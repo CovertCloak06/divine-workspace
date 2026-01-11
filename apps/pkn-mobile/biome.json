@@ -1,0 +1,12 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "extends": ["@divine/shared-config/biome.json"],
+  "files": {
+    "ignore": [
+      "backend/memory",
+      "frontend/js/core",
+      "frontend/js/utils",
+      "frontend/js/api"
+    ]
+  }
+}
