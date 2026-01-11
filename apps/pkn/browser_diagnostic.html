@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PKN Browser Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        h1 { color: #0ff; }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            margin: 10px;
+            background: #0ff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .result {
+            border: 2px solid #0ff;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(0,255,255,0.05);
+        }
+        .ok { border-color: #0f0; color: #0f0; }
+        .fail { border-color: #f00; color: #f00; }
+        pre {
+            background: #001;
+            padding: 10px;
+            border-left: 3px solid #0ff;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PKN Browser Diagnostic</h1>
+
+    <button onclick="runDiagnostic()">Run Full Diagnostic</button>
+    <button onclick="forceClearAndReload()">Clear Cache & Reload</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function runDiagnostic() {
+            const output = document.getElementById('results');
+            output.innerHTML = '<div class="result">⏳ Running diagnostic...</div>';
+
+            let html = '';
+
+            // Test 1: Check window.pluginManager
+            html += '<h2>1. Plugin Manager</h2>';
+            if (typeof window.pluginManager !== 'undefined') {
+                const plugins = window.pluginManager.getAllPlugins();
+                html += `<div class="result ok">✓ pluginManager is defined<br>✓ Found ${plugins.length} plugins</div>`;
+                html += '<pre>' + JSON.stringify(plugins.map(p => ({
+                    name: p.manifest.name,
+                    enabled: p.enabled,
+                    version: p.manifest.version
+                })), null, 2) + '</pre>';
+            } else {
+                html += '<div class="result fail">✗ pluginManager is NOT defined<br>This means main.js did not load or execute properly</div>';
+            }
+
+            // Test 2: Check window.openPluginsManager
+            html += '<h2>2. Plugin UI Functions</h2>';
+            if (typeof window.openPluginsManager === 'function') {
+                html += '<div class="result ok">✓ openPluginsManager function exists</div>';
+            } else {
+                html += '<div class="result fail">✗ openPluginsManager NOT found<br>Plugin button won\'t work</div>';
+            }
+
+            // Test 3: Check for showToast recursion
+            html += '<h2>3. ShowToast Function</h2>';
+            if (typeof window.showToast === 'function') {
+                html += '<div class="result ok">✓ showToast function exists</div>';
+                // Test it
+                try {
+                    window.showToast('Test message', 1000, 'info');
+                    html += '<div class="result ok">✓ showToast executed without error (check for toast popup)</div>';
+                } catch (e) {
+                    html += `<div class="result fail">✗ showToast threw error: ${e.message}</div>`;
+                }
+            } else {
+                html += '<div class="result fail">✗ showToast NOT defined</div>';
+            }
+
+            // Test 4: Check loaded scripts
+            html += '<h2>4. Loaded Scripts</h2>';
+            const scripts = Array.from(document.getElementsByTagName('script'));
+            const scriptSrcs = scripts.map(s => s.src).filter(s => s);
+            const mainJsLoaded = scriptSrcs.some(s => s.includes('main.js'));
+            const appJsLoaded = scriptSrcs.some(s => s.includes('app.js'));
+
+            if (mainJsLoaded) {
+                html += '<div class="result ok">✓ main.js is in the page</div>';
+            } else {
+                html += '<div class="result fail">✗ main.js NOT in the page</div>';
+            }
+
+            if (appJsLoaded) {
+                html += '<div class="result ok">✓ app.js is in the page</div>';
+            } else {
+                html += '<div class="result fail">✗ app.js NOT in the page</div>';
+            }
+
+            // Test 5: Check DOM elements
+            html += '<h2>5. DOM Elements</h2>';
+            const modal = document.getElementById('pluginsModal');
+            const list = document.getElementById('pluginsList');
+
+            if (modal) {
+                html += '<div class="result ok">✓ Plugins modal exists in DOM</div>';
+            } else {
+                html += '<div class="result fail">✗ Plugins modal NOT in DOM</div>';
+            }
+
+            if (list) {
+                html += '<div class="result ok">✓ Plugin list container exists</div>';
+            } else {
+                html += '<div class="result fail">✗ Plugin list container missing</div>';
+            }
+
+            // Test 6: Console errors
+            html += '<h2>6. Console Check</h2>';
+            html += '<div class="result">Open browser console (F12) and check for:<br>';
+            html += '• Red error messages<br>';
+            html += '• "Failed to load module" errors<br>';
+            html += '• "Cannot use import" errors<br>';
+            html += '• Any recursion errors<br></div>';
+
+            // Solution
+            html += '<h2>💡 Solution</h2>';
+            if (typeof window.pluginManager === 'undefined') {
+                html += '<div class="result fail">';
+                html += '<strong>ISSUE: pluginManager not loaded</strong><br><br>';
+                html += '<strong>FIX:</strong><br>';
+                html += '1. Click "Clear Cache & Reload" button above<br>';
+                html += '2. Or manually: Ctrl+Shift+R (Cmd+Shift+R on Mac)<br>';
+                html += '3. Or clear browser cache in settings<br>';
+                html += '4. Or try in private/incognito window<br>';
+                html += '</div>';
+            } else {
+                html += '<div class="result ok">';
+                html += '<strong>✓ Everything looks good!</strong><br><br>';
+                html += 'Try clicking the "🔌 Plugins" button in the sidebar.<br>';
+                html += 'Or run in console: <code>openPluginsManager()</code>';
+                html += '</div>';
+            }
+
+            output.innerHTML = html;
+        }
+
+        function forceClearAndReload() {
+            // Clear service worker cache
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => reg.unregister());
+                });
+            }
+
+            // Clear caches API
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+
+            // Add timestamp to URL and reload
+            const url = new URL(window.location.href);
+            url.searchParams.set('nocache', Date.now());
+
+            alert('Caches cleared! Reloading with fresh URL...');
+            window.location.href = url.toString();
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(runDiagnostic, 500);
+        });
+    </script>
+</body>
+</html>

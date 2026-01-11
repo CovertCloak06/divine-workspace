@@ -1,0 +1,48 @@
+/* THEME OVERRIDE - Maximum specificity fix for all theme issues */
+
+/* FIX 1: Header agent button containers - FORCE theme colors */
+.header-agent-selector .agent-mode-btn:hover {
+    background: var(--theme-primary-fade) !important;
+    border-color: var(--theme-primary-fade) !important;
+    color: var(--theme-primary) !important;
+}
+
+.header-agent-selector .agent-mode-btn.active {
+    background: var(--theme-primary-fade) !important;
+    border-color: var(--theme-primary) !important;
+    color: var(--theme-primary) !important;
+}
+
+/* FIX 2: Send button - FORCE theme colors everywhere */
+.send-btn {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary)) !important;
+}
+
+.send-btn:hover {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary)) !important;
+    box-shadow: 0 6px 16px var(--theme-primary-glow) !important;
+}
+
+.send-btn:active {
+    box-shadow: 0 2px 8px var(--theme-primary-glow) !important;
+}
+
+/* FIX 3: Mode toggle buttons near input */
+.mode-btn-header:hover {
+    background: var(--theme-primary-fade) !important;
+    color: var(--theme-primary) !important;
+}
+
+.mode-btn-header.active {
+    background: var(--theme-primary) !important;
+    color: #000 !important;
+}
+
+/* FIX 4: Header icons - smaller size */
+.header-agent-selector .agent-icon {
+    font-size: 16px !important;
+}
+
+.header-agent-selector .agent-label {
+    font-size: 11px !important;
+}

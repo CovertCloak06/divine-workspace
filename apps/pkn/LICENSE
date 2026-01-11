@@ -1,0 +1,77 @@
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
+
+Copyright (C) 2026 gh0st
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU Affero General Public License is a free, copyleft license for
+software and other kinds of works, specifically designed to ensure
+cooperation with the community in the case of network server software.
+
+This license is designed to make sure that you get credit for your work,
+and that companies cannot take your software, improve it, and sell it
+without contributing back to the community.
+
+Key Terms:
+
+1. FREEDOM TO USE
+   - Anyone can use Divine Node for FREE (personal, commercial, any purpose)
+   - No restrictions on running the software
+
+2. FREEDOM TO MODIFY
+   - Anyone can modify the source code
+   - Can improve, customize, extend
+
+3. COPYLEFT PROTECTION (The Important Part)
+   - If you distribute modified versions, you MUST share the source code
+   - If you run it as a web service (SaaS), you MUST share the source code
+   - Any improvements MUST be contributed back under the same license
+
+4. COMMERCIAL USE ALLOWED
+   - Companies CAN use this commercially
+   - BUT they must open-source any modifications
+   - OR purchase a commercial license exception from gh0st
+
+---
+
+COMMERCIAL LICENSE AVAILABLE:
+
+Don't want to open-source your modifications?
+Need to run a private SaaS without sharing code?
+
+Purchase a commercial license exception:
+- Small Business (1-10 employees): $99/year
+- Enterprise (unlimited): $499/year
+
+Contact: [Your Email/Website]
+
+---
+
+THIRD-PARTY COMPONENTS:
+
+This software uses third-party AI models and libraries licensed separately:
+
+1. AI Models (NOT included - users download separately):
+   - Qwen2.5-Coder-14B by Alibaba Cloud (Apache 2.0)
+   - LLaVA by Microsoft Research (Apache 2.0)
+   - Llama models by Meta AI (Llama Community License)
+
+2. Dependencies (see requirements.txt):
+   - llama.cpp by Georgi Gerganov (MIT)
+   - Flask by Pallets (BSD-3-Clause)
+   - Other libraries (various licenses)
+
+See CREDITS.md for full attribution.
+
+AI models have separate licenses and must be used according to their terms.
+
+---
+
+For the full legal text of AGPL-3.0, see:
+https://www.gnu.org/licenses/agpl-3.0.en.html
+
+TL;DR: Free to use, but you can't take it and make a closed-source product
+without buying a commercial license from the creator (gh0st).

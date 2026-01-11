@@ -1,0 +1,339 @@
+/**
+ * OSINT Tools UI Styling
+ * Cyberpunk-themed styling for OSINT intelligence gathering tools
+ */
+
+/* Main OSINT Panel */
+.osint-tools-panel {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* OSINT Header */
+.osint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #00ffff;
+    margin-bottom: 15px;
+}
+
+.osint-header h3 {
+    color: #00ffff;
+    font-size: 1.3em;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+    font-family: 'Courier New', monospace;
+}
+
+.osint-toggle {
+    background: transparent;
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.osint-toggle:hover {
+    background: rgba(0, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.toggle-icon {
+    font-size: 0.9em;
+    display: inline-block;
+}
+
+/* OSINT Content Area */
+.osint-content {
+    color: #e0e0e0;
+}
+
+/* Legal Warning */
+.osint-warning {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid #ffa500;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #ffa500;
+    text-align: center;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+/* Category Layout */
+.osint-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.osint-category {
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.osint-category h4 {
+    color: #00ffff;
+    font-size: 1em;
+    margin: 0 0 10px 0;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* OSINT Buttons */
+.osint-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #0a4a4a 0%, #053535 100%);
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 8px 12px;
+    margin: 5px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    text-align: left;
+    font-family: 'Courier New', monospace;
+}
+
+.osint-btn:hover {
+    background: linear-gradient(135deg, #0d5f5f 0%, #084848 100%);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transform: translateX(3px);
+}
+
+.osint-btn:active {
+    transform: translateX(1px);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+/* Tool Execution Area */
+.osint-tool-area {
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.osint-tool-area.hidden {
+    display: none;
+}
+
+.osint-tool-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.5);
+    margin-bottom: 15px;
+}
+
+.osint-tool-header h4 {
+    color: #00ffff;
+    margin: 0;
+    font-size: 1.1em;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+.close-btn {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+/* Tool Form */
+.osint-form {
+    margin-bottom: 20px;
+}
+
+.osint-field {
+    margin-bottom: 15px;
+}
+
+.osint-field label {
+    display: block;
+    color: #00ffff;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    font-family: 'Courier New', monospace;
+}
+
+.osint-field input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    border-radius: 4px;
+    padding: 10px;
+    color: #e0e0e0;
+    font-size: 0.95em;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+}
+
+.osint-field input:focus {
+    outline: none;
+    border-color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.osint-field input::placeholder {
+    color: rgba(224, 224, 224, 0.4);
+}
+
+.osint-submit-btn {
+    background: linear-gradient(135deg, #00ffff 0%, #00cccc 100%);
+    border: none;
+    color: #000;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.osint-submit-btn:hover {
+    background: linear-gradient(135deg, #00ffff 0%, #00ffff 100%);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+    transform: translateY(-2px);
+}
+
+.osint-submit-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+/* Results Display */
+.osint-tool-results {
+    min-height: 50px;
+}
+
+.osint-loading {
+    text-align: center;
+    color: #00ffff;
+    padding: 20px;
+    font-size: 1.1em;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.osint-error {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid #ff4444;
+    border-radius: 5px;
+    padding: 15px;
+    color: #ff4444;
+    text-align: center;
+}
+
+.osint-results-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.osint-results-container h5 {
+    color: #00ffff;
+    margin: 0 0 10px 0;
+    font-size: 1em;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.osint-results-pre {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 12px;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Scrollbar styling */
+.osint-results-pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.osint-results-pre::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.osint-results-pre::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 255, 0.5);
+    border-radius: 4px;
+}
+
+.osint-results-pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 0.7);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .osint-categories {
+        grid-template-columns: 1fr;
+    }
+
+    .osint-header h3 {
+        font-size: 1.1em;
+    }
+
+    .osint-btn {
+        font-size: 0.85em;
+        padding: 7px 10px;
+    }
+
+    .osint-field input {
+        font-size: 0.9em;
+    }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+    .osint-tools-panel {
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+    }
+
+    .osint-field input {
+        background: rgba(0, 0, 0, 0.7);
+    }
+}

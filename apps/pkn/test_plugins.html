@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKN Plugin Test Suite</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0ff;
+            border-bottom: 2px solid #0ff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid #0ff;
+            border-radius: 8px;
+        }
+        .test-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 3px solid #666;
+        }
+        .test-item.pass {
+            border-left-color: #0f0;
+            color: #0f0;
+        }
+        .test-item.fail {
+            border-left-color: #f00;
+            color: #f00;
+        }
+        .test-item.warn {
+            border-left-color: #ffa500;
+            color: #ffa500;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .summary {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 PKN Plugin Test Suite</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+        const tests = [];
+
+        function addTest(name, status, message) {
+            tests.push({ name, status, message });
+            const item = document.createElement('div');
+            item.className = `test-item ${status}`;
+            item.innerHTML = `
+                <strong>${status === 'pass' ? '✓' : status === 'fail' ? '✗' : '⚠'}</strong>
+                <strong>${name}</strong>: ${message}
+            `;
+            results.appendChild(item);
+        }
+
+        function addSection(title) {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = `<h2>${title}</h2>`;
+            results.appendChild(section);
+            return section;
+        }
+
+        async function runTests() {
+            // Test 1: Plugin Manager
+            addSection('Plugin System Core');
+            try {
+                const { pluginManager } = await import('./js/plugin-manager.js');
+                addTest('Plugin Manager', 'pass', 'Loaded successfully');
+
+                await pluginManager.init();
+                addTest('Plugin Manager Init', 'pass', 'Initialized successfully');
+            } catch (error) {
+                addTest('Plugin Manager', 'fail', error.message);
+                return;
+            }
+
+            // Test 2: Event Bus
+            try {
+                const eventBus = await import('./js/event-bus.js');
+                addTest('Event Bus', 'pass', 'Loaded successfully');
+            } catch (error) {
+                addTest('Event Bus', 'fail', error.message);
+            }
+
+            // Test 3: Plugin Base
+            try {
+                const { PluginBase } = await import('./js/plugin-base.js');
+                addTest('Plugin Base Class', 'pass', 'Loaded successfully');
+            } catch (error) {
+                addTest('Plugin Base Class', 'fail', error.message);
+            }
+
+            // Test 4: Individual Plugins
+            addSection('Individual Plugin Tests');
+
+            const plugins = [
+                { name: 'Welcome Message', path: './plugins/welcome-message/plugin.js', manifest: './plugins/welcome-message/manifest.json', class: 'WelcomeMessagePlugin' },
+                { name: 'Context Detector', path: './plugins/context-detector/plugin.js', manifest: './plugins/context-detector/manifest.json', class: 'SmartContextDetectorPlugin' },
+                { name: 'Voice I/O', path: './plugins/voice-io/plugin.js', manifest: './plugins/voice-io/manifest.json', class: 'VoiceIOPlugin' },
+                { name: 'Quick Actions', path: './plugins/quick-actions/plugin.js', manifest: './plugins/quick-actions/manifest.json', class: 'QuickActionsPlugin' },
+                { name: 'Agent Memory', path: './plugins/agent-memory/plugin.js', manifest: './plugins/agent-memory/manifest.json', class: 'AgentMemoryPlugin' },
+                { name: 'Meeting Summarizer', path: './plugins/meeting-summarizer/plugin.js', manifest: './plugins/meeting-summarizer/manifest.json', class: 'MeetingSummarizerPlugin' },
+                { name: 'Diff Viewer', path: './plugins/diff-viewer/plugin.js', manifest: './plugins/diff-viewer/manifest.json', class: 'DiffViewerPlugin' },
+                { name: 'Code Sandbox', path: './plugins/code-sandbox/plugin.js', manifest: './plugins/code-sandbox/manifest.json', class: 'CodeSandboxPlugin' },
+                { name: 'Collaboration Theater', path: './plugins/collaboration-theater/plugin.js', manifest: './plugins/collaboration-theater/manifest.json', class: 'CollaborationTheaterPlugin' },
+                { name: 'Dark Web OSINT', path: './plugins/darkweb-osint/plugin.js', manifest: './plugins/darkweb-osint/manifest.json', class: 'DarkWebOSINTPlugin' }
+            ];
+
+            for (const plugin of plugins) {
+                try {
+                    // Load manifest
+                    const manifestResponse = await fetch(plugin.manifest);
+                    const manifest = await manifestResponse.json();
+
+                    // Load plugin
+                    const module = await import(plugin.path);
+                    const PluginClass = module[plugin.class] || module.default;
+
+                    if (!PluginClass) {
+                        addTest(plugin.name, 'fail', `Class ${plugin.class} not found in export`);
+                        continue;
+                    }
+
+                    // Instantiate plugin
+                    const instance = new PluginClass(manifest);
+
+                    // Check required methods
+                    const requiredMethods = ['init', 'enable', 'disable'];
+                    const missingMethods = requiredMethods.filter(method => typeof instance[method] !== 'function');
+
+                    if (missingMethods.length > 0) {
+                        addTest(plugin.name, 'fail', `Missing methods: ${missingMethods.join(', ')}`);
+                    } else {
+                        addTest(plugin.name, 'pass', `Loaded and instantiated successfully (ID: ${manifest.id})`);
+                    }
+                } catch (error) {
+                    addTest(plugin.name, 'fail', error.message);
+                }
+            }
+
+            // Test 5: Plugin Registration
+            addSection('Plugin Registration Tests');
+            try {
+                const { pluginManager } = await import('./js/plugin-manager.js');
+                const registered = pluginManager.getAllPlugins();
+
+                if (registered.length > 0) {
+                    addTest('Registered Plugins', 'pass', `${registered.length} plugins registered: ${registered.map(p => p.manifest.name).join(', ')}`);
+                } else {
+                    addTest('Registered Plugins', 'warn', 'No plugins registered yet (need to run main.js init)');
+                }
+            } catch (error) {
+                addTest('Plugin Registration', 'fail', error.message);
+            }
+
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'summary';
+            const passed = tests.filter(t => t.status === 'pass').length;
+            const failed = tests.filter(t => t.status === 'fail').length;
+            const warned = tests.filter(t => t.status === 'warn').length;
+            const total = tests.length;
+
+            summary.innerHTML = `
+                <div>Test Summary:</div>
+                <div style="color: #0f0;">✓ Passed: ${passed}/${total}</div>
+                <div style="color: #f00;">✗ Failed: ${failed}/${total}</div>
+                <div style="color: #ffa500;">⚠ Warnings: ${warned}/${total}</div>
+                <div style="margin-top: 10px;">${failed === 0 ? '🎉 All tests passed!' : '⚠ Some tests failed - check details above'}</div>
+            `;
+            results.appendChild(summary);
+        }
+
+        // Run tests on load
+        runTests().catch(error => {
+            addTest('Test Runner', 'fail', `Fatal error: ${error.message}`);
+        });
+    </script>
+</body>
+</html>

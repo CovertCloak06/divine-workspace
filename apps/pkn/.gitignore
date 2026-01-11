@@ -1,0 +1,84 @@
+# Environment variables and secrets
+.env
+.env.local
+config.local.js
+
+# API keys and credentials
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Logs
+*.log
+logs/
+
+# User data
+uploads/
+*.db
+*.sqlite
+.chroma_db/
+pkn_memory.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.bashrc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules (if added later)
+node_modules/
+
+# Large model files (DO NOT COMMIT - HUGE!)
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+llama.cpp/models/*.gguf
+llama.cpp/models/
+models/
+
+# Memory & conversation data (user privacy)
+memory/
+conversation_history.json
+.parakleon_memory.json
+
+# Backups
+pkn_backup_*.tar.gz
+backup_*.zip
+*.backup
+*.bak
+
+# Gaming content (not part of PKN)
+minecraft_builds/
+
+# Build artifacts
+llama.cpp/build/
+llama.cpp/llama-server
+llama.cpp/main
+*.o
+*.a
+
+# Generated images
+generated_images/
+*.png
+*.jpg
+!img/**/*.png
+!img/**/*.jpg
+llama.cpp/

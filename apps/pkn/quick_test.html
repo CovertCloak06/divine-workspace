@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Plugin Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        h1 { color: #0ff; }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            margin: 10px;
+            background: #0ff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        pre {
+            background: #001;
+            padding: 15px;
+            border: 2px solid #0ff;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Quick Plugin Test</h1>
+
+    <p>This page will open PKN and show you how to check if plugins loaded.</p>
+
+    <button onclick="openAndTest()">Open PKN & Show Instructions</button>
+
+    <div id="instructions" style="display:none;">
+        <h2 style="color:#ff0;">📋 TEST INSTRUCTIONS:</h2>
+        <ol style="font-size:16px; line-height:1.8;">
+            <li>PKN should now be open in a new tab/window</li>
+            <li>In that window, press <strong>F12</strong> to open Developer Console</li>
+            <li>Click the <strong>Console</strong> tab</li>
+            <li>Type or paste this command and press Enter:</li>
+        </ol>
+        <pre>pluginManager.getAllPlugins()</pre>
+        <h3 style="color:#0f0;">✅ Expected Result:</h3>
+        <p>You should see an array with 10 plugin objects, like:</p>
+        <pre>[
+  {manifest: {name: "Welcome Message", ...}, enabled: true},
+  {manifest: {name: "Smart Context Detector", ...}, enabled: true},
+  ... (8 more plugins)
+]</pre>
+        <h3 style="color:#0f0;">🎯 Alternative - Use the UI:</h3>
+        <ol style="font-size:16px; line-height:1.8;">
+            <li>Hover mouse on the <strong>left edge</strong> of the screen</li>
+            <li>Sidebar should slide out</li>
+            <li>Click the <strong>"🔌 Plugins"</strong> button</li>
+            <li>Should see the Plugins Manager panel with all 10 plugins listed</li>
+        </ol>
+        <h3 style="color:#f00;">❌ If plugins don't appear:</h3>
+        <p>1. Hard refresh the page: <strong>Ctrl+Shift+R</strong></p>
+        <p>2. Check console for errors (red text)</p>
+        <p>3. Try typing: <code>window.pluginManager</code> (should NOT be undefined)</p>
+    </div>
+
+    <script>
+        function openAndTest() {
+            window.open('http://localhost:8010/pkn.html', '_blank');
+            document.getElementById('instructions').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

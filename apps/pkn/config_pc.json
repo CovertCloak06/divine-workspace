@@ -1,0 +1,29 @@
+{
+  "device": "pc",
+  "model": {
+    "path": "llama.cpp/models/Qwen2.5-Coder-14B-Instruct-abliterated-Q4_K_M.gguf",
+    "name": "Qwen2.5-Coder-14B-Instruct-Abliterated",
+    "size_gb": 8.4,
+    "context_length": 32768,
+    "uncensored": true
+  },
+  "llm_settings": {
+    "n_ctx": 8192,
+    "n_batch": 512,
+    "n_threads": 10,
+    "n_gpu_layers": 45
+  },
+  "image_generation": {
+    "enabled": true,
+    "model": "stable-diffusion-v1-5",
+    "num_inference_steps": 50,
+    "width": 512,
+    "height": 512
+  },
+  "optimizations": {
+    "low_memory_mode": false,
+    "reduced_agent_count": false,
+    "cache_size_mb": 2048
+  },
+  "max_memory_gb": 16
+}

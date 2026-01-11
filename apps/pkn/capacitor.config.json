@@ -1,0 +1,28 @@
+{
+  "appId": "com.divinenode.app",
+  "appName": "Divine Node",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost:8010",
+    "cleartext": true,
+    "androidScheme": "http"
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "",
+      "keystorePassword": "",
+      "keystoreAlias": "",
+      "keystoreAliasPassword": "",
+      "releaseType": "APK"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0a0a0a",
+      "showSpinner": true,
+      "spinnerColor": "#00ffff"
+    }
+  }
+}

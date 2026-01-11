@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Plugins Loaded</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        h1 { color: #0ff; }
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #0ff;
+            background: rgba(0,255,255,0.05);
+        }
+        .success { border-color: #0f0; color: #0f0; }
+        .error { border-color: #f00; color: #f00; }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            background: #0ff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 PKN Plugin System Verification</h1>
+
+    <button onclick="checkPlugins()">Check Plugins</button>
+    <button onclick="window.open('http://localhost:8010/pkn.html', '_blank')">Open Main PKN</button>
+
+    <div id="output"></div>
+
+    <script>
+        async function checkPlugins() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="result">⏳ Checking...</div>';
+
+            try {
+                // Open PKN page in iframe to test
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'http://localhost:8010/pkn.html?v=' + Date.now();
+                document.body.appendChild(iframe);
+
+                // Wait for load
+                await new Promise(resolve => iframe.onload = resolve);
+
+                // Check after a delay for module loading
+                setTimeout(() => {
+                    try {
+                        const win = iframe.contentWindow;
+
+                        let html = '<div class="result success"><h2>✅ CHECK COMPLETE</h2>';
+
+                        if (win.pluginManager) {
+                            const plugins = win.pluginManager.getAllPlugins();
+                            html += `<p><strong>${plugins.length} plugins registered!</strong></p>`;
+                            html += '<ul>';
+                            plugins.forEach(p => {
+                                html += `<li>${p.manifest.name} (v${p.manifest.version}) - ${p.enabled ? 'ENABLED' : 'disabled'}</li>`;
+                            });
+                            html += '</ul>';
+                        } else {
+                            html += '<p style="color: #ff0;">⚠️ pluginManager not found yet - may still be loading</p>';
+                        }
+
+                        if (win.openPluginsManager) {
+                            html += '<p>✅ openPluginsManager() function available</p>';
+                        } else {
+                            html += '<p style="color: #f00;">❌ openPluginsManager() not found</p>';
+                        }
+
+                        html += '</div>';
+                        html += '<div class="result" style="border-color: #ff0; color: #ff0;">';
+                        html += '<h3>📋 Next Steps:</h3>';
+                        html += '<p>1. Click "Open Main PKN" button above</p>';
+                        html += '<p>2. Wait for page to load completely</p>';
+                        html += '<p>3. Press F12 and type: <code>pluginManager.getAllPlugins()</code></p>';
+                        html += '<p>4. Or click the sidebar and look for "🔌 Plugins" button</p>';
+                        html += '</div>';
+
+                        output.innerHTML = html;
+
+                        iframe.remove();
+                    } catch (error) {
+                        output.innerHTML = `
+                            <div class="result error">
+                                <h2>❌ CROSS-ORIGIN ERROR</h2>
+                                <p>Cannot access iframe due to browser security.</p>
+                                <p><strong>Manual test required:</strong></p>
+                                <ol>
+                                    <li>Click "Open Main PKN" above</li>
+                                    <li>Press F12 for console</li>
+                                    <li>Type: <code>pluginManager.getAllPlugins()</code></li>
+                                    <li>Should see array of 10 plugins</li>
+                                </ol>
+                            </div>
+                        `;
+                        iframe.remove();
+                    }
+                }, 3000);
+
+            } catch (error) {
+                output.innerHTML = `
+                    <div class="result error">
+                        <h2>❌ ERROR</h2>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

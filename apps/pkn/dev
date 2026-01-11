@@ -1,0 +1,98 @@
+#!/bin/bash
+# PKN Developer Toolkit CLI
+# Usage: ./dev <command>
+
+set -e
+
+PKN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PKN_DIR"
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+show_help() {
+    echo -e "${CYAN}${BOLD}PKN Developer Toolkit${NC}\n"
+    echo -e "${BOLD}Usage:${NC} ./dev <command>"
+    echo ""
+    echo -e "${BOLD}Commands:${NC}"
+    echo -e "  ${GREEN}check${NC}       - Run JavaScript error checker"
+    echo -e "  ${GREEN}fix${NC}         - Auto-fix common issues"
+    echo -e "  ${GREEN}watch${NC}       - Watch files and auto-check on changes"
+    echo -e "  ${GREEN}diagnose${NC}    - Run full diagnostic (server + browser)"
+    echo -e "  ${GREEN}browser${NC}     - Open browser diagnostic page"
+    echo -e "  ${GREEN}server${NC}      - Check server-side files only"
+    echo -e "  ${GREEN}plugins${NC}     - Check plugin system specifically"
+    echo -e "  ${GREEN}clean${NC}       - Clean cache files and temp data"
+    echo -e "  ${GREEN}test${NC}        - Run all tests"
+    echo -e "  ${GREEN}help${NC}        - Show this help"
+    echo ""
+    echo -e "${BOLD}Examples:${NC}"
+    echo -e "  ./dev check        # Quick error check"
+    echo -e "  ./dev watch        # Auto-check on file changes"
+    echo -e "  ./dev diagnose     # Full system diagnostic"
+    echo ""
+}
+
+case "${1:-help}" in
+    check)
+        echo -e "${CYAN}Running JavaScript error checker...${NC}"
+        python3 check_js_errors.py
+        ;;
+
+    fix)
+        echo -e "${CYAN}Running auto-fix...${NC}"
+        python3 auto_fix.py
+        ;;
+
+    watch)
+        echo -e "${CYAN}Watching files for changes...${NC}"
+        echo -e "${YELLOW}Press Ctrl+C to stop${NC}\n"
+        python3 file_watcher.py
+        ;;
+
+    diagnose)
+        echo -e "${CYAN}Running full diagnostic...${NC}"
+        python3 diagnose_plugins.py
+        ;;
+
+    browser)
+        echo -e "${CYAN}Opening browser diagnostic...${NC}"
+        firefox http://localhost:8010/browser_diagnostic.html 2>/dev/null &
+        ;;
+
+    server)
+        echo -e "${CYAN}Checking server files...${NC}"
+        python3 diagnose_plugins.py
+        ;;
+
+    plugins)
+        echo -e "${CYAN}Checking plugin system...${NC}"
+        python3 check_plugins_detailed.py
+        ;;
+
+    clean)
+        echo -e "${CYAN}Cleaning cache and temp files...${NC}"
+        python3 clean_build.py
+        ;;
+
+    test)
+        echo -e "${CYAN}Running tests...${NC}"
+        echo "Test suite not yet implemented"
+        ;;
+
+    help|--help|-h)
+        show_help
+        ;;
+
+    *)
+        echo -e "${RED}Unknown command: $1${NC}"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

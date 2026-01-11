@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PKN Plugin Live Test</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #0ff; text-align: center; }
+        .test {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #0ff;
+            background: rgba(0,255,255,0.05);
+            border-radius: 8px;
+        }
+        .success { border-color: #0f0; color: #0f0; }
+        .error { border-color: #f00; color: #f00; }
+        .info { border-color: #ff0; color: #ff0; }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #0ff, #0aa);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #000;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #0f0, #0aa);
+            box-shadow: 0 0 20px rgba(0,255,255,0.8);
+        }
+        pre {
+            background: #001;
+            padding: 10px;
+            border-left: 3px solid #0ff;
+            overflow-x: auto;
+        }
+        .plugin-list {
+            list-style: none;
+            padding: 0;
+        }
+        .plugin-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(0,255,255,0.1);
+            border-left: 3px solid #0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 PKN Plugin System - Live Test</h1>
+
+    <div class="test info">
+        <h2>📋 Instructions</h2>
+        <p><strong>Step 1:</strong> Click "Load Plugins" button below</p>
+        <p><strong>Step 2:</strong> Wait for green success message</p>
+        <p><strong>Step 3:</strong> Click "Open Plugins Manager" to see all plugins</p>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <button onclick="loadPlugins()">🔧 Load Plugins</button>
+        <button onclick="openManager()" id="openBtn" disabled>🔌 Open Plugins Manager</button>
+        <button onclick="testInConsole()">💻 Test in Console</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script type="module">
+        let pluginManager;
+        let pluginsLoaded = false;
+
+        window.loadPlugins = async function() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="test info"><h2>⏳ Loading plugins...</h2></div>';
+
+            try {
+                // Add timestamp to bypass cache
+                const ts = Date.now();
+
+                // Load plugin manager
+                status.innerHTML += '<div class="test">Loading plugin manager...</div>';
+                const { pluginManager: pm } = await import(`./js/plugin-manager.js?v=${ts}`);
+                pluginManager = pm;
+                window.pluginManager = pm;
+
+                // Initialize
+                status.innerHTML += '<div class="test">Initializing plugin manager...</div>';
+                await pluginManager.init();
+
+                // Load plugins UI
+                status.innerHTML += '<div class="test">Loading plugins UI...</div>';
+                const pluginsUI = await import(`./js/plugins-ui.js?v=${ts}`);
+                window.openPluginsManager = pluginsUI.openPluginsManager;
+                window.closePluginsManager = pluginsUI.closePluginsManager;
+
+                // Register all plugins
+                status.innerHTML += '<div class="test">Registering plugins...</div>';
+
+                const plugins = [
+                    { name: 'Welcome Message', m: './plugins/welcome-message/manifest.json', p: './plugins/welcome-message/plugin.js', c: 'WelcomeMessagePlugin' },
+                    { name: 'Context Detector', m: './plugins/context-detector/manifest.json', p: './plugins/context-detector/plugin.js', c: 'SmartContextDetectorPlugin' },
+                    { name: 'Voice I/O', m: './plugins/voice-io/manifest.json', p: './plugins/voice-io/plugin.js', c: 'VoiceIOPlugin' },
+                    { name: 'Quick Actions', m: './plugins/quick-actions/manifest.json', p: './plugins/quick-actions/plugin.js', c: 'QuickActionsPlugin' },
+                    { name: 'Agent Memory', m: './plugins/agent-memory/manifest.json', p: './plugins/agent-memory/plugin.js', c: 'AgentMemoryPlugin' },
+                    { name: 'Meeting Summarizer', m: './plugins/meeting-summarizer/manifest.json', p: './plugins/meeting-summarizer/plugin.js', c: 'MeetingSummarizerPlugin' },
+                    { name: 'Diff Viewer', m: './plugins/diff-viewer/manifest.json', p: './plugins/diff-viewer/plugin.js', c: 'DiffViewerPlugin' },
+                    { name: 'Code Sandbox', m: './plugins/code-sandbox/manifest.json', p: './plugins/code-sandbox/plugin.js', c: 'CodeSandboxPlugin' },
+                    { name: 'Collaboration Theater', m: './plugins/collaboration-theater/manifest.json', p: './plugins/collaboration-theater/plugin.js', c: 'CollaborationTheaterPlugin' },
+                    { name: 'Dark Web OSINT', m: './plugins/darkweb-osint/manifest.json', p: './plugins/darkweb-osint/plugin.js', c: 'DarkWebOSINTPlugin' }
+                ];
+
+                let successCount = 0;
+                let failCount = 0;
+                let resultHTML = '<ul class="plugin-list">';
+
+                for (const plugin of plugins) {
+                    try {
+                        const manifestRes = await fetch(`${plugin.m}?v=${ts}`);
+                        const manifest = await manifestRes.json();
+
+                        const module = await import(`${plugin.p}?v=${ts}`);
+                        const PluginClass = module[plugin.c] || module.default;
+
+                        await pluginManager.register(manifest, PluginClass);
+
+                        resultHTML += `<li style="border-color: #0f0; color: #0f0;">✅ ${plugin.name}</li>`;
+                        successCount++;
+                    } catch (error) {
+                        resultHTML += `<li style="border-color: #f00; color: #f00;">❌ ${plugin.name}: ${error.message}</li>`;
+                        failCount++;
+                    }
+                }
+
+                resultHTML += '</ul>';
+
+                const registered = pluginManager.getAllPlugins();
+
+                status.innerHTML = `
+                    <div class="test success">
+                        <h2>✅ SUCCESS!</h2>
+                        <p><strong>${successCount} plugins loaded</strong></p>
+                        ${failCount > 0 ? `<p style="color: #f00;">${failCount} plugins failed</p>` : ''}
+                        ${resultHTML}
+                    </div>
+                `;
+
+                // Enable the open button
+                document.getElementById('openBtn').disabled = false;
+                document.getElementById('openBtn').style.opacity = 1;
+                pluginsLoaded = true;
+
+                // Show how to use
+                status.innerHTML += `
+                    <div class="test info">
+                        <h2>🎯 Next Steps:</h2>
+                        <p>1. Click "Open Plugins Manager" button above</p>
+                        <p>2. Or run in console: <code>openPluginsManager()</code></p>
+                        <p>3. Or check: <code>window.pluginManager.getAllPlugins()</code></p>
+                    </div>
+                `;
+
+            } catch (error) {
+                status.innerHTML = `
+                    <div class="test error">
+                        <h2>❌ ERROR</h2>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        };
+
+        window.openManager = function() {
+            if (!pluginsLoaded) {
+                alert('Please load plugins first!');
+                return;
+            }
+
+            if (typeof window.openPluginsManager === 'function') {
+                window.openPluginsManager();
+            } else {
+                alert('Plugins Manager not available. Check console for errors.');
+            }
+        };
+
+        window.testInConsole = function() {
+            alert('Open browser console (F12) and run:\n\npluginManager.getAllPlugins()\n\nThis will show all registered plugins.');
+        };
+    </script>
+</body>
+</html>

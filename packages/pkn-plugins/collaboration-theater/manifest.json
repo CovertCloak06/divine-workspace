@@ -1,0 +1,34 @@
+{
+  "id": "collaboration-theater",
+  "name": "Agent Collaboration Theater",
+  "version": "1.0.0",
+  "description": "Visualize agents working together in real-time with a theatrical interface",
+  "author": "PKN Team",
+  "autoEnable": false,
+  "dependencies": [],
+  "settings": {
+    "autoShow": {
+      "type": "boolean",
+      "label": "Auto-show on multi-agent tasks",
+      "default": true,
+      "description": "Automatically open theater when multiple agents collaborate"
+    },
+    "showThoughts": {
+      "type": "boolean",
+      "label": "Show agent thoughts",
+      "default": true,
+      "description": "Display thought bubbles while agents think"
+    },
+    "animationSpeed": {
+      "type": "select",
+      "label": "Animation speed",
+      "default": "normal",
+      "options": [
+        {"value": "slow", "label": "Slow"},
+        {"value": "normal", "label": "Normal"},
+        {"value": "fast", "label": "Fast"}
+      ],
+      "description": "Speed of theater animations"
+    }
+  }
+}

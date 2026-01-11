@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKN Plugin Demo Tour</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0ff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #0ff;
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #0ff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #0f0;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .plugin-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05));
+            border: 2px solid #0ff;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .plugin-card:hover {
+            border-color: #0f0;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: translateY(-5px);
+        }
+        .plugin-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .plugin-icon {
+            font-size: 32px;
+        }
+        .plugin-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0ff;
+        }
+        .plugin-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 12px;
+            padding: 4px 8px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #0f0;
+            border-radius: 4px;
+            color: #0f0;
+        }
+        .plugin-description {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 15px;
+            min-height: 60px;
+        }
+        .plugin-features {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+        .plugin-features li {
+            color: #888;
+            font-size: 13px;
+            padding: 4px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .plugin-features li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #0ff;
+        }
+        .demo-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #0ff, #0aa);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+        .demo-btn:hover {
+            background: linear-gradient(135deg, #0f0, #0aa);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+        .instructions {
+            background: rgba(255, 165, 0, 0.1);
+            border: 2px solid #ffa500;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .instructions h2 {
+            color: #ffa500;
+            margin-bottom: 10px;
+        }
+        .instructions p {
+            color: #ffcc00;
+            margin-bottom: 8px;
+        }
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            padding: 12px 24px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #0f0;
+            border-radius: 6px;
+            color: #0f0;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+        .quick-btn:hover {
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        .demo-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        .demo-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .demo-content {
+            background: linear-gradient(135deg, rgba(0, 20, 20, 0.98), rgba(0, 10, 10, 0.98));
+            border: 3px solid #0ff;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #0ff;
+            font-size: 32px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-btn:hover {
+            color: #f00;
+        }
+        .demo-section {
+            margin: 20px 0;
+        }
+        .demo-section h3 {
+            color: #0ff;
+            margin-bottom: 10px;
+        }
+        .demo-example {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .demo-code {
+            background: #001;
+            border-left: 3px solid #0ff;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 PKN Plugin System Demo</h1>
+        <p class="subtitle">Interactive demonstration of all 10 feature plugins</p>
+
+        <div class="instructions">
+            <h2>📋 Demo Instructions</h2>
+            <p><strong>1.</strong> Click any plugin card below to see a detailed demo</p>
+            <p><strong>2.</strong> Use the "Open Plugin Manager" button to enable/disable plugins</p>
+            <p><strong>3.</strong> Try the "Test All Plugins" button to run automated tests</p>
+            <p><strong>4.</strong> Open the main PKN app to use plugins in real scenarios</p>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="openPluginManager()">🔌 Open Plugin Manager</button>
+            <button class="quick-btn" onclick="openMainApp()">🚀 Open PKN App</button>
+            <button class="quick-btn" onclick="runAllTests()">✅ Test All Plugins</button>
+        </div>
+
+        <div class="demo-grid">
+            <!-- Plugin 1 -->
+            <div class="plugin-card" onclick="showDemo('context-detector')">
+                <div class="plugin-status">AUTO-ENABLED</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">🤖</div>
+                    <div class="plugin-title">Smart Context Detector</div>
+                </div>
+                <div class="plugin-description">
+                    Automatically detects the type of input (code, URL, error, command) and suggests the most appropriate AI agent to handle it.
+                </div>
+                <ul class="plugin-features">
+                    <li>7 detection patterns (code, URL, error, etc.)</li>
+                    <li>Real-time agent suggestions</li>
+                    <li>Auto-switch capability</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('context-detector')">
+                    📊 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 2 -->
+            <div class="plugin-card" onclick="showDemo('voice-io')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">🎤</div>
+                    <div class="plugin-title">Voice I/O</div>
+                </div>
+                <div class="plugin-description">
+                    Speech-to-text input and text-to-speech output using browser Web Speech API for hands-free interaction.
+                </div>
+                <ul class="plugin-features">
+                    <li>Microphone button in input area</li>
+                    <li>Adjustable voice speed & pitch</li>
+                    <li>Auto-speak AI responses</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('voice-io')">
+                    🎙️ View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 3 -->
+            <div class="plugin-card" onclick="showDemo('quick-actions')">
+                <div class="plugin-status">AUTO-ENABLED</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">⚡</div>
+                    <div class="plugin-title">Quick Actions & Macros</div>
+                </div>
+                <div class="plugin-description">
+                    Pre-built multi-agent workflows for common tasks like debugging, research, security audits, and code optimization.
+                </div>
+                <ul class="plugin-features">
+                    <li>6 built-in workflows</li>
+                    <li>Sequential agent execution</li>
+                    <li>Custom macro support</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('quick-actions')">
+                    ⚡ View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 4 -->
+            <div class="plugin-card" onclick="showDemo('agent-memory')">
+                <div class="plugin-status">AUTO-ENABLED</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">🧠</div>
+                    <div class="plugin-title">Agent Memory</div>
+                </div>
+                <div class="plugin-description">
+                    Tracks what each agent learns about you over time, including preferences, facts, and important information.
+                </div>
+                <ul class="plugin-features">
+                    <li>6 agent-specific memory banks</li>
+                    <li>Auto-extraction from conversations</li>
+                    <li>Export to JSON</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('agent-memory')">
+                    🧠 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 5 -->
+            <div class="plugin-card" onclick="showDemo('meeting-summarizer')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">📋</div>
+                    <div class="plugin-title">Meeting Summarizer</div>
+                </div>
+                <div class="plugin-description">
+                    Paste meeting notes and automatically extract action items, decisions, attendees, and key discussion points.
+                </div>
+                <ul class="plugin-features">
+                    <li>Action items with owners</li>
+                    <li>Decision extraction</li>
+                    <li>Date/deadline detection</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('meeting-summarizer')">
+                    📝 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 6 -->
+            <div class="plugin-card" onclick="showDemo('diff-viewer')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">⚖️</div>
+                    <div class="plugin-title">Code Diff Viewer</div>
+                </div>
+                <div class="plugin-description">
+                    Side-by-side code comparison with syntax highlighting using the Myers LCS algorithm for accurate diffs.
+                </div>
+                <ul class="plugin-features">
+                    <li>Split & unified views</li>
+                    <li>Line-by-line comparison</li>
+                    <li>Add/delete statistics</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('diff-viewer')">
+                    🔍 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 7 -->
+            <div class="plugin-card" onclick="showDemo('code-sandbox')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">▶️</div>
+                    <div class="plugin-title">Code Sandbox</div>
+                </div>
+                <div class="plugin-description">
+                    Safely execute JavaScript, Python, and HTML code snippets with output preview and error handling.
+                </div>
+                <ul class="plugin-features">
+                    <li>3 languages supported</li>
+                    <li>Sandboxed execution</li>
+                    <li>5-second timeout</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('code-sandbox')">
+                    💻 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 8 -->
+            <div class="plugin-card" onclick="showDemo('collaboration-theater')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">🎭</div>
+                    <div class="plugin-title">Collaboration Theater</div>
+                </div>
+                <div class="plugin-description">
+                    Visualize AI agents working together on complex tasks with animations, thought bubbles, and collaboration beams.
+                </div>
+                <ul class="plugin-features">
+                    <li>Animated agent stage</li>
+                    <li>Real-time collaboration log</li>
+                    <li>Visual data transfer beams</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('collaboration-theater')">
+                    🎬 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 9 -->
+            <div class="plugin-card" onclick="showDemo('darkweb-osint')">
+                <div class="plugin-status">MANUAL</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">🕵️</div>
+                    <div class="plugin-title">Dark Web OSINT</div>
+                </div>
+                <div class="plugin-description">
+                    Educational security research tool for breach monitoring, threat intelligence, and .onion domain analysis.
+                </div>
+                <ul class="plugin-features">
+                    <li>Breach lookup (HIBP-style)</li>
+                    <li>Threat intel feeds</li>
+                    <li>Educational use only</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('darkweb-osint')">
+                    🔒 View Demo
+                </button>
+            </div>
+
+            <!-- Plugin 10 -->
+            <div class="plugin-card" onclick="showDemo('welcome-message')">
+                <div class="plugin-status">AUTO-ENABLED</div>
+                <div class="plugin-header">
+                    <div class="plugin-icon">👋</div>
+                    <div class="plugin-title">Welcome Message</div>
+                </div>
+                <div class="plugin-description">
+                    Displays a welcome screen on first load with project information, quick start guide, and feature highlights.
+                </div>
+                <ul class="plugin-features">
+                    <li>First-run detection</li>
+                    <li>Project overview</li>
+                    <li>Feature showcase</li>
+                </ul>
+                <button class="demo-btn" onclick="event.stopPropagation(); showDemo('welcome-message')">
+                    👋 View Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Modal -->
+    <div class="demo-modal" id="demoModal">
+        <div class="demo-content" id="demoContent">
+            <button class="close-btn" onclick="closeDemo()">×</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const demos = {
+            'context-detector': {
+                title: '🤖 Smart Context Detector Demo',
+                sections: [
+                    {
+                        heading: 'What It Does',
+                        content: 'Automatically detects the type of content you\'re typing and suggests the best AI agent to help you.'
+                    },
+                    {
+                        heading: 'Try It',
+                        examples: [
+                            {
+                                title: 'Type some code',
+                                code: 'function calculateSum(a, b) {\n  return a + b;\n}',
+                                result: '→ Suggests CODER agent'
+                            },
+                            {
+                                title: 'Paste a URL',
+                                code: 'https://github.com/anthropics/claude-code',
+                                result: '→ Suggests RESEARCHER agent'
+                            },
+                            {
+                                title: 'Paste an error',
+                                code: 'TypeError: Cannot read property \'name\' of undefined',
+                                result: '→ Suggests CODER agent'
+                            }
+                        ]
+                    },
+                    {
+                        heading: 'Settings',
+                        content: 'Enable auto-switch to automatically change to the suggested agent.'
+                    }
+                ]
+            },
+            'voice-io': {
+                title: '🎤 Voice I/O Demo',
+                sections: [
+                    {
+                        heading: 'What It Does',
+                        content: 'Enables hands-free interaction with speech-to-text input and text-to-speech output using browser\'s Web Speech API.'
+                    },
+                    {
+                        heading: 'How to Use',
+                        steps: [
+                            '1. Click the 🎤 microphone button in the input area',
+                            '2. Speak your message',
+                            '3. Text appears automatically in the input field',
+                            '4. Enable "Auto-speak" in settings to hear AI responses'
+                        ]
+                    },
+                    {
+                        heading: 'Browser Support',
+                        content: 'Works best in Chrome and Edge. Firefox has limited support. Requires microphone permissions.'
+                    }
+                ]
+            },
+            'quick-actions': {
+                title: '⚡ Quick Actions & Macros Demo',
+                sections: [
+                    {
+                        heading: 'Pre-Built Workflows',
+                        workflows: [
+                            '🐛 Debug This Code - Analyzes → Diagnoses → Fixes',
+                            '📚 Research & Summarize - Researches → Summarizes',
+                            '🔒 Security Audit - Scans → Finds Issues → Recommends Fixes',
+                            '💡 Explain Code - Analyzes → Explains Simply',
+                            '⚡ Optimize Performance - Analyzes → Finds Bottlenecks → Optimizes',
+                            '🧪 Generate Tests - Analyzes → Designs Tests → Writes Tests'
+                        ]
+                    },
+                    {
+                        heading: 'Try It',
+                        steps: [
+                            '1. Paste code in the input area',
+                            '2. Click the ⚡ lightning bolt button',
+                            '3. Select a workflow',
+                            '4. Watch agents execute sequentially'
+                        ]
+                    }
+                ]
+            },
+            'agent-memory': {
+                title: '🧠 Agent Memory Demo',
+                sections: [
+                    {
+                        heading: 'What It Tracks',
+                        content: 'Each of the 6 agents maintains its own memory bank: CODER, REASONER, RESEARCHER, EXECUTOR, GENERAL, SECURITY.'
+                    },
+                    {
+                        heading: 'Auto-Extraction',
+                        examples: [
+                            {
+                                title: 'Say: "I prefer TypeScript"',
+                                result: '→ Stored in agent memory'
+                            },
+                            {
+                                title: 'Say: "My project uses React"',
+                                result: '→ Stored as project context'
+                            }
+                        ]
+                    },
+                    {
+                        heading: 'Manual Memories',
+                        steps: [
+                            '1. Click 🧠 Agent Memory in sidebar',
+                            '2. Click "+ Add Memory" for any agent',
+                            '3. Type your memory',
+                            '4. Export to JSON or clear all'
+                        ]
+                    }
+                ]
+            },
+            'meeting-summarizer': {
+                title: '📋 Meeting Summarizer Demo',
+                sections: [
+                    {
+                        heading: 'What It Extracts',
+                        features: [
+                            '✓ Action items with assigned owners',
+                            '✓ Key decisions made',
+                            '✓ List of attendees',
+                            '✓ Important dates and deadlines',
+                            '✓ Key discussion points'
+                        ]
+                    },
+                    {
+                        heading: 'Example Input',
+                        code: `Meeting: Q1 Planning
+Attendees: Alice, Bob, Charlie
+
+Decisions:
+- Decided to launch feature by March 1st
+- Agreed to hire 2 developers
+
+Action Items:
+- Alice will create mockups (due Feb 15)
+- Bob to research databases
+- Charlie will update roadmap`,
+                        result: '→ Extracts all structured data automatically'
+                    }
+                ]
+            },
+            'diff-viewer': {
+                title: '⚖️ Code Diff Viewer Demo',
+                sections: [
+                    {
+                        heading: 'Features',
+                        features: [
+                            '✓ Side-by-side split view',
+                            '✓ Unified diff view',
+                            '✓ Myers LCS algorithm',
+                            '✓ Line-by-line comparison',
+                            '✓ Addition/deletion statistics'
+                        ]
+                    },
+                    {
+                        heading: 'Try It',
+                        steps: [
+                            '1. Click ⚖️ Diff in chat toolbar',
+                            '2. Click "+ New Diff"',
+                            '3. Paste original code (left)',
+                            '4. Paste modified code (right)',
+                            '5. Click "Generate Diff"'
+                        ]
+                    },
+                    {
+                        heading: 'View Modes',
+                        content: 'Toggle between Split (side-by-side) and Unified (single column with +/- indicators).'
+                    }
+                ]
+            },
+            'code-sandbox': {
+                title: '▶️ Code Sandbox Demo',
+                sections: [
+                    {
+                        heading: 'Supported Languages',
+                        languages: [
+                            'JavaScript - Runs in sandboxed function',
+                            'Python - Requires backend API',
+                            'HTML/CSS - Renders in iframe'
+                        ]
+                    },
+                    {
+                        heading: 'JavaScript Example',
+                        code: `console.log('Hello PKN!');
+const result = 2 + 2;
+return result;`,
+                        result: `Hello PKN!
+→ 4`
+                    },
+                    {
+                        heading: 'Safety Features',
+                        features: [
+                            '✓ Sandboxed execution environment',
+                            '✓ 5-second timeout',
+                            '✓ Error handling',
+                            '✓ Console output capture'
+                        ]
+                    }
+                ]
+            },
+            'collaboration-theater': {
+                title: '🎭 Collaboration Theater Demo',
+                sections: [
+                    {
+                        heading: 'Visual Elements',
+                        features: [
+                            '🎨 Agent avatars on stage (6 agents)',
+                            '💭 Thought bubbles showing AI thinking',
+                            '⚡ Collaboration beams between agents',
+                            '📜 Real-time collaboration log',
+                            '🎬 Animations when agents work'
+                        ]
+                    },
+                    {
+                        heading: 'Try It',
+                        steps: [
+                            '1. Click 🎭 Collaboration Theater in sidebar',
+                            '2. Send a multi-agent task',
+                            '3. Watch agents animate:',
+                            '   - Bounce when thinking',
+                            '   - Show thought bubbles',
+                            '   - Send data beams to each other',
+                            '4. Read collaboration log at bottom'
+                        ]
+                    }
+                ]
+            },
+            'darkweb-osint': {
+                title: '🕵️ Dark Web OSINT Demo',
+                sections: [
+                    {
+                        heading: '⚠️ Educational Use Only',
+                        content: 'This tool is for legitimate security research and defensive purposes only.'
+                    },
+                    {
+                        heading: 'Features',
+                        tabs: [
+                            '🔍 Breach Lookup - Check if emails appear in data breaches',
+                            '👁️ Monitoring - Track emails for new breaches',
+                            '📊 Threat Intel - CVEs, malware, phishing, botnets',
+                            '🧅 .onion Tools - Analyze Tor addresses'
+                        ]
+                    },
+                    {
+                        heading: 'Try It',
+                        steps: [
+                            '1. Click 🕵️ Dark Web OSINT in sidebar',
+                            '2. Read the warning banner',
+                            '3. Try Breach Lookup tab with test@example.com',
+                            '4. Explore Threat Intel feeds',
+                            '5. Test .onion domain analysis'
+                        ]
+                    }
+                ]
+            },
+            'welcome-message': {
+                title: '👋 Welcome Message Demo',
+                sections: [
+                    {
+                        heading: 'What It Shows',
+                        features: [
+                            '✓ Project overview and description',
+                            '✓ Quick start guide',
+                            '✓ Feature highlights',
+                            '✓ Getting started tips'
+                        ]
+                    },
+                    {
+                        heading: 'When It Appears',
+                        content: 'Automatically shown on first visit or when localStorage is cleared. Won\'t show again after dismissed.'
+                    },
+                    {
+                        heading: 'Try It',
+                        code: 'localStorage.clear();\nlocation.reload();',
+                        result: '→ Welcome screen appears'
+                    }
+                ]
+            }
+        };
+
+        function showDemo(pluginId) {
+            const modal = document.getElementById('demoModal');
+            const modalBody = document.getElementById('modalBody');
+            const demo = demos[pluginId];
+
+            if (!demo) return;
+
+            let html = `<h2 style="color: #0ff; margin-bottom: 20px;">${demo.title}</h2>`;
+
+            demo.sections.forEach(section => {
+                html += `<div class="demo-section">`;
+                html += `<h3>${section.heading}</h3>`;
+
+                if (section.content) {
+                    html += `<div class="demo-example">${section.content}</div>`;
+                }
+
+                if (section.steps) {
+                    section.steps.forEach(step => {
+                        html += `<div class="demo-example" style="color: #0f0;">${step}</div>`;
+                    });
+                }
+
+                if (section.examples) {
+                    section.examples.forEach(ex => {
+                        html += `<div class="demo-example">`;
+                        html += `<strong style="color: #0ff;">${ex.title}:</strong>`;
+                        html += `<div class="demo-code">${ex.code}</div>`;
+                        html += `<div style="color: #0f0;">${ex.result}</div>`;
+                        html += `</div>`;
+                    });
+                }
+
+                if (section.features) {
+                    section.features.forEach(feature => {
+                        html += `<div class="demo-example" style="color: #0f0;">${feature}</div>`;
+                    });
+                }
+
+                if (section.workflows) {
+                    section.workflows.forEach(wf => {
+                        html += `<div class="demo-example" style="color: #0ff;">${wf}</div>`;
+                    });
+                }
+
+                if (section.languages) {
+                    section.languages.forEach(lang => {
+                        html += `<div class="demo-example" style="color: #0ff;">• ${lang}</div>`;
+                    });
+                }
+
+                if (section.tabs) {
+                    section.tabs.forEach(tab => {
+                        html += `<div class="demo-example" style="color: #0ff;">${tab}</div>`;
+                    });
+                }
+
+                if (section.code) {
+                    html += `<div class="demo-code">${section.code}</div>`;
+                    if (section.result) {
+                        html += `<div style="color: #0f0; margin-top: 10px;">${section.result}</div>`;
+                    }
+                }
+
+                html += `</div>`;
+            });
+
+            modalBody.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        function closeDemo() {
+            document.getElementById('demoModal').classList.remove('active');
+        }
+
+        function openPluginManager() {
+            window.open('http://localhost:8010/pkn.html', '_blank');
+            setTimeout(() => {
+                alert('Plugin Manager opened!\n\n1. Click the sidebar (left edge)\n2. Click "🔌 Plugins"\n3. Toggle plugins on/off');
+            }, 1000);
+        }
+
+        function openMainApp() {
+            window.open('http://localhost:8010/pkn.html', '_blank');
+        }
+
+        function runAllTests() {
+            window.open('http://localhost:8010/test_plugins.html', '_blank');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDemo();
+        });
+
+        // Close modal on outside click
+        document.getElementById('demoModal').addEventListener('click', (e) => {
+            if (e.target.id === 'demoModal') closeDemo();
+        });
+    </script>
+</body>
+</html>

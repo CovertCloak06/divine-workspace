@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PKN Functional Plugin Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        .test { margin: 10px 0; padding: 10px; background: rgba(0,255,255,0.1); }
+    </style>
+</head>
+<body>
+    <h1>PKN Functional Plugin Tests</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+
+        function log(message, isPass = true) {
+            const div = document.createElement('div');
+            div.className = `test ${isPass ? 'pass' : 'fail'}`;
+            div.textContent = `${isPass ? '✓' : '✗'} ${message}`;
+            output.appendChild(div);
+        }
+
+        async function runTests() {
+            try {
+                // Import main.js which registers all plugins
+                log('Loading main.js and plugin system...');
+
+                // Wait a bit for modules to load
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Check if pluginManager is available
+                const { pluginManager } = await import('./js/plugin-manager.js');
+                log('Plugin Manager loaded', true);
+
+                await pluginManager.init();
+                log('Plugin Manager initialized', true);
+
+                // Import and register all plugins (simulating main.js)
+                const plugins = [
+                    { name: 'Welcome Message', manifest: './plugins/welcome-message/manifest.json',
+                      module: './plugins/welcome-message/plugin.js', class: 'WelcomeMessagePlugin' },
+                    { name: 'Context Detector', manifest: './plugins/context-detector/manifest.json',
+                      module: './plugins/context-detector/plugin.js', class: 'SmartContextDetectorPlugin' },
+                    { name: 'Voice I/O', manifest: './plugins/voice-io/manifest.json',
+                      module: './plugins/voice-io/plugin.js', class: 'VoiceIOPlugin' },
+                    { name: 'Quick Actions', manifest: './plugins/quick-actions/manifest.json',
+                      module: './plugins/quick-actions/plugin.js', class: 'QuickActionsPlugin' },
+                    { name: 'Agent Memory', manifest: './plugins/agent-memory/manifest.json',
+                      module: './plugins/agent-memory/plugin.js', class: 'AgentMemoryPlugin' },
+                    { name: 'Meeting Summarizer', manifest: './plugins/meeting-summarizer/manifest.json',
+                      module: './plugins/meeting-summarizer/plugin.js', class: 'MeetingSummarizerPlugin' },
+                    { name: 'Diff Viewer', manifest: './plugins/diff-viewer/manifest.json',
+                      module: './plugins/diff-viewer/plugin.js', class: 'DiffViewerPlugin' },
+                    { name: 'Code Sandbox', manifest: './plugins/code-sandbox/manifest.json',
+                      module: './plugins/code-sandbox/plugin.js', class: 'CodeSandboxPlugin' },
+                    { name: 'Collaboration Theater', manifest: './plugins/collaboration-theater/manifest.json',
+                      module: './plugins/collaboration-theater/plugin.js', class: 'CollaborationTheaterPlugin' },
+                    { name: 'Dark Web OSINT', manifest: './plugins/darkweb-osint/manifest.json',
+                      module: './plugins/darkweb-osint/plugin.js', class: 'DarkWebOSINTPlugin' }
+                ];
+
+                log(`\nRegistering ${plugins.length} plugins...`);
+
+                for (const pluginInfo of plugins) {
+                    try {
+                        const manifestRes = await fetch(pluginInfo.manifest);
+                        const manifest = await manifestRes.json();
+
+                        const module = await import(pluginInfo.module);
+                        const PluginClass = module[pluginInfo.class] || module.default;
+
+                        await pluginManager.register(manifest, PluginClass);
+                        log(`  Registered: ${pluginInfo.name}`, true);
+                    } catch (error) {
+                        log(`  Failed: ${pluginInfo.name} - ${error.message}`, false);
+                    }
+                }
+
+                // Get all registered plugins
+                const registered = pluginManager.getAllPlugins();
+                log(`\nTotal registered: ${registered.length} plugins`);
+
+                // Test plugin methods
+                log('\nTesting plugin lifecycle methods...');
+                for (const plugin of registered) {
+                    const name = plugin.manifest.name;
+                    try {
+                        // Test init (should already be called by register)
+                        if (typeof plugin.instance.init === 'function') {
+                            log(`  ${name}: init() exists`, true);
+                        }
+
+                        // Test enable
+                        if (typeof plugin.instance.enable === 'function') {
+                            await plugin.instance.enable();
+                            log(`  ${name}: enable() works`, true);
+
+                            // Test disable
+                            if (typeof plugin.instance.disable === 'function') {
+                                await plugin.instance.disable();
+                                log(`  ${name}: disable() works`, true);
+                            }
+                        }
+                    } catch (error) {
+                        log(`  ${name}: Error - ${error.message}`, false);
+                    }
+                }
+
+                // Test specific plugin features
+                log('\nTesting specific plugin features...');
+
+                // Test Context Detector
+                const contextDetector = registered.find(p => p.manifest.id === 'context-detector');
+                if (contextDetector) {
+                    log('  Context Detector: Pattern detection available',
+                        typeof contextDetector.instance.detectContext === 'function');
+                }
+
+                // Test Voice I/O
+                const voiceIO = registered.find(p => p.manifest.id === 'voice-io');
+                if (voiceIO) {
+                    const hasWebSpeech = 'speechSynthesis' in window;
+                    log('  Voice I/O: Browser speech API available', hasWebSpeech);
+                }
+
+                // Test Quick Actions
+                const quickActions = registered.find(p => p.manifest.id === 'quick-actions');
+                if (quickActions) {
+                    log('  Quick Actions: Built-in actions available',
+                        Array.isArray(quickActions.instance.builtInActions) &&
+                        quickActions.instance.builtInActions.length > 0);
+                }
+
+                // Test Agent Memory
+                const agentMemory = registered.find(p => p.manifest.id === 'agent-memory');
+                if (agentMemory) {
+                    log('  Agent Memory: Memory storage available',
+                        typeof agentMemory.instance.memories === 'object');
+                }
+
+                // Test Code Sandbox
+                const codeSandbox = registered.find(p => p.manifest.id === 'code-sandbox');
+                if (codeSandbox) {
+                    log('  Code Sandbox: Execution methods available',
+                        typeof codeSandbox.instance.runCode === 'function');
+                }
+
+                // Test Diff Viewer
+                const diffViewer = registered.find(p => p.manifest.id === 'diff-viewer');
+                if (diffViewer) {
+                    log('  Diff Viewer: Diff computation available',
+                        typeof diffViewer.instance.computeDiff === 'function');
+                }
+
+                log('\n✓ All functional tests completed!');
+
+            } catch (error) {
+                log(`Fatal error: ${error.message}`, false);
+                console.error(error);
+            }
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

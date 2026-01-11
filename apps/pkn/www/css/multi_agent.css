@@ -1,0 +1,703 @@
+/**
+ * Multi-Agent UI Styles
+ * Mobile-first responsive design for PC and Android
+ */
+
+/* Header Agent Controls (integrated into header) */
+.header-agent-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.header-agent-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.header-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.agent-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.agent-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.agent-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-primary);
+}
+
+.agent-badge {
+    font-size: 20px;
+    filter: drop-shadow(0 0 4px var(--theme-primary-glow));
+}
+
+/* Header Mode Toggle (compact for header) */
+.agent-mode-toggle-header {
+    display: flex;
+    gap: 2px;
+    background: var(--theme-primary-fade);
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.mode-btn-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 3px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn-header:hover {
+    background: var(--theme-primary-fade);
+    color: var(--theme-primary);
+}
+
+.mode-btn-header.active {
+    background: var(--theme-primary);
+    color: #000;
+    border-color: var(--theme-primary);
+}
+
+.mode-icon {
+    font-size: 14px;
+}
+
+/* Agent Selector */
+.agent-selector {
+    flex: 1;
+    min-width: 200px;
+}
+
+.agent-selector select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--theme-primary-fade);
+    border: 1px solid var(--theme-primary);
+    border-radius: 4px;
+    color: var(--theme-primary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.agent-selector select:focus {
+    outline: none;
+    box-shadow: 0 0 8px var(--theme-primary-glow);
+}
+
+/* Session Info */
+.session-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+}
+
+.session-id {
+    font-size: 13px;
+    color: var(--theme-primary);
+    font-family: monospace;
+}
+
+.session-save-btn {
+    background: transparent;
+    border: 1px solid var(--theme-primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.session-save-btn:hover {
+    background: var(--theme-primary);
+    transform: scale(1.1);
+}
+
+/* Agent Thinking Indicator */
+.agent-thinking {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    color: var(--theme-primary);
+}
+
+.thinking-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--theme-primary-glow);
+    border-top-color: var(--theme-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.thinking-text {
+    font-size: 13px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Message Enhancements for Multi-Agent */
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+}
+
+.agent-name-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.message-tools {
+    margin-top: 10px;
+    padding: 8px;
+    background: var(--theme-primary-fade);
+    border-left: 3px solid var(--theme-primary);
+    font-size: 11px;
+    color: #999;
+    font-family: monospace;
+}
+
+.message-time {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+    font-family: monospace;
+}
+
+/* Session List in Sidebar */
+.sessions-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.session-item {
+    padding: 10px;
+    margin: 4px 0;
+    background: var(--theme-primary-fade);
+    border-left: 3px solid var(--theme-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.session-item:hover {
+    background: var(--theme-primary-fade);
+    transform: translateX(4px);
+}
+
+.session-item-name {
+    font-size: 13px;
+    color: var(--theme-primary);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.session-item-meta {
+    font-size: 11px;
+    color: #999;
+}
+
+.session-item-empty {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+}
+
+.sessions-footer {
+    padding: 8px;
+    border-top: 1px solid var(--theme-primary-glow);
+    margin-top: 8px;
+}
+
+/* System Messages */
+.system-message {
+    background: rgba(255, 200, 0, 0.1) !important;
+    border-left: 3px solid #ffc800;
+}
+
+.system-message .message-text {
+    color: #ffc800;
+}
+
+/* Quality Indicators */
+.agent-confidence {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.confidence-high {
+    background: rgba(0, 255, 0, 0.2);
+    color: #0f0;
+}
+
+.confidence-medium {
+    background: rgba(255, 255, 0, 0.2);
+    color: #ff0;
+}
+
+.confidence-low {
+    background: rgba(255, 100, 0, 0.2);
+    color: #f60;
+}
+
+/* Mobile Responsiveness (Android) */
+@media (max-width: 768px) {
+    .agent-status-bar {
+        padding: 10px 15px;
+    }
+
+    .agent-status-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .agent-info {
+        min-width: auto;
+        justify-content: space-between;
+    }
+
+    .agent-mode-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .mode-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .agent-selector {
+        min-width: auto;
+    }
+
+    .session-info {
+        justify-content: space-between;
+    }
+
+    .message-header {
+        font-size: 11px;
+    }
+
+    .agent-badge {
+        font-size: 18px;
+    }
+
+    /* Session display - adjust for mobile */
+    .session-display-header {
+        bottom: 70px;
+        right: 20px; /* Far right on mobile */
+    }
+
+    .session-info-header {
+        padding: 3px 6px;
+        font-size: 9px;
+    }
+
+    .session-label-header {
+        font-size: 8px;
+    }
+
+    .session-id-header {
+        font-size: 9px;
+    }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+    .mode-text {
+        display: none;
+    }
+
+    .mode-btn {
+        padding: 6px 10px;
+    }
+
+    .agent-label,
+    .session-label {
+        font-size: 10px;
+    }
+
+    .agent-name,
+    .session-id {
+        font-size: 12px;
+    }
+
+    /* Session display - compact on small screens */
+    .session-display-header {
+        bottom: 65px;
+        right: 16px; /* Far right on small screens */
+    }
+
+    .session-label-header {
+        display: none; /* Hide "SESSION:" label on tiny screens */
+    }
+
+    .session-info-header {
+        padding: 2px 5px;
+        font-size: 8px;
+    }
+
+    .session-id-header {
+        font-size: 8px;
+    }
+}
+
+/* Desktop high zoom / large text */
+@media (min-width: 1024px) {
+    .session-display-header {
+        bottom: 90px; /* More space from input on large screens */
+    }
+
+    .session-info-header {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+
+    .session-label-header {
+        font-size: 10px;
+    }
+
+    .session-id-header {
+        font-size: 11px;
+    }
+}
+
+/* Performance Monitoring Badge */
+.perf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: var(--theme-primary-fade);
+    border: 1px solid var(--theme-primary-glow);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--theme-primary);
+    font-family: monospace;
+    margin-left: 8px;
+}
+
+.perf-badge-fast {
+    border-color: #0f0;
+    color: #0f0;
+}
+
+.perf-badge-slow {
+    border-color: #f60;
+    color: #f60;
+}
+
+/* Error States */
+.agent-error {
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid #f00;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.agent-error-title {
+    font-weight: 600;
+    color: #f00;
+    margin-bottom: 6px;
+}
+
+.agent-error-detail {
+    font-size: 12px;
+    color: #999;
+    font-family: monospace;
+}
+
+/* Retry Button */
+.retry-btn {
+    background: var(--theme-primary-fade);
+    border: 1px solid var(--theme-primary);
+    color: var(--theme-primary);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+}
+
+.retry-btn:hover {
+    background: var(--theme-primary);
+    color: #000;
+}
+
+/* Agent Stats Panel (for debugging/quality monitoring) */
+.agent-stats-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--theme-primary);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 250px;
+    z-index: 9999;
+    display: none;
+}
+
+.agent-stats-panel.visible {
+    display: block;
+}
+
+.agent-stats-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-primary);
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--theme-primary-glow);
+    padding-bottom: 6px;
+}
+
+.agent-stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+    color: #999;
+}
+
+.agent-stat-value {
+    color: var(--theme-primary);
+    font-family: monospace;
+}
+
+/* Loading State */
+.agent-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--theme-primary);
+}
+
+.agent-loading-text {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+/* Session Display - Bottom Right of Input Area */
+.session-display-header {
+    position: fixed;
+    bottom: 85px; /* Above cyan line - positioned closer to input */
+    right: 24px; /* Far right of chat box */
+    display: flex;
+    justify-content: flex-end;
+    z-index: 100;
+    pointer-events: none; /* Don't block clicks */
+}
+
+.session-info-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--theme-primary-glow);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10px;
+    pointer-events: auto; /* Re-enable for this element */
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.session-info-header:hover {
+    background: rgba(0, 0, 0, 0.95);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 12px var(--theme-primary-glow);
+}
+
+.session-label-header {
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 9px;
+    white-space: nowrap;
+}
+
+.session-id-header {
+    color: var(--theme-primary);
+    font-family: monospace;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.session-save-btn-header {
+    background: transparent;
+    border: none;
+    color: var(--theme-primary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 3px;
+    transition: transform 0.2s;
+    line-height: 1;
+}
+
+.session-save-btn-header:hover {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px var(--theme-primary-glow));
+}
+
+/* AI Avatar and User Label */
+.ai-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--theme-primary);
+    object-fit: cover;
+}
+
+.user-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Header Thinking Indicator (left of toggle) */
+.agent-thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--theme-primary);
+}
+
+.agent-thinking-header .thinking-spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+}
+
+/* === Streaming Response Styles === */
+
+.message.streaming {
+    position: relative;
+}
+
+.streaming-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--theme-primary);
+    margin-left: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--theme-primary-glow);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.4;
+        transform: scale(0.8);
+    }
+}
+
+.streaming-text {
+    position: relative;
+}
+
+/* Typewriter cursor effect */
+.message.streaming .streaming-text::after {
+    content: '▊';
+    color: var(--theme-primary);
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* Smooth text appearance */
+.streaming-text {
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Stop button for streaming (future enhancement) */
+.stop-streaming-btn {
+    background: #f44;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 8px;
+    transition: background 0.2s;
+}
+
+.stop-streaming-btn:hover {
+    background: #f66;
+}
+
+.stop-streaming-btn:active {
+    background: #c33;
+}

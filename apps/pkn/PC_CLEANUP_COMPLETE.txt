@@ -1,0 +1,33 @@
+========================================
+✓ PC BUILD CLEANUP - COMPLETE
+========================================
+
+PC Build is now DESKTOP-ONLY
+No mobile-specific code remains
+
+Changes Made:
+-------------
+1. Removed css/mobile-fix.css (archived)
+2. Removed mobile-fix.css link from HTML
+3. Removed mobile-init.js reference (broken link)
+4. Reduced HTML from 1288 to 1285 lines
+
+Files Changed:
+--------------
+Modified: pkn.html
+Archived: css/mobile-fix.css → css/mobile-fix.css.removed_20260109
+Backup:   pkn.html.bak_before_mobile_removal_20260109_222208
+
+Current PC Build:
+-----------------
+✓ Desktop-focused only
+✓ No mobile CSS
+✓ Responsive design kept (window resizing)
+✓ 4 CSS files: main, file-explorer, multi_agent, osint
+
+Build Separation:
+-----------------
+PC    = Desktop (local LLM, full features)
+Phone = Mobile (cloud API, touch-optimized)
+
+This is the professional approach for your use case.

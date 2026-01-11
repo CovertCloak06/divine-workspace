@@ -1,0 +1,14 @@
+#!/bin/bash
+# PKN Terminal CLI Launcher
+# Usage: ./pkn-cli [options]
+
+PKN_DIR="/home/gh0st/pkn"
+cd "$PKN_DIR"
+
+# Activate virtual environment if it exists
+if [ -d "$PKN_DIR/.venv" ]; then
+    source "$PKN_DIR/.venv/bin/activate"
+fi
+
+# Run CLI
+python3 "$PKN_DIR/pkn_cli.py" "$@"

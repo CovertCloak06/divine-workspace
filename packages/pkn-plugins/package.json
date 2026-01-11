@@ -1,0 +1,24 @@
+{
+  "name": "@divine/pkn-plugins",
+  "version": "1.0.0",
+  "description": "Shared PKN plugins for Divine Node ecosystem",
+  "main": "index.js",
+  "exports": {
+    "./agent-memory": "./agent-memory/manifest.json",
+    "./agent-theater": "./agent-theater/manifest.json",
+    "./code-sandbox": "./code-sandbox/manifest.json",
+    "./collaboration-theater": "./collaboration-theater/manifest.json",
+    "./context-detector": "./context-detector/manifest.json",
+    "./custom-template": "./custom-template/manifest.json",
+    "./darkweb-osint": "./darkweb-osint/manifest.json",
+    "./diff-viewer": "./diff-viewer/manifest.json",
+    "./meeting-summarizer": "./meeting-summarizer/manifest.json",
+    "./osint-dark-web": "./osint-dark-web/manifest.json",
+    "./quick-actions": "./quick-actions/manifest.json",
+    "./voice-io": "./voice-io/manifest.json",
+    "./welcome-message": "./welcome-message/manifest.json"
+  },
+  "keywords": ["pkn", "plugins", "divine-node"],
+  "author": "Divine Node",
+  "license": "MIT"
+}

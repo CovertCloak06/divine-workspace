@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<!-- ===========================================
+    PARAKLEON MAIN HTML (pkn.html)
+    ===========================================
+    Cross-references:
+    - CSS: main.css (all styling and responsive design)
+    - JS: app.js (DOM manipulation and event handlers, chat logic, modal toggles)
+    - JS: tools.js (network tools, PhoneScan, IP info)
+    - JS: config.js (API configuration, model keys)
+    - Server: divinenode_server.py (serves this file and handles API calls)
+    - Mobile: termux_menu.sh (startup script for mobile deployment)
+
+    HTML Structure:
+    - .hover-strip: Left edge trigger for sidebar (36px wide, see main.css)
+    - .sidebar: Collapsible navigation menu (see app.js: setupSidebarHover)
+    - .main: Main chat interface and content area
+    - .container: Root layout container
+    - Modals: Settings, files panel, model selector overlays (see app.js for modal logic)
+
+    Key Elements:
+    - #sendBtn: Main send button (.send-btn class, handler: sendMessage in app.js)
+    - #messageInput: Chat input textarea (see app.js for event handling)
+    - #modelSelect: AI model dropdown (populated by app.js)
+    - #messagesContainer: Chat messages display (rendered by app.js)
+    - #filesPanel: Modal for file uploads (see app.js, divinenode_server.py)
+    - #aiModelsModal: Modal for model management (see app.js)
+    - #settingsOverlay: Modal for settings (see app.js)
+    - #imagesGalleryModal: Modal for generated images (see app.js)
+    =========================================== -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Divine Node - PKN AI</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00FFFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Divine Node">
+    <meta name="description" content="Self-hosted multi-agent AI system with 100% privacy">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="img/icon-512.png">
+    <link rel="apple-touch-icon" href="img/icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/file-explorer.css">
+    <link rel="stylesheet" href="css/osint.css">
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+</head>
+            <div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
+                <div class="settings-panel" style="max-width: 900px; max-height: 90vh;">
+                    <div class="settings-header">
+                        <div class="settings-title">📁 File Explorer</div>
+                        <button class="settings-close-x" onclick="hideFilesPanel()">×</button>
+                    </div>
+
+                    <div class="settings-body" style="max-height: calc(90vh - 80px); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+
+                        <!-- Enhanced Toolbar -->
+                        <div class="files-toolbar">
+                            <div class="toolbar-left">
+                                <!-- Location Tabs -->
+                                <div class="file-location-tabs">
+                                    <button class="file-location-tab active" data-location="uploads">📤 Uploads</button>
+                                    <button class="file-location-tab" data-location="sdcard">📱 SD Card</button>
+                                    <button class="file-location-tab" data-location="home">🏠 Home</button>
+                                    <button class="file-location-tab" data-location="pkn">⚡ PKN</button>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <!-- Search -->
+                                <input type="text" id="fileSearch" placeholder="🔍 Search files..." />
+
+                                <!-- Sort -->
+                                <select id="sortBy" class="file-toolbar-btn" style="padding: 6px 12px;">
+                                    <option value="name">Name</option>
+                                    <option value="date">Date</option>
+                                    <option value="size">Size</option>
+                                    <option value="type">Type</option>
+                                </select>
+
+                                <!-- View Mode Toggle -->
+                                <button id="toggleViewMode" class="file-toolbar-btn" title="Toggle Grid/List View">
+                                    📊
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Breadcrumb navigation -->
+                        <div class="file-breadcrumb">
+                            <div id="fileBreadcrumb" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                <span style="cursor: pointer; color: #00FFFF;">📂 Root</span>
+                            </div>
+                        </div>
+
+                        <!-- Files container -->
+                        <div id="filesList" class="files-container" style="flex: 1; overflow-y: auto; padding: 16px;">
+                            <div class="loading">Loading files...</div>
+                        </div>
+
+                        <!-- Bottom Toolbar -->
+                        <div class="files-toolbar" style="border-top: 1px solid #333; border-bottom: none;">
+                            <div class="toolbar-left">
+                                <span id="selectedCount" style="color: #888; font-size: 12px;"></span>
+                            </div>
+                            <div class="toolbar-right">
+                                <button id="uploadFileBtn" class="file-toolbar-btn">📤 Upload</button>
+                                <button id="newFolderBtn" class="file-toolbar-btn">📁 New Folder</button>
+                                <button id="refreshFilesBtn" class="file-toolbar-btn">🔄 Refresh</button>
+                                <button id="deleteSelectedBtn" class="file-toolbar-btn danger">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<body>
+<div id="hoverStrip" class="hover-strip" aria-hidden="true" tabindex="0" role="button" aria-label="Open sidebar">
+    <!-- Sidebar hover trigger (see app.js: setupSidebarHover) -->
+    <span class="hover-strip-text">MENU</span>
+</div>
+<div class="container">
+    <!-- Sidebar navigation (see main.css for .sidebar styles, app.js for toggle logic) -->
+    <div class="sidebar hidden">
+
+        <div class="sidebar-header">
+            <img src="img/icsword.png" alt="Parakleon" class="sidebar-header-icon">
+            <h3>Menu</h3> <!-- Sidebar title -->
+        </div>
+
+        <div class="sidebar-content">
+    <!-- Sidebar sections: Projects, Favorites, Chats, Archive, Images, AI Models, Files -->
+
+        <div class="sidebar-section-header" onclick="toggleSection('projectsSection')">
+            <span>Projects</span>
+            <span class="chevron" id="projectsChevron">▼</span> <!-- See app.js: renderProjects -->
+        </div>
+        <div class="sidebar-section" id="projectsSection">
+            <div class="projects-list" id="projectsList"></div> <!-- Populated by app.js -->
+            <div class="projects-footer">
+                <button class="action-btn" onclick="createNewProject()" style="width: 100%; font-size: 11px;">+ New Project</button>
+            </div>
+        </div>
+
+        <div class="sidebar-section-header" onclick="toggleSection('favoritesSection')">
+            <span>Favorites</span>
+            <span class="chevron" id="favoritesChevron">►</span>
+        </div>
+        <div class="sidebar-section collapsed" id="favoritesSection">
+            <div class="history-list" id="favoritesList"></div>
+        </div>
+
+        <div class="sidebar-section-header" onclick="toggleSection('chatsSection')">
+            <span>Chats</span>
+            <span class="chevron" id="chatsChevron">►</span>
+        </div>
+        <div class="sidebar-section collapsed" id="chatsSection">
+            <div class="history-list" id="historyList"></div>
+        </div>
+
+        <div class="sidebar-section-header" onclick="toggleSection('archiveSection')">
+            <span>Archive</span>
+            <span class="chevron" id="archiveChevron">►</span>
+        </div>
+        <div class="sidebar-section collapsed" id="archiveSection">
+            <div class="history-list" id="archiveList"></div>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="openImagesGallery()">
+            <span>Images</span>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="openAIModelsManager()">
+            <span>AI Models</span>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="showFilesPanel()">
+            <span>Files</span>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="openCodeEditor()">
+            <span>💻 Code Editor</span>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="OSINTTools.togglePanel()">
+            <span>🔍 OSINT Tools</span>
+        </div>
+
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="settings-link" onclick="toggleSettings()">
+                <span class="settings-icon">⚙</span>
+                <span>Settings</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Main chat header (logo, title, model selector) -->
+        <div class="header">
+            <div class="header-logo">
+                <span class="logo-text logo-line-1">Divine</span>
+                <span class="logo-text logo-line-2">Node</span>
+            </div>
+            <div class="header-agent-selector">
+                <div class="agent-mode-toggle" id="headerAgentSelector">
+                    <button class="agent-mode-btn active" data-agent="auto" onclick="selectHeaderAgent('auto')" title="Auto-select best agent for task">
+                        <span class="agent-icon">⚡</span>
+                        <span class="agent-label">Auto</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="coder" onclick="selectHeaderAgent('coder')" title="Code writing and debugging">
+                        <span class="agent-icon">💻</span>
+                        <span class="agent-label">Coder</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="reasoner" onclick="selectHeaderAgent('reasoner')" title="Planning and problem-solving">
+                        <span class="agent-icon">🧠</span>
+                        <span class="agent-label">Reasoner</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="researcher" onclick="selectHeaderAgent('researcher')" title="Web research and information gathering">
+                        <span class="agent-icon">🔍</span>
+                        <span class="agent-label">Research</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="general" onclick="selectHeaderAgent('general')" title="Quick Q&A and general assistance">
+                        <span class="agent-icon">💬</span>
+                        <span class="agent-label">General</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="vision" onclick="selectHeaderAgent('vision')" title="Local vision analysis (LLaVA) - Private">
+                        <span class="agent-icon">👁️</span>
+                        <span class="agent-label">Vision</span>
+                    </button>
+                    <button class="agent-mode-btn" data-agent="vision_cloud" onclick="selectHeaderAgent('vision_cloud')" title="Cloud vision (Groq Llama-3.2-90B) - FREE, Fast, English-only">
+                        <span class="agent-icon">☁️</span>
+                        <span class="agent-label">Cloud</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Management Toolbar -->
+        <div class="chat-toolbar" id="chatToolbar">
+            <div class="chat-toolbar-left">
+                <input
+                    type="text"
+                    id="chatSearchInput"
+                    class="chat-search-input"
+                    placeholder="🔍 Search in chat..."
+                    style="display: none;"
+                />
+                <div id="searchResults" class="search-results-indicator" style="display: none;"></div>
+            </div>
+            <div class="chat-toolbar-right">
+                <button class="chat-toolbar-btn" onclick="newChat()" title="New Chat">
+                    <span>🏠</span>
+                </button>
+                <button class="chat-toolbar-btn" onclick="toggleChatSearch()" title="Search in Chat (Ctrl+F)">
+                    <span>🔍</span>
+                </button>
+                <button class="chat-toolbar-btn" onclick="exportChat()" title="Export Chat">
+                    <span>📥</span>
+                </button>
+                <button class="chat-toolbar-btn" onclick="scrollToBottom()" title="Scroll to Bottom">
+                    <span>⬇️</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="messages" id="messagesContainer">
+            <!-- Welcome screen (shown on empty chat) -->
+            <div class="welcome-screen" id="welcomeScreen" style="display: none;">
+                <div class="welcome-header">
+                    <h2>Welcome to Divine Node</h2>
+                    <p class="welcome-subtitle">Your private, local AI workstation</p>
+                </div>
+
+                <div class="quick-start">
+                    <h3>Try these examples:</h3>
+                    <div class="example-grid">
+                        <button class="example-card" onclick="sendExample('Write a Python function to validate email addresses')">
+                            <span class="example-icon">💻</span>
+                            <span class="example-title">Generate Code</span>
+                            <span class="example-desc">Write a Python function to validate email addresses</span>
+                        </button>
+
+                        <button class="example-card" onclick="sendExample('Explain how neural networks work in simple terms')">
+                            <span class="example-icon">🧠</span>
+                            <span class="example-title">Learn Something</span>
+                            <span class="example-desc">Explain how neural networks work</span>
+                        </button>
+
+                        <button class="example-card" onclick="sendExample('Research the latest developments in quantum computing')">
+                            <span class="example-icon">🔬</span>
+                            <span class="example-title">Research Topic</span>
+                            <span class="example-desc">Latest developments in quantum computing</span>
+                        </button>
+
+                        <button class="example-card" onclick="openImageGenerator()">
+                            <span class="example-icon">🖼️</span>
+                            <span class="example-title">Create Image</span>
+                            <span class="example-desc">Generate AI artwork from text prompts</span>
+                        </button>
+
+                        <button class="example-card" onclick="sendExample('Debug this code: function add(a,b) { return a + b } add(1, \"2\")')">
+                            <span class="example-icon">🐛</span>
+                            <span class="example-title">Debug Code</span>
+                            <span class="example-desc">Find and fix bugs in your code</span>
+                        </button>
+
+                        <button class="example-card" onclick="sendExample('Plan a system architecture for a real-time chat application')">
+                            <span class="example-icon">🏗️</span>
+                            <span class="example-title">Plan & Design</span>
+                            <span class="example-desc">Architect a real-time chat application</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="agent-preview">
+                    <h4>Multi-Agent System:</h4>
+                    <div class="agent-badges">
+                        <span class="agent-badge-preview coder" title="Writes, debugs, and refactors code">💻 Coder</span>
+                        <span class="agent-badge-preview reasoner" title="Plans, analyzes, and solves complex problems">🧠 Reasoner</span>
+                        <span class="agent-badge-preview researcher" title="Researches topics and finds information">🔬 Researcher</span>
+                        <span class="agent-badge-preview executor" title="Executes system commands and file operations">⚙️ Executor</span>
+                        <span class="agent-badge-preview general" title="Handles general queries and quick questions">💬 General</span>
+                        <span class="agent-badge-preview consultant" title="External LLM consultation (Claude/GPT)">🎓 Consultant</span>
+                    </div>
+                    <p class="agent-preview-note">AI automatically routes your tasks to the best agent</p>
+                </div>
+            </div>
+        </div>
+    <!-- Chat messages area (see app.js: renderHistory, addMessage) -->
+
+            <!-- Enhanced File Explorer (modal) -->
+
+        <div class="input-container">
+                        <!-- Chat input area (see app.js: sendMessage, file upload logic) -->
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <textarea
+                        id="messageInput"
+                        placeholder="Lay it on me..."
+                        autocomplete="off"
+                        rows="1"
+                    ></textarea>
+                    <button class="paperclip-btn" onclick="triggerFileUpload()" title="Attach file" aria-label="Attach file">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.5 2C10.12 2 9 3.12 9 4.5V11C9 11.83 9.67 12.5 10.5 12.5C11.33 12.5 12 11.83 12 11V5H13V11C13 12.38 11.88 13.5 10.5 13.5C9.12 13.5 8 12.38 8 11V4.5C8 2.57 9.57 1 11.5 1C13.43 1 15 2.57 15 4.5V11H14V4.5C14 3.12 12.88 2 11.5 2Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button class="image-gen-btn" onclick="openImageGenerator()" title="Generate Image" aria-label="Generate Image">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor"/>
+                            <path d="M2 11L5 8L7 10L11 6L14 9V12C14 13.1 13.1 14 12 14H4C2.9 14 2 13.1 2 12V11Z" fill="currentColor" opacity="0.6"/>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Send button - .send-btn styling in main.css, sendMessage() handler in app.js -->
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">SEND</button>
+            </div>
+            <input type="file" id="fileInput" style="display:none" multiple />
+                        <!-- File preview and actions (see app.js: file upload logic) -->
+            <div id="filePreview" class="file-preview"></div>
+            <div id="fileActions" class="file-actions" style="display:none">
+                <button class="file-action-btn" onclick="sendSmartFileAction('summarize')">Summarize file(s)</button>
+                <button class="file-action-btn" onclick="sendSmartFileAction('keypoints')">Key points</button>
+                <button class="file-action-btn" onclick="sendSmartFileAction('explain_code')">Explain code</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="settingsOverlay" class="settings-overlay hidden">
+    <!-- Settings modal (see app.js: toggleSettings, saveTemperature, saveMaxTokens, etc.) -->
+    <div class="settings-panel" style="max-width: 520px; max-height: 80vh; overflow-y: auto;">
+        <div class="settings-header">
+            <div class="settings-title">Parakleon Settings</div>
+            <button class="settings-close-x" onclick="toggleSettings()">×</button>
+        </div>
+        <div class="settings-body">
+            <!-- Basic Settings (Always Visible) -->
+            <div class="settings-group">
+                <h3 style="color: var(--theme-primary); font-size: 14px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--theme-primary-fade); font-weight: 700;">⚙️ Basic Settings</h3>
+
+                <!-- Chat Settings -->
+                <div class="settings-section" style="margin-bottom: 20px;">
+                    <h4 style="color: var(--theme-primary); margin: 0 0 12px 0; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                        💬 Chat Settings
+                        <span class="help-icon" title="Control how chat behaves" style="cursor: help; font-size: 11px; color: #666;">ⓘ</span>
+                    </h4>
+                    <div class="settings-row">
+                        <input type="checkbox" id="fullHistoryToggle" onchange="toggleFullHistory()" />
+                        <label for="fullHistoryToggle">Use full history for this chat</label>
+                        <span class="help-icon" title="Include all previous messages in context (uses more tokens)" style="cursor: help; font-size: 11px; color: #666; margin-left: auto;">ⓘ</span>
+                    </div>
+                    <div class="settings-row">
+                        <input type="checkbox" id="enterToSendToggle" checked onchange="saveEnterToSend(this.checked)" />
+                        <label for="enterToSendToggle">Enter to send (Shift+Enter for newline)</label>
+                    </div>
+                    <div class="settings-row">
+                        <input type="checkbox" id="showTimestampsToggle" onchange="saveShowTimestamps(this.checked)" />
+                        <label for="showTimestampsToggle">Show message timestamps</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings (Collapsible) -->
+            <details class="settings-group advanced-settings" style="margin-top: 20px;">
+                <summary style="cursor: pointer; color: var(--theme-primary); font-size: 14px; font-weight: 700; padding: 8px 0; list-style: none; user-select: none;">
+                    <span style="display: inline-block; transition: transform 0.2s;">▶</span> 🔧 Advanced Settings
+                    <small style="color: #666; font-size: 11px; font-weight: normal; margin-left: 8px;">(Model parameters, API keys)</small>
+                </summary>
+
+                <!-- Model Parameters -->
+                <div class="settings-section" style="margin-top: 16px;">
+                    <h4 style="color: var(--theme-primary); margin: 0 0 12px 0; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                        🤖 Model Parameters
+                        <span class="help-icon" title="Fine-tune AI behavior and response quality" style="cursor: help; font-size: 11px; color: #666;">ⓘ</span>
+                    </h4>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+                    <label style="margin-bottom: 6px;">Temperature: <span id="temperatureValue">0.7</span></label>
+                    <input type="range" id="temperatureSlider" min="0" max="2" step="0.1" value="0.7" 
+                           onchange="saveTemperature(this.value)" style="width: 100%;" />
+                    <small style="color: #666; font-size: 11px;">Lower = more focused, Higher = more creative</small>
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 12px;">
+                    <label style="margin-bottom: 6px;">Max Tokens: <span id="maxTokensValue">2048</span></label>
+                    <input type="range" id="maxTokensSlider" min="256" max="8192" step="256" value="2048"
+                           onchange="saveMaxTokens(this.value)" style="width: 100%;" />
+                    <small style="color: #666; font-size: 11px;">Maximum response length (higher = longer responses, slower generation)</small>
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 12px;">
+                    <label style="margin-bottom: 6px;">Top P: <span id="topPValue">0.9</span></label>
+                    <input type="range" id="topPSlider" min="0" max="1" step="0.05" value="0.9"
+                           onchange="saveTopP(this.value)" style="width: 100%;" />
+                    <small style="color: #666; font-size: 11px;">Nucleus sampling - lower values = more focused/predictable responses</small>
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 12px;">
+                    <label style="margin-bottom: 6px;">Frequency Penalty: <span id="frequencyPenaltyValue">0.0</span></label>
+                    <input type="range" id="frequencyPenaltySlider" min="0" max="2" step="0.1" value="0.0"
+                           onchange="saveFrequencyPenalty(this.value)" style="width: 100%;" />
+                    <small style="color: #666; font-size: 11px;">Reduces word repetition (higher = less repetitive, more varied vocabulary)</small>
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 12px;">
+                    <label style="margin-bottom: 6px;">Presence Penalty: <span id="presencePenaltyValue">0.0</span></label>
+                    <input type="range" id="presencePenaltySlider" min="0" max="2" step="0.1" value="0.0"
+                           onchange="savePresencePenalty(this.value)" style="width: 100%;" />
+                    <small style="color: #666; font-size: 11px;">Encourages new topics (higher = more likely to introduce new subjects)</small>
+                </div>
+                </div>
+
+                <!-- API Keys -->
+                <div class="settings-section" style="margin-top: 20px;">
+                    <h4 style="color: var(--theme-primary); margin: 0 0 12px 0; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                        🔑 API Keys
+                        <span class="help-icon" title="Optional external API keys for Consultant agent" style="cursor: help; font-size: 11px; color: #666;">ⓘ</span>
+                    </h4>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+                    <label style="margin-bottom: 4px; font-size: 12px;">OpenAI</label>
+                    <input type="password" id="apiKey_openai" placeholder="sk-..." 
+                           onchange="saveApiKey('openai', this.value)" 
+                           style="background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px;" />
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 8px;">
+                    <label style="margin-bottom: 4px; font-size: 12px;">Groq</label>
+                    <input type="password" id="apiKey_groq" placeholder="gsk_..." 
+                           onchange="saveApiKey('groq', this.value)" 
+                           style="background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px;" />
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 8px;">
+                    <label style="margin-bottom: 4px; font-size: 12px;">Together AI</label>
+                    <input type="password" id="apiKey_together" placeholder="..." 
+                           onchange="saveApiKey('together', this.value)" 
+                           style="background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px;" />
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; margin-top: 8px;">
+                    <label style="margin-bottom: 4px; font-size: 12px;">HuggingFace</label>
+                    <input type="password" id="apiKey_huggingface" placeholder="hf_..." 
+                           onchange="saveApiKey('huggingface', this.value)" 
+                           style="background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 6px; border-radius: 4px;" />
+                </div>
+                </div>
+            </details>
+
+            <!-- Data Management (Always Visible) -->
+            <div class="settings-group" style="margin-top: 20px;">
+                <h3 style="color: var(--theme-primary); font-size: 14px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--theme-primary-fade); font-weight: 700;">💾 Data Management</h3>
+
+                <div class="settings-section">
+                    <h4 style="color: var(--theme-primary); margin: 0 0 12px 0; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                        📊 Storage
+                        <span class="help-icon" title="Manage your local data storage" style="cursor: help; font-size: 11px; color: #666;">ⓘ</span>
+                    </h4>
+                <div class="settings-row" style="justify-content: space-between;">
+                    <span style="color: #888;">Storage Used:</span>
+                    <span id="storageUsage" style="color: #00FFFF;">0.00 MB</span>
+                </div>
+                <div class="settings-row" style="gap: 8px; flex-wrap: wrap;">
+                    <button class="settings-action-btn" onclick="backupChat(); toggleSettings();">Export Chats</button>
+                    <button class="settings-action-btn" onclick="importBackup();">Import Chats</button>
+                </div>
+                <div class="settings-row" style="gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                    <button class="settings-action-btn settings-danger" onclick="clearGeneratedImages()">Clear Images</button>
+                    <button class="settings-action-btn settings-danger" onclick="confirmDeleteAllChats()">Delete Chats</button>
+                    <button class="settings-action-btn settings-danger" onclick="confirmDeleteAllProjects()">Delete Projects</button>
+                </div>
+                </div>
+            </div>
+
+            <!-- Appearance (Always Visible) -->
+            <div class="settings-group" style="margin-top: 20px;">
+                <h3 style="color: var(--theme-primary); font-size: 14px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--theme-primary-fade); font-weight: 700;">🎨 Appearance</h3>
+
+                <div class="settings-section">
+                    <h4 style="color: var(--theme-primary); margin: 0 0 12px 0; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                        Theme & Colors
+                        <span class="help-icon" title="Customize the look and feel" style="cursor: help; font-size: 11px; color: #666;">ⓘ</span>
+                    </h4>
+
+                <!-- Dark/Light Mode Toggle -->
+                <div class="settings-row" style="margin-bottom: 20px;">
+                    <div style="flex:1;">
+                        <label style="margin-bottom:8px; display:block; font-weight: 600;">🌓 Display Mode</label>
+                        <div class="theme-mode-toggle" style="display: flex; gap: 8px; padding: 4px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--theme-primary-fade);">
+                            <button class="theme-mode-btn active" data-mode="dark" onclick="setThemeMode('dark')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; background: var(--theme-primary); color: #000; font-weight: 600; transition: all 0.2s;">
+                                🌙 Dark
+                            </button>
+                            <button class="theme-mode-btn" data-mode="light" onclick="setThemeMode('light')" style="flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: #888; font-weight: 600; transition: all 0.2s;">
+                                ☀️ Light
+                            </button>
+                        </div>
+                        <small style="color:#666; font-size: 11px; margin-top: 4px; display: block;">Switch between dark and light themes</small>
+                    </div>
+                </div>
+
+                <!-- Theme Color Selector -->
+                <div class="settings-row" style="margin-bottom: 16px;">
+                    <div style="flex:1;">
+                        <label style="margin-bottom:6px; display:block; font-weight: 600;">🎨 Theme Color</label>
+                        <select id="themeSelect" onchange="changeTheme(this.value)" style="width:100%; padding:8px; background:#0a0a0a; border:1px solid var(--theme-primary); color:#fff; border-radius:4px; font-size: 14px;">
+                            <option value="cyan">Cyan (Default)</option>
+                            <option value="red">🔴 Blood Red</option>
+                            <option value="purple">🟣 Neon Purple</option>
+                            <option value="green">🟢 Matrix Green</option>
+                            <option value="blue">🔵 Electric Blue</option>
+                            <option value="pink">🌸 Hot Pink</option>
+                            <option value="gold">🟡 Golden Yellow</option>
+                        </select>
+                        <small style="color:#666; font-size: 11px;">Change the accent color throughout the entire UI</small>
+                    </div>
+                </div>
+
+                <div class="settings-row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <div style="flex:1; min-width:160px;">
+                        <label style="margin-bottom:6px; display:block;">Chat Font</label>
+                        <select id="chatFontSelect" onchange="saveChatFontFamily(this.value)" style="width:100%; padding:6px; background:#0a0a0a; border:1px solid var(--theme-primary); color:#fff; border-radius:4px;">
+                            <option value="Dancing Script, cursive">Dancing Script</option>
+                            <option value="Great Vibes, cursive">Great Vibes</option>
+                            <option value="Pacifico, cursive">Pacifico</option>
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="Courier New, monospace">Courier New</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                        </select>
+                        <small style="color:#666; font-size: 11px;">Font used for chat messages and input textarea.</small>
+                    </div>
+                    <div style="flex:1; min-width:160px;">
+                        <label style="margin-bottom:6px; display:block;">UI / Menu Font</label>
+                        <select id="uiFontSelect" onchange="saveUIFontFamily(this.value)" style="width:100%; padding:6px; background:#0a0a0a; border:1px solid var(--theme-primary); color:#fff; border-radius:4px;">
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Courier New, monospace">Courier New</option>
+                            <option value="Dancing Script, cursive">Dancing Script</option>
+                            <option value="Pacifico, cursive">Pacifico</option>
+                        </select>
+                        <small style="color:#666; font-size: 11px;">Font used in menus and sidebar (keeps UI readable).</small>
+                    </div>
+                </div>
+                <div class="settings-row" style="margin-top:12px; gap:8px; align-items:center;">
+                    <div style="flex:1; display:flex; flex-direction:column;">
+                        <label style="margin-bottom:6px;">Input Text Color</label>
+                        <input type="color" id="inputTextColor" onchange="saveInputTextColor(this.value)" value="#ffffff" style="width:60px; height:34px; border:none; background:transparent;" />
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column;">
+                        <label style="margin-bottom:6px;">AI Text Color</label>
+                        <input type="color" id="outputTextColor" onchange="saveOutputTextColor(this.value)" value="#ffd8e0" style="width:60px; height:34px; border:none; background:transparent;" />
+                    </div>
+                </div>
+                <div class="settings-row" style="margin-top:12px; gap:8px; align-items:center;">
+                    <div style="flex:1; display:flex; flex-direction:column;">
+                        <label style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">Chat Font Size <span id="chatFontSizeValue" style="font-size:11px; color:#ccc;">15px</span></label>
+                        <input type="range" id="chatFontSizeSlider" min="12" max="22" step="1" value="15" oninput="document.getElementById('chatFontSizeValue').textContent=this.value+'px'" onchange="saveChatFontSize(this.value)" style="width:100%;" />
+                        <small style="color:#666; font-size: 11px;">Adjusts chat message and input font size.</small>
+                    </div>
+                </div>
+                <div class="settings-row" style="margin-top:12px;">
+                    <div id="appearancePreview" style="width:100%; padding:10px; background:#0f1111; border:1px solid #222; border-radius:6px;">
+                        <div style="margin-bottom:6px;"><strong>Preview:</strong></div>
+                        <div class="preview user-message"><div class="message-content">User input text</div></div>
+                        <div style="height:8px;"></div>
+                        <div class="preview ai-message"><div class="message-content">AI response text</div></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- CLI Access (Always Visible) -->
+            <div class="settings-group" style="margin-top: 20px;">
+                <h3 style="color: var(--theme-primary); font-size: 14px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--theme-primary-fade); font-weight: 700;">⌨️ Command Line Access</h3>
+
+                <div class="settings-section">
+                <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid var(--theme-primary-fade); border-radius: 6px; padding: 12px;">
+                    <p style="color: #999; font-size: 12px; margin-bottom: 12px;">Access Divine Node from the terminal for advanced control:</p>
+
+                    <div style="background: #000; border: 1px solid var(--theme-primary); border-radius: 4px; padding: 10px; margin-bottom: 8px; font-family: 'Courier New', monospace; font-size: 11px;">
+                        <div style="color: #666; margin-bottom: 4px;"># Control services:</div>
+                        <div style="color: var(--theme-primary);">./pkn_control.sh start-all</div>
+                        <div style="color: var(--theme-primary);">./pkn_control.sh status</div>
+                        <div style="color: var(--theme-primary);">./pkn_control.sh stop-all</div>
+
+                        <div style="color: #666; margin: 12px 0 4px 0;"># View logs:</div>
+                        <div style="color: var(--theme-primary);">tail -f divinenode.log</div>
+
+                        <div style="color: #666; margin: 12px 0 4px 0;"># Test agents:</div>
+                        <div style="color: var(--theme-primary);">python3 test_free_agents.py</div>
+                    </div>
+
+                    <div class="settings-row" style="gap: 8px; flex-wrap: wrap;">
+                        <button class="settings-action-btn" onclick="copyCliCommands()" style="flex: 1;">
+                            📋 Copy Commands
+                        </button>
+                        <button class="settings-action-btn" onclick="showCliHelp()" style="flex: 1;">
+                            📖 CLI Guide
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--theme-primary-fade);">
+                        <p style="color: #666; font-size: 11px; margin-bottom: 6px;">
+                            <strong>Keyboard shortcut:</strong> Press <kbd style="background: #222; padding: 2px 6px; border-radius: 3px; font-family: monospace; color: var(--theme-primary);">Ctrl+`</kbd> to show CLI commands
+                        </p>
+                        <p style="color: #666; font-size: 11px; font-style: italic;">
+                            Open a terminal in /home/gh0st/pkn to run these commands
+                        </p>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Creation Modal -->
+<div id="projectModal" class="settings-overlay hidden">
+    <!-- Project creation modal (see app.js: createNewProject, saveNewProject) -->
+    <div class="settings-panel" style="max-width: 520px;">
+        <div class="settings-header">
+            <div class="settings-title">Create New Project</div>
+            <button class="settings-close-x" onclick="closeProjectModal()">×</button>
+        </div>
+        <div class="settings-body">
+            <div class="project-modal-field">
+                <label for="projectName">Project Name</label>
+                <input type="text" id="projectName" class="project-input" placeholder="My Project" />
+            </div>
+            <div class="project-modal-field">
+                <label for="projectPrompt">System Prompt (Instructions for AI)</label>
+                <textarea id="projectPrompt" class="project-textarea" placeholder="You are an expert developer helping with this project..." rows="4"></textarea>
+            </div>
+            <div class="project-modal-field">
+                <label>Project Files</label>
+                <div class="project-file-upload">
+                    <input type="file" id="projectFilesInput" multiple style="display: none;" onchange="handleProjectFiles()" />
+                    <button class="settings-action-btn" onclick="document.getElementById('projectFilesInput').click()">+ Add Files</button>
+                    <div id="projectFilesList" class="project-files-preview"></div>
+                </div>
+            </div>
+            <div class="settings-row" style="margin-top: 16px; justify-content: flex-end;">
+                <button class="settings-action-btn" onclick="closeProjectModal()" style="margin-right: 8px;">Cancel</button>
+                <button class="settings-action-btn" onclick="saveNewProject()" style="background: #00FFFF; color: #000;">Create Project</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Generator Modal -->
+<div id="imageGenModal" class="settings-overlay hidden">
+    <!-- Image generator modal (see app.js: openImageGenerator, generateImage, divinenode_server.py) -->
+    <div class="settings-panel" style="max-width: 500px;">
+        <div class="settings-header">
+            <div class="settings-title">Generate Image</div>
+            <button class="settings-close-x" onclick="closeImageGenerator()">×</button>
+        </div>
+        <div class="settings-body">
+            <p style="margin-bottom: 12px; font-size: 13px; color: var(--theme-primary);">Describe the image you want to generate:</p>
+                <textarea
+                id="imagePrompt"
+                placeholder="e.g., A futuristic cyberpunk crown with glowing neon circuits..."
+                style="width: 100%; min-height: 100px; background: #0a0a0a; border: 1px solid var(--theme-primary); border-radius: 4px; padding: 10px; color: #fff; font-family: var(--chat-font-family, 'Courier New', monospace); font-size: var(--chat-font-size, 13px); resize: vertical;"
+            ></textarea>
+            <div class="settings-row" style="margin-top: 16px; justify-content: flex-end; gap: 8px;">
+                <button class="settings-action-btn" onclick="closeImageGenerator()">Cancel</button>
+                <button class="settings-action-btn" onclick="generateImage()" style="background: var(--theme-primary); color: #000;">Generate</button>
+            </div>
+            <div id="imageGenStatus" style="margin-top: 12px; font-size: 12px; color: var(--theme-primary); text-align: center; display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Move to Project Modal -->
+<div id="moveToProjectModal" class="settings-overlay hidden">
+    <!-- Move chat to project modal (see app.js: showMoveToProjectModal) -->
+    <div class="settings-panel" style="max-width: 420px;">
+        <div class="settings-header">
+            <div class="settings-title">Move Chat to Project</div>
+            <button class="settings-close-x" onclick="closeMoveToProjectModal()">×</button>
+        </div>
+        <div class="settings-body">
+            <p style="margin-bottom: 16px;">Select a project to move this chat to:</p>
+            <div id="moveToProjectList" class="project-files-preview" style="max-height: 300px; overflow-y: auto;"></div>
+            <div class="settings-row" style="margin-top: 16px; justify-content: flex-end;">
+                <button class="settings-action-btn" onclick="closeMoveToProjectModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Models Manager Modal -->
+<div id="aiModelsModal" class="settings-overlay hidden">
+    <!-- AI Models Manager modal (see app.js: openAIModelsManager, addCustomModel, resetModelsToDefault) -->
+    <div class="settings-panel ai-models-panel" style="max-width: 600px;">
+        <div class="settings-header">
+            <div class="settings-title">AI Models Manager</div>
+            <button class="settings-close-x" onclick="closeAIModelsManager()">×</button>
+        </div>
+        <div class="settings-body">
+            <p style="margin-bottom: 12px; color: #888; font-size: 12px;">Manage which AI models appear in your selector dropdown. Add custom models or hide ones you don't use.</p>
+            
+            <div style="margin-bottom: 16px;">
+                <h4 style="color: #00FFFF; margin-bottom: 8px; font-size: 13px;">Add Custom Model</h4>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <select id="newModelProvider" style="flex: 1; min-width: 120px; padding: 6px; background: #0a0a0a; border: 1px solid #00FFFF; color: #fff; border-radius: 4px;">
+                        <option value="openai">OpenAI</option>
+                        <option value="groq">Groq</option>
+                        <option value="together">Together AI</option>
+                        <option value="huggingface">Hugging Face</option>
+                        <option value="ollama">Ollama (Local)</option>
+                        <option value="custom">Custom API</option>
+                    </select>
+                    <input type="text" id="newModelId" placeholder="Model ID (e.g. gpt-4)" style="flex: 2; min-width: 150px; padding: 6px; background: #0a0a0a; border: 1px solid #00FFFF; color: #fff; border-radius: 4px;" />
+                    <input type="text" id="newModelName" placeholder="Display Name" style="flex: 1; min-width: 100px; padding: 6px; background: #0a0a0a; border: 1px solid #00FFFF; color: #fff; border-radius: 4px;" />
+                    <button class="settings-action-btn" onclick="addCustomModel()" style="white-space: nowrap;">+ Add</button>
+                </div>
+            </div>
+            
+            <h4 style="color: #00FFFF; margin-bottom: 8px; font-size: 13px;">Current Models</h4>
+            <div id="aiModelsList" style="max-height: 300px; overflow-y: auto; padding-right: 8px;"></div>
+            
+            <div class="settings-row" style="margin-top: 16px; justify-content: flex-start;">
+                <button class="settings-action-btn" onclick="resetModelsToDefault()">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Images Gallery Modal -->
+<div id="imagesGalleryModal" class="settings-overlay hidden">
+    <!-- Images gallery modal (see app.js: openImagesGallery, clearGeneratedImages) -->
+    <div class="settings-panel" style="max-width: 700px; max-height: 80vh;">
+        <div class="settings-header">
+            <div class="settings-title">Images Gallery</div>
+            <button class="settings-close-x" onclick="closeImagesGallery()">×</button>
+        </div>
+        <div class="settings-body" style="overflow-y: auto; max-height: calc(80vh - 60px);">
+            <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 16px;">
+                <p style="color: #888; font-size: 12px; margin: 0;">Your generated images</p>
+            </div>
+            <div id="imagesGalleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;"></div>
+        </div>
+        <div class="settings-footer" style="padding: 12px 16px; border-top: 1px solid #00FFFF; display: flex; justify-content: flex-start;">
+            <button class="settings-action-btn" onclick="openImageGenerator()">+ Generate New</button>
+        </div>
+    </div>
+</div>
+
+<!-- Code Editor Modal -->
+<div id="codeEditorOverlay" class="settings-overlay hidden">
+    <div class="settings-panel" style="max-width: 90%; width: 90%; max-height: 85vh; height: 85vh; margin: auto;">
+        <div class="settings-header">
+            <div class="settings-title">💻 Code Editor</div>
+            <button class="settings-close-x" onclick="closeCodeEditor()">×</button>
+        </div>
+        <div class="settings-body" style="padding: 0; display: flex; flex-direction: column; height: calc(85vh - 50px); overflow: hidden;">
+            <!-- File selector and controls -->
+            <div style="padding: 8px 12px; border-bottom: 1px solid #333; display: flex; gap: 8px; align-items: center; background: #1a1a1a; flex-shrink: 0;">
+                <select id="editorFileSelect" style="flex: 1; padding: 6px; background: #2a2a2a; color: #0ff; border: 1px solid #00FFFF; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px;">
+                    <option value="">Select a file to edit...</option>
+                </select>
+                <button onclick="saveCurrentFile()" style="padding: 6px 12px; background: #00FFFF; color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">💾 Save</button>
+                <button onclick="refreshFileList()" style="padding: 6px 12px; background: #333; color: #0ff; border: 1px solid #00FFFF; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄</button>
+            </div>
+            <!-- Monaco Editor Container -->
+            <div id="monacoEditorContainer" style="flex: 1; min-height: 0; border: none;"></div>
+            <div id="editorStatus" style="padding: 6px 12px; background: #1a1a1a; border-top: 1px solid #333; font-size: 11px; color: #888; font-family: 'Courier New', monospace; flex-shrink: 0;">
+                Ready
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container for brief notifications -->
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+<!-- Toast notifications (see app.js: showToast) -->
+
+<!-- Agent Switcher Quick Access Panel -->
+<div id="agentSwitcherPanel" class="agent-switcher-panel hidden">
+    <div class="agent-switcher-header">
+        <h3>🤖 Select Agent</h3>
+        <button class="agent-switcher-close" onclick="toggleAgentSwitcher()">×</button>
+    </div>
+    <div class="agent-switcher-body">
+        <!-- Agent cards will be populated by multi_agent_ui.js -->
+        <div id="agentSwitcherCards" class="agent-cards-grid">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+    <div class="agent-switcher-footer">
+        <button class="agent-auto-btn" onclick="window.multiAgentUI?.setMode('auto')">
+            ⚡ Auto-Select Mode
+        </button>
+        <small style="color: #666; font-size: 11px;">Press <kbd>Ctrl+A</kbd> to toggle this panel</small>
+    </div>
+</div>
+
+<!-- Floating Agent Switcher Button -->
+<button id="agentSwitcherBtn" class="agent-switcher-fab" onclick="toggleAgentSwitcher()" title="Switch Agent (Ctrl+A)">
+    <img src="img/icchat.png" alt="AI" style="width: 24px; height: 24px; border-radius: 50%; opacity: 0.8;" />
+</button>
+
+<!-- Keyboard Shortcuts Help Modal -->
+<div id="keyboardShortcutsModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <button onclick="hideKeyboardShortcuts()" class="modal-close">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div class="shortcuts-section">
+                <h4 style="color: var(--theme-primary); margin-top: 0;">Navigation</h4>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>A</kbd>
+                    <span>Toggle Agent Switcher</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                    <span>Open Settings</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>N</kbd>
+                    <span>New Chat</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>/</kbd>
+                    <span>Show This Help</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Esc</kbd>
+                    <span>Close Modals/Panels</span>
+                </div>
+            </div>
+
+            <div class="shortcuts-section">
+                <h4 style="color: var(--theme-primary);">Chat Actions</h4>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+                    <span>Send Message</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                    <span>Clear Input</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>L</kbd>
+                    <span>Clear Chat</span>
+                </div>
+            </div>
+
+            <div class="shortcuts-section">
+                <h4 style="color: var(--theme-primary);">Tools</h4>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                    <span>Generate Image</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                    <span>File Explorer</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl</kbd> + <kbd>`</kbd>
+                    <span>CLI Commands</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 16px; border-top: 1px solid #333;">
+            <button onclick="hideKeyboardShortcuts()" style="width: 100%;">Got it!</button>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Install Button (floating) -->
+<button id="pwa-install-btn" class="pwa-install-btn" onclick="installPWA()" style="display: none;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    <span style="margin-left: 8px;">Install App</span>
+</button>
+
+<!-- Capacitor Backend Integration (auto-start Termux) -->
+<script src="js/capacitor-backend.js"></script>
+
+<script src="tools.js"></script>
+<!-- Configuration files -->
+<script src="config.js"></script>
+<!-- Load local config override if it exists (gitignored, contains your API keys) -->
+<script src="config.local.js" onerror="console.log('No config.local.js found - using defaults')"></script>
+
+<!-- Code autocomplete widget -->
+<script src="js/autocomplete.js"></script>
+
+<!-- Multi-agent UI -->
+<link rel="stylesheet" href="css/multi_agent.css">
+<script src="js/agent_quality.js"></script>
+<script src="js/multi_agent_ui.js"></script>
+
+<!-- Main application -->
+<!-- OLD MONOLITHIC FILE - DISABLED TO FIX RECURSION ERROR (using modular js/ files instead) -->
+<script src="app.js"></script>
+
+<!-- Enhanced File Explorer -->
+<script src="js/files.js"></script>
+
+<!-- OSINT Tools UI -->
+<script src="js/osint_ui.js"></script>
+
+<script>
+// Force init on page load (see app.js: init)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// Wire simple UI helpers for the new document tools
+function triggerFileUpload() {
+    // File upload helper (see app.js: file upload logic)
+    if (window.ParakleonTools && window.ParakleonTools.uploadDocument) {
+        window.ParakleonTools.uploadDocument();
+    } else {
+        const input = document.getElementById('fileInput');
+        if (input) input.click();
+    }
+}
+
+function listDocumentsUI() {
+    // Document listing helper (see tools.js)
+    if (window.ParakleonTools && window.ParakleonTools.listDocuments) {
+        window.ParakleonTools.listDocuments();
+    } else {
+        alert('Document listing not available');
+    }
+}
+
+function summarizeDocumentUI() {
+    // Document summarization helper (see tools.js)
+    if (window.ParakleonTools && window.ParakleonTools.summarizeDocument) {
+        window.ParakleonTools.summarizeDocument();
+    } else {
+        alert('Summarize not available');
+    }
+}
+
+// ============================================
+// THEME SYSTEM
+// ============================================
+function changeTheme(themeName) {
+    // Remove all theme classes
+    document.body.classList.remove('theme-cyan', 'theme-red', 'theme-purple', 'theme-green', 'theme-blue', 'theme-pink', 'theme-gold');
+
+    // Add new theme class (cyan is default, no class needed)
+    if (themeName !== 'cyan') {
+        document.body.classList.add('theme-' + themeName);
+    }
+
+    // Save to localStorage
+    localStorage.setItem('pkn-theme', themeName);
+
+    // Update the select dropdown
+    const select = document.getElementById('themeSelect');
+    if (select) select.value = themeName;
+
+    console.log('Theme changed to:', themeName);
+}
+
+function loadSavedTheme() {
+    const savedTheme = localStorage.getItem('pkn-theme') || 'cyan';
+    changeTheme(savedTheme);
+}
+
+// Load theme on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadSavedTheme);
+} else {
+    loadSavedTheme();
+}
+
+// ============================================
+// CODE EDITOR (Monaco Editor Integration)
+// ============================================
+let monacoEditor = null;
+let currentEditingFile = null;
+
+function openCodeEditor() {
+    const overlay = document.getElementById('codeEditorOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+
+        // Initialize Monaco if not already done
+        if (!monacoEditor) {
+            initMonacoEditor();
+        }
+
+        // Load file list
+        refreshFileList();
+    }
+}
+
+function closeCodeEditor() {
+    const overlay = document.getElementById('codeEditorOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+function initMonacoEditor() {
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+
+    require(['vs/editor/editor.main'], function() {
+        monacoEditor = monaco.editor.create(document.getElementById('monacoEditorContainer'), {
+            value: '// Select a file to edit...',
+            language: 'javascript',
+            theme: 'vs-dark',
+            automaticLayout: true,
+            fontSize: 14,
+            minimap: { enabled: true },
+            lineNumbers: 'on',
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            readOnly: false,
+            cursorStyle: 'line'
+        });
+
+        // File selector change handler
+        document.getElementById('editorFileSelect').addEventListener('change', function(e) {
+            const filePath = e.target.value;
+            if (filePath) {
+                loadFileIntoEditor(filePath);
+            }
+        });
+
+        updateEditorStatus('Editor ready');
+    });
+}
+
+function refreshFileList() {
+    fetch('/api/editor/files')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('editorFileSelect');
+            select.innerHTML = '<option value="">Select a file to edit...</option>';
+
+            if (data.files && data.files.length > 0) {
+                data.files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.path;
+                    option.textContent = file.name;
+                    select.appendChild(option);
+                });
+                updateEditorStatus(`${data.files.length} files available`);
+            } else {
+                updateEditorStatus('No files found');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading file list:', error);
+            updateEditorStatus('Error loading files', true);
+        });
+}
+
+function loadFileIntoEditor(filePath) {
+    updateEditorStatus('Loading...');
+
+    fetch('/api/editor/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_path: filePath })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.content !== undefined) {
+            monacoEditor.setValue(data.content);
+            currentEditingFile = filePath;
+
+            // Set language based on file extension
+            const ext = filePath.split('.').pop().toLowerCase();
+            const langMap = {
+                'js': 'javascript',
+                'py': 'python',
+                'html': 'html',
+                'css': 'css',
+                'json': 'json',
+                'md': 'markdown',
+                'sh': 'shell',
+                'txt': 'plaintext'
+            };
+            const language = langMap[ext] || 'plaintext';
+            monaco.editor.setModelLanguage(monacoEditor.getModel(), language);
+
+            updateEditorStatus(`Loaded: ${filePath.split('/').pop()}`);
+        } else {
+            updateEditorStatus('Error loading file', true);
+        }
+    })
+    .catch(error => {
+        console.error('Error reading file:', error);
+        updateEditorStatus('Error reading file', true);
+    });
+}
+
+function saveCurrentFile() {
+    if (!currentEditingFile) {
+        updateEditorStatus('No file selected', true);
+        return;
+    }
+
+    const content = monacoEditor.getValue();
+    updateEditorStatus('Saving...');
+
+    fetch('/api/editor/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            file_path: currentEditingFile,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateEditorStatus('✅ Saved successfully');
+            setTimeout(() => updateEditorStatus(`Editing: ${currentEditingFile.split('/').pop()}`), 2000);
+        } else {
+            updateEditorStatus('❌ Save failed', true);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving file:', error);
+        updateEditorStatus('❌ Error saving', true);
+    });
+}
+
+function updateEditorStatus(message, isError = false) {
+    const status = document.getElementById('editorStatus');
+    if (status) {
+        status.textContent = message;
+        status.style.color = isError ? '#ff4444' : '#888';
+    }
+}
+
+// ==========================================
+// PWA Service Worker Registration
+// ==========================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+                console.log('[PWA] Service Worker registered successfully:', registration.scope);
+
+                // Check for updates every hour
+                setInterval(() => {
+                    registration.update();
+                }, 3600000);
+
+                // Listen for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available
+                            console.log('[PWA] New version available');
+                            showUpdateNotification();
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('[PWA] Service Worker registration failed:', error);
+            });
+    });
+}
+
+// ==========================================
+// PWA Install Prompt
+// ==========================================
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    // Show install button
+    showInstallButton();
+});
+
+function showInstallButton() {
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) {
+        installBtn.style.display = 'block';
+    }
+}
+
+window.installPWA = function() {
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (!deferredPrompt) {
+        console.log('[PWA] Install prompt not available');
+        return;
+    }
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+            console.log('[PWA] User accepted the install prompt');
+        } else {
+            console.log('[PWA] User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+
+        // Hide install button
+        if (installBtn) {
+            installBtn.style.display = 'none';
+        }
+    });
+};
+
+// Track installation
+window.addEventListener('appinstalled', () => {
+    console.log('[PWA] App installed successfully');
+    deferredPrompt = null;
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+});
+
+// Show update notification
+function showUpdateNotification() {
+    if (confirm('A new version of Divine Node is available. Reload to update?')) {
+        window.location.reload();
+    }
+}
+</script>
+</body>
+</html>

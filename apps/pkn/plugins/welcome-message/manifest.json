@@ -1,0 +1,30 @@
+{
+  "id": "welcome-message",
+  "name": "Welcome Message",
+  "version": "1.0.0",
+  "description": "Shows a custom welcome message when PKN loads",
+  "author": "PKN Team",
+  "autoEnable": true,
+  "dependencies": [],
+  "settings": {
+    "message": {
+      "type": "text",
+      "label": "Welcome Message",
+      "default": "Welcome to Divine Node!",
+      "description": "The message shown when the app loads"
+    },
+    "duration": {
+      "type": "number",
+      "label": "Display Duration (ms)",
+      "default": 3000,
+      "description": "How long to show the message"
+    },
+    "position": {
+      "type": "select",
+      "label": "Position",
+      "default": "top-right",
+      "options": ["top-left", "top-right", "bottom-left", "bottom-right"],
+      "description": "Where to show the message"
+    }
+  }
+}

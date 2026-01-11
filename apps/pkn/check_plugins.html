@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Plugin Check</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            background: #000; 
+            color: #0f0; 
+            padding: 20px; 
+            font-size: 16px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            background: #0ff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #0ff;
+            background: rgba(0,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 PKN Plugin Quick Check</h1>
+    
+    <button onclick="checkMain()">1. Check Main PKN Page</button>
+    <button onclick="openMain()">2. Open Main PKN</button>
+    <button onclick="forceLoad()">3. Force Load Plugins</button>
+    
+    <div id="output"></div>
+
+    <script>
+        function checkMain() {
+            window.open('http://localhost:8010/pkn.html', 'pkn');
+            setTimeout(() => {
+                const output = document.getElementById('output');
+                output.innerHTML = `
+                    <div class="result">
+                        <h2>Check These in the PKN Window:</h2>
+                        <ol>
+                            <li><strong>Press F12</strong> to open console</li>
+                            <li><strong>Type:</strong> window.pluginManager</li>
+                            <li><strong>Type:</strong> window.openPluginsManager</li>
+                            <li>If either shows "undefined", plugins didn't load</li>
+                            <li>If they exist, type: <strong>openPluginsManager()</strong></li>
+                        </ol>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        function openMain() {
+            window.open('http://localhost:8010/pkn.html', '_blank');
+        }
+
+        async function forceLoad() {
+            const pknWindow = window.open('http://localhost:8010/pkn.html', 'pkn');
+            
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="result">
+                    <h2>🔧 Force Loading Plugins...</h2>
+                    <p>1. Opened PKN in new window</p>
+                    <p>2. Wait 3 seconds...</p>
+                    <p>3. Will inject plugin loader</p>
+                    <p><strong>Watch the PKN window!</strong></p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                try {
+                    // Inject the force load script
+                    pknWindow.eval(`
+                        console.clear();
+                        console.log('%c🔧 FORCING PLUGIN LOAD...', 'color: #ff0; font-size: 20px;');
+                        
+                        fetch('/force_load_plugins.js')
+                            .then(r => r.text())
+                            .then(code => {
+                                eval(code);
+                                console.log('%c✅ Force load complete!', 'color: #0f0; font-size: 18px;');
+                            })
+                            .catch(err => {
+                                console.error('Force load failed:', err);
+                            });
+                    `);
+
+                    output.innerHTML = `
+                        <div class="result">
+                            <h2>✅ Injected!</h2>
+                            <p>Check the PKN window console (F12)</p>
+                            <p>You should see green success messages</p>
+                            <p>Then run: <strong>openPluginsManager()</strong></p>
+                        </div>
+                    `;
+                } catch (error) {
+                    output.innerHTML = `
+                        <div class="result" style="border-color: #f00; color: #f00;">
+                            <h2>❌ Injection Failed</h2>
+                            <p>${error.message}</p>
+                            <p>Try manually in PKN console:</p>
+                            <pre>fetch('/force_load_plugins.js').then(r=>r.text()).then(eval)</pre>
+                        </div>
+                    `;
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,686 @@
+/**
+ * Interactive Tutorial Styling
+ * Cyberpunk-themed visual tutorial system | ref:interactive-tutorial.js, panel.html
+ */
+
+/* Tutorial Overlay - Full screen modal */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);  /* Dark overlay backdrop */
+    backdrop-filter: blur(5px);  /* Blur background content */
+    z-index: 99999;  /* Above everything */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.tutorial-overlay.hidden {
+    display: none;  /* Hidden by default */
+}
+
+/* Main Tutorial Modal */
+.tutorial-modal {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border: 2px solid #00ffff;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), 0 0 60px rgba(0, 255, 255, 0.1);
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tutorial Header */
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.tutorial-header h2 {
+    margin: 0;
+    color: #00ffff;
+    font-size: 24px;
+}
+
+.tutorial-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.mode-toggle {
+    padding: 8px 16px;
+    background: #222;
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.mode-toggle:hover {
+    background: #00ffff;
+    color: #000;
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    background: #ff3366;
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: #ff0044;
+    transform: scale(1.1);
+}
+
+/* Progress Bar */
+.progress-bar {
+    position: relative;
+    height: 40px;
+    background: #222;
+    border-bottom: 1px solid #333;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ffff 0%, #00cccc 100%);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+/* Tutorial Content - Two Column Layout */
+.tutorial-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.tutorial-left {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    border-right: 1px solid #333;
+}
+
+.tutorial-right {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background: #111;
+}
+
+.step-title {
+    color: #00ffff;
+    font-size: 22px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.step-explanation {
+    color: #ccc;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* Visual Aids */
+.step-visual {
+    margin: 20px 0;
+}
+
+.visual-example {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.code-visual {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    padding: 10px;
+    background: #000;
+    border-radius: 4px;
+}
+
+.code-visual .tag {
+    color: #ff6b9d;
+}
+
+.code-visual .content {
+    color: #fff;
+}
+
+.arrow {
+    text-align: center;
+    font-size: 30px;
+    color: #00ffff;
+    margin: 10px 0;
+}
+
+.demo-btn {
+    padding: 10px 20px;
+    background: #00ffff;
+    border: none;
+    color: #000;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Task Area */
+.task-instruction {
+    color: #00ffff;
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.task-area {
+    margin-bottom: 20px;
+}
+
+.code-editor {
+    width: 100%;
+    padding: 15px;
+    background: #000;
+    border: 2px solid #00ffff;
+    border-radius: 6px;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    resize: vertical;
+}
+
+.check-btn {
+    width: 100%;
+    padding: 12px;
+    background: #00ffff;
+    border: none;
+    color: #000;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.check-btn:hover {
+    background: #00cccc;
+    transform: translateY(-2px);
+}
+
+/* Slider Widget */
+.slider-widget {
+    padding: 20px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 6px;
+}
+
+.slider-widget input[type="range"] {
+    width: 100%;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    outline: none;
+}
+
+.slider-widget input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #00ffff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    text-align: center;
+    font-size: 24px;
+    color: #00ffff;
+    margin-top: 10px;
+}
+
+/* Quiz Options */
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quiz-option {
+    padding: 15px;
+    background: #222;
+    border: 2px solid #444;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.quiz-option:hover {
+    border-color: #00ffff;
+    background: #2a2a2a;
+}
+
+.quiz-option.correct {
+    border-color: #00ff00;
+    background: #002200;
+}
+
+.quiz-option.wrong {
+    border-color: #ff0000;
+    background: #220000;
+}
+
+/* Interactive Choices */
+.interactive-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.choice-btn {
+    padding: 20px;
+    background: #222;
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.choice-btn:hover {
+    background: #00ffff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+/* Feedback Messages */
+.task-hint {
+    background: #2a2a00;
+    border: 1px solid #ffff00;
+    border-radius: 6px;
+    padding: 12px;
+    color: #ffff00;
+    margin-top: 15px;
+}
+
+.task-feedback {
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.task-feedback.success {
+    background: #002200;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+}
+
+.task-feedback.error {
+    background: #220000;
+    border: 2px solid #ff0000;
+    color: #ff0000;
+}
+
+/* Footer Navigation */
+.tutorial-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-top: 1px solid #333;
+}
+
+.nav-btn {
+    padding: 12px 24px;
+    background: #00ffff;
+    border: none;
+    color: #000;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #00cccc;
+}
+
+.nav-btn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.hint-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: 2px solid #ffff00;
+    color: #ffff00;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.hint-btn:hover {
+    background: #ffff00;
+    color: #000;
+}
+
+/* Lesson Selector */
+.lesson-selector {
+    width: 100%;
+    max-width: 1200px;
+    padding: 40px;
+}
+
+.lesson-selector h3 {
+    color: #00ffff;
+    font-size: 28px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.lesson-card {
+    background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 25px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.lesson-card:hover {
+    border-color: #00ffff;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3);
+}
+
+.lesson-card.completed {
+    border-color: #00ff00;
+}
+
+.lesson-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lesson-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.lesson-info h4 {
+    color: #00ffff;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.lesson-info p {
+    color: #999;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.lesson-meta {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.difficulty {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.difficulty.beginner {
+    background: #004400;
+    color: #00ff00;
+}
+
+.difficulty.intermediate {
+    background: #444400;
+    color: #ffff00;
+}
+
+.difficulty.advanced {
+    background: #440000;
+    color: #ff0000;
+}
+
+.duration {
+    color: #888;
+    font-size: 12px;
+}
+
+/* Lesson Complete Screen */
+.lesson-complete {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.complete-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.lesson-complete h2 {
+    color: #00ffff;
+    font-size: 36px;
+    margin-bottom: 15px;
+}
+
+.lesson-complete p {
+    color: #999;
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+
+.complete-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 40px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 48px;
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.btn-primary {
+    padding: 15px 40px;
+    background: #00ffff;
+    border: none;
+    color: #000;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: #00cccc;
+    transform: scale(1.05);
+}
+
+.btn-secondary {
+    padding: 15px 40px;
+    background: transparent;
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #00ffff;
+    color: #000;
+}
+
+/* Reading Mode */
+.reading-mode {
+    padding: 40px;
+    color: #ccc;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.reading-mode h2 {
+    color: #00ffff;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.lesson-description {
+    color: #999;
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+
+.reading-step {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #333;
+}
+
+.reading-step h3 {
+    color: #00ffff;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.reading-step p {
+    font-size: 16px;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+
+.task-box {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.task-box strong {
+    color: #00ffff;
+}
+
+.task-box pre {
+    background: #000;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    margin-top: 10px;
+}
+
+/* Live Preview */
+.live-preview {
+    background: #fff;
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 30px;
+    min-height: 150px;
+}
+
+.preview-label {
+    color: #00ffff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.preview-area {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 4px;
+    min-height: 100px;
+}
+
+/* Scrollbar Styling */
+.tutorial-left::-webkit-scrollbar,
+.tutorial-right::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tutorial-left::-webkit-scrollbar-track,
+.tutorial-right::-webkit-scrollbar-track {
+    background: #111;
+}
+
+.tutorial-left::-webkit-scrollbar-thumb,
+.tutorial-right::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 4px;
+}
+
+.tutorial-left::-webkit-scrollbar-thumb:hover,
+.tutorial-right::-webkit-scrollbar-thumb:hover {
+    background: #00cccc;
+}

@@ -1,0 +1,29 @@
+{
+  "id": "darkweb-osint",
+  "name": "Dark Web OSINT",
+  "version": "1.0.0",
+  "description": "Threat intelligence and breach monitoring for security research",
+  "author": "PKN Team",
+  "autoEnable": false,
+  "dependencies": [],
+  "settings": {
+    "alertOnBreaches": {
+      "type": "boolean",
+      "label": "Alert on new breaches",
+      "default": true,
+      "description": "Show notifications when monitored emails appear in breaches"
+    },
+    "monitoredEmails": {
+      "type": "text",
+      "label": "Monitored emails (comma-separated)",
+      "default": "",
+      "description": "Email addresses to monitor for breaches"
+    },
+    "apiKey": {
+      "type": "text",
+      "label": "HaveIBeenPwned API Key",
+      "default": "",
+      "description": "Optional: API key for breach lookups"
+    }
+  }
+}

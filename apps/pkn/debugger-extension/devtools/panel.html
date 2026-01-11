@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Debugger</title>
+    <link rel="stylesheet" href="../css/debugger.css">
+    <link rel="stylesheet" href="tutorial.css">
+    <style>
+        /* Extension-specific overrides */
+        .preview-container {
+            display: none; /* Hide iframe preview in extension */
+        }
+        .panel-center {
+            display: none; /* Hide center panel - we inspect the actual page */
+        }
+        .panel-left, .panel-right {
+            width: 50% !important; /* Make side panels wider */
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Container -->
+    <div class="debugger-container">
+
+        <!-- Top Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <h1 class="app-title">🐞 Divine Debugger</h1>
+                <span class="version">v1.0 - Chrome Extension</span>
+            </div>
+            <div class="toolbar-right">
+                <button id="refreshElements" class="btn-icon" title="Refresh Element List">
+                    🔄
+                </button>
+                <button id="resetAll" class="btn-danger" title="Reset All Changes">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Layout: 2 columns (no center preview) -->
+        <div class="main-layout">
+
+            <!-- Left Panel: Element Selector & Inspector -->
+            <div class="panel panel-left">
+                <div class="panel-header">
+                    <h2>🎯 Element Inspector</h2>
+                    <button class="panel-toggle" data-panel="left">−</button>
+                </div>
+                <div class="panel-content">
+
+                    <!-- Element Selector -->
+                    <div class="section">
+                        <label class="section-title">Target Element</label>
+                        <select id="elementSelector" class="select-box">
+                            <option value="">Select element...</option>
+                        </select>
+                        <button id="pickElement" class="btn-secondary">
+                            👆 Inspect Element
+                        </button>
+                    </div>
+
+                    <!-- Element Info -->
+                    <div class="section">
+                        <label class="section-title">Element Info</label>
+                        <div id="elementInfo" class="info-box">
+                            <span class="text-muted">No element selected</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="section">
+                        <label class="section-title">Quick Actions</label>
+                        <button id="hideElement" class="btn-action">Hide Element</button>
+                        <button id="showElement" class="btn-action">Show Element</button>
+                        <button id="highlightElement" class="btn-action">Highlight</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Right Panel: Style Editor -->
+            <div class="panel panel-right">
+                <div class="panel-header">
+                    <h2>🎨 Style Editor</h2>
+                    <button class="panel-toggle" data-panel="right">−</button>
+                </div>
+                <div class="panel-content">
+
+                    <!-- Layout Controls -->
+                    <div class="section">
+                        <label class="section-title">Layout</label>
+
+                        <div class="control-group">
+                            <label>Width</label>
+                            <input type="range" id="width" min="0" max="1000" value="0">
+                            <input type="text" id="widthValue" class="value-input" placeholder="auto">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Height</label>
+                            <input type="range" id="height" min="0" max="1000" value="0">
+                            <input type="text" id="heightValue" class="value-input" placeholder="auto">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Padding</label>
+                            <input type="range" id="padding" min="0" max="100" value="0">
+                            <span class="value-display" id="paddingValue">0px</span>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Margin</label>
+                            <input type="range" id="margin" min="0" max="100" value="0">
+                            <span class="value-display" id="marginValue">0px</span>
+                        </div>
+                    </div>
+
+                    <!-- Appearance Controls -->
+                    <div class="section">
+                        <label class="section-title">Appearance</label>
+
+                        <div class="control-group">
+                            <label>Background Color</label>
+                            <input type="color" id="bgColor" value="#111111">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Text Color</label>
+                            <input type="color" id="textColor" value="#00FFFF">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Border Radius</label>
+                            <input type="range" id="borderRadius" min="0" max="50" value="0">
+                            <span class="value-display" id="borderRadiusValue">0px</span>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Opacity</label>
+                            <input type="range" id="opacity" min="0" max="100" value="100">
+                            <span class="value-display" id="opacityValue">100%</span>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Z-Index</label>
+                            <input type="number" id="zIndex" min="-999" max="9999" value="0">
+                        </div>
+                    </div>
+
+                    <!-- Typography -->
+                    <div class="section">
+                        <label class="section-title">Typography</label>
+
+                        <div class="control-group">
+                            <label>Font Size</label>
+                            <input type="range" id="fontSize" min="8" max="72" value="16">
+                            <span class="value-display" id="fontSizeValue">16px</span>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Font Family</label>
+                            <select id="fontFamily" class="select-box">
+                                <option value="inherit">Inherit</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="Georgia, serif">Georgia</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Font Weight</label>
+                            <select id="fontWeight" class="select-box">
+                                <option value="normal">Normal</option>
+                                <option value="bold">Bold</option>
+                                <option value="lighter">Lighter</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Theme Actions -->
+                    <div class="section">
+                        <label class="section-title">Theme Management</label>
+                        <button id="saveTheme" class="btn-primary">💾 Save Theme</button>
+                        <button id="loadTheme" class="btn-secondary">📂 Load Theme</button>
+                        <button id="exportCSS" class="btn-secondary">📤 Export CSS</button>
+                        <button id="resetStyles" class="btn-danger">↺ Reset Styles</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Panel: Tabs (Console, State) -->
+        <div class="bottom-panel">
+            <div class="tabs">
+                <button class="tab active" data-tab="console">🖥️ Console</button>
+                <button class="tab" data-tab="state">🧪 State</button>
+                <button class="tab" data-tab="analysis">🔍 Code Analysis</button>
+            </div>
+
+            <div class="tab-content">
+
+                <!-- Console Tab -->
+                <div id="consoleTab" class="tab-panel active">
+                    <div class="console-controls">
+                        <button id="clearConsole" class="btn-sm">Clear</button>
+                        <select id="logLevel" class="select-sm">
+                            <option value="all">All Logs</option>
+                            <option value="log">Log</option>
+                            <option value="warn">Warn</option>
+                            <option value="error">Error</option>
+                            <option value="info">Info</option>
+                        </select>
+                    </div>
+                    <div id="consoleOutput" class="console-output"></div>
+                </div>
+
+                <!-- State Tab -->
+                <div id="stateTab" class="tab-panel">
+                    <div class="state-controls">
+                        <input type="text" id="expressionInput" placeholder="Enter JavaScript expression..." class="expression-input">
+                        <button id="evaluateBtn" class="btn-primary">▶️ Evaluate</button>
+                    </div>
+                    <div id="stateOutput" class="state-output"></div>
+                </div>
+
+                <!-- Code Analysis Tab -->
+                <div id="analysisTab" class="tab-panel">
+                    <div class="analysis-header">
+                        <h3 style="margin: 0; color: #00FFFF;">🔍 PKN Code Health Scanner</h3>
+                        <p style="margin: 5px 0; color: #888; font-size: 13px;">Analyze your codebase for common issues - no terminal required!</p>
+                    </div>
+
+                    <div class="analysis-controls" style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="projectUrl" placeholder="Project URL (e.g., http://localhost:8010)"
+                               value="http://localhost:8010"
+                               style="flex: 1; padding: 8px; background: #222; border: 1px solid #444; border-radius: 4px; color: #0FF; font-family: monospace;">
+                        <button id="runAnalysis" class="btn-primary" style="padding: 8px 20px; background: #00FFFF; color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                            🚀 Run Full Analysis
+                        </button>
+                    </div>
+
+                    <div class="analysis-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                        <button id="checkDuplicates" class="btn-action" style="padding: 10px; background: #222; border: 1px solid #444; border-radius: 4px; color: #0FF; cursor: pointer; transition: all 0.2s;">
+                            📋 Duplicate Functions
+                        </button>
+                        <button id="checkScopes" class="btn-action" style="padding: 10px; background: #222; border: 1px solid #444; border-radius: 4px; color: #0FF; cursor: pointer; transition: all 0.2s;">
+                            🔄 Scope Mismatches
+                        </button>
+                        <button id="checkSelectors" class="btn-action" style="padding: 10px; background: #222; border: 1px solid #444; border-radius: 4px; color: #0FF; cursor: pointer; transition: all 0.2s;">
+                            🎯 Missing Selectors
+                        </button>
+                    </div>
+
+                    <div id="analysisOutput" class="analysis-output" style="background: #111; border: 1px solid #333; border-radius: 4px; padding: 15px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;">
+                        <div style="color: #888; text-align: center; padding: 40px 20px;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🛠️</div>
+                            <div>Click "Run Full Analysis" to scan your codebase</div>
+                            <div style="font-size: 11px; margin-top: 10px;">Or use individual buttons to check specific issues</div>
+                        </div>
+                    </div>
+
+                    <div class="learning-mode" style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #001a1a 0%, #002929 100%); border: 1px solid #004d4d; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="font-size: 24px;">📚</span>
+                            <h4 style="margin: 0; color: #00FFFF;">Learning Mode</h4>
+                        </div>
+                        <p style="margin: 0 0 10px 0; color: #999; font-size: 12px;">
+                            Understanding code issues helps you become a better developer! Each issue includes:
+                        </p>
+                        <ul style="margin: 0; padding-left: 20px; color: #888; font-size: 12px;">
+                            <li>Why it's a problem</li>
+                            <li>How it causes bugs</li>
+                            <li>How to fix it</li>
+                            <li>Best practices to prevent it</li>
+                        </ul>
+                        <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                            <button id="toggleExplanations" class="btn-secondary" style="flex: 1; min-width: 180px; padding: 8px 12px; background: #004d4d; border: 1px solid #00FFFF; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 12px; font-weight: bold;">
+                                📖 Show Detailed Explanations
+                            </button>
+                            <button id="startTutorial" class="btn-primary" style="flex: 1; min-width: 180px; padding: 8px 16px; background: linear-gradient(135deg, #00FFFF 0%, #00CCCC 100%); border: none; border-radius: 4px; color: #000; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);">
+                                🎓 Start Interactive Tutorial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Extension-specific Scripts -->
+    <script src="code-analyzer.js"></script>
+    <script src="analysis-ui.js"></script>
+    <script src="interactive-tutorial.js"></script>
+    <script src="panel.js" type="module"></script>
+</body>
+</html>

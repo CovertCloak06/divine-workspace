@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0d0d0d;
+            color: #00FFFF;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #00FFFF;
+            margin: 0 0 20px 0;
+        }
+        .tool-section {
+            background: #1a1a1a;
+            border-left: 3px solid #00FFFF;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .tool-section h2 {
+            color: #00FFFF;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .tool-section p {
+            color: #ccc;
+            font-size: 12px;
+            margin: 5px 0 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px 5px 5px 0;
+            background: #00FFFF;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #00CCCC;
+        }
+        button.secondary {
+            background: #333;
+            color: #00FFFF;
+        }
+        button.secondary:hover {
+            background: #444;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            display: none;
+        }
+        .output.visible {
+            display: block;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #0f0;
+            color: #000;
+        }
+        .status.error {
+            background: #f00;
+            color: #fff;
+        }
+        .status.running {
+            background: #ff0;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛠️ PKN Dev Tools</h1>
+
+    <div class="tool-section">
+        <h2>🔍 JavaScript Error Checker</h2>
+        <p>Check for import/export mismatches, typos, and common errors</p>
+        <button onclick="runCheck()">Run Check</button>
+        <button class="secondary" onclick="runAutoFix()">Auto-Fix</button>
+        <span id="check-status"></span>
+        <div id="check-output" class="output"></div>
+    </div>
+
+    <div class="tool-section">
+        <h2>🔌 Plugin System Validator</h2>
+        <p>Validate plugin structure, manifests, and exports</p>
+        <button onclick="runPluginCheck()">Check Plugins</button>
+        <span id="plugin-status"></span>
+        <div id="plugin-output" class="output"></div>
+    </div>
+
+    <div class="tool-section">
+        <h2>🏥 Full Diagnostic</h2>
+        <p>Run complete server and browser diagnostic</p>
+        <button onclick="runDiagnostic()">Run Diagnostic</button>
+        <button class="secondary" onclick="openBrowserDiag()">Browser Check</button>
+        <span id="diag-status"></span>
+        <div id="diag-output" class="output"></div>
+    </div>
+
+    <div class="tool-section">
+        <h2>🧹 Clean Build</h2>
+        <p>Remove cache files, logs, and temporary data</p>
+        <button onclick="runClean()">Clean</button>
+        <span id="clean-status"></span>
+        <div id="clean-output" class="output"></div>
+    </div>
+
+    <div class="tool-section">
+        <h2>📦 Quick Actions</h2>
+        <p>Common development tasks</p>
+        <button onclick="openServer()">Open Server</button>
+        <button class="secondary" onclick="openPluginsDocs()">Plugin Docs</button>
+        <button class="secondary" onclick="copyCommand()">Copy CLI Command</button>
+    </div>
+
+    <script>
+        function runCheck() {
+            const status = document.getElementById('check-status');
+            const output = document.getElementById('check-output');
+
+            status.className = 'status running';
+            status.textContent = 'Running...';
+            output.textContent = 'Checking JavaScript files...';
+            output.classList.add('visible');
+
+            // Send message to background script to run check
+            chrome.runtime.sendMessage({
+                action: 'runCommand',
+                command: 'check'
+            }, (response) => {
+                if (response.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Passed';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Issues Found';
+                }
+                output.textContent = response.output || 'Check complete';
+            });
+        }
+
+        function runAutoFix() {
+            if (confirm('This will automatically fix common issues. Continue?')) {
+                const status = document.getElementById('check-status');
+                const output = document.getElementById('check-output');
+
+                status.className = 'status running';
+                status.textContent = 'Fixing...';
+
+                chrome.runtime.sendMessage({
+                    action: 'runCommand',
+                    command: 'fix'
+                }, (response) => {
+                    status.className = 'status success';
+                    status.textContent = 'Fixed';
+                    output.textContent = response.output || 'Fixes applied';
+                    output.classList.add('visible');
+                });
+            }
+        }
+
+        function runPluginCheck() {
+            const status = document.getElementById('plugin-status');
+            const output = document.getElementById('plugin-output');
+
+            status.className = 'status running';
+            status.textContent = 'Checking...';
+            output.textContent = 'Validating plugins...';
+            output.classList.add('visible');
+
+            chrome.runtime.sendMessage({
+                action: 'runCommand',
+                command: 'plugins'
+            }, (response) => {
+                status.className = response.success ? 'status success' : 'status error';
+                status.textContent = response.success ? 'Valid' : 'Issues';
+                output.textContent = response.output;
+            });
+        }
+
+        function runDiagnostic() {
+            const status = document.getElementById('diag-status');
+            const output = document.getElementById('diag-output');
+
+            status.className = 'status running';
+            status.textContent = 'Running...';
+            output.textContent = 'Running full diagnostic...';
+            output.classList.add('visible');
+
+            chrome.runtime.sendMessage({
+                action: 'runCommand',
+                command: 'diagnose'
+            }, (response) => {
+                status.className = 'status success';
+                status.textContent = 'Complete';
+                output.textContent = response.output;
+            });
+        }
+
+        function openBrowserDiag() {
+            window.open('http://localhost:8010/browser_diagnostic.html', '_blank');
+        }
+
+        function runClean() {
+            if (confirm('Remove cache and temporary files?')) {
+                const status = document.getElementById('clean-status');
+                const output = document.getElementById('clean-output');
+
+                status.className = 'status running';
+                status.textContent = 'Cleaning...';
+                output.textContent = 'Removing files...';
+                output.classList.add('visible');
+
+                chrome.runtime.sendMessage({
+                    action: 'runCommand',
+                    command: 'clean'
+                }, (response) => {
+                    status.className = 'status success';
+                    status.textContent = 'Clean';
+                    output.textContent = response.output;
+                });
+            }
+        }
+
+        function openServer() {
+            window.open('http://localhost:8010/pkn.html', '_blank');
+        }
+
+        function openPluginsDocs() {
+            window.open('http://localhost:8010/plugins/README.md', '_blank');
+        }
+
+        function copyCommand() {
+            const command = 'cd /home/gh0st/pkn && ./dev check';
+            navigator.clipboard.writeText(command);
+            alert('Copied to clipboard:\n' + command);
+        }
+    </script>
+</body>
+</html>

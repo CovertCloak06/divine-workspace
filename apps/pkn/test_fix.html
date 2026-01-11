@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Plugin Fix</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #0ff; }
+        .box {
+            border: 2px solid #0ff;
+            padding: 20px;
+            margin: 20px 0;
+            background: rgba(0,255,255,0.05);
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            margin: 10px;
+            background: #0ff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        pre {
+            background: #001;
+            padding: 10px;
+            border-left: 3px solid #0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Plugin System Fix - Test Page</h1>
+
+    <div class="box">
+        <h2>✅ Fixes Applied:</h2>
+        <ol>
+            <li><strong>pkn.html</strong> now loads <code>js/main.js</code> instead of <code>app.js</code></li>
+            <li><strong>files.js</strong> infinite recursion bug fixed in showToast</li>
+        </ol>
+    </div>
+
+    <div class="box">
+        <h2>🧪 Test Instructions:</h2>
+        <p><strong>Step 1:</strong> Click the button below to open PKN in a new tab</p>
+        <button onclick="openPKN()">Open PKN (Fresh Load)</button>
+
+        <p><strong>Step 2:</strong> In the new tab, press <strong>F12</strong> to open console</p>
+
+        <p><strong>Step 3:</strong> Check for errors - should see NO recursion errors!</p>
+
+        <p><strong>Step 4:</strong> In console, type:</p>
+        <pre>pluginManager.getAllPlugins()</pre>
+
+        <p><strong>Expected Result:</strong> Array with 10 plugins:</p>
+        <pre style="color:#0f0;">[
+  {manifest: {name: "Welcome Message", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Smart Context Detector", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Voice I/O", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Quick Actions", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Agent Memory", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Meeting Summarizer", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Diff Viewer", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Code Sandbox", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Collaboration Theater", version: "1.0.0"}, enabled: true},
+  {manifest: {name: "Dark Web OSINT", version: "1.0.0"}, enabled: true}
+]</pre>
+
+        <p><strong>Step 5:</strong> Try opening Plugins Manager UI:</p>
+        <pre>openPluginsManager()</pre>
+
+        <p><strong>Or:</strong> Hover on left edge → Click "🔌 Plugins" button in sidebar</p>
+    </div>
+
+    <div class="box">
+        <h2>❌ If Still Not Working:</h2>
+        <ol>
+            <li>Hard refresh: <strong>Ctrl + Shift + R</strong></li>
+            <li>Clear browser cache completely</li>
+            <li>Check console for JavaScript errors (red text)</li>
+            <li>Verify files are loading: Network tab in DevTools (F12)</li>
+        </ol>
+    </div>
+
+    <script>
+        function openPKN() {
+            // Open with cache-busting parameter
+            window.open('http://localhost:8010/pkn.html?v=' + Date.now(), '_blank');
+        }
+    </script>
+</body>
+</html>

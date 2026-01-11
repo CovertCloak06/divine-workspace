@@ -1,0 +1,25 @@
+{
+  "name": "@divine/pkn",
+  "version": "1.0.0",
+  "description": "Divine Node (PKN) - Multi-agent AI system with local LLM inference",
+  "main": "parakleon_config.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "python3 divinenode_server.py",
+    "start": "./pkn_control.sh start-all",
+    "stop": "./pkn_control.sh stop-all",
+    "status": "./pkn_control.sh status",
+    "test": "python3 test_free_agents.py",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "keywords": ["ai", "llm", "multi-agent", "local", "qwen"],
+  "author": "Divine Node",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@divine/pkn-plugins": "workspace:*"
+  }
+}

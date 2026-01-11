@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Divine Node</string>
+    <string name="title_activity_main">Divine Node</string>
+    <string name="package_name">com.divinenode.app</string>
+    <string name="custom_url_scheme">com.divinenode.app</string>
+</resources>

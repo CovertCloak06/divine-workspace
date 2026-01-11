@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PKN CSS Diagnostic</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        .issue { background: #300; padding: 10px; margin: 10px 0; border: 1px solid #f00; }
+        .pass { background: #030; border-color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>PKN CSS Diagnostic Report</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        // Load the actual PKN page in an iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = 'pkn.html';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+            const doc = iframe.contentDocument;
+            const report = [];
+            
+            // TEST 1: Header button containers
+            const headerBtn = doc.querySelector('.agent-mode-btn.active');
+            if (headerBtn) {
+                const bg = getComputedStyle(headerBtn).backgroundColor;
+                const hasCyan = bg.includes('0, 255, 255') || bg.includes('0,255,255');
+                report.push({
+                    test: 'Header Active Button Background',
+                    pass: !hasCyan,
+                    actual: bg,
+                    expected: 'Should use theme color (not cyan rgb(0,255,255))'
+                });
+            }
+            
+            // TEST 2: Send button
+            const sendBtn = doc.querySelector('.send-btn');
+            if (sendBtn) {
+                const bg = getComputedStyle(sendBtn).background;
+                const hasCyan = bg.includes('#00ffff') || bg.includes('0, 255, 255');
+                report.push({
+                    test: 'Send Button Background',
+                    pass: !hasCyan,
+                    actual: bg.substring(0, 100),
+                    expected: 'Should use theme variables'
+                });
+            }
+            
+            // TEST 3: Check for lightning bolts
+            const lightningBolts = Array.from(doc.querySelectorAll('*')).filter(el => 
+                el.textContent.includes('⚡')
+            );
+            report.push({
+                test: 'Lightning Bolt Count',
+                pass: lightningBolts.length <= 1,
+                actual: `Found ${lightningBolts.length} lightning bolts`,
+                expected: 'Should have only 1 (in header AUTO button)'
+            });
+            
+            // TEST 4: Header icon size
+            const headerIcon = doc.querySelector('.header-agent-selector .agent-icon');
+            if (headerIcon) {
+                const fontSize = getComputedStyle(headerIcon).fontSize;
+                const size = parseFloat(fontSize);
+                report.push({
+                    test: 'Header Icon Size',
+                    pass: size <= 20,
+                    actual: fontSize,
+                    expected: '16px or smaller'
+                });
+            }
+            
+            // TEST 5: CSS file loading
+            const cssFiles = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'))
+                .map(link => link.href);
+            report.push({
+                test: 'CSS Files Loaded',
+                pass: cssFiles.length > 0,
+                actual: `${cssFiles.length} files: ${cssFiles.map(f => f.split('/').pop()).join(', ')}`,
+                expected: 'main.css, multi_agent.css should be loaded'
+            });
+            
+            // Display results
+            report.forEach(item => {
+                const div = document.createElement('div');
+                div.className = item.pass ? 'issue pass' : 'issue';
+                div.innerHTML = `
+                    <strong>${item.pass ? '✓' : '✗'} ${item.test}</strong><br>
+                    Expected: ${item.expected}<br>
+                    Actual: ${item.actual}
+                `;
+                results.appendChild(div);
+            });
+            
+            // Summary
+            const passed = report.filter(r => r.pass).length;
+            const total = report.length;
+            const summary = document.createElement('h2');
+            summary.textContent = `Results: ${passed}/${total} tests passed`;
+            summary.style.color = passed === total ? '#0f0' : '#f00';
+            results.insertBefore(summary, results.firstChild);
+        };
+    </script>
+</body>
+</html>
