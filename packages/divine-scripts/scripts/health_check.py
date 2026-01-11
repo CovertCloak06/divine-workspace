@@ -104,7 +104,7 @@ class HealthChecker:
         # Check llama.cpp
         print("Checking llama.cpp...")
         self.check_port("llama.cpp Port 8000", 8000)
-        self.check_http_endpoint("llama.cpp Health", "http://localhost:8000/health")
+        self.check_http_endpoint("llama.cpp API", "http://localhost:8000/v1/models")
 
         # Check Ollama
         print("Checking Ollama...")
