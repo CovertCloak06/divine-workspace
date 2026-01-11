@@ -14,7 +14,7 @@ import time
 multi_agent_bp = Blueprint("multi_agent", __name__)
 
 
-@multi_agent_bp.route("/api/multi-agent/chat", methods=["POST"])
+@multi_agent_bp.route("/chat", methods=["POST"])
 def api_multi_agent_chat():
     """
     Multi-agent chat endpoint with intelligent routing and conversation memory.
@@ -118,7 +118,7 @@ def api_multi_agent_chat():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@multi_agent_bp.route("/api/multi-agent/chat/stream", methods=["POST"])
+@multi_agent_bp.route("/chat/stream", methods=["POST"])
 def api_multi_agent_chat_stream():
     """
     Multi-agent chat endpoint with Server-Sent Events (SSE) streaming.
@@ -243,7 +243,7 @@ def api_multi_agent_chat_stream():
     )
 
 
-@multi_agent_bp.route("/api/multi-agent/classify", methods=["POST"])
+@multi_agent_bp.route("/classify", methods=["POST"])
 def api_classify_task():
     """
     Classify a task without executing it.
@@ -310,7 +310,7 @@ def api_classify_task():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@multi_agent_bp.route("/api/multi-agent/agents", methods=["GET"])
+@multi_agent_bp.route("/agents", methods=["GET"])
 def api_list_agents():
     """
     Get list of available agents.
@@ -336,7 +336,7 @@ def api_list_agents():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@multi_agent_bp.route("/api/multi-agent/vote", methods=["POST"])
+@multi_agent_bp.route("/vote", methods=["POST"])
 def api_vote_on_decision():
     """
     Voting mechanism for complex decisions.
