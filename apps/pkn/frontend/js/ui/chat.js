@@ -3,8 +3,8 @@
  * Handles chat messaging and conversation management
  */
 
-import { showToast, escapeHtml } from './utils.js';
-import { loadChatsFromStorage, saveChatsToStorage, loadProjectsFromStorage, saveProjectsToStorage, loadSettings } from './storage.js';
+import { showToast, escapeHtml } from '../utils/utils.js';
+import { loadChatsFromStorage, saveChatsToStorage, loadProjectsFromStorage, saveProjectsToStorage, loadSettings } from '../utils/storage.js';
 
 // Global variables that need to be accessed/modified
 let currentChatId = null;

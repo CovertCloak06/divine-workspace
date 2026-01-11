@@ -4,14 +4,25 @@
  */
 
 // Core
-import './core/main.js';
+import { init } from './core/main.js';
 import './core/event-bus.js';
+
+// Expose init globally for inline scripts in HTML
+window.init = init;
 
 // UI Components
 import './ui/chat.js';
 import './ui/multi_agent_ui.js';
-import './ui/osint_ui.js';
-import './ui/plugins-ui.js';
+import { OSINTTools } from './ui/osint_ui.js';
+import { openPluginsManager, closePluginsManager, togglePlugin, openPluginSettings, renderPluginsList } from './ui/plugins-ui.js';
+
+// Expose OSINT and Plugins functions globally for HTML onclick handlers
+window.OSINTTools = OSINTTools;
+window.openPluginsManager = openPluginsManager;
+window.closePluginsManager = closePluginsManager;
+window.togglePlugin = togglePlugin;
+window.openPluginSettings = openPluginSettings;
+window.renderPluginsList = renderPluginsList;
 
 // Features
 import './features/files.js';

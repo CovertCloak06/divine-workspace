@@ -3,8 +3,8 @@
  * Handles AI model management and selection
  */
 
-import { showToast } from './utils.js';
-import { loadModelsFromStorage, saveModelsToStorage, loadSettings } from './storage.js';
+import { showToast } from '../utils/utils.js';
+import { loadModelsFromStorage, saveModelsToStorage, loadSettings } from '../utils/storage.js';
 
 // Default models configuration
 export const DEFAULT_MODELS = [

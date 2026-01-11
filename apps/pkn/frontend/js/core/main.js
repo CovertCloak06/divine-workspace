@@ -3,11 +3,11 @@
  * Ties together all modules and sets up event handlers
  */
 
-import { showToast, toggleSection, closeHistoryMenu, checkBackend } from './utils.js';
-import { sendMessage, addMessage } from './chat.js';
+import { showToast, toggleSection, closeHistoryMenu, checkBackend } from '../utils/utils.js';
+import { sendMessage, addMessage } from '../ui/chat.js';
 // renderHistory is in app.js (loaded globally)
-import { initModelSelector } from './models.js';
-import { renderProjects } from './projects.js';
+import { initModelSelector } from '../features/models.js';
+import { renderProjects } from '../features/projects.js';
 import {
     toggleSettings,
     saveTemperature,
@@ -19,7 +19,7 @@ import {
     saveShowTimestamps,
     savePlaceholder,
     saveApiKey
-} from './settings.js';
+} from '../features/settings.js';
 // Files panel functions are in app.js (loaded globally)
 // import { showFilesPanel, hideFilesPanel, initFilesPanelRefs } from './files.js';
 import {
@@ -30,8 +30,8 @@ import {
     openImagesGallery,
     closeImagesGallery,
     clearGeneratedImages
-} from './images.js';
-import { pluginManager } from './plugin-manager.js';
+} from '../features/images.js';
+import { pluginManager } from '../features/plugin-manager.js';
 import eventBus from './event-bus.js';
 import {
     openPluginsManager,
@@ -39,7 +39,7 @@ import {
     togglePlugin,
     openPluginSettings,
     renderPluginsList
-} from './plugins-ui.js';
+} from '../ui/plugins-ui.js';
 
 // Import plugins (classes only - manifests loaded dynamically for browser compatibility)
 import { WelcomeMessagePlugin } from '../plugins/welcome-message/plugin.js';
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 // Main Initialization Function
 // ============================================
-async function init() {
+export async function init() {
     if (init._ran) return; // idempotent guard
     init._ran = true;
 

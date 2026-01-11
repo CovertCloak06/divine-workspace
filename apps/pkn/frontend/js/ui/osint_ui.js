@@ -7,7 +7,7 @@
  * Users must comply with applicable laws and regulations.
  */
 
-const OSINTTools = {
+export const OSINTTools = {
     baseUrl: window.location.origin,
     currentPanel: null,
 
@@ -84,6 +84,13 @@ const OSINTTools = {
                     <div class="osint-category">
                         <h4>📱 Phone</h4>
                         <button onclick="OSINTTools.showTool('phone')" class="osint-btn">Phone Lookup</button>
+                    </div>
+
+                    <!-- Tracking & Privacy -->
+                    <div class="osint-category">
+                        <h4>🔍 Tracking & Privacy</h4>
+                        <button onclick="OSINTTools.showTool('trackingpixels')" class="osint-btn">Tracking Pixels</button>
+                        <button onclick="OSINTTools.showTool('privacycheck')" class="osint-btn">Privacy Check</button>
                     </div>
                 </div>
 
@@ -201,6 +208,20 @@ const OSINTTools = {
                 title: 'Phone Number Lookup',
                 fields: [{name: 'phone', label: 'Phone', placeholder: '+1-555-123-4567', type: 'tel'}],
                 endpoint: '/api/osint/phone-lookup'
+            },
+            'trackingpixels': {
+                title: 'Tracking Pixels Detector',
+                fields: [
+                    {name: 'url', label: 'URL or Email Content', placeholder: 'https://example.com or paste email HTML', type: 'text'}
+                ],
+                endpoint: '/api/osint/tracking-pixels'
+            },
+            'privacycheck': {
+                title: 'Privacy & Leak Check',
+                fields: [
+                    {name: 'email', label: 'Email Address', placeholder: 'your@email.com', type: 'email'}
+                ],
+                endpoint: '/api/osint/privacy-check'
             }
         };
 

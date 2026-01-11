@@ -4,7 +4,7 @@
  * Provides standard lifecycle methods and core API access
  */
 
-import eventBus from './event-bus.js';
+import eventBus from '../core/event-bus.js';
 
 export class PluginBase {
     constructor(manifest) {

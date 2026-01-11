@@ -3,8 +3,8 @@
  * Handles project management and project-related operations
  */
 
-import { showToast, escapeHtml } from './utils.js';
-import { loadProjectsFromStorage, saveProjectsToStorage } from './storage.js';
+import { showToast, escapeHtml } from '../utils/utils.js';
+import { loadProjectsFromStorage, saveProjectsToStorage } from '../utils/storage.js';
 
 // Global state
 let currentProjectId = null;

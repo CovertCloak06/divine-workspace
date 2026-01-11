@@ -3,8 +3,8 @@
  * Handles the Plugins Manager modal interface
  */
 
-import { pluginManager } from './plugin-manager.js';
-import { showToast } from './utils.js';
+import { pluginManager } from '../features/plugin-manager.js';
+import { showToast } from '../utils/utils.js';
 
 /**
  * Open Plugins Manager modal

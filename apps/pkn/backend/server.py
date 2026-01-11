@@ -18,8 +18,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Enable CORS for local development
 
-# Static file serving (serves pkn.html, css, js, img)
-ROOT = Path(__file__).parent.parent  # Points to apps/pkn/
+# Static file serving (serves pkn.html, css, js, img from frontend/)
+ROOT = Path(__file__).parent.parent / "frontend"  # Points to apps/pkn/frontend/
 
 
 @app.route("/")
@@ -44,6 +44,17 @@ def static_files(filename):
         )
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+
+        # Set proper MIME types for JavaScript modules
+        if filename.endswith('.js'):
+            response.headers["Content-Type"] = "text/javascript; charset=utf-8"
+        elif filename.endswith('.mjs'):
+            response.headers["Content-Type"] = "text/javascript; charset=utf-8"
+        elif filename.endswith('.css'):
+            response.headers["Content-Type"] = "text/css; charset=utf-8"
+        elif filename.endswith('.json'):
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
+
         return response
     return {"error": "Not found"}, 404
 

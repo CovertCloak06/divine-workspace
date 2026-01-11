@@ -474,14 +474,15 @@ function sendMessage() {
     currentAbortController = new AbortController();
     const timeoutId = setTimeout(() => currentAbortController.abort(), 120000);
 
-    // Always use multi-agent endpoint
+    // Always use multi-agent endpoint (backend preference passed to Flask server)
     fetch('/api/multi-agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             message: input,
             mode: agentType,
-            history: messages
+            history: messages,
+            backend: window.AI_BACKEND || 'local'  // 'local' (llama.cpp) or 'cloud' (OpenAI)
         }),
         signal: currentAbortController.signal
     })
@@ -970,6 +971,52 @@ function openAIModelsManager() {
 function closeAIModelsManager() {
     const modal = document.getElementById('aiModelsModal');
     if (modal) modal.classList.add('hidden');
+}
+
+function switchBackend(useCloud) {  // Toggle between local llama.cpp and cloud OpenAI | ref:pkn.html AI Models modal toggle
+    // Save preference to localStorage
+    localStorage.setItem('ai-backend', useCloud ? 'cloud' : 'local');
+
+    // Update UI status indicators
+    const icon = document.getElementById('backendStatusIcon');
+    const text = document.getElementById('backendStatusText');
+    const desc = document.getElementById('backendStatusDesc');
+
+    if (useCloud) {
+        icon.textContent = '☁️';
+        text.textContent = 'Cloud API';
+        desc.textContent = 'Fast • Requires API Key • Online';
+    } else {
+        icon.textContent = '🏠';
+        text.textContent = 'Local Model';
+        desc.textContent = 'Private • Offline • Free';
+    }
+
+    // Store backend type globally for chat requests
+    window.AI_BACKEND = useCloud ? 'cloud' : 'local';
+
+    console.log(`[Backend] Switched to: ${useCloud ? 'Cloud (OpenAI)' : 'Local (llama.cpp)'}`);
+
+    // Show notification toast
+    const toast = document.createElement('div');
+    toast.textContent = `AI Backend: ${useCloud ? 'Cloud ☁️' : 'Local 🏠'}`;
+    toast.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--theme-primary);color:#000;padding:12px 24px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 12px rgba(0,255,255,0.3);';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function loadBackendPreference() {  // Load saved backend preference on page load | Called during init
+    const savedBackend = localStorage.getItem('ai-backend') || 'local';
+    const toggle = document.getElementById('backendToggle');
+
+    if (toggle) {
+        toggle.checked = (savedBackend === 'cloud');
+        // Trigger the switch to update UI
+        switchBackend(savedBackend === 'cloud');
+    }
+
+    // Set global
+    window.AI_BACKEND = savedBackend;
 }
 
 function openCodeAcademy() {  // Open DVN Code Academy in new tab | ref:pkn.html sidebar onclick
@@ -4054,6 +4101,9 @@ function init() {
 
 	// Load saved theme mode
 	loadThemeMode();
+
+	// Load saved backend preference (Local llama.cpp vs Cloud OpenAI)
+	loadBackendPreference();
 
 	// Initialize file upload handling
 	initFileUpload();

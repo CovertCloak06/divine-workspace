@@ -4,7 +4,7 @@
  * Manages plugin state and dependencies
  */
 
-import eventBus from './event-bus.js';
+import eventBus from '../core/event-bus.js';
 
 class PluginManager {
     constructor() {

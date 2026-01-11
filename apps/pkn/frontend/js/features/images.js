@@ -3,7 +3,7 @@
  * Handles image generation and image gallery management
  */
 
-import { showToast, escapeHtml } from './utils.js';
+import { showToast, escapeHtml } from '../utils/utils.js';
 
 // Storage key for images
 const IMAGES_STORAGE_KEY = 'parakleon_images_v1';

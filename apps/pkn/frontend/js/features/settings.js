@@ -3,8 +3,8 @@
  * Handles application settings and appearance customization
  */
 
-import { showToast } from './utils.js';
-import { loadSettings, saveSettings, DEFAULT_SETTINGS, loadChatsFromStorage, saveChatsToStorage, loadProjectsFromStorage, saveProjectsToStorage } from './storage.js';
+import { showToast } from '../utils/utils.js';
+import { loadSettings, saveSettings, DEFAULT_SETTINGS, loadChatsFromStorage, saveChatsToStorage, loadProjectsFromStorage, saveProjectsToStorage } from '../utils/storage.js';
 
 /**
  * Toggle settings overlay visibility
