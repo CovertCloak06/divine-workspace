@@ -154,6 +154,6 @@ def find_missing_selectors(project_dir):
 if __name__ == "__main__":
     import sys
 
-    project_dir = sys.argv[1] if len(sys.argv) > 1 else "/home/gh0st/pkn"
+    project_dir = sys.argv[1] if len(sys.argv) > 1 else "/home/gh0st/dvn/divine-workspace/apps/pkn"
     success = find_missing_selectors(project_dir)
     sys.exit(0 if success else 1)

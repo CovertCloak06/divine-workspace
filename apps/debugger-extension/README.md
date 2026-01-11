@@ -210,15 +210,15 @@ The debugger-extension also includes **Python analysis scripts** to catch common
 
 **Run all checks:**
 ```bash
-cd /home/gh0st/pkn/debugger-extension
-python3 run_all_checks.py /home/gh0st/pkn
+cd /home/gh0st/dvn/divine-workspace/apps/pkn/debugger-extension
+python3 run_all_checks.py /home/gh0st/dvn/divine-workspace/apps/pkn
 ```
 
 **Run individual checks:**
 ```bash
-python3 analyze_duplicate_functions.py /home/gh0st/pkn
-python3 analyze_scope_mismatches.py /home/gh0st/pkn
-python3 analyze_missing_selectors.py /home/gh0st/pkn
+python3 analyze_duplicate_functions.py /home/gh0st/dvn/divine-workspace/apps/pkn
+python3 analyze_scope_mismatches.py /home/gh0st/dvn/divine-workspace/apps/pkn
+python3 analyze_missing_selectors.py /home/gh0st/dvn/divine-workspace/apps/pkn
 ```
 
 ### Example Output
@@ -248,7 +248,7 @@ Add to `.git/hooks/pre-commit` for automatic checking:
 ```bash
 #!/bin/bash
 cd debugger-extension
-python3 run_all_checks.py /home/gh0st/pkn || exit 1
+python3 run_all_checks.py /home/gh0st/dvn/divine-workspace/apps/pkn || exit 1
 ```
 
 ## 📄 License

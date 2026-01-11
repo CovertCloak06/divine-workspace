@@ -7,7 +7,7 @@ Usage:
     python3 verify_before_fix.py <function_name> [project_dir]
 
 Example:
-    python3 verify_before_fix.py closeHistoryMenu /home/gh0st/pkn
+    python3 verify_before_fix.py closeHistoryMenu /home/gh0st/dvn/divine-workspace/apps/pkn
 """
 
 import re
@@ -154,10 +154,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python3 verify_before_fix.py <function_name> [project_dir]")
         print("\nExample:")
-        print("  python3 verify_before_fix.py closeHistoryMenu /home/gh0st/pkn")
+        print("  python3 verify_before_fix.py closeHistoryMenu /home/gh0st/dvn/divine-workspace/apps/pkn")
         sys.exit(1)
 
     function_name = sys.argv[1]
-    project_dir = sys.argv[2] if len(sys.argv) > 2 else "/home/gh0st/pkn"
+    project_dir = sys.argv[2] if len(sys.argv) > 2 else "/home/gh0st/dvn/divine-workspace/apps/pkn"
 
     find_function_calls(function_name, project_dir)

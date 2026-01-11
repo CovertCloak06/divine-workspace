@@ -6,7 +6,7 @@ Catches common bugs before they cause issues in production.
 Usage:
     python3 run_all_checks.py [project_dir]
 
-Default project_dir: /home/gh0st/pkn
+Default project_dir: /home/gh0st/dvn/divine-workspace/apps/pkn
 """
 
 import sys
@@ -36,7 +36,7 @@ def run_check(script_name, project_dir):
 
 def main():
     """Run all analysis checks on PKN codebase | ref:analyze_*.py"""
-    project_dir = sys.argv[1] if len(sys.argv) > 1 else "/home/gh0st/pkn"
+    project_dir = sys.argv[1] if len(sys.argv) > 1 else "/home/gh0st/dvn/divine-workspace/apps/pkn"
 
     print("=" * 70)
     print("🛠️  PKN CODE ANALYSIS")

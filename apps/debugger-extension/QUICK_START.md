@@ -9,13 +9,13 @@ chrome://extensions/
 
 # Click "Developer mode" toggle (top right)
 # Click "Load unpacked"
-# Select folder: /home/gh0st/pkn/debugger-extension
+# Select folder: /home/gh0st/dvn/divine-workspace/apps/pkn/debugger-extension
 ```
 
 ### 2. Open Your Project
 ```bash
 # Start PKN server
-cd /home/gh0st/pkn
+cd /home/gh0st/dvn/divine-workspace/apps/pkn
 ./pkn_control.sh start-all
 
 # Open in browser

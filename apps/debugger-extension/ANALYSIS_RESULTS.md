@@ -3,7 +3,7 @@
 ## Summary of Findings
 
 Analysis date: 2026-01-10
-Scripts run: `run_all_checks.py` on `/home/gh0st/pkn`
+Scripts run: `run_all_checks.py` on `/home/gh0st/dvn/divine-workspace/apps/pkn`
 
 ---
 
@@ -171,7 +171,7 @@ Before making changes, verify:
 
 1. **Check what's actually used**: Search codebase for function calls
    ```bash
-   grep -r "functionName(" /home/gh0st/pkn/
+   grep -r "functionName(" /home/gh0st/dvn/divine-workspace/apps/pkn/
    ```
 
 2. **Test in browser**: Make sure function is called and works
@@ -182,7 +182,7 @@ Before making changes, verify:
 
 3. **Check imports**: See which version modules import
    ```bash
-   grep -r "import.*functionName" /home/gh0st/pkn/
+   grep -r "import.*functionName" /home/gh0st/dvn/divine-workspace/apps/pkn/
    ```
 
 4. **Review git history**: See why duplicate was created
