@@ -9,10 +9,14 @@ import sys
 from pathlib import Path
 from flask import Flask, send_from_directory
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 # Add backend to path for imports
 app_root = Path(__file__).parent.parent
 sys.path.insert(0, str(app_root))
+
+# Load environment variables from .env file
+load_dotenv(app_root / ".env")
 
 from backend.routes import register_routes
 
