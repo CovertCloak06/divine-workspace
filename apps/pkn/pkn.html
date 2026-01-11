@@ -970,34 +970,37 @@
 </button>
 
 <!-- Capacitor Backend Integration (auto-start Termux) -->
-<script src="js/capacitor-backend.js"></script>
+
 
 <script src="tools.js"></script>
+<!-- PKN Frontend Modules -->
+<script type="module" src="frontend/js/pkn.js"></script>
+<script src="frontend/js/core/app.js"></script>
 <!-- Configuration files -->
 <script src="config.js"></script>
 <!-- Load local config override if it exists (gitignored, contains your API keys) -->
 <script src="config.local.js" onerror="console.log('No config.local.js found - using defaults')"></script>
 
 <!-- Code autocomplete widget -->
-<script src="js/autocomplete.js"></script>
+
 
 <!-- Multi-agent UI -->
 <link rel="stylesheet" href="css/multi_agent.css">
-<script src="js/agent_quality.js"></script>
-<script src="js/multi_agent_ui.js?v=20260110-fix"></script>
+
+
 
 <!-- Main application -->
 <!-- Core UI and functionality -->
-<script src="app.js?v=1768062996216316461"></script>
+
 
 <!-- Plugin system (loads AFTER app.js) -->
-<script type="module" src="js/main.js?v=settings-works"></script>
+
 
 <!-- Enhanced File Explorer -->
-<script src="js/files.js?v=20260110"></script>
+
 
 <!-- OSINT Tools UI -->
-<script src="js/osint_ui.js"></script>
+
 
 <script>
 // Force init on page load (see app.js: init)
