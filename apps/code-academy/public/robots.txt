@@ -1,0 +1,8 @@
+# Divine Node Code Academy - Robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://divinenode.dev/sitemap.xml

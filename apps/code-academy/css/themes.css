@@ -1,0 +1,435 @@
+/**
+ * DVN Code Academy - Theme System
+ * Light and Dark theme with CSS variables
+ */
+
+/* ========================================
+   ROOT - Default (Dark Theme)
+   ======================================== */
+
+:root {
+  /* Primary Colors */
+  --primary-color: #00ffff;
+  --primary-hover: #00e6e6;
+  --primary-rgb: 0, 255, 255;
+
+  /* Background Colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-overlay: rgba(0, 0, 0, 0.9);
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-inverse: #000000;
+
+  /* Border Colors */
+  --border-primary: rgba(0, 255, 255, 0.3);
+  --border-secondary: rgba(255, 255, 255, 0.2);
+  --border-muted: rgba(255, 255, 255, 0.1);
+
+  /* Accent Colors */
+  --accent-cyan: #00ffff;
+  --accent-purple: #9b59b6;
+  --accent-green: #4caf50;
+  --accent-red: #f44336;
+  --accent-yellow: #ffc107;
+
+  /* Component Colors */
+  --code-bg: #0a0a0a;
+  --code-text: #ffffff;
+  --input-bg: rgba(255, 255, 255, 0.1);
+  --input-border: rgba(0, 255, 255, 0.3);
+  --input-focus: rgba(0, 255, 255, 0.5);
+
+  /* Shadow & Glow */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glow-primary: 0 0 20px rgba(0, 255, 255, 0.5);
+  --glow-hover: 0 0 30px rgba(0, 255, 255, 0.8);
+}
+
+/* ========================================
+   LIGHT THEME - Professional & Muted
+   ======================================== */
+
+[data-theme='light'] {
+  /* Primary Colors - Muted Blue instead of Cyan */
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-rgb: 37, 99, 235;
+
+  /* Background Colors - Clean whites and grays */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+
+  /* Text Colors - Dark grays for readability */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Border Colors - Soft grays */
+  --border-primary: #cbd5e1;
+  --border-secondary: #e2e8f0;
+  --border-muted: #f1f5f9;
+
+  /* Accent Colors - Softer, professional tones */
+  --accent-cyan: #0ea5e9;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+
+  /* Component Colors */
+  --code-bg: #f8fafc;
+  --code-text: #0f172a;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-focus: #2563eb;
+
+  /* Shadow & Glow - Subtle for light theme */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --glow-primary: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  --glow-hover: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+/* ========================================
+   THEME TOGGLE BUTTON
+   ======================================== */
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.theme-toggle-active {
+  animation: togglePulse 0.3s ease;
+}
+
+@keyframes togglePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+}
+
+.theme-toggle-text {
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .theme-toggle-text {
+    display: none; /* Show only emoji on mobile */
+  }
+
+  .theme-toggle-btn {
+    padding: 8px 12px;
+    min-width: 44px; /* Touch target size */
+  }
+}
+
+/* ========================================
+   APPLY THEME VARIABLES TO COMPONENTS
+   ======================================== */
+
+/* Body & Base */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Navbar */
+.navbar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.nav-link {
+  color: var(--text-secondary);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--primary-color);
+}
+
+/* Hero Section */
+.hero {
+  background: var(--bg-secondary);
+}
+
+.hero-title {
+  color: var(--text-primary);
+}
+
+.hero-highlight {
+  color: var(--primary-color);
+}
+
+.hero-subtitle {
+  color: var(--text-secondary);
+}
+
+/* Cards & Boxes */
+.path-card,
+.welcome-box,
+.feature-box {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.path-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--glow-primary);
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  box-shadow: var(--glow-hover);
+}
+
+.btn-secondary {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+}
+
+/* Code Editor */
+.code-editor,
+.code-editor-textarea,
+.challenge-editor-area {
+  background: var(--code-bg);
+  color: var(--code-text);
+  border: 2px solid var(--border-primary);
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--input-focus);
+  box-shadow: var(--glow-primary);
+}
+
+/* Modals */
+.tutorial-modal .modal-content,
+.modal-content {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-overlay {
+  background: var(--bg-overlay);
+}
+
+/* Preview Areas */
+.adjuster-preview,
+.guided-preview,
+.preview-frame {
+  border: 2px solid var(--border-primary);
+}
+
+/* Feedback Messages */
+.feedback-success {
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+.feedback-error {
+  background: rgba(244, 67, 54, 0.1);
+  border-left: 4px solid var(--accent-red);
+  color: var(--accent-red);
+}
+
+.feedback-warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-left: 4px solid var(--accent-yellow);
+  color: var(--accent-yellow);
+}
+
+[data-theme='light'] .feedback-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .feedback-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .feedback-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--text-primary);
+}
+
+/* Sliders */
+.control-slider {
+  background: var(--input-bg);
+}
+
+.control-slider::-webkit-slider-thumb {
+  background: var(--primary-color);
+  box-shadow: var(--glow-primary);
+}
+
+.control-slider::-moz-range-thumb {
+  background: var(--primary-color);
+}
+
+/* Code Blanks (Guided Editor) */
+.code-blank {
+  background: var(--input-bg);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.code-blank:focus {
+  box-shadow: var(--glow-primary);
+}
+
+[data-theme='light'] .code-blank {
+  background: #ffffff;
+  color: var(--primary-color);
+}
+
+/* Line Numbers */
+.line-number {
+  color: var(--text-muted);
+}
+
+/* Footer */
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}
+
+/* Scrollbars (Dark Theme only) */
+[data-theme='dark'] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 5px;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* Light Theme Scrollbars - Default browser style is fine */
+
+/* ========================================
+   SMOOTH TRANSITIONS
+   ======================================== */
+
+* {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Disable transitions for layout properties */
+*:not(.theme-toggle-btn) {
+  transition-property: background-color, color, border-color, box-shadow, opacity;
+}
+
+/* ========================================
+   ACCESSIBILITY - High Contrast Mode
+   ======================================== */
+
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: rgba(0, 255, 255, 0.6);
+  }
+
+  [data-theme='light'] {
+    --border-primary: #64748b;
+    --text-muted: #64748b;
+  }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  [data-theme='dark'] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --primary-color: #2563eb;
+  }
+
+  .theme-toggle-btn,
+  .navbar,
+  .footer {
+    display: none;
+  }
+}

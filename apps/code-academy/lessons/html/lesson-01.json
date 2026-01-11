@@ -1,0 +1,95 @@
+{
+  "id": "html-01",
+  "title": "Your First HTML Page",
+  "description": "Learn the basics of HTML and create your first web page element",
+  "difficulty": "beginner",
+  "estimatedTime": "10 minutes",
+  "steps": [
+    {
+      "title": "Step 1: What is HTML?",
+      "content": "HTML (HyperText Markup Language) is the language that builds every website you visit. It tells your web browser what to display on the screen.\n\nHTML works by using **tags** - special codes that label different parts of your page. Every tag you write tells the browser: \"this is a title\" or \"this is a paragraph\" or \"this is a link.\"",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);padding:12px;border-radius:6px;border:1px solid rgba(0,255,255,0.3);font-size:13px;\"><div style=\"margin-bottom:8px;color:#888;\">🌐 What you type (HTML code):</div><div style=\"font-family:monospace;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;margin-bottom:8px;\">&lt;h1&gt;Welcome to My Site&lt;/h1&gt;</div><div style=\"margin-bottom:8px;color:#888;\">👁️ What people see (on the webpage):</div><div style=\"background:#fff;color:#000;padding:8px;border-radius:4px;\"><h1 style=\"margin:0;font-size:18px;\">Welcome to My Site</h1></div></div>",
+      "task": {
+        "type": "quiz",
+        "instruction": "Select the correct answer below:",
+        "question": "What does HTML stand for?",
+        "options": [
+          { "text": "HyperText Markup Language", "correct": true },
+          { "text": "HighTech Modern Language", "correct": false },
+          { "text": "Home Tool Markup Language", "correct": false },
+          { "text": "Hyper Transfer Main Language", "correct": false }
+        ],
+        "hint": "Think about what the 'HT' in HTML might represent. It's about linking documents together on the web!"
+      }
+    },
+    {
+      "title": "Step 2: Opening and Closing Tags",
+      "content": "Every HTML tag has TWO parts that work together:\n\n**Opening Tag** = `<h1>` - This STARTS the element\n- Has angle brackets: `< >`\n- Contains the tag name: `h1`\n- NO forward slash\n\n**Closing Tag** = `</h1>` - This ENDS the element  \n- Has angle brackets: `< >`\n- Contains a forward slash: `/`\n- Same tag name: `h1`\n\nThe browser reads everything between the opening and closing tags as belonging to that element. The `/` tells the browser \"this element is finished now.\"",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);padding:12px;border-radius:6px;border:1px solid rgba(0,255,255,0.3);font-size:12px;\"><div style=\"text-align:center;margin-bottom:12px;font-family:monospace;font-size:14px;\"><span style=\"color:#4ade80;font-weight:bold;\">&lt;h1&gt;</span><span style=\"color:#fff;margin:0 8px;\">My Website Title</span><span style=\"color:#f87171;font-weight:bold;\">&lt;/h1&gt;</span></div><div style=\"display:flex;justify-content:space-around;margin-top:8px;\"><div style=\"text-align:center;\"><div style=\"color:#4ade80;font-size:20px;\">↑</div><div style=\"color:#4ade80;font-weight:600;\">Opening Tag</div><div style=\"color:#888;font-size:11px;\">Starts the heading</div><div style=\"color:#888;font-size:11px;\">No forward slash</div></div><div style=\"text-align:center;\"><div style=\"color:#fff;font-size:20px;\">↑</div><div style=\"color:#fff;font-weight:600;\">Content</div><div style=\"color:#888;font-size:11px;\">What visitors see</div></div><div style=\"text-align:center;\"><div style=\"color:#f87171;font-size:20px;\">↑</div><div style=\"color:#f87171;font-weight:600;\">Closing Tag</div><div style=\"color:#888;font-size:11px;\">Ends the heading</div><div style=\"color:#888;font-size:11px;\">Has / forward slash</div></div></div></div>",
+      "task": {
+        "type": "quiz",
+        "instruction": "Test your understanding:",
+        "question": "What is the difference between <h1> and </h1>?",
+        "options": [
+          { "text": "</h1> has a forward slash (/) which makes it a closing tag", "correct": true },
+          { "text": "They are exactly the same", "correct": false },
+          { "text": "</h1> is for paragraphs, <h1> is for headings", "correct": false },
+          { "text": "<h1> is newer, </h1> is outdated", "correct": false }
+        ],
+        "hint": "Look for the forward slash (/) - that's what makes a tag a closing tag!"
+      }
+    },
+    {
+      "title": "Step 3: Where Do Headers Go in Real HTML?",
+      "content": "Headers are titles on your webpage. Think of a webpage like a document with sections - the **h1 tag goes at the very top** as the main title.\n\n**HTML documents have a structure:**\n1. `<html>` = The container for the entire page\n2. `<body>` = The visible part people see\n3. `<h1>` = The main title (goes INSIDE the body)\n4. `<p>` = Paragraphs (also go inside the body)\n\nYour h1 tag lives inside the body tag. The body tag contains everything users see on the screen.",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);border:2px solid rgba(0,255,255,0.3);border-radius:8px;padding:12px;font-size:12px;\"><div style=\"color:#888;margin-bottom:8px;\">📄 Complete HTML Document Structure:</div><div style=\"font-family:monospace;line-height:1.8;position:relative;\"><div style=\"color:#666;\">&lt;html&gt; <span style=\"color:#888;\">← Starts the webpage</span></div><div style=\"color:#666;padding-left:15px;\">&lt;body&gt; <span style=\"color:#888;\">← Visible content area</span></div><div style=\"padding-left:30px;border-left:3px solid #4ade80;margin-left:15px;padding-left:15px;\"><div style=\"color:#4ade80;font-weight:bold;margin-bottom:4px;\">← THIS IS WHERE h1 GOES</div><div style=\"color:#4ade80;\">&lt;h1&gt;My Page Title&lt;/h1&gt;</div></div><div style=\"color:#888;padding-left:30px;margin-top:6px;\">&lt;p&gt;This is a paragraph&lt;/p&gt;</div><div style=\"color:#aaa;padding-left:30px;\">&lt;h2&gt;Section Title&lt;/h2&gt;</div><div style=\"color:#888;padding-left:30px;\">&lt;p&gt;Another paragraph&lt;/p&gt;</div><div style=\"color:#666;padding-left:15px;margin-top:6px;\">&lt;/body&gt; <span style=\"color:#888;\">← Ends visible area</span></div><div style=\"color:#666;\">&lt;/html&gt; <span style=\"color:#888;\">← Ends webpage</span></div></div><div style=\"margin-top:10px;padding:8px;background:rgba(74,222,128,0.1);border-left:3px solid #4ade80;color:#888;font-size:11px;\">💡 The h1 tag is the FIRST thing inside &lt;body&gt; - it's your page title that people see at the top!</div></div>",
+      "task": {
+        "type": "quiz",
+        "instruction": "Test your understanding:",
+        "question": "Where does the <h1> tag belong in an HTML document?",
+        "options": [
+          { "text": "Inside the <body> tag, usually at the top", "correct": true },
+          { "text": "Outside the <html> tag", "correct": false },
+          { "text": "Before the <body> tag", "correct": false },
+          { "text": "At the very end of the document", "correct": false }
+        ],
+        "hint": "Remember: <h1> goes inside <body>, which is the visible part of your webpage!"
+      }
+    },
+    {
+      "title": "Step 4: Write Your First Tag",
+      "content": "Time to write code! We'll create an h1 tag with your own text.\n\n**Remember the pattern:**  \nOpening tag + Content + Closing tag  \n`<h1>` + Your text + `</h1>`",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);padding:12px;border-radius:8px;border:1px solid rgba(0,255,255,0.3);font-size:14px;\"><div style=\"color:#888;margin-bottom:8px;\">✏️ You'll type this pattern:</div><div style=\"font-family:monospace;line-height:1.8;\"><span style=\"color:#ff6b6b;\">&lt;h1&gt;</span><span style=\"color:#ffd700;\">My First Page</span><span style=\"color:#ff6b6b;\">&lt;/h1&gt;</span></div></div>",
+      "task": {
+        "type": "code",
+        "instruction": "In the code editor below, type the text \"My First Page\" between the h1 tags:",
+        "starter": "<h1></h1>",
+        "solution": "<h1>My First Page</h1>",
+        "hint": "Put your text between <h1> and </h1>. The cursor should be right in the middle - just type!",
+        "validate": "(code) => code.includes('<h1>') && code.includes('</h1>') && code.includes('My First Page')"
+      }
+    },
+    {
+      "title": "Step 5: Add a Paragraph",
+      "content": "Great job! Now let's add a paragraph. Paragraphs use the **<p>** tag (p = paragraph).\n\nParagraphs add space around text automatically, making your page easier to read.",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);padding:12px;border-radius:8px;border:1px solid rgba(0,255,255,0.3);font-size:13px;\"><div style=\"font-family:monospace;line-height:1.6;\"><span style=\"color:#00ffff;\">&lt;h1&gt;My First Page&lt;/h1&gt;</span> <span style=\"color:#666;\">← Your heading</span><br><span style=\"color:#888;\">&lt;p&gt;Welcome to HTML!&lt;/p&gt;</span> <span style=\"color:#666;\">← New paragraph</span></div></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Add a paragraph with the text \"Welcome to HTML!\" below your heading:",
+        "starter": "<h1>My First Page</h1>\n<p></p>",
+        "solution": "<h1>My First Page</h1>\n<p>Welcome to HTML!</p>",
+        "hint": "Type between the <p> and </p> tags. Don't forget the forward slash in the closing tag!",
+        "validate": "(code) => code.includes('<p>') && code.includes('</p>') && code.includes('Welcome to HTML!')"
+      }
+    },
+    {
+      "title": "Step 6: See Your Result",
+      "content": "🎉 Excellent work! You just created your first HTML elements!\n\nYou now know:\n- What tags are and why we use them\n- How to write opening and closing tags\n- The difference between h1 (heading) and p (paragraph)\n\nNext lessons will teach you links, images, and building complete pages!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "Click \"Complete Lesson\" below to finish this lesson!"
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# Python dependencies for development automation
+pre-commit==4.5.1
+cookiecutter==2.6.0
+invoke==2.2.1

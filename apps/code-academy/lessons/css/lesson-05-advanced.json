@@ -1,0 +1,121 @@
+{
+  "id": "css-05-advanced",
+  "title": "Build a Cyberpunk Card (Advanced)",
+  "description": "Build a complete cyberpunk-styled card component from scratch",
+  "difficulty": "advanced",
+  "tier": 3,
+  "estimatedTime": "20 minutes",
+  "steps": [
+    {
+      "title": "Step 1: The Challenge",
+      "content": "**Your Mission**: Build a cyberpunk-styled card component that matches the design shown.\n\n**Requirements**:\n- Dark background (#0a0a0a)\n- Cyan accent color (#00ffff)\n- Glowing border effect\n- Flexbox for layout\n- Hover effects\n\nYou'll write all the CSS yourself. Use the preview to check your work!",
+      "visual": "<div class=\"code-demo\"><div style=\"background:#0a0a0a; border:2px solid #00ffff; box-shadow:0 0 20px rgba(0,255,255,0.5); padding:30px; border-radius:10px; max-width:300px;\"><h3 style=\"color:#00ffff; margin:0 0 15px 0; font-family:monospace;\">DIVINE NODE</h3><p style=\"color:#ffffff; margin:0 0 20px 0; font-size:14px; line-height:1.6;\">A self-hosted AI system with multi-agent architecture and cyberpunk aesthetic.</p><button style=\"background:linear-gradient(135deg, #00ffff, #00cccc); color:#000; border:none; padding:10px 25px; border-radius:5px; font-weight:bold; cursor:pointer;\">LEARN MORE</button></div></div>",
+      "task": {
+        "type": "challenge",
+        "instruction": "Build the card shown above. Start with the HTML structure provided.",
+        "htmlStarter": "<div class=\"cyber-card\">\n  <h3 class=\"card-title\">DIVINE NODE</h3>\n  <p class=\"card-text\">A self-hosted AI system with multi-agent architecture and cyberpunk aesthetic.</p>\n  <button class=\"card-btn\">LEARN MORE</button>\n</div>",
+        "cssStarter": "/* Write your CSS here */\n\n.cyber-card {\n  \n}\n\n.card-title {\n  \n}\n\n.card-text {\n  \n}\n\n.card-btn {\n  \n}",
+        "requirements": [
+          "cyber-card must have dark background (#0a0a0a)",
+          "cyber-card must have cyan border (#00ffff)",
+          "cyber-card should have box-shadow glow",
+          "card-title must be cyan (#00ffff)",
+          "card-btn should have cyan gradient background",
+          "Use padding and border-radius for spacing and rounded corners"
+        ],
+        "hints": [
+          "box-shadow: 0 0 20px rgba(0,255,255,0.5) creates a glow effect",
+          "linear-gradient(135deg, #00ffff, #00cccc) for the button",
+          "Use flexbox or appropriate spacing with margin/padding",
+          "border-radius: 10px for rounded corners"
+        ],
+        "solution": ".cyber-card {\n  background: #0a0a0a;\n  border: 2px solid #00ffff;\n  box-shadow: 0 0 20px rgba(0,255,255,0.5);\n  padding: 30px;\n  border-radius: 10px;\n  max-width: 300px;\n}\n\n.card-title {\n  color: #00ffff;\n  margin: 0 0 15px 0;\n  font-family: monospace;\n}\n\n.card-text {\n  color: #ffffff;\n  margin: 0 0 20px 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.card-btn {\n  background: linear-gradient(135deg, #00ffff, #00cccc);\n  color: #000;\n  border: none;\n  padding: 10px 25px;\n  border-radius: 5px;\n  font-weight: bold;\n  cursor: pointer;\n}",
+        "validate": "(html, css) => {\n  const checks = [\n    css.includes('#0a0a0a'),\n    css.includes('#00ffff'),\n    css.includes('box-shadow'),\n    css.includes('border-radius'),\n    css.includes('padding'),\n    (css.includes('linear-gradient') || css.includes('gradient'))\n  ];\n  return checks.filter(Boolean).length >= 5;\n}"
+      }
+    },
+    {
+      "title": "Step 2: Add Hover Effects",
+      "content": "Make your card interactive! Add hover effects that:\n- Increase the glow when hovering over the card\n- Make the button brighter on hover\n- Add a smooth transition\n\n**Hint**: Use `:hover` pseudo-class and `transition` property.",
+      "visual": "<div class=\"code-demo\"><div style=\"background:#0a0a0a; border:2px solid #00ffff; box-shadow:0 0 30px rgba(0,255,255,0.8); padding:30px; border-radius:10px; max-width:300px; transition:all 0.3s;\"><h3 style=\"color:#00ffff; margin:0 0 15px 0; font-family:monospace;\">DIVINE NODE</h3><p style=\"color:#ffffff; margin:0 0 20px 0; font-size:14px; line-height:1.6;\">Hover state with enhanced glow!</p><button style=\"background:linear-gradient(135deg, #00ffff, #00e6e6); color:#000; border:none; padding:10px 25px; border-radius:5px; font-weight:bold; transform:scale(1.05);\">LEARN MORE</button></div></div>",
+      "task": {
+        "type": "challenge",
+        "instruction": "Add hover effects to your card and button:",
+        "htmlStarter": "<!-- HTML from previous step -->",
+        "cssStarter": "/* Add hover states to your existing CSS */\n\n.cyber-card:hover {\n  \n}\n\n.card-btn:hover {\n  \n}\n\n/* Don't forget transitions! */",
+        "requirements": [
+          "cyber-card:hover should increase box-shadow glow",
+          "card-btn:hover should brighten or transform",
+          "Add transition for smooth animation",
+          "Transition duration should be around 0.3s"
+        ],
+        "hints": [
+          "box-shadow: 0 0 30px rgba(0,255,255,0.8) for stronger glow",
+          "transform: scale(1.05) makes button slightly bigger",
+          "transition: all 0.3s ease applies to all properties",
+          "Add transition to the base class, not the :hover"
+        ],
+        "solution": ".cyber-card {\n  /* ... previous styles ... */\n  transition: all 0.3s ease;\n}\n\n.cyber-card:hover {\n  box-shadow: 0 0 30px rgba(0,255,255,0.8);\n  transform: translateY(-5px);\n}\n\n.card-btn {\n  /* ... previous styles ... */\n  transition: all 0.3s ease;\n}\n\n.card-btn:hover {\n  background: linear-gradient(135deg, #00ffff, #00e6e6);\n  transform: scale(1.05);\n}",
+        "validate": "(html, css) => {\n  return css.includes(':hover') && css.includes('transition');\n}"
+      }
+    },
+    {
+      "title": "Step 3: Responsive Design",
+      "content": "Make your card responsive! It should:\n- Stack vertically on mobile (max-width: 768px)\n- Adjust padding for smaller screens\n- Scale font sizes appropriately\n\n**Use media queries** to handle different screen sizes.",
+      "visual": "<div class=\"code-example\"><code>@media (max-width: 768px) {<br>  .cyber-card {<br>    padding: 20px;<br>    max-width: 100%;<br>  }<br>}</code></div>",
+      "task": {
+        "type": "challenge",
+        "instruction": "Add responsive design with media queries:",
+        "htmlStarter": "<!-- HTML from previous step -->",
+        "cssStarter": "/* Add media query for mobile */\n\n@media (max-width: 768px) {\n  \n}",
+        "requirements": [
+          "Use @media (max-width: 768px) for mobile breakpoint",
+          "Reduce padding on mobile",
+          "Adjust card max-width to be responsive",
+          "Consider font-size adjustments"
+        ],
+        "hints": [
+          "max-width: 100% makes card fill container on mobile",
+          "padding: 20px is more comfortable on small screens",
+          "font-size: 0.9em or similar for card-text on mobile",
+          "You can adjust button padding too"
+        ],
+        "solution": "@media (max-width: 768px) {\n  .cyber-card {\n    padding: 20px;\n    max-width: 100%;\n    margin: 10px;\n  }\n  \n  .card-title {\n    font-size: 1.2em;\n  }\n  \n  .card-text {\n    font-size: 0.9em;\n  }\n  \n  .card-btn {\n    padding: 8px 20px;\n    width: 100%;\n  }\n}",
+        "validate": "(html, css) => {\n  return css.includes('@media') && css.includes('max-width');\n}"
+      }
+    },
+    {
+      "title": "Step 4: Final Polish",
+      "content": "Add final touches to make your card production-ready:\n- Font families (use system fonts or monospace)\n- Letter spacing for the title\n- Text shadow for extra depth\n- Smooth animations\n\nMake it **your own** - experiment and iterate!",
+      "visual": "preview",
+      "task": {
+        "type": "challenge",
+        "instruction": "Add finishing touches - be creative!",
+        "htmlStarter": "<!-- Your complete HTML -->",
+        "cssStarter": "/* Add final polish to your CSS */",
+        "requirements": [
+          "Use appropriate font-family choices",
+          "Consider text-shadow for depth",
+          "Add letter-spacing for titles",
+          "Ensure all elements are visually balanced"
+        ],
+        "hints": [
+          "font-family: 'Courier New', monospace for cyber look",
+          "letter-spacing: 2px for titles adds spacing",
+          "text-shadow: 0 0 10px rgba(0,255,255,0.5) for glow",
+          "Try adding subtle animations with @keyframes"
+        ],
+        "solution": "/* Example solution - yours can be different! */\n.card-title {\n  color: #00ffff;\n  margin: 0 0 15px 0;\n  font-family: 'Courier New', monospace;\n  letter-spacing: 2px;\n  text-shadow: 0 0 10px rgba(0,255,255,0.5);\n  font-size: 1.5em;\n}\n\n@keyframes pulse {\n  0%, 100% { box-shadow: 0 0 20px rgba(0,255,255,0.5); }\n  50% { box-shadow: 0 0 30px rgba(0,255,255,0.8); }\n}\n\n.cyber-card {\n  animation: pulse 3s infinite;\n}",
+        "validate": "(html, css) => true  // Accept all creative solutions"
+      }
+    },
+    {
+      "title": "Step 5: Mission Complete!",
+      "content": "🎉 **Congratulations!** You've built a complete cyberpunk card component from scratch!\n\n**What you mastered**:\n- ✅ Cyberpunk color schemes and glows\n- ✅ Flexbox layout\n- ✅ Hover effects and transitions\n- ✅ Responsive design with media queries\n- ✅ Advanced CSS techniques\n\nYou're now ready to build full web interfaces! Keep experimenting and creating.",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You've completed the advanced challenge! Download your code or continue to the next challenge."
+      }
+    }
+  ]
+}

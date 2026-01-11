@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://divinenode.dev/schemas/lesson.json",
+  "title": "Lesson Schema",
+  "description": "JSON schema for Divine Node Code Academy lesson files",
+  "type": "object",
+  "required": ["id", "title", "description", "difficulty", "estimatedTime", "steps"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z]+-[0-9]{2}$",
+      "description": "Unique lesson identifier (e.g., 'html-01', 'css-03')"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 100,
+      "description": "Lesson title shown to users"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "description": "Brief description of what the lesson teaches"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "description": "Difficulty level"
+    },
+    "estimatedTime": {
+      "type": "string",
+      "pattern": "^[0-9]+ (minutes?|hours?)$",
+      "description": "Estimated completion time (e.g., '10 minutes', '1 hour')"
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional array of prerequisite lesson IDs"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/step"
+      }
+    }
+  },
+  "definitions": {
+    "step": {
+      "type": "object",
+      "required": ["title", "content", "task"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 100,
+          "description": "Step title"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Instructional content (supports markdown-like syntax)"
+        },
+        "visual": {
+          "type": "string",
+          "description": "HTML for visual examples or 'preview' for live code preview"
+        },
+        "task": {
+          "$ref": "#/definitions/task"
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["type", "instruction"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["quiz", "code", "completion", "info", "terminal", "guided-code", "challenge", "slider", "visual-adjuster"],
+          "description": "Task type"
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 5,
+          "description": "Task instruction shown to user"
+        },
+        "hint": {
+          "type": "string",
+          "description": "Optional hint for the task"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "quiz" } }
+          },
+          "then": {
+            "required": ["question", "options"],
+            "properties": {
+              "question": {
+                "type": "string",
+                "minLength": 5,
+                "description": "Quiz question"
+              },
+              "options": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 6,
+                "items": {
+                  "type": "object",
+                  "required": ["text", "correct"],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "correct": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "code" } }
+          },
+          "then": {
+            "required": ["validate"],
+            "properties": {
+              "starter": {
+                "type": "string",
+                "description": "Starting code in the editor"
+              },
+              "solution": {
+                "type": "string",
+                "description": "Example solution (for reference)"
+              },
+              "validate": {
+                "type": "string",
+                "description": "Validation function as string (e.g., '(code) => code.includes(\"<h1>\")')"
+              },
+              "expectedContent": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Alternative: array of strings that must be in code"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "id": "css-04-guided",
+  "title": "Flexbox Layout - Guided Editor (Intermediate)",
+  "description": "Learn Flexbox by editing specific parts of the code",
+  "difficulty": "intermediate",
+  "tier": 2,
+  "estimatedTime": "15 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Flexbox Basics",
+      "content": "Flexbox is a layout system that makes it easy to align and distribute items in a container.\n\nFirst step: turn on flexbox by setting `display: flex;`\n\nYou'll only edit the values marked with **___** - the rest is locked to prevent typos!",
+      "visual": "<div class=\"code-example\"><code>.container {<br>  display: flex;<br>}</code></div>",
+      "task": {
+        "type": "guided-code",
+        "instruction": "Fill in 'flex' for the display property:",
+        "template": ".container {\n  display: ___;\n}",
+        "blanks": [
+          {
+            "id": "blank1",
+            "answer": "flex",
+            "hint": "Type the word 'flex'",
+            "autocomplete": ["flex", "block", "inline", "grid"]
+          }
+        ],
+        "lockedParts": [".container {", "display:", ";", "}"],
+        "solution": ".container {\n  display: flex;\n}",
+        "validate": "(code) => code.includes('display: flex')"
+      }
+    },
+    {
+      "title": "Step 2: Justify Content",
+      "content": "`justify-content` controls horizontal alignment of flex items:\n- `flex-start` - align left\n- `center` - align center\n- `flex-end` - align right\n- `space-between` - spread out with space between\n- `space-around` - spread out with space around",
+      "visual": "<div class=\"code-demo\"><div style=\"display:flex; justify-content:center; gap:10px; border:2px dashed #00ffff; padding:10px;\"><div style=\"width:50px; height:50px; background:#00ffff;\"></div><div style=\"width:50px; height:50px; background:#00ffff;\"></div><div style=\"width:50px; height:50px; background:#00ffff;\"></div></div></div>",
+      "task": {
+        "type": "guided-code",
+        "instruction": "Center the items horizontally using justify-content:",
+        "template": ".container {\n  display: flex;\n  justify-content: ___;\n}",
+        "blanks": [
+          {
+            "id": "blank1",
+            "answer": "center",
+            "hint": "Use 'center' to align items in the middle",
+            "autocomplete": ["flex-start", "center", "flex-end", "space-between", "space-around"]
+          }
+        ],
+        "lockedParts": [".container {", "display: flex;", "justify-content:", ";", "}"],
+        "solution": ".container {\n  display: flex;\n  justify-content: center;\n}",
+        "validate": "(code) => code.includes('justify-content: center')"
+      }
+    },
+    {
+      "title": "Step 3: Align Items",
+      "content": "`align-items` controls vertical alignment:\n- `flex-start` - align top\n- `center` - align middle\n- `flex-end` - align bottom\n- `stretch` - stretch to fill height",
+      "visual": "<div class=\"code-demo\"><div style=\"display:flex; align-items:center; height:100px; gap:10px; border:2px dashed #00ffff; padding:10px;\"><div style=\"width:50px; height:50px; background:#00ffff;\"></div><div style=\"width:50px; height:70px; background:#ff00ff;\"></div><div style=\"width:50px; height:40px; background:#ffff00;\"></div></div></div>",
+      "task": {
+        "type": "guided-code",
+        "instruction": "Center items vertically and add a gap of 20px:",
+        "template": ".container {\n  display: flex;\n  justify-content: center;\n  align-items: ___;\n  gap: ___px;\n}",
+        "blanks": [
+          {
+            "id": "blank1",
+            "answer": "center",
+            "hint": "Vertical centering uses 'center'",
+            "autocomplete": ["flex-start", "center", "flex-end", "stretch"]
+          },
+          {
+            "id": "blank2",
+            "answer": "20",
+            "hint": "Enter the number 20",
+            "type": "number",
+            "autocomplete": ["10", "20", "30", "40"]
+          }
+        ],
+        "lockedParts": [".container {", "display: flex;", "justify-content: center;", "align-items:", ";", "gap:", "px;", "}"],
+        "solution": ".container {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  gap: 20px;\n}",
+        "validate": "(code) => code.includes('align-items: center') && code.includes('gap: 20px')"
+      }
+    },
+    {
+      "title": "Step 4: Flex Direction",
+      "content": "`flex-direction` changes the layout direction:\n- `row` - horizontal (default)\n- `column` - vertical\n- `row-reverse` - horizontal reversed\n- `column-reverse` - vertical reversed",
+      "visual": "<div class=\"code-demo\"><div style=\"display:flex; flex-direction:column; align-items:center; gap:10px; border:2px dashed #00ffff; padding:10px;\"><div style=\"width:100px; height:40px; background:#00ffff; display:flex; align-items:center; justify-content:center; color:#000;\">Item 1</div><div style=\"width:100px; height:40px; background:#00ffff; display:flex; align-items:center; justify-content:center; color:#000;\">Item 2</div><div style=\"width:100px; height:40px; background:#00ffff; display:flex; align-items:center; justify-content:center; color:#000;\">Item 3</div></div></div>",
+      "task": {
+        "type": "guided-code",
+        "instruction": "Stack items vertically using flex-direction column:",
+        "template": ".container {\n  display: flex;\n  flex-direction: ___;\n  align-items: center;\n  gap: 15px;\n}",
+        "blanks": [
+          {
+            "id": "blank1",
+            "answer": "column",
+            "hint": "Use 'column' for vertical stacking",
+            "autocomplete": ["row", "column", "row-reverse", "column-reverse"]
+          }
+        ],
+        "lockedParts": [".container {", "display: flex;", "flex-direction:", ";", "align-items: center;", "gap: 15px;", "}"],
+        "solution": ".container {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 15px;\n}",
+        "validate": "(code) => code.includes('flex-direction: column')"
+      }
+    },
+    {
+      "title": "Step 5: Build a Navigation Bar",
+      "content": "Now put it all together! Create a horizontal navigation bar with centered items and space between them.",
+      "visual": "<div class=\"code-demo\"><nav style=\"display:flex; justify-content:space-between; align-items:center; background:#0a0a0a; padding:15px 30px; border:2px solid #00ffff;\"><div style=\"color:#00ffff; font-weight:bold;\">DVN Logo</div><div style=\"display:flex; gap:20px;\"><a href=\"#\" style=\"color:#00ffff; text-decoration:none;\">Home</a><a href=\"#\" style=\"color:#00ffff; text-decoration:none;\">About</a><a href=\"#\" style=\"color:#00ffff; text-decoration:none;\">Contact</a></div></nav></div>",
+      "task": {
+        "type": "guided-code",
+        "instruction": "Complete the navigation bar CSS:",
+        "template": "nav {\n  display: ___;\n  justify-content: ___;\n  align-items: ___;\n  padding: 15px 30px;\n  background: #0a0a0a;\n}",
+        "blanks": [
+          {
+            "id": "blank1",
+            "answer": "flex",
+            "hint": "Enable flexbox",
+            "autocomplete": ["flex", "block", "inline"]
+          },
+          {
+            "id": "blank2",
+            "answer": "space-between",
+            "hint": "Spread items apart",
+            "autocomplete": ["center", "space-between", "space-around", "flex-start"]
+          },
+          {
+            "id": "blank3",
+            "answer": "center",
+            "hint": "Center vertically",
+            "autocomplete": ["center", "flex-start", "flex-end", "stretch"]
+          }
+        ],
+        "lockedParts": ["nav {", "display:", ";", "justify-content:", ";", "align-items:", ";", "padding: 15px 30px;", "background: #0a0a0a;", "}"],
+        "solution": "nav {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 15px 30px;\n  background: #0a0a0a;\n}",
+        "validate": "(code) => code.includes('display: flex') && code.includes('justify-content: space-between') && code.includes('align-items: center')"
+      }
+    },
+    {
+      "title": "Step 6: Preview Your Work",
+      "content": "Excellent! You've mastered Flexbox using guided editing. You learned:\n- display: flex\n- justify-content (horizontal)\n- align-items (vertical)\n- flex-direction (layout direction)\n- gap (spacing)\n\nReady for advanced mode where you build from scratch?",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're ready for full code editing! Let's level up."
+      }
+    }
+  ]
+}

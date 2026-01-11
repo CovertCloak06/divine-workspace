@@ -1,0 +1,39 @@
+{
+  "id": "{{id}}",
+  "title": "{{title}}",
+  "description": "{{title}} lesson description",
+  "difficulty": "{{difficulty}}",
+  "estimatedTime": "10 minutes",
+  "steps": [
+    {
+      "title": "Introduction",
+      "content": "Welcome to **{{title}}**!\\n\\nIn this lesson you will learn:",
+      "visual": "<div style=\"background:rgba(0,255,255,0.05);padding:12px;border-radius:6px;border:1px solid rgba(0,255,255,0.3);font-size:12px;\"><code>Example visualization here</code></div>",
+      "task": {
+        "type": "quiz",
+        "instruction": "Answer this question to proceed",
+        "question": "What will you learn in this lesson?",
+        "options": [
+          "Correct answer",
+          "Wrong answer 1",
+          "Wrong answer 2",
+          "Wrong answer 3"
+        ],
+        "correctAnswer": 0,
+        "hint": "Read the introduction carefully"
+      }
+    },
+    {
+      "title": "Practice",
+      "content": "Now let's practice!",
+      "task": {
+        "type": "code",
+        "instruction": "Write the code as instructed",
+        "starter": "<!-- Your code here -->",
+        "solution": "<!-- Solution code -->",
+        "hint": "Remember to use proper syntax",
+        "validate": "(code) => code.includes('TODO')"
+      }
+    }
+  ]
+}

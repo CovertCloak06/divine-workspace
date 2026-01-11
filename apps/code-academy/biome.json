@@ -1,0 +1,67 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/playwright-report",
+      "!**/.nyc_output",
+      "!**/*.min.js"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noExtraBooleanCast": "error",
+        "noUselessCatch": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUndeclaredVariables": "error"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn",
+        "noGlobalEval": "error"
+      },
+      "style": {
+        "useConst": "warn"
+      },
+      "suspicious": {
+        "noDoubleEquals": "error",
+        "noDebugger": "warn",
+        "noVar": "error"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "always",
+      "quoteStyle": "single",
+      "trailingCommas": "es5"
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/js/tutorial-engine.js", "**/js/**/*-editor.js"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noGlobalEval": "off"
+          }
+        }
+      }
+    }
+  ]
+}

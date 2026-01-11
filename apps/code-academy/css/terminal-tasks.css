@@ -1,0 +1,283 @@
+/**
+ * Terminal Task Styles
+ * Styles for terminal-based project-builder lessons
+ */
+
+/* Info Task */
+.info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.info-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.info-message p {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Terminal Task Actions */
+.terminal-task-actions {
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.custom-name-input {
+  margin-bottom: 15px;
+}
+
+.custom-name-input label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.custom-name-input input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.custom-name-input input:focus {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: var(--glow-primary);
+}
+
+.custom-name-input input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+#executeTerminalCmd {
+  width: 100%;
+  max-width: 200px;
+}
+
+/* Code Editor Section (for code-with-terminal tasks) */
+.code-editor-section {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.editor-header strong {
+  color: var(--primary-color);
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.editor-actions {
+  padding: 15px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.code-editor-section .code-editor {
+  width: 100%;
+  background: var(--code-bg);
+  color: var(--code-text);
+  border: none;
+  padding: 15px;
+  font-family: 'Courier New', Monaco, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 250px;
+}
+
+.code-editor-section .code-editor:focus {
+  outline: none;
+  background: var(--code-bg);
+}
+
+/* Preview Section (for preview-with-terminal tasks) */
+.preview-section {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.preview-header strong {
+  color: var(--primary-color);
+  font-size: 14px;
+}
+
+.preview-frame {
+  padding: 0;
+  background: #ffffff;
+  min-height: 300px;
+}
+
+.preview-frame iframe {
+  display: block;
+}
+
+/* Terminal Feedback */
+#terminalFeedback {
+  margin-top: 15px;
+}
+
+/* Animations for terminal tasks */
+.code-editor-section,
+.preview-section {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Download Button (for completion tasks) */
+.download-project-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 15px;
+}
+
+.download-project-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-hover);
+}
+
+.download-project-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .terminal-task-actions {
+    padding: 15px;
+  }
+
+  .custom-name-input input {
+    max-width: 100%;
+  }
+
+  #executeTerminalCmd {
+    max-width: 100%;
+  }
+
+  .editor-header,
+  .preview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .editor-header button,
+  .preview-header button {
+    width: 100%;
+  }
+
+  .editor-actions {
+    flex-direction: column;
+  }
+
+  .editor-actions button {
+    width: 100%;
+  }
+
+  .code-editor-section .code-editor {
+    font-size: 13px;
+    min-height: 200px;
+  }
+
+  .preview-frame {
+    min-height: 250px;
+  }
+
+  .preview-frame iframe {
+    height: 300px !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .terminal-task-actions,
+  .code-editor-section,
+  .preview-section {
+    border-width: 3px;
+  }
+
+  .custom-name-input input:focus {
+    border-width: 2px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .terminal-task-actions,
+  .editor-actions,
+  .preview-header button {
+    display: none;
+  }
+
+  .code-editor-section .code-editor {
+    border: 1px solid #000;
+    min-height: auto;
+  }
+}

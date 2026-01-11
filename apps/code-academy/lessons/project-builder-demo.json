@@ -1,0 +1,170 @@
+{
+  "id": "project-builder-01",
+  "title": "Build Your First Website Project",
+  "description": "Learn project structure by building a real website from scratch using terminal commands",
+  "difficulty": "beginner",
+  "tier": 0,
+  "lessonType": "project-builder",
+  "estimatedTime": "20 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Understanding Project Structure",
+      "content": "Before we write code, we need to understand how files are organized.\n\n**Every web project needs:**\n- 📁 A **root folder** (home for your project)\n- 📄 **index.html** (your main HTML file)\n- 📄 **style.css** (your CSS stylesheet)\n- 📁 Optional folders like `images/`, `js/`, etc.\n\n**Why does structure matter?**\n- Keeps files organized\n- Makes collaboration easier\n- Industry standard practice\n- Easier to find and fix bugs\n\nLet's build this structure using **terminal commands** - the way professional developers work!",
+      "visual": "<div class=\"project-structure-diagram\"><pre style=\"color:var(--text-primary); font-family:monospace; background:var(--bg-secondary); padding:20px; border-radius:8px;\">\nmy-first-website/\n├── index.html\n├── style.css\n└── images/\n    └── logo.png\n</pre></div>",
+      "task": {
+        "type": "info",
+        "instruction": "Click \"Next\" when you're ready to create your project folder!"
+      }
+    },
+    {
+      "title": "Step 2: Create Project Folder",
+      "content": "Let's create a folder for your project using the `mkdir` command.\n\n**What is `mkdir`?**\n- Stands for \"**M**a**k**e **Dir**ectory\"\n- Creates a new folder\n- Used in: Windows (PowerShell), Mac, Linux\n\n**Syntax:**\n```\nmkdir folder-name\n```\n\nYou can use the provided name or customize it!",
+      "visual": null,
+      "task": {
+        "type": "terminal-command",
+        "instruction": "Create a folder called 'my-first-website' (or choose your own name):",
+        "providedCommand": "mkdir my-first-website",
+        "allowCustomName": true,
+        "namePattern": "^[a-zA-Z0-9-_]+$",
+        "expectedAction": "create_directory",
+        "successMessage": "✓ Directory created successfully!",
+        "hints": [
+          "Use letters, numbers, hyphens, or underscores only",
+          "No spaces in folder names",
+          "Examples: my-website, first-project, portfolio-site"
+        ]
+      }
+    },
+    {
+      "title": "Step 3: Navigate Into Your Folder",
+      "content": "Now let's \"enter\" your project folder using the `cd` command.\n\n**What is `cd`?**\n- Stands for \"**C**hange **D**irectory\"\n- Moves you into a folder\n- Like double-clicking a folder in File Explorer\n\n**Syntax:**\n```\ncd folder-name\n```\n\nThis changes your working directory so files you create go inside this folder.",
+      "visual": null,
+      "task": {
+        "type": "terminal-command",
+        "instruction": "Navigate into your project folder:",
+        "providedCommand": "cd my-first-website",
+        "usePreviousName": true,
+        "expectedAction": "change_directory",
+        "successMessage": "✓ Now inside: ~/projects/my-first-website",
+        "hints": [
+          "Type 'cd' followed by your folder name",
+          "Tab completion works in real terminals!"
+        ]
+      }
+    },
+    {
+      "title": "Step 4: Create index.html",
+      "content": "Every website needs an HTML file! Let's create `index.html` using the `touch` command.\n\n**What is `touch`?**\n- Creates an empty file\n- Mac/Linux command (Windows: `type nul >`)\n- Fast way to create files from terminal\n\n**Why \"index.html\"?**\n- Web servers look for `index.html` by default\n- It's the \"home page\" of your site\n- Industry naming convention\n\n**Syntax:**\n```\ntouch filename.html\n```",
+      "visual": null,
+      "task": {
+        "type": "terminal-command",
+        "instruction": "Create your HTML file:",
+        "providedCommand": "touch index.html",
+        "expectedAction": "create_file",
+        "successMessage": "✓ File created: index.html",
+        "hints": [
+          "Exactly as shown: touch index.html",
+          "File extension matters: .html"
+        ]
+      }
+    },
+    {
+      "title": "Step 5: Create style.css",
+      "content": "Now let's add a CSS file for styling.\n\n**What is CSS?**\n- Controls how your website looks (colors, fonts, layout)\n- Keeps styling separate from HTML (good practice!)\n- File extension: `.css`\n\nWe'll use the same `touch` command.",
+      "visual": null,
+      "task": {
+        "type": "terminal-command",
+        "instruction": "Create your CSS file:",
+        "providedCommand": "touch style.css",
+        "expectedAction": "create_file",
+        "successMessage": "✓ File created: style.css",
+        "hints": [
+          "Same command, different filename",
+          "Don't forget the .css extension"
+        ]
+      }
+    },
+    {
+      "title": "Step 6: View Your File Structure",
+      "content": "Let's see what we've created using the `ls` command.\n\n**What is `ls`?**\n- Stands for \"**L**i**s**t\"\n- Shows all files and folders in current directory\n- Like viewing files in File Explorer\n- Mac/Linux: `ls`, Windows: `dir`\n\n**Your project should now look like:**\n```\nmy-first-website/\n├── index.html\n└── style.css\n```",
+      "visual": null,
+      "task": {
+        "type": "terminal-command",
+        "instruction": "List your project files:",
+        "providedCommand": "ls",
+        "expectedAction": "list_files",
+        "successMessage": "index.html  style.css",
+        "hints": [
+          "Just type 'ls' (lowercase)",
+          "You should see 2 files listed"
+        ]
+      }
+    },
+    {
+      "title": "Step 7: Add HTML Content",
+      "content": "Now let's add code to `index.html`! In a real terminal, you'd type `code index.html` to open an editor.\n\nOur built-in editor will pop up below. Write a basic HTML structure.",
+      "visual": null,
+      "task": {
+        "type": "code-with-terminal",
+        "instruction": "Open index.html in editor and add basic HTML:",
+        "terminalCommand": "code index.html",
+        "file": "index.html",
+        "starter": "<!DOCTYPE html>\n<html>\n<head>\n    <title>My First Website</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n    <h1>Welcome to My Website!</h1>\n    <p>This is my first web project.</p>\n</body>\n</html>",
+        "expectedContent": ["<!DOCTYPE html>", "<html>", "<title>", "<link", "style.css"],
+        "successMessage": "✓ index.html saved successfully!",
+        "hints": [
+          "Notice the <link> tag connecting to style.css",
+          "Every HTML page needs <!DOCTYPE html>",
+          "Content goes inside <body> tags"
+        ]
+      }
+    },
+    {
+      "title": "Step 8: Add CSS Styling",
+      "content": "Time to make it look good! Open `style.css` and add some styles.",
+      "visual": null,
+      "task": {
+        "type": "code-with-terminal",
+        "instruction": "Open style.css and add styling:",
+        "terminalCommand": "code style.css",
+        "file": "style.css",
+        "starter": "body {\n    font-family: Arial, sans-serif;\n    background-color: #f0f0f0;\n    margin: 0;\n    padding: 20px;\n}\n\nh1 {\n    color: #2563eb;\n}\n\np {\n    color: #475569;\n    line-height: 1.6;\n}",
+        "expectedContent": ["body", "background-color", "h1", "color"],
+        "successMessage": "✓ style.css saved successfully!",
+        "hints": [
+          "CSS rules have format: selector { property: value; }",
+          "Notice how we style body, h1, and p separately",
+          "Colors can be hex codes (#2563eb) or names (blue)"
+        ]
+      }
+    },
+    {
+      "title": "Step 9: Preview Your Website",
+      "content": "Let's see your creation! In a real terminal, you'd type `open index.html` to view it in a browser.\n\nOur live preview will show your website below.",
+      "visual": null,
+      "task": {
+        "type": "preview-with-terminal",
+        "instruction": "Open your website in the browser:",
+        "terminalCommand": "open index.html",
+        "showPreview": true,
+        "successMessage": "✓ Opening in browser preview...",
+        "hints": [
+          "Your HTML and CSS should work together",
+          "If styling doesn't show, check the <link> tag",
+          "Try changing colors in style.css and re-save!"
+        ]
+      }
+    },
+    {
+      "title": "Step 10: Congratulations! 🎉",
+      "content": "You've successfully built your first website project using professional workflows!\n\n**What you learned:**\n- ✅ Creating project folders (`mkdir`)\n- ✅ Navigating directories (`cd`)\n- ✅ Creating files (`touch`)\n- ✅ Listing files (`ls`)\n- ✅ Opening files in editor (`code`)\n- ✅ Previewing in browser (`open`)\n- ✅ Project structure best practices\n- ✅ Connecting HTML to CSS\n\n**Next Steps:**\n- Download your project as a ZIP\n- Try adding more pages (about.html, contact.html)\n- Create an images/ folder and add pictures\n- Learn JavaScript to add interactivity\n\n**Professional Tip:**\nReal developers use these same commands every day. You're building the right habits from the start!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "Click \"Download Project\" to save your work, or click \"Complete\" to continue learning!",
+        "showDownloadButton": true,
+        "showNextLessonButton": true
+      }
+    }
+  ]
+}

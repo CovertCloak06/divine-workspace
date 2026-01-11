@@ -1,0 +1,72 @@
+{
+  "id": "js-02",
+  "title": "Variables & Data Types",
+  "description": "Learn about different types of data in JavaScript",
+  "difficulty": "beginner",
+  "estimatedTime": "15 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Data Types",
+      "content": "JavaScript has several data types:\n- **String**: text in quotes (`'hello'` or `\"hello\"`)\n- **Number**: integers or decimals (`42`, `3.14`)\n- **Boolean**: true or false\n- **Array**: list of values (`[1, 2, 3]`)\n- **Object**: key-value pairs (`{name: 'PKN'}`)\n\nYou can use `typeof` to check a variable's type.",
+      "visual": "<div class=\"code-example\"><code>let text = 'Hello';<br>let num = 42;<br>let isTrue = true;</code></div>",
+      "task": {
+        "type": "quiz",
+        "question": "What data type is the value 'Divine Node'?",
+        "options": [
+          { "text": "String", "correct": true },
+          { "text": "Number", "correct": false },
+          { "text": "Boolean", "correct": false },
+          { "text": "Array", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: Strings",
+      "content": "Strings are text enclosed in quotes (single or double). You can combine (concatenate) strings using the `+` operator.\n\n`let greeting = 'Hello, ' + 'World!';`\n\nOr use template literals with backticks:\n\n`let greeting = \\`Hello, World!\\`;`",
+      "visual": "<div class=\"code-example\"><code>let name = 'Divine Node';<br>let msg = 'Welcome to ' + name;</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a variable 'fullName' by combining 'Divine' and 'Node' with a space:",
+        "starter": "let firstName = 'Divine';\nlet lastName = 'Node';\nlet fullName = ;",
+        "solution": "let firstName = 'Divine';\nlet lastName = 'Node';\nlet fullName = firstName + ' ' + lastName;",
+        "hint": "Use the + operator: firstName + ' ' + lastName",
+        "validate": "(code) => code.includes('fullName') && code.includes('+') && code.includes('firstName') && code.includes('lastName')"
+      }
+    },
+    {
+      "title": "Step 3: Booleans",
+      "content": "Booleans represent yes/no, on/off, true/false values. They're essential for making decisions in code.\n\nComparison operators create booleans:\n- `===` equal to\n- `!==` not equal to\n- `>` greater than\n- `<` less than",
+      "visual": "<div class=\"code-example\"><code>let isActive = true;<br>let age = 25;<br>let isAdult = age >= 18; // true</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a boolean variable 'isReady' that checks if score is greater than 80:",
+        "starter": "let score = 95;\nlet isReady = ;",
+        "solution": "let score = 95;\nlet isReady = score > 80;",
+        "hint": "Use the > comparison operator",
+        "validate": "(code) => code.includes('isReady') && code.includes('score') && code.includes('>')"
+      }
+    },
+    {
+      "title": "Step 4: Arrays",
+      "content": "Arrays store multiple values in a single variable. They use square brackets `[]` and values are separated by commas.\n\n`let colors = ['red', 'green', 'blue'];`\n\nAccess items by their index (starting at 0):\n`colors[0]` returns `'red'`",
+      "visual": "<div class=\"code-example\"><code>let agents = ['Coder', 'Reasoner', 'Researcher'];<br>console.log(agents[0]); // 'Coder'</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create an array called 'languages' with 'HTML', 'CSS', and 'JavaScript':",
+        "starter": "let languages = ;",
+        "solution": "let languages = ['HTML', 'CSS', 'JavaScript'];",
+        "hint": "Use square brackets and separate values with commas",
+        "validate": "(code) => code.includes('languages') && code.includes('[') && code.includes('HTML') && code.includes('CSS') && code.includes('JavaScript')"
+      }
+    },
+    {
+      "title": "Step 5: See Your Data!",
+      "content": "Excellent work! You now understand JavaScript's core data types:\n- Strings for text\n- Numbers for math\n- Booleans for logic\n- Arrays for lists\n\nNext, you'll learn about functions and how to organize your code!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're mastering JavaScript fundamentals! Keep going!"
+      }
+    }
+  ]
+}

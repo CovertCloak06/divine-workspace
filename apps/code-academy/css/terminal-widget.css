@@ -1,0 +1,298 @@
+/**
+ * Terminal Widget Styles
+ * Small 1-2 line terminal display for lessons
+ */
+
+.terminal-widget {
+  background: var(--code-bg, #0a0a0a);
+  border: 2px solid var(--border-primary, rgba(0, 255, 255, 0.3));
+  border-radius: 8px;
+  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin: 15px 0;
+}
+
+/* Terminal Header with macOS-style dots */
+.terminal-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary, #2a2a2a);
+  border-bottom: 1px solid var(--border-primary, rgba(0, 255, 255, 0.3));
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-red {
+  background: #ff5f56;
+}
+
+.dot-yellow {
+  background: #ffbd2e;
+}
+
+.dot-green {
+  background: #27c93f;
+}
+
+.terminal-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Terminal Body */
+.terminal-body {
+  padding: 12px 15px;
+  background: var(--code-bg, #0a0a0a);
+  color: var(--code-text, #ffffff);
+  line-height: 1.6;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.terminal-widget-compact .terminal-body {
+  max-height: 60px;
+  overflow-y: hidden;
+}
+
+/* Terminal Lines */
+.terminal-line {
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-prompt {
+  color: var(--primary-color, #00ffff);
+  font-weight: 600;
+  user-select: none;
+}
+
+/* Light theme adjustments */
+[data-theme='light'] .terminal-prompt {
+  color: var(--primary-color, #2563eb);
+}
+
+/* Command Text */
+.terminal-cmd-symbol {
+  color: var(--primary-color, #00ffff);
+  font-weight: bold;
+}
+
+.terminal-cmd-text {
+  color: var(--code-text, #ffffff);
+  font-weight: 500;
+}
+
+[data-theme='light'] .terminal-cmd-text {
+  color: var(--text-primary, #0f172a);
+}
+
+/* Result Line */
+.terminal-result {
+  color: var(--accent-green, #4caf50);
+}
+
+.terminal-result-icon {
+  color: var(--accent-green, #4caf50);
+  font-weight: bold;
+}
+
+/* Error Line */
+.terminal-error {
+  color: var(--accent-red, #f44336);
+}
+
+.terminal-error-icon {
+  color: var(--accent-red, #f44336);
+  font-weight: bold;
+}
+
+/* Info Line */
+.terminal-info {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+  font-style: italic;
+}
+
+/* Blinking Cursor */
+.terminal-cursor-blink {
+  color: var(--primary-color, #00ffff);
+  animation: cursorBlink 1s infinite;
+  font-weight: bold;
+}
+
+@keyframes cursorBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Interactive Input */
+.terminal-input-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--code-text, #ffffff);
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+.terminal-input::placeholder {
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  font-style: italic;
+}
+
+[data-theme='light'] .terminal-input {
+  color: var(--text-primary, #0f172a);
+}
+
+[data-theme='light'] .terminal-input::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Copy Button (optional enhancement) */
+.terminal-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: 1px solid var(--border-secondary, rgba(255, 255, 255, 0.2));
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: none;
+}
+
+.terminal-widget:hover .terminal-copy-btn {
+  display: block;
+}
+
+.terminal-copy-btn:hover {
+  background: var(--input-bg);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Scrollbar for Terminal */
+.terminal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-body::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #1a1a1a);
+}
+
+.terminal-body::-webkit-scrollbar-thumb {
+  background: var(--border-primary, rgba(0, 255, 255, 0.3));
+  border-radius: 4px;
+}
+
+.terminal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color, #00ffff);
+}
+
+/* Light Theme Scrollbar */
+[data-theme='light'] .terminal-body::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #f8fafc);
+}
+
+[data-theme='light'] .terminal-body::-webkit-scrollbar-thumb {
+  background: var(--border-primary, #cbd5e1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .terminal-widget {
+    font-size: 13px;
+  }
+
+  .terminal-body {
+    padding: 10px 12px;
+  }
+
+  .terminal-title {
+    display: none; /* Hide title on mobile */
+  }
+
+  .terminal-header {
+    padding: 6px 10px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Animations */
+.terminal-line {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Syntax Highlighting (optional for commands) */
+.terminal-cmd-text .cmd-keyword {
+  color: #ff79c6;
+  font-weight: bold;
+}
+
+.terminal-cmd-text .cmd-string {
+  color: #f1fa8c;
+}
+
+.terminal-cmd-text .cmd-flag {
+  color: #8be9fd;
+}
+
+.terminal-cmd-text .cmd-path {
+  color: #50fa7b;
+}
+
+/* Example usage:
+<span class="cmd-keyword">mkdir</span>
+<span class="cmd-path">my-project</span>
+*/

@@ -1,0 +1,74 @@
+{
+  "id": "css-01",
+  "title": "CSS Basics",
+  "description": "Introduction to Cascading Style Sheets and styling your first element",
+  "difficulty": "beginner",
+  "estimatedTime": "15 minutes",
+  "steps": [
+    {
+      "title": "Step 1: What is CSS?",
+      "content": "CSS (Cascading Style Sheets) controls the **appearance** of your HTML. While HTML provides structure, CSS provides style.\n\nCSS uses **selectors** to target HTML elements and **properties** to define how they look.",
+      "visual": "<div class=\"code-example\"><code>h1 {\n  color: cyan;\n  font-size: 32px;\n}</code></div>",
+      "task": {
+        "type": "quiz",
+        "question": "What does CSS stand for?",
+        "options": [
+          { "text": "Cascading Style Sheets", "correct": true },
+          { "text": "Creative Style System", "correct": false },
+          { "text": "Computer Style Syntax", "correct": false },
+          { "text": "Coded Style Script", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: CSS Syntax",
+      "content": "CSS rules have three parts:\n1. **Selector** - which element to style (e.g., `h1`)\n2. **Property** - what to change (e.g., `color`)\n3. **Value** - what to change it to (e.g., `red`)\n\nFormat: `selector { property: value; }`",
+      "visual": "<div class=\"code-example\"><code style=\"color:#00ffff\">selector { property: value; }</code></div>",
+      "task": {
+        "type": "quiz",
+        "question": "In the CSS rule 'p { color: blue; }', what is 'p'?",
+        "options": [
+          { "text": "The selector", "correct": true },
+          { "text": "The property", "correct": false },
+          { "text": "The value", "correct": false },
+          { "text": "The declaration", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 3: Your First Style",
+      "content": "Let's style an h1 element! We'll change its color to cyan (#00ffff) - the signature color of DVN.\n\nRemember the syntax: `selector { property: value; }`",
+      "visual": "<div class=\"code-demo\"><h1 style=\"color:#00ffff; margin:0\">Styled Heading</h1></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Write a CSS rule to make all h1 elements cyan (#00ffff):",
+        "starter": "h1 {\n  \n}",
+        "solution": "h1 {\n  color: #00ffff;\n}",
+        "hint": "Use the 'color' property with the value '#00ffff'",
+        "validate": "(code) => code.includes('h1') && code.includes('color') && code.includes('#00ffff')"
+      }
+    },
+    {
+      "title": "Step 4: Multiple Properties",
+      "content": "You can add multiple properties to one rule by separating them with semicolons.\n\nLet's add both color AND font-size to make your heading stand out!",
+      "visual": "<div class=\"code-demo\"><h1 style=\"color:#00ffff; font-size:48px; margin:0\">Big Cyan Heading</h1></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Style h1 with color cyan (#00ffff) and font-size 48px:",
+        "starter": "h1 {\n  color: #00ffff;\n  \n}",
+        "solution": "h1 {\n  color: #00ffff;\n  font-size: 48px;\n}",
+        "hint": "Add 'font-size: 48px;' on a new line",
+        "validate": "(code) => code.includes('color: #00ffff') && code.includes('font-size: 48px')"
+      }
+    },
+    {
+      "title": "Step 5: See It Live!",
+      "content": "Excellent! You've written your first CSS rule. In the next lesson, you'll learn about colors, backgrounds, and typography.\n\nCSS is what makes the web beautiful!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're now a CSS stylist! Continue to the next lesson to learn more."
+      }
+    }
+  ]
+}

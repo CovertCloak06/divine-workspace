@@ -1,0 +1,72 @@
+{
+  "id": "css-02",
+  "title": "Colors & Typography",
+  "description": "Master color values, backgrounds, and text styling in CSS",
+  "difficulty": "beginner",
+  "estimatedTime": "15 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Color Values",
+      "content": "CSS supports multiple color formats:\n- **Named colors**: `red`, `blue`, `cyan`\n- **Hex codes**: `#00ffff`, `#ff0000`\n- **RGB**: `rgb(0, 255, 255)`\n- **RGBA**: `rgba(0, 255, 255, 0.5)` (with transparency)\n\nHex codes are the most common in web development.",
+      "visual": "<div class=\"code-demo\"><div style=\"display:flex;gap:10px\"><div style=\"width:50px;height:50px;background:#00ffff\"></div><div style=\"width:50px;height:50px;background:#ff00ff\"></div><div style=\"width:50px;height:50px;background:#ffff00\"></div></div></div>",
+      "task": {
+        "type": "quiz",
+        "question": "Which color format includes transparency?",
+        "options": [
+          { "text": "RGBA", "correct": true },
+          { "text": "Hex", "correct": false },
+          { "text": "Named colors", "correct": false },
+          { "text": "RGB", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: Background Colors",
+      "content": "The `background-color` property sets the background of an element.\n\nYou can use any color format: named, hex, RGB, or RGBA.",
+      "visual": "<div class=\"code-demo\"><div style=\"background-color:#0a0a0a;color:#00ffff;padding:20px\">Dark background with cyan text</div></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Set a dark background (#0a0a0a) and cyan text (#00ffff) for a div:",
+        "starter": "div {\n  \n  \n}",
+        "solution": "div {\n  background-color: #0a0a0a;\n  color: #00ffff;\n}",
+        "hint": "Use 'background-color' for the background and 'color' for the text",
+        "validate": "(code) => code.includes('background-color: #0a0a0a') && code.includes('color: #00ffff')"
+      }
+    },
+    {
+      "title": "Step 3: Font Properties",
+      "content": "Control text appearance with typography properties:\n- `font-family` - typeface (Arial, monospace, etc.)\n- `font-size` - size in px, em, rem\n- `font-weight` - boldness (normal, bold, 100-900)\n- `text-align` - alignment (left, center, right)",
+      "visual": "<div class=\"code-demo\"><p style=\"font-family:monospace;font-size:18px;font-weight:bold;margin:0\">Monospace Bold Text</p></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Style a paragraph with monospace font, 16px size, and centered text:",
+        "starter": "p {\n  \n  \n  \n}",
+        "solution": "p {\n  font-family: monospace;\n  font-size: 16px;\n  text-align: center;\n}",
+        "hint": "Use font-family, font-size, and text-align properties",
+        "validate": "(code) => code.includes('font-family: monospace') && code.includes('font-size: 16px') && code.includes('text-align: center')"
+      }
+    },
+    {
+      "title": "Step 4: Putting It Together",
+      "content": "Now combine colors and typography to create a cyberpunk-styled element!\n\nDark backgrounds with bright neon text are signature to the cyberpunk aesthetic.",
+      "visual": "<div class=\"code-demo\"><div style=\"background:#0a0a0a;color:#00ffff;font-family:monospace;font-size:20px;padding:20px;text-align:center;border:2px solid #00ffff\">CYBERPUNK STYLE</div></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a cyberpunk div: dark bg (#0a0a0a), cyan text (#00ffff), monospace font, 20px, centered:",
+        "starter": "div {\n  \n  \n  \n  \n  \n}",
+        "solution": "div {\n  background-color: #0a0a0a;\n  color: #00ffff;\n  font-family: monospace;\n  font-size: 20px;\n  text-align: center;\n}",
+        "hint": "Combine all the properties you've learned",
+        "validate": "(code) => code.includes('background-color: #0a0a0a') && code.includes('color: #00ffff') && code.includes('font-family: monospace')"
+      }
+    },
+    {
+      "title": "Step 5: Preview Your Work",
+      "content": "Amazing! You've mastered colors and typography. Your cyberpunk-styled element looks fantastic.\n\nNext, you'll learn about the box model and layout.",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're building beautiful interfaces! Continue learning."
+      }
+    }
+  ]
+}

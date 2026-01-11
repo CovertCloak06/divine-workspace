@@ -1,0 +1,72 @@
+{
+  "id": "js-01",
+  "title": "JavaScript Introduction",
+  "description": "Your first steps into programming with JavaScript",
+  "difficulty": "beginner",
+  "estimatedTime": "15 minutes",
+  "steps": [
+    {
+      "title": "Step 1: What is JavaScript?",
+      "content": "JavaScript makes web pages **interactive**. While HTML structures content and CSS styles it, JavaScript adds behavior.\n\n- Change content dynamically\n- Respond to user actions (clicks, typing)\n- Make calculations\n- Communicate with servers\n\nIt's one of the most popular programming languages in the world!",
+      "visual": "<div class=\"code-example\"><code style=\"color:#00ffff\">console.log('Hello, World!');</code></div>",
+      "task": {
+        "type": "quiz",
+        "question": "What is JavaScript primarily used for?",
+        "options": [
+          { "text": "Making web pages interactive", "correct": true },
+          { "text": "Styling web pages", "correct": false },
+          { "text": "Structuring web pages", "correct": false },
+          { "text": "Database management", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: Your First JavaScript",
+      "content": "`console.log()` is a function that prints messages to the browser's console. It's useful for debugging and seeing what your code is doing.\n\nThe console is part of your browser's developer tools (press F12 to open it).",
+      "visual": "<div class=\"code-example\"><code>console.log('Hello from JavaScript!');</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Write a console.log statement that prints \"My first JavaScript!\":",
+        "starter": "console.log();",
+        "solution": "console.log('My first JavaScript!');",
+        "hint": "Put your message in quotes inside the parentheses",
+        "validate": "(code) => code.includes('console.log') && (code.includes('My first JavaScript!') || code.includes(\"My first JavaScript!\"))"
+      }
+    },
+    {
+      "title": "Step 3: Variables",
+      "content": "Variables store data. Think of them as labeled boxes that hold information.\n\nIn modern JavaScript, use `let` to declare a variable:\n\n`let name = 'Divine Node';`\n\nYou can then use that variable later in your code.",
+      "visual": "<div class=\"code-example\"><code>let name = 'Divine Node';<br>console.log(name);</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a variable called 'message' with the value \"Hello, DVN!\" and log it:",
+        "starter": "let message = ;\nconsole.log(message);",
+        "solution": "let message = 'Hello, DVN!';\nconsole.log(message);",
+        "hint": "Put the text in quotes after the = sign",
+        "validate": "(code) => code.includes('let message') && (code.includes('\"Hello, DVN!\"') || code.includes(\"'Hello, DVN!'\")) && code.includes('console.log(message)')"
+      }
+    },
+    {
+      "title": "Step 4: Numbers and Math",
+      "content": "JavaScript can do math! You can add, subtract, multiply, and divide numbers.\n\nOperators:\n- `+` addition\n- `-` subtraction\n- `*` multiplication\n- `/` division",
+      "visual": "<div class=\"code-example\"><code>let sum = 10 + 5;<br>console.log(sum); // 15</code></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a variable 'result' that adds 42 and 8, then log it:",
+        "starter": "let result = ;\nconsole.log(result);",
+        "solution": "let result = 42 + 8;\nconsole.log(result);",
+        "hint": "Use the + operator between 42 and 8",
+        "validate": "(code) => code.includes('let result') && code.includes('42') && code.includes('8') && code.includes('+')"
+      }
+    },
+    {
+      "title": "Step 5: Run Your Code!",
+      "content": "Fantastic! You've written your first JavaScript program. You can now:\n- Print messages to the console\n- Store data in variables\n- Perform calculations\n\nThese are the building blocks of programming!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're now a JavaScript programmer! Ready for more?"
+      }
+    }
+  ]
+}

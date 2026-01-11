@@ -1,0 +1,18 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import {{pascalCase name}} from '../../src/{{type}}s/{{pascalCase name}}.js';
+
+describe('{{pascalCase name}}', () => {
+  let instance;
+
+  beforeEach(() => {
+    instance = new {{pascalCase name}}();
+  });
+
+  it('should initialize', () => {
+    expect(instance).toBeDefined();
+  });
+
+  it('should have init method', () => {
+    expect(typeof instance.init).toBe('function');
+  });
+});

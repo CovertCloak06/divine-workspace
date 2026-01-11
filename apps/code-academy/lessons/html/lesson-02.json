@@ -1,0 +1,59 @@
+{
+  "id": "html-02",
+  "title": "HTML Tags & Elements",
+  "description": "Learn about different HTML tags and how to structure content",
+  "difficulty": "beginner",
+  "estimatedTime": "12 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Understanding Elements",
+      "content": "An HTML **element** consists of an opening tag, content, and a closing tag. For example:\n\n`<p>This is content</p>`\n\nSome elements are **self-closing** and don't need a closing tag, like `<br>` (line break) and `<img>` (image).",
+      "visual": "<div class=\"code-example\"><code>&lt;p&gt;Content goes here&lt;/p&gt;<br>&lt;br&gt; &lt;!-- Self-closing --&gt;</code></div>",
+      "task": {
+        "type": "quiz",
+        "question": "Which tag is self-closing?",
+        "options": [
+          { "text": "<br>", "correct": true },
+          { "text": "<p>", "correct": false },
+          { "text": "<h1>", "correct": false },
+          { "text": "<div>", "correct": false }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: Bold and Italic",
+      "content": "You can style text using special tags:\n- `<strong>` makes text **bold** (important content)\n- `<em>` makes text *italic* (emphasized content)\n\nThese tags can be nested inside other tags like paragraphs.",
+      "visual": "<div class=\"code-demo\"><p style=\"margin:0\">This is <strong>bold</strong> and this is <em>italic</em></p></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create a paragraph with the word \"HTML\" in bold and the word \"awesome\" in italic:",
+        "starter": "<p>Learning  is !</p>",
+        "solution": "<p>Learning <strong>HTML</strong> is <em>awesome</em>!</p>",
+        "hint": "Use <strong> for bold and <em> for italic",
+        "validate": "(code) => code.includes('<strong>HTML</strong>') && code.includes('<em>awesome</em>')"
+      }
+    },
+    {
+      "title": "Step 3: Lists",
+      "content": "HTML has two types of lists:\n- **Unordered lists** (`<ul>`) with bullet points\n- **Ordered lists** (`<ol>`) with numbers\n\nEach item in a list uses the `<li>` (list item) tag.",
+      "visual": "<div class=\"code-demo\"><ul style=\"margin:0; color:#00ffff\"><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul></div>",
+      "task": {
+        "type": "code",
+        "instruction": "Create an unordered list with three items: \"HTML\", \"CSS\", \"JavaScript\":",
+        "starter": "<ul>\n  <li></li>\n  <li></li>\n  <li></li>\n</ul>",
+        "solution": "<ul>\n  <li>HTML</li>\n  <li>CSS</li>\n  <li>JavaScript</li>\n</ul>",
+        "hint": "Type each technology name between the <li> and </li> tags",
+        "validate": "(code) => code.includes('<ul>') && code.includes('HTML') && code.includes('CSS') && code.includes('JavaScript')"
+      }
+    },
+    {
+      "title": "Step 4: Complete!",
+      "content": "Great job! You've learned about HTML elements, text formatting, and lists. These are fundamental building blocks for every web page.\n\nNext up: links and images!",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You've mastered HTML elements! Ready for the next challenge?"
+      }
+    }
+  ]
+}

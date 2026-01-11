@@ -1,0 +1,50 @@
+# Pre-commit hooks - Better than Husky, more powerful and language-agnostic
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Biome - Linting and formatting
+  - repo: https://github.com/biomejs/pre-commit
+    rev: "v2.3.11"
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@2.3.11"]
+        args: ["--write", "--unsafe"]
+
+  # Python formatting (if we add Python scripts)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Security checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  # Commit message validation
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.4.1
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock.json

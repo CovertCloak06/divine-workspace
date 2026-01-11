@@ -1,0 +1,155 @@
+{
+  "id": "css-03-visual",
+  "title": "Box Model - Visual Builder (Beginner)",
+  "description": "Learn the CSS box model using interactive visual controls",
+  "difficulty": "beginner",
+  "tier": 1,
+  "estimatedTime": "10 minutes",
+  "steps": [
+    {
+      "title": "Step 1: Understanding the Box Model",
+      "content": "Every HTML element is a box! The CSS box model has four parts:\n- **Content** - The actual content (text, images)\n- **Padding** - Space inside the element, around content\n- **Border** - A line around the padding\n- **Margin** - Space outside the element\n\nUse the controls to adjust each part and see the changes in real-time!",
+      "visual": "<div class=\"box-model-diagram\"><div class=\"margin-layer\">Margin<div class=\"border-layer\">Border<div class=\"padding-layer\">Padding<div class=\"content-layer\">Content</div></div></div></div></div>",
+      "task": {
+        "type": "visual-adjuster",
+        "instruction": "Use the +/- buttons to set padding to 20px and margin to 10px:",
+        "element": "div",
+        "controls": [
+          {
+            "property": "padding",
+            "label": "Padding",
+            "min": 0,
+            "max": 50,
+            "step": 5,
+            "unit": "px",
+            "default": 0,
+            "target": 20
+          },
+          {
+            "property": "margin",
+            "label": "Margin",
+            "min": 0,
+            "max": 50,
+            "step": 5,
+            "unit": "px",
+            "default": 0,
+            "target": 10
+          }
+        ],
+        "previewElement": "<div style='background:#00ffff; color:#000; text-align:center; padding:10px;'>Sample Box</div>"
+      }
+    },
+    {
+      "title": "Step 2: Positioning Elements",
+      "content": "The `position` property controls how elements are placed on the page. Use `top`, `left`, `right`, and `bottom` to move positioned elements.\n\nTry moving the box around the screen!",
+      "visual": "<div class=\"position-demo\" style=\"position:relative; width:300px; height:200px; border:2px dashed #00ffff;\"><div class=\"moveable-box\" style=\"position:absolute; width:60px; height:60px; background:#00ffff;\"></div></div>",
+      "task": {
+        "type": "visual-adjuster",
+        "instruction": "Move the box to top: 50px and left: 100px:",
+        "element": "div",
+        "controls": [
+          {
+            "property": "top",
+            "label": "↕ Top",
+            "min": 0,
+            "max": 140,
+            "step": 10,
+            "unit": "px",
+            "default": 0,
+            "target": 50,
+            "showArrows": true
+          },
+          {
+            "property": "left",
+            "label": "↔ Left",
+            "min": 0,
+            "max": 240,
+            "step": 10,
+            "unit": "px",
+            "default": 0,
+            "target": 100,
+            "showArrows": true
+          }
+        ],
+        "previewElement": "<div style='position:absolute; width:60px; height:60px; background:#00ffff; border:2px solid #fff;'></div>",
+        "previewContainer": "position:relative; width:300px; height:200px; border:2px dashed #00ffff;"
+      }
+    },
+    {
+      "title": "Step 3: Size Controls",
+      "content": "Control element dimensions with `width` and `height` properties.\n\nMake the box bigger and smaller to see how it affects the layout!",
+      "visual": "<div class=\"code-example\"><code>div {<br>  width: 100px;<br>  height: 100px;<br>}</code></div>",
+      "task": {
+        "type": "visual-adjuster",
+        "instruction": "Set width to 150px and height to 100px:",
+        "element": "div",
+        "controls": [
+          {
+            "property": "width",
+            "label": "Width",
+            "min": 50,
+            "max": 300,
+            "step": 10,
+            "unit": "px",
+            "default": 100,
+            "target": 150
+          },
+          {
+            "property": "height",
+            "label": "Height",
+            "min": 50,
+            "max": 200,
+            "step": 10,
+            "unit": "px",
+            "default": 100,
+            "target": 100
+          }
+        ],
+        "previewElement": "<div style='background:#00ffff; color:#000; display:flex; align-items:center; justify-content:center;'>Resize Me</div>"
+      }
+    },
+    {
+      "title": "Step 4: Border Styling",
+      "content": "Borders have three properties: width, style, and color.\n\nExperiment with different border widths and see how it affects the box!",
+      "visual": "<div class=\"code-demo\"><div style=\"border:4px solid #00ffff; padding:20px; color:#00ffff;\">Bordered Box</div></div>",
+      "task": {
+        "type": "visual-adjuster",
+        "instruction": "Set border-width to 4px and border-radius to 10px:",
+        "element": "div",
+        "controls": [
+          {
+            "property": "border-width",
+            "label": "Border Width",
+            "min": 0,
+            "max": 20,
+            "step": 1,
+            "unit": "px",
+            "default": 0,
+            "target": 4
+          },
+          {
+            "property": "border-radius",
+            "label": "Border Radius",
+            "min": 0,
+            "max": 50,
+            "step": 5,
+            "unit": "px",
+            "default": 0,
+            "target": 10
+          }
+        ],
+        "previewElement": "<div style='background:#0a0a0a; color:#00ffff; padding:20px; border:2px solid #00ffff;'>Styled Box</div>",
+        "additionalStyles": "border-style: solid; border-color: #00ffff;"
+      }
+    },
+    {
+      "title": "Step 5: Complete!",
+      "content": "Awesome! You've learned the box model using visual controls. Now you understand:\n- Padding (inside spacing)\n- Margin (outside spacing)\n- Borders (element outline)\n- Positioning (moving elements)\n- Sizing (width & height)\n\nReady for intermediate mode where you'll edit code directly?",
+      "visual": "preview",
+      "task": {
+        "type": "completion",
+        "instruction": "You're ready for the next tier! Click Complete to continue."
+      }
+    }
+  ]
+}

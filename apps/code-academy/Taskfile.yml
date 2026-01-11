@@ -1,0 +1,183 @@
+# Taskfile - Modern task runner (better than Make)
+# Install: curl -sL https://taskfile.dev/install.sh | sh
+# Run: task <command>
+# Docs: https://taskfile.dev
+
+version: '3'
+
+vars:
+  PORT: 8011
+  NODE_VERSION: 20
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Install all dependencies
+    cmds:
+      - npm ci
+      - pip3 install --user -r requirements.txt
+    sources:
+      - package.json
+      - package-lock.json
+      - requirements.txt
+
+  dev:
+    desc: Start development server
+    cmds:
+      - npm run dev
+
+  build:
+    desc: Build for production
+    cmds:
+      - npm run build
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:unit
+      - task: test:e2e
+
+  test:unit:
+    desc: Run unit tests
+    cmds:
+      - npm run test
+
+  test:e2e:
+    desc: Run E2E tests
+    cmds:
+      - npm run test:e2e
+
+  test:a11y:
+    desc: Run accessibility tests
+    cmds:
+      - npm run test:a11y
+
+  lint:
+    desc: Lint code with Biome
+    cmds:
+      - npm run lint
+
+  lint:fix:
+    desc: Lint and auto-fix
+    cmds:
+      - npm run lint:fix
+
+  format:
+    desc: Format code with Biome
+    cmds:
+      - npm run format
+
+  format:check:
+    desc: Check code formatting
+    cmds:
+      - npm run format:check
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf dist build coverage playwright-report .nyc_output
+      - find . -name "*.log" -type f -delete
+
+  clean:all:
+    desc: Clean everything including node_modules
+    cmds:
+      - task: clean
+      - rm -rf node_modules
+
+  docker:build:
+    desc: Build Docker image
+    cmds:
+      - docker-compose build app
+
+  docker:up:
+    desc: Start Docker containers
+    cmds:
+      - docker-compose up -d app
+
+  docker:down:
+    desc: Stop Docker containers
+    cmds:
+      - docker-compose down
+
+  docker:dev:
+    desc: Run development in Docker
+    cmds:
+      - docker-compose --profile dev up dev
+
+  docker:logs:
+    desc: View Docker logs
+    cmds:
+      - docker-compose logs -f app
+
+  generate:component:
+    desc: Generate new component
+    cmds:
+      - npm run generate:component
+
+  generate:lesson:
+    desc: Generate new lesson
+    cmds:
+      - npm run generate:lesson
+
+  ci:
+    desc: Run full CI check locally
+    cmds:
+      - task: lint
+      - task: format:check
+      - task: test
+      - task: build
+    silent: false
+
+  pre-commit:
+    desc: Run pre-commit hooks manually
+    cmds:
+      - pre-commit run --all-files
+
+  pre-commit:update:
+    desc: Update pre-commit hooks
+    cmds:
+      - pre-commit autoupdate
+
+  security:
+    desc: Run security audit
+    cmds:
+      - npm audit --production
+      - pre-commit run detect-secrets --all-files
+
+  lighthouse:
+    desc: Run Lighthouse CI
+    cmds:
+      - npm run lighthouse
+
+  analyze:
+    desc: Analyze bundle size
+    cmds:
+      - npm run analyze
+
+  release:
+    desc: Create a new release
+    cmds:
+      - npm run release
+
+  setup:
+    desc: Initial project setup
+    cmds:
+      - task: install
+      - pre-commit install
+      - pre-commit install --hook-type commit-msg
+      - echo "✅ Project setup complete!"
+
+  health:
+    desc: Check project health
+    cmds:
+      - echo "📊 Project Health Check"
+      - echo "Node version:" && node --version
+      - echo "npm version:" && npm --version
+      - echo "Python version:" && python3 --version
+      - echo "pre-commit version:" && pre-commit --version
+      - echo "task version:" && task --version
+      - echo "✅ All tools installed"
