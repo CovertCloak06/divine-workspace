@@ -138,36 +138,47 @@ A custom Android keyboard fork based on [Unexpected Keyboard](https://github.com
 
 ## ⚠️ Important Notes
 
-### Old Location Still Exists
+### Old Location - Archive and Remove
 
-**`/home/gh0st/unexpected-keyboard-fork/`** still exists unchanged and has its own git repository with remotes:
-- `origin`: https://github.com/Julow/Unexpected-Keyboard.git (upstream)
-- `ghost`: https://github.com/CovertCloak06/Ghost-Keys.git (your fork)
+**`/home/gh0st/unexpected-keyboard-fork/`** still exists but is now OBSOLETE.
 
-**DO NOT DELETE YET** - This is your development repo with git history.
+**The monorepo is now the ONLY development location for Ghost Keys.**
 
-The monorepo copy is **INDEPENDENT** - changes in monorepo won't sync to your GitHub repo automatically.
+### Cleanup After Verification
 
-### Workflow Recommendation
+Once you've verified Ghost Keys works in the monorepo:
 
-**For active development on Ghost Keys:**
-1. Keep developing in `/home/gh0st/unexpected-keyboard-fork/`
-2. Commit and push to GitHub as usual
-3. When ready to integrate with monorepo, copy latest version:
-   ```bash
-   # Stop! Back up first
-   cp -r apps/ghost-keys apps/ghost-keys.backup
+```bash
+# 1. Archive the old location for backup
+tar -czf ~/backups/ghost-keys-pre-monorepo-$(date +%Y%m%d).tar.gz \
+  /home/gh0st/unexpected-keyboard-fork/
 
-   # Copy latest version
-   rsync -av --exclude='.git' --exclude='build' --exclude='.gradle' \
-     /home/gh0st/unexpected-keyboard-fork/ \
-     apps/ghost-keys/
-   ```
+# 2. Remove the old location
+rm -rf /home/gh0st/unexpected-keyboard-fork/
+```
 
-**For monorepo-only changes:**
-- Edit directly in `apps/ghost-keys/`
-- Commit to divine-workspace repo
-- Optionally copy back to standalone repo if needed
+### Git Integration
+
+Ghost Keys has its own GitHub repository. To push changes from the monorepo:
+
+**Option 1: Add as git subtree (recommended)**
+```bash
+cd /home/gh0st/dvn/divine-workspace
+git subtree add --prefix=apps/ghost-keys \
+  https://github.com/CovertCloak06/Ghost-Keys.git master --squash
+
+# Push changes
+git subtree push --prefix=apps/ghost-keys \
+  https://github.com/CovertCloak06/Ghost-Keys.git master
+```
+
+**Option 2: Manual sync when needed**
+```bash
+# Copy from monorepo to temp dir, push from there
+# Only if you need to maintain the separate GitHub repo
+```
+
+**Recommended: Just develop in the monorepo.** The GitHub repo can be archived or updated occasionally via subtree.
 
 ### Android Requirements
 

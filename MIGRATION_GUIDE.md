@@ -4,6 +4,18 @@
 
 **Every project you have MUST be moved into this monorepo structure.**
 
+## 🎯 MIGRATION PHILOSOPHY
+
+**ONE SOURCE OF TRUTH**: After migration, the monorepo is the ONLY development location.
+
+1. ✅ **DO**: Develop in `/home/gh0st/dvn/divine-workspace/apps/your-app/`
+2. ❌ **DON'T**: Keep old locations as "active development"
+3. ✅ **DO**: Archive old locations as backups
+4. ❌ **DON'T**: Maintain parallel development environments
+5. ✅ **DO**: Delete old locations after verification
+
+**The monorepo has ALL the tools you need. There is NO reason to work elsewhere.**
+
 ---
 
 ## 📋 Projects That Need Migration
@@ -299,6 +311,34 @@ cd /home/gh0st/pkn && npm install  ❌
 cd /home/gh0st/dvn/divine-workspace
 just dev-app pkn  ✅
 ```
+
+### Cleanup Old Locations
+
+**After you've verified everything works, DELETE the old locations:**
+
+```bash
+# 1. Create backup archive first
+mkdir -p ~/backups
+tar -czf ~/backups/pre-monorepo-$(date +%Y%m%d).tar.gz \
+  /home/gh0st/pkn/ \
+  /home/gh0st/unexpected-keyboard-fork/ \
+  /home/gh0st/dvn/code-academy/
+
+# 2. Verify archive created
+ls -lh ~/backups/pre-monorepo-*.tar.gz
+
+# 3. DELETE old locations
+rm -rf /home/gh0st/pkn/
+rm -rf /home/gh0st/unexpected-keyboard-fork/
+rm -rf /home/gh0st/dvn/code-academy/
+
+# 4. Verify only monorepo remains
+cd /home/gh0st/dvn/divine-workspace
+ls apps/
+# Should show: code-academy, pkn, debugger-extension, ghost-keys
+```
+
+**No parallel development environments. Monorepo is the ONLY source.**
 
 ---
 
