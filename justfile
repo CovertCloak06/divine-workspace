@@ -146,7 +146,7 @@ lint:
 # Format all code
 format:
     @echo "✨ Formatting all code..."
-    @pnpm biome format --write apps/ packages/
+    @pnpm biome format --write apps/ packages/ 2>/dev/null || true
     @find apps -name "*.py" -exec ruff format {} + 2>/dev/null || true
 
 # Run full CI checks (lint + format + test)
