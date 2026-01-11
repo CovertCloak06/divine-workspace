@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<row height="0.75">
+  <key key0="macro_drawer"
+       key1="save_macro"
+       key2="macro_next"
+       key3="macro_prev"/>
+  <key key0="Top:'htop\n'"
+       key1="PS:'ps aux\n'"
+       key2="PSG:'ps aux | grep '"
+       key3="Kill:'kill -9 '"/>
+  <key key0="RAM:'free -h\n'"
+       key1="Mem:'cat /proc/meminfo\n'"
+       key2="Swap:'swapon --show\n'"
+       key3="Cache:'sync; echo 3 > /proc/sys/vm/drop_caches\n'"/>
+  <key key0="Disk:'df -h\n'"
+       key1="DU:'du -sh *\n'"
+       key2="IO:'iostat\n'"
+       key3="Mnt:'mount | column -t\n'"/>
+  <key key0="Net:'netstat -tuln\n'"
+       key1="SS:'ss -tuln\n'"
+       key2="Ports:'lsof -i\n'"
+       key3="IP:'ip addr\n'"/>
+  <key key0="Find:'find . -name '"
+       key1="Grep:'grep -r &quot;&quot; .\n'"
+       key2="Loc:'locate '"
+       key3="Which:'which '"/>
+  <key key0="Tail:'tail -f '"
+       key1="T50:'tail -50 '"
+       key2="Head:'head -50 '"
+       key3="Less:'less '"/>
+  <key key0="Chmod:'chmod +x '"
+       key1="Chown:'chown $USER:$USER '"
+       key2="Ln:'ln -s '"
+       key3="Mkdir:'mkdir -p '"/>
+</row>

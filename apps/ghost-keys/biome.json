@@ -1,0 +1,22 @@
+{
+  "extends": ["@divine/shared-config/biome.json"],
+  "files": {
+    "includes": ["**/*.py", "**/*.xml", "**/*.java", "**/*.kt", "**/*.kts"],
+    "ignore": [
+      "build/**",
+      ".gradle/**",
+      "gradle/**",
+      "gradlew",
+      "gradlew.bat",
+      "res/**",
+      "srcs/**"
+    ]
+  },
+  "linter": {
+    "rules": {
+      "correctness": {
+        "noUndeclaredVariables": "off"
+      }
+    }
+  }
+}

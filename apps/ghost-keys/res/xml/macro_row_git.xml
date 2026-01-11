@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<row height="0.75">
+  <key key0="macro_drawer"
+       key1="save_macro"
+       key2="macro_next"
+       key3="macro_prev"/>
+  <key key0="Push:'git push\n'"
+       key1="Force:'git push -f\n'"
+       key2="Origin:'git push origin\n'"
+       key3="Tags:'git push --tags\n'"/>
+  <key key0="Pull:'git pull\n'"
+       key1="Rebase:'git pull --rebase\n'"
+       key2="Origin:'git pull origin\n'"
+       key3="FF:'git pull --ff-only\n'"/>
+  <key key0="Commit:'git commit -m &quot;'"
+       key1="Amend:'git commit --amend\n'"
+       key2="All:'git commit -am &quot;'"
+       key3="Empty:'git commit --allow-empty -m &quot;'"/>
+  <key key0="Status:'git status\n'"
+       key1="Short:'git status -s\n'"
+       key2="Branch:'git branch -vv\n'"
+       key3="Remote:'git remote -v\n'"/>
+  <key key0="Diff:'git diff\n'"
+       key1="Staged:'git diff --staged\n'"
+       key2="Stat:'git diff --stat\n'"
+       key3="HEAD:'git diff HEAD~1\n'"/>
+  <key key0="Log:'git log --oneline -10\n'"
+       key1="Graph:'git log --graph --oneline -20\n'"
+       key2="All:'git log --all --oneline -15\n'"
+       key3="Stat:'git log --stat -5\n'"/>
+  <key key0="Stash:'git stash\n'"
+       key1="Pop:'git stash pop\n'"
+       key2="List:'git stash list\n'"
+       key3="Drop:'git stash drop\n'"/>
+</row>

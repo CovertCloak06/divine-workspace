@@ -1,0 +1,24 @@
+{
+  "name": "@divine/ghost-keys",
+  "version": "1.0.0",
+  "description": "Ghost Keys - Custom Android keyboard with PKN macro row, cyberpunk themes, and optimized layout",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "echo 'Android development: Use Android Studio or ./gradlew assembleDebug'",
+    "build": "./gradlew assembleDebug",
+    "build:release": "./gradlew assembleRelease",
+    "install-apk": "adb install build/outputs/apk/debug/Unexpected-Keyboard-debug.apk",
+    "uninstall-apk": "adb uninstall juloo.keyboard2",
+    "clean": "./gradlew clean",
+    "lint": "biome lint . --skip-errors",
+    "format": "biome format --write . --skip-errors",
+    "check-layout": "python3 check_layout.py"
+  },
+  "keywords": ["android", "keyboard", "pkn", "termux", "macro", "cyberpunk", "ghost-keys"],
+  "author": "Divine Node",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CovertCloak06/Ghost-Keys.git"
+  }
+}

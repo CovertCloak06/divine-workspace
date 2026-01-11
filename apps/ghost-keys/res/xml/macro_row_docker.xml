@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<row height="0.75">
+  <key key0="macro_drawer"
+       key1="save_macro"
+       key2="macro_next"
+       key3="macro_prev"/>
+  <key key0="PS:'docker ps\n'"
+       key1="All:'docker ps -a\n'"
+       key2="Quiet:'docker ps -q\n'"
+       key3="Size:'docker ps -s\n'"/>
+  <key key0="Images:'docker images\n'"
+       key1="All:'docker images -a\n'"
+       key2="Dang:'docker images -f dangling=true\n'"
+       key3="Prune:'docker image prune -f\n'"/>
+  <key key0="Logs:'docker logs -f '"
+       key1="Tail:'docker logs --tail 100 '"
+       key2="Time:'docker logs --since 1h '"
+       key3="Err:'docker logs 2>&amp;1 '"/>
+  <key key0="Exec:'docker exec -it '"
+       key1="Bash:'docker exec -it  bash\n'"
+       key2="SH:'docker exec -it  sh\n'"
+       key3="Root:'docker exec -u root -it '"/>
+  <key key0="Stop:'docker stop '"
+       key1="All:'docker stop $(docker ps -q)\n'"
+       key2="Kill:'docker kill '"
+       key3="RM:'docker rm -f '"/>
+  <key key0="Up:'docker-compose up -d\n'"
+       key1="Down:'docker-compose down\n'"
+       key2="Build:'docker-compose build\n'"
+       key3="Logs:'docker-compose logs -f\n'"/>
+  <key key0="Pull:'docker pull '"
+       key1="Build:'docker build -t '"
+       key2="Run:'docker run -d '"
+       key3="Vol:'docker volume ls\n'"/>
+</row>

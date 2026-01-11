@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<row height="0.75">
+  <key key0="macro_drawer"
+       key1="save_macro"
+       key2="macro_next"
+       key3="macro_prev"/>
+  <key key0="Save:'\u0018\u0013'"
+       key1="SaveAs:'\u0018'"/>
+  <key key0="Exit:'\u0018'"
+       key1="Abort:'\u0007'"/>
+  <key key0="Cut:'\u000B'"
+       key1="UnCut:'\u0015'"
+       key2="Copy:'\u0001\u0006\u000B'"/>
+  <key key0="Mark:'\u0006'"
+       key1="MarkAll:'\u0001\u0006'"/>
+  <key key0="Where:'\u0017'"
+       key1="Replace:'\u0012'"
+       key2="Next:'\u0017\n'"/>
+  <key key0="Undo:'\u001F'"
+       key1="Redo:'\u0005'"/>
+  <key key0="GoTo:'\u0014'"
+       key1="Top:'\u0019\u0016'"
+       key2="End:'\u0019\u0017'"/>
+</row>

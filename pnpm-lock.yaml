@@ -93,6 +93,8 @@ importers:
 
   apps/debugger-extension: {}
 
+  apps/ghost-keys: {}
+
   apps/pkn:
     dependencies:
       '@capacitor/android':
