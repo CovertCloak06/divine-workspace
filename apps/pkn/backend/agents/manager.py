@@ -120,7 +120,7 @@ class AgentManager:
             "capabilities": ["code_writing", "debugging", "refactoring", "code_review"],
             "speed": "slow",  # ~6s for simple tasks
             "quality": "high",  # Best code quality
-            "tools_enabled": True,
+            "tools_enabled": False,  # Simplified for now - basic chat works
         }
 
         # Reasoner Agent - Could use DeepSeek or same Qwen
@@ -131,29 +131,29 @@ class AgentManager:
             "capabilities": ["planning", "logic", "problem_solving", "analysis"],
             "speed": "slow",
             "quality": "high",
-            "tools_enabled": True,
+            "tools_enabled": False,  # Simplified for now
         }
 
         # Researcher Agent - Enhanced agent with web tools
         self.agents[AgentType.RESEARCHER] = {
             "name": "Research Agent",
-            "model": "enhanced_agent",
-            "endpoint": None,  # Uses local_parakleon_agent directly
+            "model": "llamacpp:local",
+            "endpoint": "http://127.0.0.1:8000/v1",
             "capabilities": ["web_search", "documentation", "fact_checking"],
             "speed": "very_slow",  # Includes web lookups
             "quality": "high",
-            "tools_enabled": True,
+            "tools_enabled": False,  # Simplified for now
         }
 
         # Executor Agent - For system commands (uses enhanced agent)
         self.agents[AgentType.EXECUTOR] = {
             "name": "Executor Agent",
-            "model": "enhanced_agent",
-            "endpoint": None,
+            "model": "llamacpp:local",
+            "endpoint": "http://127.0.0.1:8000/v1",
             "capabilities": ["command_execution", "file_operations", "system_tasks"],
             "speed": "medium",
             "quality": "medium",
-            "tools_enabled": True,
+            "tools_enabled": False,  # Simplified for now
         }
 
         # General Agent - For simple Q&A (Ollama if available, else Qwen)
@@ -899,6 +899,81 @@ class AgentManager:
             return report
         except Exception as e:
             return f"Error generating report: {str(e)}"
+
+    async def _call_chat_api(
+        self,
+        instruction: str,
+        endpoint: str,
+        model: str,
+        system_prompt: str = None,
+    ) -> str:
+        """
+        Call a chat API endpoint (supports both Ollama and OpenAI-compatible).
+
+        Args:
+            instruction: User message/prompt
+            endpoint: API endpoint URL (e.g., http://127.0.0.1:8000/v1)
+            model: Model identifier
+            system_prompt: Optional system message for the LLM
+
+        Returns:
+            str: The LLM's response text
+        """
+        import requests
+
+        # Build messages array with system prompt
+        messages = []
+
+        # Add system message for English-only enforcement
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        else:
+            # Default English-only enforcement
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "IMPORTANT: You must respond ONLY in English. Never use Chinese, Spanish, or any other language. English only.",
+                }
+            )
+
+        # Add user message
+        messages.append({"role": "user", "content": instruction})
+
+        # Determine if this is Ollama or OpenAI-compatible endpoint
+        if model.startswith("ollama:"):
+            # Ollama endpoint
+            actual_model = model.replace("ollama:", "", 1)
+            url = f"{endpoint}/api/chat"
+            payload = {"model": actual_model, "messages": messages, "stream": False}
+        else:
+            # OpenAI-compatible endpoint (llama.cpp, etc.)
+            url = f"{endpoint}/chat/completions"
+            payload = {"model": model, "messages": messages}
+
+        try:
+            response = requests.post(url, json=payload, timeout=120)
+            response.raise_for_status()
+
+            data = response.json()
+
+            # Handle different response formats
+            if "message" in data and "content" in data["message"]:
+                # Ollama format
+                return data["message"]["content"]
+            elif "choices" in data and len(data["choices"]) > 0:
+                # OpenAI format
+                return data["choices"][0]["message"]["content"]
+            else:
+                return f"Error: Unexpected response format from {endpoint}"
+
+        except requests.exceptions.Timeout:
+            return "Error: LLM request timed out after 120 seconds"
+        except requests.exceptions.ConnectionError:
+            return f"Error: Could not connect to LLM at {endpoint}. Is the server running?"
+        except requests.exceptions.HTTPError as e:
+            return f"Error: LLM API returned error {e.response.status_code}: {e.response.text}"
+        except Exception as e:
+            return f"Error calling LLM API: {str(e)}"
 
     def get_agent_stats(self) -> Dict[str, Any]:
         """Get statistics about agent usage"""
