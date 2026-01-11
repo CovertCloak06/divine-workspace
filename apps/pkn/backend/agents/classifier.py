@@ -300,7 +300,7 @@ class TaskClassifier:
                 'estimated_time': str
             }
         """
-        classification = self.classify_task(instruction)
+        classification = self.classify(instruction)
 
         # Determine strategy
         if classification["complexity"] == TaskComplexity.COMPLEX:

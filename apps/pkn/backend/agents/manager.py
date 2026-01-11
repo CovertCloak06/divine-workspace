@@ -43,9 +43,12 @@ class AgentManager:
     Routes tasks to the most appropriate agent based on task type and complexity.
     """
 
-    def __init__(self, project_root: str = "/home/gh0st/pkn"):
+    def __init__(self, project_root: str = None):
         from pathlib import Path
 
+        # Auto-detect project root: backend/agents/manager.py -> apps/pkn/
+        if project_root is None:
+            project_root = Path(__file__).parent.parent.parent
         self.project_root = Path(project_root)
         self.agents = {}
         self.active_tasks = {}
@@ -57,6 +60,9 @@ class AgentManager:
 
         # Initialize available agents
         self._init_agents()
+
+        # Give classifier access to agent configurations
+        self.classifier.agents = self.agents
 
         # Initialize advanced features
         try:
