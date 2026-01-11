@@ -1,0 +1,90 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PKN: Start Server",
+      "type": "shell",
+      "command": "just dev-app pkn",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "PKN: Run Tests",
+      "type": "shell",
+      "command": "just test-app pkn",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Code Academy: Dev Server",
+      "type": "shell",
+      "command": "just dev-app code-academy",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Code Academy: Run Tests",
+      "type": "shell",
+      "command": "just test-app code-academy",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "PKN Mobile: Start Server",
+      "type": "shell",
+      "command": "just dev-app pkn-mobile",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "All: Health Check",
+      "type": "shell",
+      "command": "just health",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "All: Run CI",
+      "type": "shell",
+      "command": "just ci",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "All: Format Code",
+      "type": "shell",
+      "command": "just format",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "All: Lint Code",
+      "type": "shell",
+      "command": "just lint",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "All: Build",
+      "type": "shell",
+      "command": "just build",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

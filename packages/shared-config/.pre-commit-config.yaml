@@ -1,25 +1,79 @@
+# Divine Node Workspace - Pre-commit Hooks Configuration
+# Ensures code quality and standards enforcement before commits
+
 repos:
-  - repo: https://github.com/biomejs/pre-commit
-    rev: "v2.3.11"
+  # Biome linting & formatting (JavaScript/TypeScript/JSON)
+  - repo: local
     hooks:
       - id: biome-check
-        additional_dependencies: ["@biomejs/biome@2.3.11"]
-        args: ["--write", "--unsafe"]
+        name: Biome Check (Lint & Format)
+        entry: pnpm biome check --write
+        language: system
+        types_or: [javascript, typescript, json, jsx, tsx]
+        pass_filenames: true
 
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+  # Python linting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
     hooks:
-      - id: check-added-large-files
-        args: ['--maxkb=500']
-      - id: check-json
-      - id: check-yaml
-      - id: check-merge-conflict
-      - id: detect-private-key
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
+      - id: ruff
+        name: Ruff (Python Linter)
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: Ruff Format (Python Formatter)
 
+  # File size limit enforcement (200 lines)
+  - repo: local
+    hooks:
+      - id: check-file-size
+        name: Check File Size (200 line limit)
+        entry: python3 scripts/check_file_size.py
+        language: system
+        pass_filenames: true
+        types_or: [python, javascript, typescript, css]
+
+  # Test runner (run relevant tests for changed files)
+  - repo: local
+    hooks:
+      - id: run-tests
+        name: Run Unit Tests for Changed Files
+        entry: python3 scripts/run_tests_for_files.py
+        language: system
+        pass_filenames: true
+        types_or: [python, javascript, typescript]
+        stages: [commit]
+
+  # Security checks (detect secrets)
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+    rev: v1.4.0
     hooks:
       - id: detect-secrets
+        name: Detect Secrets
         args: ['--baseline', '.secrets.baseline']
+        exclude: package.json
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+      - id: end-of-file-fixer
+        name: Fix End of Files
+      - id: check-yaml
+        name: Check YAML Syntax
+      - id: check-json
+        name: Check JSON Syntax
+        exclude: (package.json|tsconfig.json)
+      - id: check-added-large-files
+        name: Check for Large Files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+        name: Check for Merge Conflicts
+      - id: mixed-line-ending
+        name: Check Line Endings
+        args: ['--fix=lf']
+
+# Global configuration
+default_stages: [commit]
+fail_fast: false

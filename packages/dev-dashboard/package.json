@@ -1,0 +1,17 @@
+{
+  "name": "@divine/dev-dashboard",
+  "version": "1.0.0",
+  "description": "Development dashboard for Divine Node workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 src/dashboard.py"
+  },
+  "keywords": [
+    "dashboard",
+    "monitoring",
+    "dev-tools"
+  ],
+  "author": "Divine Node",
+  "license": "MIT"
+}

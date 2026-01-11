@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PKN: Debug Backend",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/pkn/server.py",
+      "args": ["--host", "0.0.0.0", "--port", "8010", "--debug"],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/apps/pkn"
+      },
+      "cwd": "${workspaceFolder}/apps/pkn"
+    },
+    {
+      "name": "PKN: Debug Agent Tests",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/pkn/tests/unit/test_agents.py",
+      "purpose": ["debug-test"],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/apps/pkn"
+      },
+      "cwd": "${workspaceFolder}/apps/pkn"
+    },
+    {
+      "name": "PKN Mobile: Debug Backend",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/pkn-mobile/backend/server.py",
+      "args": ["--host", "0.0.0.0", "--port", "8010", "--debug"],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/apps/pkn-mobile"
+      },
+      "cwd": "${workspaceFolder}/apps/pkn-mobile"
+    },
+    {
+      "name": "Code Academy: Debug Vite",
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Vite Dev Server",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@divine/code-academy", "dev"],
+      "skipFiles": ["<node_internals>/**"],
+      "cwd": "${workspaceFolder}/apps/code-academy"
+    },
+    {
+      "name": "Scripts: Debug Health Check",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/health_check.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
