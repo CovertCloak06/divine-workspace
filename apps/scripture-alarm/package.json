@@ -1,0 +1,31 @@
+{
+  "name": "@divine/scripture-alarm",
+  "version": "1.1.0",
+  "description": "Scripture Alarm - Android alarm clock that wakes you up with Bible verses read aloud via TTS",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Android development: Use Android Studio or ./gradlew assembleDebug'",
+    "build": "./gradlew assembleDebug",
+    "build:release": "./gradlew assembleRelease",
+    "install-apk": "~/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk",
+    "uninstall-apk": "~/platform-tools/adb uninstall com.covertcloak.scripturealarm",
+    "clean": "./gradlew clean",
+    "lint": "biome lint . --skip-errors",
+    "format": "biome format --write . --skip-errors"
+  },
+  "keywords": [
+    "android",
+    "alarm",
+    "bible",
+    "scripture",
+    "tts",
+    "kotlin"
+  ],
+  "author": "CovertCloak06",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CovertCloak06/scripture-alarm"
+  }
+}

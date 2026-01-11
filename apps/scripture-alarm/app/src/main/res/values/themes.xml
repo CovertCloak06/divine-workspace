@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Purple Theme (Default) -->
+    <style name="Theme.ScriptureAlarm" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#5C6BC0</item>
+        <item name="colorPrimaryVariant">#3949AB</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#7C4DFF</item>
+        <item name="android:statusBarColor">#3949AB</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#F5F5F7</item>
+        <item name="alarmBackgroundColor">#1A237E</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#212121</item>
+        <item name="textSecondaryColor">#757575</item>
+    </style>
+
+    <!-- Dark Purple Theme -->
+    <style name="Theme.ScriptureAlarm.DarkPurple" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#7C4DFF</item>
+        <item name="colorPrimaryVariant">#651FFF</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#B388FF</item>
+        <item name="android:statusBarColor">#1A1A2E</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#1A1A2E</item>
+        <item name="alarmBackgroundColor">#0D0D1A</item>
+        <item name="cardBackgroundColor">#2D2D44</item>
+        <item name="textPrimaryColor">#FFFFFF</item>
+        <item name="textSecondaryColor">#B0B0B0</item>
+    </style>
+
+    <!-- Blue Theme -->
+    <style name="Theme.ScriptureAlarm.Blue" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#2196F3</item>
+        <item name="colorPrimaryVariant">#1976D2</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#03A9F4</item>
+        <item name="android:statusBarColor">#1976D2</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#E3F2FD</item>
+        <item name="alarmBackgroundColor">#0D47A1</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#0D47A1</item>
+        <item name="textSecondaryColor">#1565C0</item>
+    </style>
+
+    <!-- Dark Blue Theme -->
+    <style name="Theme.ScriptureAlarm.DarkBlue" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#42A5F5</item>
+        <item name="colorPrimaryVariant">#1E88E5</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#64B5F6</item>
+        <item name="android:statusBarColor">#0D1B2A</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#0D1B2A</item>
+        <item name="alarmBackgroundColor">#051322</item>
+        <item name="cardBackgroundColor">#1B3A4B</item>
+        <item name="textPrimaryColor">#FFFFFF</item>
+        <item name="textSecondaryColor">#90CAF9</item>
+    </style>
+
+    <!-- Green Theme -->
+    <style name="Theme.ScriptureAlarm.Green" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#4CAF50</item>
+        <item name="colorPrimaryVariant">#388E3C</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#8BC34A</item>
+        <item name="android:statusBarColor">#388E3C</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#E8F5E9</item>
+        <item name="alarmBackgroundColor">#1B5E20</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#1B5E20</item>
+        <item name="textSecondaryColor">#2E7D32</item>
+    </style>
+
+    <!-- Dark Green Theme -->
+    <style name="Theme.ScriptureAlarm.DarkGreen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#66BB6A</item>
+        <item name="colorPrimaryVariant">#43A047</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#81C784</item>
+        <item name="android:statusBarColor">#1A2E1A</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#1A2E1A</item>
+        <item name="alarmBackgroundColor">#0D1F0D</item>
+        <item name="cardBackgroundColor">#2E4A2E</item>
+        <item name="textPrimaryColor">#FFFFFF</item>
+        <item name="textSecondaryColor">#A5D6A7</item>
+    </style>
+
+    <!-- Orange Theme -->
+    <style name="Theme.ScriptureAlarm.Orange" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#FF9800</item>
+        <item name="colorPrimaryVariant">#F57C00</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#FFB74D</item>
+        <item name="android:statusBarColor">#F57C00</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#FFF3E0</item>
+        <item name="alarmBackgroundColor">#E65100</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#E65100</item>
+        <item name="textSecondaryColor">#F57C00</item>
+    </style>
+
+    <!-- Dark Orange Theme -->
+    <style name="Theme.ScriptureAlarm.DarkOrange" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#FFA726</item>
+        <item name="colorPrimaryVariant">#FB8C00</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#FFCC80</item>
+        <item name="android:statusBarColor">#2E1A0D</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#2E1A0D</item>
+        <item name="alarmBackgroundColor">#1F0F05</item>
+        <item name="cardBackgroundColor">#4A3020</item>
+        <item name="textPrimaryColor">#FFFFFF</item>
+        <item name="textSecondaryColor">#FFCC80</item>
+    </style>
+
+    <!-- Pink Theme -->
+    <style name="Theme.ScriptureAlarm.Pink" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#E91E63</item>
+        <item name="colorPrimaryVariant">#C2185B</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#F48FB1</item>
+        <item name="android:statusBarColor">#C2185B</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#FCE4EC</item>
+        <item name="alarmBackgroundColor">#880E4F</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#880E4F</item>
+        <item name="textSecondaryColor">#AD1457</item>
+    </style>
+
+    <!-- Teal Theme -->
+    <style name="Theme.ScriptureAlarm.Teal" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#009688</item>
+        <item name="colorPrimaryVariant">#00796B</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#4DB6AC</item>
+        <item name="android:statusBarColor">#00796B</item>
+        <item name="android:windowBackground">?appBackgroundColor</item>
+        <item name="appBackgroundColor">#E0F2F1</item>
+        <item name="alarmBackgroundColor">#004D40</item>
+        <item name="cardBackgroundColor">#FFFFFF</item>
+        <item name="textPrimaryColor">#004D40</item>
+        <item name="textSecondaryColor">#00695C</item>
+    </style>
+</resources>

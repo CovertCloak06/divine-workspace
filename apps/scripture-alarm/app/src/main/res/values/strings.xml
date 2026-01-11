@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Scripture Alarm</string>
+    <string name="default_verse">"The Lord is my shepherd; I shall not want."</string>
+</resources>

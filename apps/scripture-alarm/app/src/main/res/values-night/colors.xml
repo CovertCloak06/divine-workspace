@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher icon background -->
+    <color name="ic_launcher_background">#121212</color>
+
+    <!-- Primary colors (same as light) -->
+    <color name="primary">#7C8FE8</color>
+    <color name="primary_dark">#5C6BC0</color>
+    <color name="primary_light">#9FA8DA</color>
+
+    <!-- Background colors (dark) -->
+    <color name="background">#121212</color>
+    <color name="card_background">#1E1E1E</color>
+    <color name="alarm_background">#1A237E</color>
+    <color name="verse_card_background">#2D2D2D</color>
+
+    <!-- Text colors (light on dark) -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+    <color name="alarm_text">#FFFFFF</color>
+    <color name="alarm_text_secondary">#B3E5FC</color>
+    <color name="verse_text">#E0E0E0</color>
+    <color name="verse_reference">#9FA8DA</color>
+
+    <!-- Button colors -->
+    <color name="button_secondary">#546E7A</color>
+
+    <!-- Day toggle colors -->
+    <color name="day_toggle_text">#9FA8DA</color>
+    <color name="day_toggle_background">#2D2D2D</color>
+    <color name="day_toggle_checked">#7C8FE8</color>
+</resources>
