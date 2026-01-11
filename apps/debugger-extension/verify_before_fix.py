@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
+
 def find_function_calls(function_name, project_dir):
     """Find all calls to a function | Shows which files use it | ref:CLAUDE.md (Code Documentation Standard)"""
 
@@ -30,25 +31,25 @@ def find_function_calls(function_name, project_dir):
     imports = []  # List of (file, line_num, context)
 
     # Search all JS files
-    js_files = list(project_path.glob('*.js')) + list(project_path.glob('js/*.js'))
+    js_files = list(project_path.glob("*.js")) + list(project_path.glob("js/*.js"))
 
     for js_file in js_files:
-        if 'node_modules' in str(js_file) or '.min.js' in str(js_file):
+        if "node_modules" in str(js_file) or ".min.js" in str(js_file):
             continue
 
         file_rel = str(js_file.relative_to(project_path))
 
         try:
-            with open(js_file, 'r', encoding='utf-8') as f:
+            with open(js_file, "r", encoding="utf-8") as f:
                 lines = f.readlines()
 
                 for line_num, line in enumerate(lines, 1):
                     # Check for function definition | function foo(), const foo = (), export function foo()
                     def_patterns = [
-                        rf'^\s*function\s+{function_name}\s*\(',
-                        rf'^\s*const\s+{function_name}\s*=\s*(?:async\s*)?\(',
-                        rf'^\s*(?:export\s+)?function\s+{function_name}\s*\(',
-                        rf'^\s*(?:export\s+)?const\s+{function_name}\s*=\s*(?:async\s*)?\(',
+                        rf"^\s*function\s+{function_name}\s*\(",
+                        rf"^\s*const\s+{function_name}\s*=\s*(?:async\s*)?\(",
+                        rf"^\s*(?:export\s+)?function\s+{function_name}\s*\(",
+                        rf"^\s*(?:export\s+)?const\s+{function_name}\s*=\s*(?:async\s*)?\(",
                     ]
 
                     for pattern in def_patterns:
@@ -57,13 +58,15 @@ def find_function_calls(function_name, project_dir):
                             break
 
                     # Check for function calls | foo(), window.foo(), obj.foo()
-                    call_pattern = rf'{function_name}\s*\('
-                    if re.search(call_pattern, line) and not any(re.search(p, line) for p in def_patterns):
+                    call_pattern = rf"{function_name}\s*\("
+                    if re.search(call_pattern, line) and not any(
+                        re.search(p, line) for p in def_patterns
+                    ):
                         # Exclude definition lines
                         calls.append((file_rel, line_num, line.strip()))
 
                     # Check for imports | import { foo } from './bar'
-                    import_pattern = rf'import\s+.*{function_name}.*from'
+                    import_pattern = rf"import\s+.*{function_name}.*from"
                     if re.search(import_pattern, line):
                         imports.append((file_rel, line_num, line.strip()))
 
@@ -146,7 +149,8 @@ def find_function_calls(function_name, project_dir):
 
     print()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python3 verify_before_fix.py <function_name> [project_dir]")
         print("\nExample:")
@@ -154,6 +158,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     function_name = sys.argv[1]
-    project_dir = sys.argv[2] if len(sys.argv) > 2 else '/home/gh0st/pkn'
+    project_dir = sys.argv[2] if len(sys.argv) > 2 else "/home/gh0st/pkn"
 
     find_function_calls(function_name, project_dir)

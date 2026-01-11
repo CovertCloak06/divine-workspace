@@ -29,7 +29,7 @@ def bash(
     command: str,
     cwd: Optional[str] = None,
     timeout: int = 120,
-    description: Optional[str] = None
+    description: Optional[str] = None,
 ) -> str:
     """
     Execute a shell command with full bash capabilities.
@@ -79,7 +79,7 @@ def bash(
             cwd=str(working_dir),
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
         )
 
         # Combine stdout and stderr
@@ -95,7 +95,7 @@ def bash(
         # Add return code
         output.append(f"\nReturn code: {result.returncode}")
 
-        return '\n'.join(output)
+        return "\n".join(output)
 
     except subprocess.TimeoutExpired:
         return f"Error: Command timed out after {timeout} seconds"
@@ -105,9 +105,7 @@ def bash(
 
 @tool
 def bash_background(
-    command: str,
-    cwd: Optional[str] = None,
-    description: Optional[str] = None
+    command: str, cwd: Optional[str] = None, description: Optional[str] = None
 ) -> str:
     """
     Execute a command in the background (non-blocking).
@@ -142,7 +140,7 @@ def bash_background(
             shell=True,
             cwd=str(working_dir),
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
         )
 
         return f"✅ Started background process (PID: {process.pid})"
@@ -174,11 +172,7 @@ def process_list(filter_pattern: Optional[str] = None) -> str:
             cmd = "ps aux"
 
         result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=10
+            cmd, shell=True, capture_output=True, text=True, timeout=10
         )
 
         if not result.stdout.strip():
@@ -221,9 +215,9 @@ def process_kill(pid_or_name: str, force: bool = False) -> str:
             return f"✅ Killed process {pid} ({'SIGKILL' if force else 'SIGTERM'})"
         else:
             # Kill by name using pkill
-            cmd = ['pkill']
+            cmd = ["pkill"]
             if force:
-                cmd.append('-9')  # SIGKILL
+                cmd.append("-9")  # SIGKILL
             cmd.append(pid_or_name)
 
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -242,11 +236,7 @@ def process_kill(pid_or_name: str, force: bool = False) -> str:
 
 
 @tool
-def read_logs(
-    file_path: str,
-    lines: int = 50,
-    follow: bool = False
-) -> str:
+def read_logs(file_path: str, lines: int = 50, follow: bool = False) -> str:
     """
     Read log files (like tail command).
 
@@ -272,10 +262,10 @@ def read_logs(
 
         # Use tail command for efficiency
         result = subprocess.run(
-            ['tail', '-n', str(lines), str(path)],
+            ["tail", "-n", str(lines), str(path)],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
         )
 
         if not result.stdout:
@@ -320,31 +310,38 @@ def todo_write(todos: List[Dict[str, str]]) -> str:
         valid_statuses = {"pending", "in_progress", "completed"}
         for todo in todos:
             if not all(k in todo for k in ["content", "status", "activeForm"]):
-                return "Error: Each todo must have 'content', 'status', and 'activeForm'"
+                return (
+                    "Error: Each todo must have 'content', 'status', and 'activeForm'"
+                )
             if todo["status"] not in valid_statuses:
                 return f"Error: Invalid status '{todo['status']}'. Must be: {valid_statuses}"
 
         # Format output
         output = ["📋 Task List:", ""]
 
-        status_icons = {
-            "pending": "⏳",
-            "in_progress": "🔄",
-            "completed": "✅"
-        }
+        status_icons = {"pending": "⏳", "in_progress": "🔄", "completed": "✅"}
 
         for i, todo in enumerate(todos, 1):
             icon = status_icons[todo["status"]]
-            status_text = todo["activeForm"] if todo["status"] == "in_progress" else todo["content"]
+            status_text = (
+                todo["activeForm"]
+                if todo["status"] == "in_progress"
+                else todo["content"]
+            )
             output.append(f"{i}. {icon} {status_text}")
 
         # Add summary
-        counts = {status: sum(1 for t in todos if t["status"] == status) for status in valid_statuses}
+        counts = {
+            status: sum(1 for t in todos if t["status"] == status)
+            for status in valid_statuses
+        }
         output.append("")
-        output.append(f"Progress: {counts['completed']}/{len(todos)} completed, "
-                     f"{counts['in_progress']} in progress, {counts['pending']} pending")
+        output.append(
+            f"Progress: {counts['completed']}/{len(todos)} completed, "
+            f"{counts['in_progress']} in progress, {counts['pending']} pending"
+        )
 
-        return '\n'.join(output)
+        return "\n".join(output)
 
     except Exception as e:
         return f"Error creating todo list: {e}"
@@ -366,15 +363,15 @@ def system_info() -> str:
 
         # CPU info
         try:
-            with open('/proc/cpuinfo', 'r') as f:
-                cpu_count = sum(1 for line in f if line.startswith('processor'))
+            with open("/proc/cpuinfo", "r") as f:
+                cpu_count = sum(1 for line in f if line.startswith("processor"))
             info.append(f"CPU Cores: {cpu_count}")
         except:
             pass
 
         # Memory info
         try:
-            with open('/proc/meminfo', 'r') as f:
+            with open("/proc/meminfo", "r") as f:
                 lines = f.readlines()
                 mem_total = int(lines[0].split()[1]) // 1024  # MB
                 mem_avail = int(lines[2].split()[1]) // 1024  # MB
@@ -387,21 +384,23 @@ def system_info() -> str:
         # Disk info
         try:
             result = subprocess.run(
-                ['df', '-h', str(PROJECT_ROOT)],
+                ["df", "-h", str(PROJECT_ROOT)],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
-            disk_lines = result.stdout.strip().split('\n')
+            disk_lines = result.stdout.strip().split("\n")
             if len(disk_lines) > 1:
                 disk_info = disk_lines[1].split()
-                info.append(f"Disk: {disk_info[2]}/{disk_info[1]} used ({disk_info[4]})")
+                info.append(
+                    f"Disk: {disk_info[2]}/{disk_info[1]} used ({disk_info[4]})"
+                )
         except:
             pass
 
         # Uptime
         try:
-            with open('/proc/uptime', 'r') as f:
+            with open("/proc/uptime", "r") as f:
                 uptime_sec = float(f.read().split()[0])
                 uptime_hours = int(uptime_sec // 3600)
                 info.append(f"Uptime: {uptime_hours} hours")
@@ -411,7 +410,7 @@ def system_info() -> str:
         if not info:
             return "System info unavailable"
 
-        return '\n'.join(info)
+        return "\n".join(info)
 
     except Exception as e:
         return f"Error getting system info: {e}"
@@ -425,15 +424,15 @@ TOOLS = [
     process_kill,
     read_logs,
     todo_write,
-    system_info
+    system_info,
 ]
 
 TOOL_DESCRIPTIONS = {
-    'bash': 'Execute any shell command (maximum power)',
-    'bash_background': 'Run long processes in background',
-    'process_list': 'List running processes',
-    'process_kill': 'Kill processes by PID or name',
-    'read_logs': 'Read log files (like tail)',
-    'todo_write': 'Create visual task lists for user',
-    'system_info': 'Get CPU, memory, disk usage',
+    "bash": "Execute any shell command (maximum power)",
+    "bash_background": "Run long processes in background",
+    "process_list": "List running processes",
+    "process_kill": "Kill processes by PID or name",
+    "read_logs": "Read log files (like tail)",
+    "todo_write": "Create visual task lists for user",
+    "system_info": "Get CPU, memory, disk usage",
 }

@@ -22,24 +22,24 @@ class ExternalLLM:
         keys = {}
 
         # Try environment variables first
-        keys['claude'] = os.getenv('ANTHROPIC_API_KEY', '')
-        keys['openai'] = os.getenv('OPENAI_API_KEY', '')
+        keys["claude"] = os.getenv("ANTHROPIC_API_KEY", "")
+        keys["openai"] = os.getenv("OPENAI_API_KEY", "")
 
         # Try .env file
-        env_file = Path(__file__).parent / '.env'
+        env_file = Path(__file__).parent / ".env"
         if env_file.exists():
-            with open(env_file, 'r') as f:
+            with open(env_file, "r") as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
-                        if '=' in line:
-                            key, value = line.split('=', 1)
+                    if line and not line.startswith("#"):
+                        if "=" in line:
+                            key, value = line.split("=", 1)
                             key = key.strip()
                             value = value.strip().strip('"').strip("'")
-                            if key == 'ANTHROPIC_API_KEY':
-                                keys['claude'] = value
-                            elif key == 'OPENAI_API_KEY':
-                                keys['openai'] = value
+                            if key == "ANTHROPIC_API_KEY":
+                                keys["claude"] = value
+                            elif key == "OPENAI_API_KEY":
+                                keys["openai"] = value
 
         return keys
 
@@ -47,10 +47,10 @@ class ExternalLLM:
         """Detect which external LLMs are available"""
         available = []
 
-        if self.api_keys.get('claude'):
-            available.append('claude')
-        if self.api_keys.get('openai'):
-            available.append('gpt')
+        if self.api_keys.get("claude"):
+            available.append("claude")
+        if self.api_keys.get("openai"):
+            available.append("gpt")
 
         return available
 
@@ -60,29 +60,26 @@ class ExternalLLM:
             return provider in self.available_models
         return len(self.available_models) > 0
 
-    async def query_claude(self, prompt: str, system_prompt: str = None,
-                          model: str = "claude-sonnet-4-5-20250929") -> Dict[str, Any]:
+    async def query_claude(
+        self,
+        prompt: str,
+        system_prompt: str = None,
+        model: str = "claude-sonnet-4-5-20250929",
+    ) -> Dict[str, Any]:
         """Query Claude API (Anthropic)"""
-        if not self.api_keys.get('claude'):
-            return {
-                'error': 'Claude API key not found',
-                'available': False
-            }
+        if not self.api_keys.get("claude"):
+            return {"error": "Claude API key not found", "available": False}
 
         try:
             # Use anthropic library if available
             try:
                 from anthropic import Anthropic
 
-                client = Anthropic(api_key=self.api_keys['claude'])
+                client = Anthropic(api_key=self.api_keys["claude"])
 
                 messages = [{"role": "user", "content": prompt}]
 
-                kwargs = {
-                    "model": model,
-                    "max_tokens": 4096,
-                    "messages": messages
-                }
+                kwargs = {"model": model, "max_tokens": 4096, "messages": messages}
 
                 if system_prompt:
                     kwargs["system"] = system_prompt
@@ -90,14 +87,14 @@ class ExternalLLM:
                 response = client.messages.create(**kwargs)
 
                 return {
-                    'provider': 'claude',
-                    'model': model,
-                    'response': response.content[0].text,
-                    'usage': {
-                        'input_tokens': response.usage.input_tokens,
-                        'output_tokens': response.usage.output_tokens
+                    "provider": "claude",
+                    "model": model,
+                    "response": response.content[0].text,
+                    "usage": {
+                        "input_tokens": response.usage.input_tokens,
+                        "output_tokens": response.usage.output_tokens,
                     },
-                    'available': True
+                    "available": True,
                 }
 
             except ImportError:
@@ -106,15 +103,15 @@ class ExternalLLM:
 
                 url = "https://api.anthropic.com/v1/messages"
                 headers = {
-                    "x-api-key": self.api_keys['claude'],
+                    "x-api-key": self.api_keys["claude"],
                     "anthropic-version": "2023-06-01",
-                    "content-type": "application/json"
+                    "content-type": "application/json",
                 }
 
                 data = {
                     "model": model,
                     "max_tokens": 4096,
-                    "messages": [{"role": "user", "content": prompt}]
+                    "messages": [{"role": "user", "content": prompt}],
                 }
 
                 if system_prompt:
@@ -126,35 +123,29 @@ class ExternalLLM:
                 result = response.json()
 
                 return {
-                    'provider': 'claude',
-                    'model': model,
-                    'response': result['content'][0]['text'],
-                    'usage': result.get('usage', {}),
-                    'available': True
+                    "provider": "claude",
+                    "model": model,
+                    "response": result["content"][0]["text"],
+                    "usage": result.get("usage", {}),
+                    "available": True,
                 }
 
         except Exception as e:
-            return {
-                'error': str(e),
-                'provider': 'claude',
-                'available': False
-            }
+            return {"error": str(e), "provider": "claude", "available": False}
 
-    async def query_gpt(self, prompt: str, system_prompt: str = None,
-                       model: str = "gpt-4o") -> Dict[str, Any]:
+    async def query_gpt(
+        self, prompt: str, system_prompt: str = None, model: str = "gpt-4o"
+    ) -> Dict[str, Any]:
         """Query GPT API (OpenAI)"""
-        if not self.api_keys.get('openai'):
-            return {
-                'error': 'OpenAI API key not found',
-                'available': False
-            }
+        if not self.api_keys.get("openai"):
+            return {"error": "OpenAI API key not found", "available": False}
 
         try:
             # Use openai library if available
             try:
                 from openai import OpenAI
 
-                client = OpenAI(api_key=self.api_keys['openai'])
+                client = OpenAI(api_key=self.api_keys["openai"])
 
                 messages = []
                 if system_prompt:
@@ -162,21 +153,19 @@ class ExternalLLM:
                 messages.append({"role": "user", "content": prompt})
 
                 response = client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    max_tokens=4096
+                    model=model, messages=messages, max_tokens=4096
                 )
 
                 return {
-                    'provider': 'gpt',
-                    'model': model,
-                    'response': response.choices[0].message.content,
-                    'usage': {
-                        'prompt_tokens': response.usage.prompt_tokens,
-                        'completion_tokens': response.usage.completion_tokens,
-                        'total_tokens': response.usage.total_tokens
+                    "provider": "gpt",
+                    "model": model,
+                    "response": response.choices[0].message.content,
+                    "usage": {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens,
+                        "total_tokens": response.usage.total_tokens,
                     },
-                    'available': True
+                    "available": True,
                 }
 
             except ImportError:
@@ -186,7 +175,7 @@ class ExternalLLM:
                 url = "https://api.openai.com/v1/chat/completions"
                 headers = {
                     "Authorization": f"Bearer {self.api_keys['openai']}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
 
                 messages = []
@@ -194,11 +183,7 @@ class ExternalLLM:
                     messages.append({"role": "system", "content": system_prompt})
                 messages.append({"role": "user", "content": prompt})
 
-                data = {
-                    "model": model,
-                    "messages": messages,
-                    "max_tokens": 4096
-                }
+                data = {"model": model, "messages": messages, "max_tokens": 4096}
 
                 response = requests.post(url, headers=headers, json=data, timeout=120)
                 response.raise_for_status()
@@ -206,50 +191,45 @@ class ExternalLLM:
                 result = response.json()
 
                 return {
-                    'provider': 'gpt',
-                    'model': model,
-                    'response': result['choices'][0]['message']['content'],
-                    'usage': result.get('usage', {}),
-                    'available': True
+                    "provider": "gpt",
+                    "model": model,
+                    "response": result["choices"][0]["message"]["content"],
+                    "usage": result.get("usage", {}),
+                    "available": True,
                 }
 
         except Exception as e:
-            return {
-                'error': str(e),
-                'provider': 'gpt',
-                'available': False
-            }
+            return {"error": str(e), "provider": "gpt", "available": False}
 
-    async def query_best_available(self, prompt: str, system_prompt: str = None,
-                                   prefer: str = 'claude') -> Dict[str, Any]:
+    async def query_best_available(
+        self, prompt: str, system_prompt: str = None, prefer: str = "claude"
+    ) -> Dict[str, Any]:
         """Query the best available external LLM"""
 
         if not self.is_available():
             return {
-                'error': 'No external LLM APIs available',
-                'available': False,
-                'suggestion': 'Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env file'
+                "error": "No external LLM APIs available",
+                "available": False,
+                "suggestion": "Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env file",
             }
 
         # Try preferred provider first
-        if prefer == 'claude' and self.is_available('claude'):
+        if prefer == "claude" and self.is_available("claude"):
             return await self.query_claude(prompt, system_prompt)
-        elif prefer == 'gpt' and self.is_available('gpt'):
+        elif prefer == "gpt" and self.is_available("gpt"):
             return await self.query_gpt(prompt, system_prompt)
 
         # Fallback to any available
-        if self.is_available('claude'):
+        if self.is_available("claude"):
             return await self.query_claude(prompt, system_prompt)
-        elif self.is_available('gpt'):
+        elif self.is_available("gpt"):
             return await self.query_gpt(prompt, system_prompt)
 
-        return {
-            'error': 'No external LLM APIs available',
-            'available': False
-        }
+        return {"error": "No external LLM APIs available", "available": False}
 
-    async def vote_on_decision(self, question: str, options: List[str],
-                              context: str = "") -> Dict[str, Any]:
+    async def vote_on_decision(
+        self, question: str, options: List[str], context: str = ""
+    ) -> Dict[str, Any]:
         """
         Use external LLM for voting on complex decisions.
 
@@ -271,7 +251,7 @@ class ExternalLLM:
 Your task is to analyze options and provide a well-reasoned choice.
 Always respond in JSON format with: choice, reasoning, confidence (0-1)."""
 
-        options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(options)])
+        options_text = "\n".join([f"{i + 1}. {opt}" for i, opt in enumerate(options)])
 
         prompt = f"""Question: {question}
 
@@ -289,39 +269,42 @@ Analyze these options and select the best one. Respond in JSON format:
 
         result = await self.query_best_available(prompt, system_prompt)
 
-        if not result.get('available'):
+        if not result.get("available"):
             # Fallback: simple heuristic choice
             return {
-                'choice': options[0],
-                'reasoning': 'External LLM unavailable, selected first option as default',
-                'confidence': 0.3,
-                'provider': 'fallback',
-                'error': result.get('error')
+                "choice": options[0],
+                "reasoning": "External LLM unavailable, selected first option as default",
+                "confidence": 0.3,
+                "provider": "fallback",
+                "error": result.get("error"),
             }
 
         try:
             # Parse JSON response
-            response_text = result['response']
+            response_text = result["response"]
 
             # Try to extract JSON from response
             import re
-            json_match = re.search(r'\{[^{}]*"choice"[^{}]*\}', response_text, re.DOTALL)
+
+            json_match = re.search(
+                r'\{[^{}]*"choice"[^{}]*\}', response_text, re.DOTALL
+            )
             if json_match:
                 decision_data = json.loads(json_match.group(0))
             else:
                 decision_data = json.loads(response_text)
 
             return {
-                'choice': decision_data.get('choice', options[0]),
-                'reasoning': decision_data.get('reasoning', response_text),
-                'confidence': float(decision_data.get('confidence', 0.7)),
-                'provider': result['provider'],
-                'model': result['model']
+                "choice": decision_data.get("choice", options[0]),
+                "reasoning": decision_data.get("reasoning", response_text),
+                "confidence": float(decision_data.get("confidence", 0.7)),
+                "provider": result["provider"],
+                "model": result["model"],
             }
 
         except Exception as e:
             # Fallback parsing
-            response_text = result['response']
+            response_text = result["response"]
 
             # Try to find which option was mentioned most
             choice = options[0]
@@ -331,11 +314,11 @@ Analyze these options and select the best one. Respond in JSON format:
                     break
 
             return {
-                'choice': choice,
-                'reasoning': response_text,
-                'confidence': 0.6,
-                'provider': result['provider'],
-                'parse_error': str(e)
+                "choice": choice,
+                "reasoning": response_text,
+                "confidence": 0.6,
+                "provider": result["provider"],
+                "parse_error": str(e),
             }
 
 
@@ -343,7 +326,7 @@ Analyze these options and select the best one. Respond in JSON format:
 external_llm = ExternalLLM()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test
     import asyncio
 
@@ -359,7 +342,7 @@ if __name__ == '__main__':
             result = await llm.vote_on_decision(
                 question="Which programming language is best for web scraping?",
                 options=["Python", "JavaScript", "Ruby"],
-                context="Need to scrape data from modern websites with JavaScript"
+                context="Need to scrape data from modern websites with JavaScript",
             )
 
             print(f"\nVoting result:")

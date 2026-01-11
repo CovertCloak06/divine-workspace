@@ -12,6 +12,7 @@ from io import BytesIO
 import os
 import sys
 
+
 class LocalImageGenerator:
     def __init__(self):
         self.pipe = None
@@ -40,11 +41,12 @@ class LocalImageGenerator:
             model_path,
             torch_dtype=torch.float32 if self.device == "cpu" else torch.float16,
             safety_checker=None,  # DISABLED - No censorship
-            requires_safety_checker=False  # Fully uncensored
+            requires_safety_checker=False,  # Fully uncensored
         )
 
         # Use Euler Discrete scheduler (most stable, works with any step count)
         from diffusers import EulerDiscreteScheduler
+
         self.pipe.scheduler = EulerDiscreteScheduler.from_config(
             self.pipe.scheduler.config
         )
@@ -59,7 +61,15 @@ class LocalImageGenerator:
 
         print("✓ Image generator ready!")
 
-    def generate(self, prompt, negative_prompt="", num_inference_steps=25, width=512, height=512, callback=None):
+    def generate(
+        self,
+        prompt,
+        negative_prompt="",
+        num_inference_steps=25,
+        width=512,
+        height=512,
+        callback=None,
+    ):
         """
         Generate an image from a text prompt
 
@@ -97,7 +107,7 @@ class LocalImageGenerator:
                 width=width,
                 height=height,
                 guidance_scale=7.5,
-                callback_on_step_end=progress_callback if callback else None
+                callback_on_step_end=progress_callback if callback else None,
             )
 
         # Get the image
@@ -111,8 +121,10 @@ class LocalImageGenerator:
         print("✓ Image generated successfully!")
         return f"data:image/png;base64,{img_str}"
 
+
 # Global instance (lazy loaded)
 _generator = None
+
 
 def get_generator():
     """Get or create the global generator instance"""
@@ -120,6 +132,7 @@ def get_generator():
     if _generator is None:
         _generator = LocalImageGenerator()
     return _generator
+
 
 def generate_image(prompt, **kwargs):
     """
@@ -135,7 +148,8 @@ def generate_image(prompt, **kwargs):
     gen = get_generator()
     return gen.generate(prompt, **kwargs)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # CLI usage
     if len(sys.argv) < 2:
         print("Usage: python3 local_image_gen.py '<prompt>'")
@@ -145,7 +159,7 @@ if __name__ == '__main__':
         print("✓ 100% local and private - no internet needed after download")
         sys.exit(1)
 
-    prompt = ' '.join(sys.argv[1:])
+    prompt = " ".join(sys.argv[1:])
 
     # Generate
     gen = LocalImageGenerator()
@@ -156,17 +170,18 @@ if __name__ == '__main__':
         prompt,
         num_inference_steps=20,  # Faster for testing
         width=512,
-        height=512
+        height=512,
     )
 
     # Save to file
     import re
-    safe_name = re.sub(r'[^\w\s-]', '', prompt[:30]).strip().replace(' ', '_')
+
+    safe_name = re.sub(r"[^\w\s-]", "", prompt[:30]).strip().replace(" ", "_")
     output_file = f"/home/gh0st/pkn/images/{safe_name}.html"
 
     os.makedirs("/home/gh0st/pkn/images", exist_ok=True)
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         f.write(f'''<!DOCTYPE html>
 <html>
 <head><title>{prompt}</title></head>

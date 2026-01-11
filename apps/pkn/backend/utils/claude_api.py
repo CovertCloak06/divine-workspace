@@ -28,17 +28,20 @@ class ClaudeAPI:
         Args:
             api_key: Anthropic API key (or set ANTHROPIC_API_KEY env var)
         """
-        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.client = None
         self.available = False
 
         if self.api_key:
             try:
                 import anthropic
+
                 self.client = anthropic.Anthropic(api_key=self.api_key)
                 self.available = True
             except ImportError:
-                print("Warning: anthropic package not installed. Run: pip install anthropic")
+                print(
+                    "Warning: anthropic package not installed. Run: pip install anthropic"
+                )
             except Exception as e:
                 print(f"Warning: Claude API initialization failed: {e}")
 
@@ -53,7 +56,7 @@ class ClaudeAPI:
         model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 4096,
         temperature: float = 0.7,
-        tools: Optional[List[Dict]] = None
+        tools: Optional[List[Dict]] = None,
     ) -> Dict[str, Any]:
         """
         Query Claude API.
@@ -80,9 +83,9 @@ class ClaudeAPI:
         """
         if not self.available:
             return {
-                'response': '',
-                'available': False,
-                'error': 'Claude API not available (no API key or anthropic not installed)'
+                "response": "",
+                "available": False,
+                "error": "Claude API not available (no API key or anthropic not installed)",
             }
 
         try:
@@ -96,9 +99,11 @@ class ClaudeAPI:
                     model=model,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    system=system_prompt if system_prompt else "You are a helpful AI assistant.",
+                    system=system_prompt
+                    if system_prompt
+                    else "You are a helpful AI assistant.",
                     messages=messages,
-                    tools=tools
+                    tools=tools,
                 )
             else:
                 # Without tools
@@ -106,32 +111,30 @@ class ClaudeAPI:
                     model=model,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    system=system_prompt if system_prompt else "You are a helpful AI assistant.",
-                    messages=messages
+                    system=system_prompt
+                    if system_prompt
+                    else "You are a helpful AI assistant.",
+                    messages=messages,
                 )
 
             # Extract response text
             response_text = ""
             for block in response.content:
-                if hasattr(block, 'text'):
+                if hasattr(block, "text"):
                     response_text += block.text
 
             return {
-                'response': response_text,
-                'model': model,
-                'usage': {
-                    'input_tokens': response.usage.input_tokens,
-                    'output_tokens': response.usage.output_tokens,
+                "response": response_text,
+                "model": model,
+                "usage": {
+                    "input_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens,
                 },
-                'available': True
+                "available": True,
             }
 
         except Exception as e:
-            return {
-                'response': '',
-                'available': False,
-                'error': str(e)
-            }
+            return {"response": "", "available": False, "error": str(e)}
 
     async def query_with_tools(
         self,
@@ -139,7 +142,7 @@ class ClaudeAPI:
         tools: List[Dict],
         system_prompt: Optional[str] = None,
         model: str = "claude-sonnet-4-20250514",
-        max_iterations: int = 5
+        max_iterations: int = 5,
     ) -> Dict[str, Any]:
         """
         Query Claude with tool use (agentic mode).
@@ -163,9 +166,9 @@ class ClaudeAPI:
         """
         if not self.available:
             return {
-                'response': '',
-                'available': False,
-                'error': 'Claude API not available'
+                "response": "",
+                "available": False,
+                "error": "Claude API not available",
             }
 
         messages = [{"role": "user", "content": prompt}]
@@ -176,9 +179,11 @@ class ClaudeAPI:
                 response = self.client.messages.create(
                     model=model,
                     max_tokens=4096,
-                    system=system_prompt if system_prompt else "You are a helpful AI assistant with access to tools.",
+                    system=system_prompt
+                    if system_prompt
+                    else "You are a helpful AI assistant with access to tools.",
                     messages=messages,
-                    tools=tools
+                    tools=tools,
                 )
 
                 # Check if Claude wants to use tools
@@ -195,46 +200,48 @@ class ClaudeAPI:
                             tool_result = f"Tool {tool_name} called with {tool_input}"
 
                             # Add assistant response and tool result to messages
-                            messages.append({"role": "assistant", "content": response.content})
-                            messages.append({
-                                "role": "user",
-                                "content": [{
-                                    "type": "tool_result",
-                                    "tool_use_id": block.id,
-                                    "content": tool_result
-                                }]
-                            })
+                            messages.append(
+                                {"role": "assistant", "content": response.content}
+                            )
+                            messages.append(
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {
+                                            "type": "tool_result",
+                                            "tool_use_id": block.id,
+                                            "content": tool_result,
+                                        }
+                                    ],
+                                }
+                            )
                 else:
                     # No more tool use, return final response
                     response_text = ""
                     for block in response.content:
-                        if hasattr(block, 'text'):
+                        if hasattr(block, "text"):
                             response_text += block.text
 
                     return {
-                        'response': response_text,
-                        'tools_used': tools_used,
-                        'iterations': iteration + 1,
-                        'available': True,
-                        'usage': {
-                            'input_tokens': response.usage.input_tokens,
-                            'output_tokens': response.usage.output_tokens,
-                        }
+                        "response": response_text,
+                        "tools_used": tools_used,
+                        "iterations": iteration + 1,
+                        "available": True,
+                        "usage": {
+                            "input_tokens": response.usage.input_tokens,
+                            "output_tokens": response.usage.output_tokens,
+                        },
                     }
 
             except Exception as e:
-                return {
-                    'response': '',
-                    'available': False,
-                    'error': str(e)
-                }
+                return {"response": "", "available": False, "error": str(e)}
 
         # Max iterations reached
         return {
-            'response': "Max iterations reached",
-            'tools_used': tools_used,
-            'iterations': max_iterations,
-            'available': True
+            "response": "Max iterations reached",
+            "tools_used": tools_used,
+            "iterations": max_iterations,
+            "available": True,
         }
 
 
@@ -245,7 +252,7 @@ claude_api = ClaudeAPI()
 async def query_claude(
     prompt: str,
     system_prompt: Optional[str] = None,
-    model: str = "claude-sonnet-4-20250514"
+    model: str = "claude-sonnet-4-20250514",
 ) -> Dict[str, Any]:
     """
     Convenience function to query Claude.
@@ -265,51 +272,51 @@ async def query_claude_smart(prompt: str) -> Dict[str, Any]:
     """
     result = await claude_api.query(prompt, model="claude-sonnet-4-20250514")
 
-    if result.get('available'):
-        result['provider'] = 'claude_sonnet_4'
+    if result.get("available"):
+        result["provider"] = "claude_sonnet_4"
         return result
     else:
         # Claude not available
         return {
-            'response': '',
-            'available': False,
-            'error': result.get('error', 'Claude API not available'),
-            'fallback_needed': True
+            "response": "",
+            "available": False,
+            "error": result.get("error", "Claude API not available"),
+            "fallback_needed": True,
         }
 
 
 # Model information
 MODELS = {
-    'sonnet-4': {
-        'id': 'claude-sonnet-4-20250514',
-        'name': 'Claude Sonnet 4',
-        'speed': 'fast',
-        'intelligence': 'very_high',
-        'cost': 'medium',
-        'recommended': True,
-        'description': 'Best balance of speed and intelligence'
+    "sonnet-4": {
+        "id": "claude-sonnet-4-20250514",
+        "name": "Claude Sonnet 4",
+        "speed": "fast",
+        "intelligence": "very_high",
+        "cost": "medium",
+        "recommended": True,
+        "description": "Best balance of speed and intelligence",
     },
-    'opus-4': {
-        'id': 'claude-opus-4-20250514',
-        'name': 'Claude Opus 4',
-        'speed': 'medium',
-        'intelligence': 'maximum',
-        'cost': 'high',
-        'recommended': False,
-        'description': 'Maximum intelligence for complex reasoning'
+    "opus-4": {
+        "id": "claude-opus-4-20250514",
+        "name": "Claude Opus 4",
+        "speed": "medium",
+        "intelligence": "maximum",
+        "cost": "high",
+        "recommended": False,
+        "description": "Maximum intelligence for complex reasoning",
     },
-    'haiku-3.5': {
-        'id': 'claude-3-5-haiku-20241022',
-        'name': 'Claude 3.5 Haiku',
-        'speed': 'very_fast',
-        'intelligence': 'high',
-        'cost': 'low',
-        'recommended': False,
-        'description': 'Fastest and cheapest, still very capable'
-    }
+    "haiku-3.5": {
+        "id": "claude-3-5-haiku-20241022",
+        "name": "Claude 3.5 Haiku",
+        "speed": "very_fast",
+        "intelligence": "high",
+        "cost": "low",
+        "recommended": False,
+        "description": "Fastest and cheapest, still very capable",
+    },
 }
 
 
-def get_model_info(model_key: str = 'sonnet-4') -> Dict[str, Any]:
+def get_model_info(model_key: str = "sonnet-4") -> Dict[str, Any]:
     """Get information about a Claude model"""
-    return MODELS.get(model_key, MODELS['sonnet-4'])
+    return MODELS.get(model_key, MODELS["sonnet-4"])

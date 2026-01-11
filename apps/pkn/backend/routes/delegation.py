@@ -2,6 +2,7 @@
 Delegation Routes Blueprint
 Extracted from divinenode_server.py
 """
+
 from flask import Blueprint, request, jsonify
 import json
 import uuid
@@ -10,9 +11,10 @@ import uuid
 
 
 # Create blueprint
-delegation_bp = Blueprint('delegation', __name__)
+delegation_bp = Blueprint("delegation", __name__)
 
-@delegation_bp.route('/api/delegation/delegate', methods=['POST'])
+
+@delegation_bp.route("/api/delegation/delegate", methods=["POST"])
 def api_delegate_task():
     """
     Delegate a task from one agent to another.
@@ -36,42 +38,44 @@ def api_delegate_task():
     """
     try:
         data = request.get_json() or {}
-        from_agent = data.get('from_agent', '')
-        to_agent = data.get('to_agent', '')
-        task = data.get('task', '')
-        context = data.get('context')
-        parent_task_id = data.get('parent_task_id')
+        from_agent = data.get("from_agent", "")
+        to_agent = data.get("to_agent", "")
+        task = data.get("task", "")
+        context = data.get("context")
+        parent_task_id = data.get("parent_task_id")
 
         if not all([from_agent, to_agent, task]):
-            return jsonify({
-                'error': 'from_agent, to_agent, and task are required',
-                'status': 'error'
-            }), 400
+            return jsonify(
+                {
+                    "error": "from_agent, to_agent, and task are required",
+                    "status": "error",
+                }
+            ), 400
 
         try:
             from ..agents import manager as agent_manager
             import asyncio
 
-            result = asyncio.run(agent_manager.delegate_to_agent(
-                from_agent, to_agent, task, context, parent_task_id
-            ))
+            result = asyncio.run(
+                agent_manager.delegate_to_agent(
+                    from_agent, to_agent, task, context, parent_task_id
+                )
+            )
 
-            return jsonify({
-                **result,
-                'status': 'success' if result.get('success') else 'error'
-            }), 200
+            return jsonify(
+                {**result, "status": "success" if result.get("success") else "error"}
+            ), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Delegation system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Delegation system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
+        return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@delegation_bp.route('/api/delegation/collaborate', methods=['POST'])
+@delegation_bp.route("/api/delegation/collaborate", methods=["POST"])
 def api_collaborate():
     """
     Have multiple agents collaborate on a task.
@@ -93,36 +97,32 @@ def api_collaborate():
     """
     try:
         data = request.get_json() or {}
-        agents = data.get('agents', [])
-        task = data.get('task', '')
-        session_id = data.get('session_id', str(uuid.uuid4()))
-        coordinator = data.get('coordinator', 'reasoner')
+        agents = data.get("agents", [])
+        task = data.get("task", "")
+        session_id = data.get("session_id", str(uuid.uuid4()))
+        coordinator = data.get("coordinator", "reasoner")
 
         if not agents or not task:
-            return jsonify({
-                'error': 'agents and task are required',
-                'status': 'error'
-            }), 400
+            return jsonify(
+                {"error": "agents and task are required", "status": "error"}
+            ), 400
 
         try:
             from ..agents import manager as agent_manager
             import asyncio
 
-            result = asyncio.run(agent_manager.collaborate_agents(
-                agents, task, session_id, coordinator
-            ))
+            result = asyncio.run(
+                agent_manager.collaborate_agents(agents, task, session_id, coordinator)
+            )
 
-            return jsonify({
-                **result,
-                'status': 'success' if result.get('success') else 'error'
-            }), 200
+            return jsonify(
+                {**result, "status": "success" if result.get("success") else "error"}
+            ), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Collaboration system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Collaboration system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
-
+        return jsonify({"error": str(e), "status": "error"}), 500

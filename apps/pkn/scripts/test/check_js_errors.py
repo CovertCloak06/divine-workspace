@@ -12,27 +12,33 @@ from collections import defaultdict
 PKN_DIR = Path("/home/gh0st/pkn")
 JS_DIR = PKN_DIR / "js"
 
+
 class Colors:
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
+
 
 def print_ok(msg):
     print(f"{Colors.GREEN}✓ {msg}{Colors.END}")
 
+
 def print_error(msg):
     print(f"{Colors.RED}✗ {msg}{Colors.END}")
+
 
 def print_warn(msg):
     print(f"{Colors.YELLOW}⚠ {msg}{Colors.END}")
 
+
 def print_header(msg):
-    print(f"\n{Colors.CYAN}{Colors.BOLD}{'='*70}{Colors.END}")
+    print(f"\n{Colors.CYAN}{Colors.BOLD}{'=' * 70}{Colors.END}")
     print(f"{Colors.CYAN}{Colors.BOLD}{msg}{Colors.END}")
-    print(f"{Colors.CYAN}{Colors.BOLD}{'='*70}{Colors.END}\n")
+    print(f"{Colors.CYAN}{Colors.BOLD}{'=' * 70}{Colors.END}\n")
+
 
 def extract_exports(file_path):
     """Extract all exported functions/variables from a JS file"""
@@ -43,31 +49,32 @@ def extract_exports(file_path):
 
         # Match: export function name() or export const name =
         patterns = [
-            r'export\s+function\s+(\w+)',
-            r'export\s+const\s+(\w+)',
-            r'export\s+let\s+(\w+)',
-            r'export\s+var\s+(\w+)',
-            r'export\s+default\s+(\w+)',
-            r'export\s+{\s*([^}]+)\s*}',  # export { a, b, c }
+            r"export\s+function\s+(\w+)",
+            r"export\s+const\s+(\w+)",
+            r"export\s+let\s+(\w+)",
+            r"export\s+var\s+(\w+)",
+            r"export\s+default\s+(\w+)",
+            r"export\s+{\s*([^}]+)\s*}",  # export { a, b, c }
         ]
 
         for pattern in patterns:
             matches = re.findall(pattern, content)
             for match in matches:
-                if '{' in pattern:  # Handle export { a, b, c }
-                    exports.extend([name.strip() for name in match.split(',')])
+                if "{" in pattern:  # Handle export { a, b, c }
+                    exports.extend([name.strip() for name in match.split(",")])
                 else:
                     exports.append(match)
 
         # Also check for: export default ClassName
-        default_match = re.search(r'export\s+default\s+(\w+)', content)
+        default_match = re.search(r"export\s+default\s+(\w+)", content)
         if default_match:
-            exports.append('default')
+            exports.append("default")
 
     except Exception as e:
         print_error(f"Error reading {file_path}: {e}")
 
     return list(set(exports))  # Remove duplicates
+
 
 def extract_imports(file_path):
     """Extract all imports from a JS file"""
@@ -89,7 +96,7 @@ def extract_imports(file_path):
                 imports[from_file] = []
 
             if named_imports:
-                names = [name.strip() for name in named_imports.split(',')]
+                names = [name.strip() for name in named_imports.split(",")]
                 imports[from_file].extend(names)
 
             if default_import:
@@ -100,19 +107,21 @@ def extract_imports(file_path):
 
     return imports
 
+
 def resolve_import_path(from_file, import_path):
     """Resolve relative import path to absolute path"""
-    if import_path.startswith('./'):
+    if import_path.startswith("./"):
         base_dir = from_file.parent
         resolved = (base_dir / import_path[2:]).resolve()
         return resolved
-    elif import_path.startswith('../'):
+    elif import_path.startswith("../"):
         base_dir = from_file.parent
         resolved = (base_dir / import_path).resolve()
         return resolved
     else:
         # Absolute or node_modules
         return None
+
 
 def check_import_export_mismatches():
     """Check for import/export mismatches across all JS files"""
@@ -142,7 +151,9 @@ def check_import_export_mismatches():
                 continue  # External dependency
 
             if not imported_file.exists():
-                errors.append(f"{file.name}: imports from non-existent file '{import_from}'")
+                errors.append(
+                    f"{file.name}: imports from non-existent file '{import_from}'"
+                )
                 continue
 
             # Check if the imported names exist in the exported file
@@ -150,7 +161,7 @@ def check_import_export_mismatches():
                 available_exports = export_map[imported_file]
 
                 for name in imported_names:
-                    if name not in available_exports and name != 'default':
+                    if name not in available_exports and name != "default":
                         errors.append(
                             f"{file.name}:{import_from} - "
                             f"imports '{name}' but {imported_file.name} only exports: {', '.join(available_exports)}"
@@ -163,6 +174,7 @@ def check_import_export_mismatches():
         print_ok("No import/export mismatches found")
 
     return len(errors)
+
 
 def check_missing_files():
     """Check for missing imported files"""
@@ -178,7 +190,9 @@ def check_missing_files():
             imported_file = resolve_import_path(file, import_from)
 
             if imported_file and not imported_file.exists():
-                errors.append(f"{file.name}: imports missing file '{import_from}' (resolved to {imported_file})")
+                errors.append(
+                    f"{file.name}: imports missing file '{import_from}' (resolved to {imported_file})"
+                )
 
     if errors:
         for error in errors:
@@ -187,6 +201,7 @@ def check_missing_files():
         print_ok("All imported files exist")
 
     return len(errors)
+
 
 def check_undefined_globals():
     """Check for common undefined global references"""
@@ -199,10 +214,10 @@ def check_undefined_globals():
 
     # Common globals that should be defined
     expected_globals = {
-        'pluginManager': 'js/main.js',
-        'eventBus': 'js/main.js',
-        'openPluginsManager': 'js/main.js',
-        'showToast': 'js/utils.js or js/main.js',
+        "pluginManager": "js/main.js",
+        "eventBus": "js/main.js",
+        "openPluginsManager": "js/main.js",
+        "showToast": "js/utils.js or js/main.js",
     }
 
     # Check main.js exports these to window
@@ -212,12 +227,13 @@ def check_undefined_globals():
             main_content = f.read()
 
         for global_name, expected_file in expected_globals.items():
-            if f'window.{global_name}' not in main_content:
+            if f"window.{global_name}" not in main_content:
                 print_warn(f"{global_name} not exported to window in {expected_file}")
             else:
                 print_ok(f"{global_name} exported to window")
 
     return 0
+
 
 def check_json_import_assertions():
     """Check for JSON import assertions (not supported in older browsers)"""
@@ -232,7 +248,9 @@ def check_json_import_assertions():
 
         # Look for assert { type: 'json' }
         if "assert { type: 'json' }" in content or 'assert {type:"json"}' in content:
-            errors.append(f"{file.name} uses JSON import assertions (not supported in older browsers)")
+            errors.append(
+                f"{file.name} uses JSON import assertions (not supported in older browsers)"
+            )
 
     if errors:
         for error in errors:
@@ -242,15 +260,16 @@ def check_json_import_assertions():
 
     return len(errors)
 
+
 def check_common_typos():
     """Check for common typos in variable names"""
     print_header("COMMON TYPO CHECK")
 
     common_mistakes = {
-        'saveProjectsFromStorage': 'saveProjectsToStorage',
-        'loadProjectsToStorage': 'loadProjectsFromStorage',
-        'pluginManger': 'pluginManager',  # common typo
-        'mangager': 'manager',
+        "saveProjectsFromStorage": "saveProjectsToStorage",
+        "loadProjectsToStorage": "loadProjectsFromStorage",
+        "pluginManger": "pluginManager",  # common typo
+        "mangager": "manager",
     }
 
     js_files = list(JS_DIR.glob("*.js"))
@@ -272,6 +291,7 @@ def check_common_typos():
 
     return len(errors)
 
+
 def check_duplicate_function_definitions():
     """Check for duplicate function definitions"""
     print_header("DUPLICATE FUNCTION CHECK")
@@ -288,8 +308,8 @@ def check_duplicate_function_definitions():
             content = f.read()
 
         # Find function definitions
-        function_pattern = r'(?:function|const|let|var)\s+(\w+)\s*(?:=|'
-        functions = re.findall(r'function\s+(\w+)\s*\(', content)
+        function_pattern = r"(?:function|const|let|var)\s+(\w+)\s*(?:=|"
+        functions = re.findall(r"function\s+(\w+)\s*\(", content)
 
         for func in functions:
             all_functions[func].append(file.name)
@@ -298,12 +318,15 @@ def check_duplicate_function_definitions():
 
     if duplicates:
         for func, files in duplicates.items():
-            if func not in ['init', 'render', 'update']:  # Common names
-                print_warn(f"Function '{func}' defined in multiple files: {', '.join(files)}")
+            if func not in ["init", "render", "update"]:  # Common names
+                print_warn(
+                    f"Function '{func}' defined in multiple files: {', '.join(files)}"
+                )
     else:
         print_ok("No problematic duplicate functions found")
 
     return 0
+
 
 def main():
     print(f"{Colors.BOLD}PKN JavaScript Error Checker{Colors.END}\n")
@@ -326,6 +349,7 @@ def main():
         print_error(f"Found {total_errors} critical error(s) that need fixing")
 
     return total_errors
+
 
 if __name__ == "__main__":
     exit(main())

@@ -2,6 +2,7 @@
 Network Routes Blueprint
 Extracted from divinenode_server.py
 """
+
 from flask import Blueprint, request, jsonify
 import subprocess
 import socket
@@ -10,15 +11,16 @@ import time
 
 
 # Create blueprint
-network_bp = Blueprint('network', __name__)
+network_bp = Blueprint("network", __name__)
 
-@network_bp.route('/api/network/dns', methods=['POST'])
+
+@network_bp.route("/api/network/dns", methods=["POST"])
 def network_dns():
     try:
         data = request.get_json() or {}
-        domain = data.get('domain', '')
+        domain = data.get("domain", "")
         if not domain:
-            return jsonify({'error': 'No domain provided'}), 400
+            return jsonify({"error": "No domain provided"}), 400
 
         # Simple lookup using socket (returns A/AAAA depending on system resolver)
         try:
@@ -28,23 +30,22 @@ def network_dns():
                 addr = info[4][0]
                 if addr not in addrs:
                     addrs.append(addr)
-            return jsonify({'domain': domain, 'addresses': addrs}), 200
+            return jsonify({"domain": domain, "addresses": addrs}), 200
         except Exception as e:
-            return jsonify({'error': f'DNS lookup failed: {str(e)}'}), 500
+            return jsonify({"error": f"DNS lookup failed: {str(e)}"}), 500
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-
-@network_bp.route('/api/network/ping', methods=['POST'])
+@network_bp.route("/api/network/ping", methods=["POST"])
 def network_ping():
     try:
         data = request.get_json() or {}
-        host = data.get('host', '')
-        count = int(data.get('count', 4))
+        host = data.get("host", "")
+        count = int(data.get("count", 4))
         if not host:
-            return jsonify({'error': 'No host provided'}), 400
+            return jsonify({"error": "No host provided"}), 400
 
         # Limit count to prevent abuse
         if count < 1 or count > 10:
@@ -52,31 +53,44 @@ def network_ping():
 
         # Use system ping (Linux). Capture stdout.
         try:
-            proc = subprocess.run(['ping', '-c', str(count), host], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+            proc = subprocess.run(
+                ["ping", "-c", str(count), host],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=15,
+            )
             out = proc.stdout.strip()
             err = proc.stderr.strip()
             status = proc.returncode
-            return jsonify({'host': host, 'count': count, 'returncode': status, 'stdout': out, 'stderr': err}), 200
+            return jsonify(
+                {
+                    "host": host,
+                    "count": count,
+                    "returncode": status,
+                    "stdout": out,
+                    "stderr": err,
+                }
+            ), 200
         except subprocess.TimeoutExpired:
-            return jsonify({'error': 'Ping command timed out'}), 500
+            return jsonify({"error": "Ping command timed out"}), 500
         except Exception as e:
-            return jsonify({'error': f'Ping failed: {str(e)}'}), 500
+            return jsonify({"error": f"Ping failed: {str(e)}"}), 500
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-
-@network_bp.route('/api/network/portscan', methods=['POST'])
+@network_bp.route("/api/network/portscan", methods=["POST"])
 def network_portscan():
     try:
         data = request.get_json() or {}
-        host = data.get('host', '')
-        ports = data.get('ports', [])
-        timeout = float(data.get('timeout', 1.0))
+        host = data.get("host", "")
+        ports = data.get("ports", [])
+        timeout = float(data.get("timeout", 1.0))
 
         if not host:
-            return jsonify({'error': 'No host provided'}), 400
+            return jsonify({"error": "No host provided"}), 400
 
         # If ports not provided, use common ports
         if not ports:
@@ -101,20 +115,20 @@ def network_portscan():
             try:
                 s.connect((host, p))
                 elapsed = (time.time() - start) * 1000.0
-                results.append({'port': p, 'open': True, 'rtt_ms': round(elapsed, 2)})
+                results.append({"port": p, "open": True, "rtt_ms": round(elapsed, 2)})
             except socket.timeout:
-                results.append({'port': p, 'open': False, 'reason': 'timeout'})
+                results.append({"port": p, "open": False, "reason": "timeout"})
             except Exception as e:
-                results.append({'port': p, 'open': False, 'reason': str(e)})
+                results.append({"port": p, "open": False, "reason": str(e)})
             finally:
                 # Use contextlib.suppress to silence errors
                 with contextlib.suppress(Exception):
                     s.close()
 
-        return jsonify({'host': host, 'results': results}), 200
+        return jsonify({"host": host, "results": results}), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 # --- OSINT endpoints ---

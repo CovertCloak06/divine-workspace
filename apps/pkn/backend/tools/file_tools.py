@@ -59,10 +59,12 @@ def glob(pattern: str, path: Optional[str] = None) -> str:
         # Format output
         result = [f"Found {len(matches)} file(s) matching '{pattern}':\n"]
         for p in matches:
-            rel_path = p.relative_to(PROJECT_ROOT) if p.is_relative_to(PROJECT_ROOT) else p
+            rel_path = (
+                p.relative_to(PROJECT_ROOT) if p.is_relative_to(PROJECT_ROOT) else p
+            )
             result.append(f"  {rel_path}")
 
-        return '\n'.join(result)
+        return "\n".join(result)
 
     except Exception as e:
         return f"Error in glob: {e}"
@@ -74,7 +76,7 @@ def grep(
     path: Optional[str] = None,
     output_mode: str = "files_with_matches",
     context_lines: int = 0,
-    case_insensitive: bool = False
+    case_insensitive: bool = False,
 ) -> str:
     """
     Search file contents using regex (powered by ripgrep/grep).
@@ -103,29 +105,24 @@ def grep(
             search_path = PROJECT_ROOT / search_path
 
         # Build grep command
-        cmd = ['grep', '-r']
+        cmd = ["grep", "-r"]
 
         if case_insensitive:
-            cmd.append('-i')
+            cmd.append("-i")
 
         if output_mode == "files_with_matches":
-            cmd.append('-l')  # Files with matches
+            cmd.append("-l")  # Files with matches
         elif output_mode == "count":
-            cmd.append('-c')  # Count matches
+            cmd.append("-c")  # Count matches
         elif output_mode == "content":
-            cmd.append('-n')  # Line numbers
+            cmd.append("-n")  # Line numbers
             if context_lines:
-                cmd.extend(['-C', str(context_lines)])  # Context
+                cmd.extend(["-C", str(context_lines)])  # Context
 
         cmd.extend([pattern, str(search_path)])
 
         # Run grep
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
         output = result.stdout.strip()
 
@@ -134,8 +131,10 @@ def grep(
 
         # Format output
         if output_mode == "files_with_matches":
-            files = output.split('\n')
-            return f"Found {len(files)} file(s) with matches:\n" + '\n'.join(f"  {f}" for f in files)
+            files = output.split("\n")
+            return f"Found {len(files)} file(s) with matches:\n" + "\n".join(
+                f"  {f}" for f in files
+            )
         else:
             return output
 
@@ -184,7 +183,7 @@ def find_definition(name: str, path: Optional[str] = None) -> str:
 
         results = []
         for pattern in patterns:
-            cmd = ['grep', '-rn', pattern, str(search_path)]
+            cmd = ["grep", "-rn", pattern, str(search_path)]
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
                 if result.stdout:
@@ -195,7 +194,7 @@ def find_definition(name: str, path: Optional[str] = None) -> str:
         if not results:
             return f"No definition found for: {name}"
 
-        output = '\n'.join(results)
+        output = "\n".join(results)
         return f"Definition(s) of '{name}':\n{output}"
 
     except Exception as e:
@@ -226,10 +225,10 @@ def tree(path: Optional[str] = None, depth: int = 2) -> str:
         # Use 'tree' command if available, else manual
         try:
             result = subprocess.run(
-                ['tree', '-L', str(depth), str(search_path)],
+                ["tree", "-L", str(depth), str(search_path)],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
             if result.returncode == 0:
                 return result.stdout
@@ -251,14 +250,16 @@ def tree(path: Optional[str] = None, depth: int = 2) -> str:
 
                     if item.is_dir() and depth_left > 1:
                         extension = "    " if is_last else "│   "
-                        lines.extend(build_tree(item, prefix + extension, depth_left - 1))
+                        lines.extend(
+                            build_tree(item, prefix + extension, depth_left - 1)
+                        )
             except PermissionError:
                 pass
 
             return lines
 
         tree_lines = [str(search_path)] + build_tree(search_path)
-        return '\n'.join(tree_lines)
+        return "\n".join(tree_lines)
 
     except Exception as e:
         return f"Error building tree: {e}"
@@ -299,21 +300,22 @@ def file_info(file_path: str) -> str:
 
         # Format modified time
         from datetime import datetime
+
         mtime = datetime.fromtimestamp(stats.st_mtime)
 
         # Count lines if text file
         lines = "N/A"
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 lines = sum(1 for _ in f)
         except:
             pass
 
         info = f"""File: {path}
-Type: {'Directory' if path.is_dir() else 'File'}
+Type: {"Directory" if path.is_dir() else "File"}
 Size: {size_str}
 Lines: {lines}
-Modified: {mtime.strftime('%Y-%m-%d %H:%M:%S')}
+Modified: {mtime.strftime("%Y-%m-%d %H:%M:%S")}
 Permissions: {oct(stats.st_mode)[-3:]}
 """
         return info.strip()
@@ -326,9 +328,9 @@ Permissions: {oct(stats.st_mode)[-3:]}
 TOOLS = [glob, grep, find_definition, tree, file_info]
 
 TOOL_DESCRIPTIONS = {
-    'glob': 'Find files by pattern (e.g., **/*.py)',
-    'grep': 'Search file contents with regex',
-    'find_definition': 'Find function/class definitions by name',
-    'tree': 'Show directory tree structure',
-    'file_info': 'Get detailed file statistics',
+    "glob": "Find files by pattern (e.g., **/*.py)",
+    "grep": "Search file contents with regex",
+    "find_definition": "Find function/class definitions by name",
+    "tree": "Show directory tree structure",
+    "file_info": "Get detailed file statistics",
 }

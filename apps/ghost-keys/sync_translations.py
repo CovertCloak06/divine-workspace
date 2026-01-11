@@ -9,45 +9,52 @@ import glob, os, sys
 # Sync store title and descriptions to the metadata directory.
 
 VALUE_DIR_TO_METADATA = {
-        "cs": "cs-CZ",
-        "de": "de-DE",
-        "en": "en-US",
-        "es": "es-ES",
-        "fa": "fa-IR",
-        "fil": "fil",
-        "fr": "fr-FR",
-        "in": "id",
-        "it": "it-IT",
-        "ja": "ja-JP",
-        "ko": "ko-KR",
-        "lv": "lv",
-        "nl": "nl-NL",
-        "pl": "pl-PL",
-        "pt": "pt-BR",
-        "ro": "ro",
-        "ru": "ru-RU",
-        "tr": "tr-TR",
-        "uk": "uk",
-        "vi": "vi",
-        "zh-rCN": "zh-CN",
-        }
+    "cs": "cs-CZ",
+    "de": "de-DE",
+    "en": "en-US",
+    "es": "es-ES",
+    "fa": "fa-IR",
+    "fil": "fil",
+    "fr": "fr-FR",
+    "in": "id",
+    "it": "it-IT",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "lv": "lv",
+    "nl": "nl-NL",
+    "pl": "pl-PL",
+    "pt": "pt-BR",
+    "ro": "ro",
+    "ru": "ru-RU",
+    "tr": "tr-TR",
+    "uk": "uk",
+    "vi": "vi",
+    "zh-rCN": "zh-CN",
+}
+
 
 # Dict of strings. Key is the pair string name and product field (often None).
 def parse_strings_file(file):
-    def key(ent): return ent.get("name"), ent.get("product")
+    def key(ent):
+        return ent.get("name"), ent.get("product")
+
     resrcs = ET.parse(file).getroot()
-    return { key(ent): ent for ent in resrcs if ent.tag == "string" }
+    return {key(ent): ent for ent in resrcs if ent.tag == "string"}
+
 
 # Print the XML file back autoformatted. Takes the output of [sync].
 def write_updated_strings(out, strings):
     out.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n')
     for key, string, comment in strings:
         out.write("    ")
-        if comment: out.write("<!-- ")
+        if comment:
+            out.write("<!-- ")
         out.write(ET.tostring(string, "unicode").strip())
-        if comment: out.write(" -->")
+        if comment:
+            out.write(" -->")
         out.write("\n")
-    out.write('</resources>\n')
+    out.write("</resources>\n")
+
 
 # Print whether string file is uptodate.
 def print_status(fname, strings):
@@ -56,20 +63,25 @@ def print_status(fname, strings):
     status = "uptodate" if c == 0 else "missing %d strings" % c
     print("%s: %s" % (fname, status))
 
+
 # Returns a list of tuples (key, string, commented).
 def sync(baseline, strings):
     return [
-            (key, strings[key], False) if key in strings else
-            (key, base_string, True)
-            for key, base_string in baseline.items() ]
+        (key, strings[key], False) if key in strings else (key, base_string, True)
+        for key, base_string in baseline.items()
+    ]
+
 
 def sync_metadata(value_dir, strings):
     if ("short_description", None) not in strings:
-        return # Short description is mandatory, do nothing without it.
+        return  # Short description is mandatory, do nothing without it.
     locale = os.path.basename(value_dir).removeprefix("values-")
     if not locale in VALUE_DIR_TO_METADATA:
-        raise Exception("Locale '%s' not known, please add it into sync_translations.py" % locale)
+        raise Exception(
+            "Locale '%s' not known, please add it into sync_translations.py" % locale
+        )
     meta_dir = "fastlane/metadata/android/" + VALUE_DIR_TO_METADATA[locale]
+
     def sync_meta_file(fname, string_name):
         if string_name in strings:
             string = strings[string_name]
@@ -77,18 +89,23 @@ def sync_metadata(value_dir, strings):
                 os.makedirs(meta_dir)
             txt_file = os.path.join(meta_dir, fname)
             with open(txt_file, "w", encoding="utf-8") as out:
-                out.write(string.text
-                          .replace("\\n", "\n")
-                          .replace("\\'", "'")
-                          .removeprefix('"')
-                          .removesuffix('"'))
+                out.write(
+                    string.text.replace("\\n", "\n")
+                    .replace("\\'", "'")
+                    .removeprefix('"')
+                    .removesuffix('"')
+                )
                 out.write("\n")
+
     sync_meta_file("title.txt", ("app_name_release", None))
     sync_meta_file("short_description.txt", ("short_description", None))
     sync_meta_file("full_description.txt", ("store_description", None))
 
+
 if len(sys.argv) < 2 or sys.argv[1] != "sync":
-    print("Syncing of translation files is no longer needed. Run with 'sync_translation.py sync' to do it anyway.")
+    print(
+        "Syncing of translation files is no longer needed. Run with 'sync_translation.py sync' to do it anyway."
+    )
     exit(1)
 
 baseline = parse_strings_file("res/values/strings.xml")

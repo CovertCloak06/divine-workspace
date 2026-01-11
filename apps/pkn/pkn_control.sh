@@ -17,7 +17,7 @@
 # pkn_control.sh status
 # pkn_control.sh debug-qwen        ← NEW: Quick diagnostics
 
-PKN_DIR="/home/gh0st/pkn"
+PKN_DIR="/home/gh0st/dvn/divine-workspace/apps/pkn"
 VENV_DIR="$PKN_DIR/.venv"
 GGUF_MODEL="$PKN_DIR/llama.cpp/models/Qwen2.5-Coder-14B-Instruct-abliterated-Q4_K_M.gguf"
 VISION_MODEL="$PKN_DIR/llama.cpp/models/llava-v1.6-vicuna-7b-Q4_K_M.gguf"

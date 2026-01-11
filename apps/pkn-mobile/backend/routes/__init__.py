@@ -13,6 +13,6 @@ from .health import health_bp
 def register_routes(app):
     """Register all route blueprints with the Flask app."""
     app.register_blueprint(health_bp)
-    app.register_blueprint(chat_bp, url_prefix='/api')
+    app.register_blueprint(chat_bp, url_prefix="/api")
 
     print("✅ Registered 2 mobile route blueprints")

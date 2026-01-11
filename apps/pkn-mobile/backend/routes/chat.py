@@ -8,7 +8,7 @@ import json
 
 from ..api.openai_client import OpenAIClient
 
-chat_bp = Blueprint('chat', __name__)
+chat_bp = Blueprint("chat", __name__)
 
 # Initialize OpenAI client (will fail gracefully if no API key)
 try:
@@ -19,7 +19,7 @@ except ValueError as e:
     openai_client = None
 
 
-@chat_bp.route('/multi-agent/chat', methods=['POST'])
+@chat_bp.route("/multi-agent/chat", methods=["POST"])
 def handle_chat():
     """
     Handle chat request with OpenAI API.
@@ -36,22 +36,20 @@ def handle_chat():
     """
     if not openai_client:
         return {
-            'error': 'OpenAI API not configured',
-            'details': 'Set OPENAI_API_KEY environment variable'
+            "error": "OpenAI API not configured",
+            "details": "Set OPENAI_API_KEY environment variable",
         }, 500
 
     data = request.json
-    user_message = data.get('message', '')
-    context = data.get('context', [])
-    stream = data.get('stream', True)
+    user_message = data.get("message", "")
+    context = data.get("context", [])
+    stream = data.get("stream", True)
 
     if not user_message:
-        return {'error': 'No message provided'}, 400
+        return {"error": "No message provided"}, 400
 
     # Build messages array
-    messages = context + [
-        {'role': 'user', 'content': user_message}
-    ]
+    messages = context + [{"role": "user", "content": user_message}]
 
     if stream:
         # Streaming response
@@ -59,8 +57,7 @@ def handle_chat():
             """Generate streaming response chunks."""
             try:
                 for chunk in openai_client.chat_completion(
-                    messages=messages,
-                    stream=True
+                    messages=messages, stream=True
                 ):
                     # Send as newline-delimited JSON
                     yield f"data: {json.dumps({'text': chunk})}\n\n"
@@ -70,23 +67,19 @@ def handle_chat():
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-        return Response(
-            stream_with_context(generate()),
-            mimetype='text/event-stream'
-        )
+        return Response(stream_with_context(generate()), mimetype="text/event-stream")
     else:
         # Non-streaming response
         try:
-            response_text = ''.join(openai_client.chat_completion(
-                messages=messages,
-                stream=False
-            ))
+            response_text = "".join(
+                openai_client.chat_completion(messages=messages, stream=False)
+            )
 
             return {
-                'response': response_text,
-                'agent': 'openai',
-                'model': openai_client.model
+                "response": response_text,
+                "agent": "openai",
+                "model": openai_client.model,
             }
 
         except Exception as e:
-            return {'error': str(e)}, 500
+            return {"error": str(e)}, 500

@@ -15,6 +15,7 @@ import os
 
 try:
     import docker
+
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
@@ -44,19 +45,23 @@ class CodeSandbox:
 
         # Resource limits
         self.default_limits = {
-            'memory': '512m',
-            'cpu_quota': 50000,  # 50% of one core
-            'timeout': 30  # seconds
+            "memory": "512m",
+            "cpu_quota": 50000,  # 50% of one core
+            "timeout": 30,  # seconds
         }
 
-    def execute_python(self, code: str, timeout: Optional[int] = None,
-                       requirements: Optional[List[str]] = None) -> Dict[str, Any]:
+    def execute_python(
+        self,
+        code: str,
+        timeout: Optional[int] = None,
+        requirements: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """Execute Python code in sandbox"""
 
         if not self.docker_enabled:
             return self._execute_python_subprocess(code, timeout)
 
-        timeout = timeout or self.default_limits['timeout']
+        timeout = timeout or self.default_limits["timeout"]
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
@@ -68,59 +73,59 @@ class CodeSandbox:
             # Create requirements.txt if needed
             if requirements:
                 req_file = tmpdir_path / "requirements.txt"
-                req_file.write_text('\n'.join(requirements))
+                req_file.write_text("\n".join(requirements))
 
             try:
                 # Prepare Docker command
                 docker_cmd = "python /code/script.py"
 
                 if requirements:
-                    docker_cmd = f"pip install -q -r /code/requirements.txt && {docker_cmd}"
+                    docker_cmd = (
+                        f"pip install -q -r /code/requirements.txt && {docker_cmd}"
+                    )
 
                 # Run container
                 container = self.client.containers.run(
                     "python:3.11-slim",
                     f"sh -c '{docker_cmd}'",
-                    volumes={str(tmpdir_path): {'bind': '/code', 'mode': 'ro'}},
-                    network_mode='none',  # No network access
-                    mem_limit=self.default_limits['memory'],
-                    cpu_quota=self.default_limits['cpu_quota'],
+                    volumes={str(tmpdir_path): {"bind": "/code", "mode": "ro"}},
+                    network_mode="none",  # No network access
+                    mem_limit=self.default_limits["memory"],
+                    cpu_quota=self.default_limits["cpu_quota"],
                     detach=False,
                     remove=True,
                     stdout=True,
-                    stderr=True
+                    stderr=True,
                 )
 
-                output = container.decode('utf-8')
+                output = container.decode("utf-8")
 
                 return {
-                    'success': True,
-                    'output': output,
-                    'language': 'python',
-                    'execution_time': None  # Docker doesn't give us this easily
+                    "success": True,
+                    "output": output,
+                    "language": "python",
+                    "execution_time": None,  # Docker doesn't give us this easily
                 }
 
             except docker.errors.ContainerError as e:
                 return {
-                    'success': False,
-                    'error': e.stderr.decode('utf-8') if e.stderr else str(e),
-                    'exit_code': e.exit_status,
-                    'language': 'python'
+                    "success": False,
+                    "error": e.stderr.decode("utf-8") if e.stderr else str(e),
+                    "exit_code": e.exit_status,
+                    "language": "python",
                 }
 
             except Exception as e:
-                return {
-                    'success': False,
-                    'error': str(e),
-                    'language': 'python'
-                }
+                return {"success": False, "error": str(e), "language": "python"}
 
-    def _execute_python_subprocess(self, code: str, timeout: Optional[int]) -> Dict[str, Any]:
+    def _execute_python_subprocess(
+        self, code: str, timeout: Optional[int]
+    ) -> Dict[str, Any]:
         """Fallback: Execute Python using subprocess (less secure)"""
 
-        timeout = timeout or self.default_limits['timeout']
+        timeout = timeout or self.default_limits["timeout"]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code)
             script_path = f.name
 
@@ -128,38 +133,34 @@ class CodeSandbox:
             start_time = time.time()
 
             result = subprocess.run(
-                ['python3', script_path],
+                ["python3", script_path],
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                env={'PYTHONPATH': ''}  # Minimal environment
+                env={"PYTHONPATH": ""},  # Minimal environment
             )
 
             execution_time = time.time() - start_time
 
             return {
-                'success': result.returncode == 0,
-                'output': result.stdout,
-                'error': result.stderr if result.returncode != 0 else None,
-                'exit_code': result.returncode,
-                'execution_time': execution_time,
-                'language': 'python',
-                'warning': 'Executed without Docker sandbox (less secure)'
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "error": result.stderr if result.returncode != 0 else None,
+                "exit_code": result.returncode,
+                "execution_time": execution_time,
+                "language": "python",
+                "warning": "Executed without Docker sandbox (less secure)",
             }
 
         except subprocess.TimeoutExpired:
             return {
-                'success': False,
-                'error': f'Execution timed out after {timeout} seconds',
-                'language': 'python'
+                "success": False,
+                "error": f"Execution timed out after {timeout} seconds",
+                "language": "python",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'language': 'python'
-            }
+            return {"success": False, "error": str(e), "language": "python"}
 
         finally:
             # Clean up temp file
@@ -168,13 +169,15 @@ class CodeSandbox:
             except:
                 pass
 
-    def execute_javascript(self, code: str, timeout: Optional[int] = None) -> Dict[str, Any]:
+    def execute_javascript(
+        self, code: str, timeout: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Execute JavaScript code in sandbox"""
 
         if not self.docker_enabled:
             return self._execute_javascript_subprocess(code, timeout)
 
-        timeout = timeout or self.default_limits['timeout']
+        timeout = timeout or self.default_limits["timeout"]
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
@@ -187,45 +190,39 @@ class CodeSandbox:
                 container = self.client.containers.run(
                     "node:18-slim",
                     "node /code/script.js",
-                    volumes={str(tmpdir_path): {'bind': '/code', 'mode': 'ro'}},
-                    network_mode='none',
-                    mem_limit=self.default_limits['memory'],
-                    cpu_quota=self.default_limits['cpu_quota'],
+                    volumes={str(tmpdir_path): {"bind": "/code", "mode": "ro"}},
+                    network_mode="none",
+                    mem_limit=self.default_limits["memory"],
+                    cpu_quota=self.default_limits["cpu_quota"],
                     detach=False,
                     remove=True,
                     stdout=True,
-                    stderr=True
+                    stderr=True,
                 )
 
-                output = container.decode('utf-8')
+                output = container.decode("utf-8")
 
-                return {
-                    'success': True,
-                    'output': output,
-                    'language': 'javascript'
-                }
+                return {"success": True, "output": output, "language": "javascript"}
 
             except docker.errors.ContainerError as e:
                 return {
-                    'success': False,
-                    'error': e.stderr.decode('utf-8') if e.stderr else str(e),
-                    'exit_code': e.exit_status,
-                    'language': 'javascript'
+                    "success": False,
+                    "error": e.stderr.decode("utf-8") if e.stderr else str(e),
+                    "exit_code": e.exit_status,
+                    "language": "javascript",
                 }
 
             except Exception as e:
-                return {
-                    'success': False,
-                    'error': str(e),
-                    'language': 'javascript'
-                }
+                return {"success": False, "error": str(e), "language": "javascript"}
 
-    def _execute_javascript_subprocess(self, code: str, timeout: Optional[int]) -> Dict[str, Any]:
+    def _execute_javascript_subprocess(
+        self, code: str, timeout: Optional[int]
+    ) -> Dict[str, Any]:
         """Fallback: Execute JavaScript using subprocess"""
 
-        timeout = timeout or self.default_limits['timeout']
+        timeout = timeout or self.default_limits["timeout"]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(code)
             script_path = f.name
 
@@ -233,37 +230,30 @@ class CodeSandbox:
             start_time = time.time()
 
             result = subprocess.run(
-                ['node', script_path],
-                capture_output=True,
-                text=True,
-                timeout=timeout
+                ["node", script_path], capture_output=True, text=True, timeout=timeout
             )
 
             execution_time = time.time() - start_time
 
             return {
-                'success': result.returncode == 0,
-                'output': result.stdout,
-                'error': result.stderr if result.returncode != 0 else None,
-                'exit_code': result.returncode,
-                'execution_time': execution_time,
-                'language': 'javascript',
-                'warning': 'Executed without Docker sandbox (less secure)'
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "error": result.stderr if result.returncode != 0 else None,
+                "exit_code": result.returncode,
+                "execution_time": execution_time,
+                "language": "javascript",
+                "warning": "Executed without Docker sandbox (less secure)",
             }
 
         except subprocess.TimeoutExpired:
             return {
-                'success': False,
-                'error': f'Execution timed out after {timeout} seconds',
-                'language': 'javascript'
+                "success": False,
+                "error": f"Execution timed out after {timeout} seconds",
+                "language": "javascript",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'language': 'javascript'
-            }
+            return {"success": False, "error": str(e), "language": "javascript"}
 
         finally:
             try:
@@ -271,20 +261,24 @@ class CodeSandbox:
             except:
                 pass
 
-    def execute_shell(self, script: str, timeout: Optional[int] = None,
-                      allowed_commands: Optional[List[str]] = None) -> Dict[str, Any]:
+    def execute_shell(
+        self,
+        script: str,
+        timeout: Optional[int] = None,
+        allowed_commands: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """Execute shell script with command whitelist"""
 
-        timeout = timeout or self.default_limits['timeout']
+        timeout = timeout or self.default_limits["timeout"]
 
         # Check for dangerous commands
-        dangerous = ['rm -rf', 'dd', 'mkfs', ':(){', 'fork', '>()', 'sudo', 'chmod 777']
+        dangerous = ["rm -rf", "dd", "mkfs", ":(){", "fork", ">()", "sudo", "chmod 777"]
         for danger in dangerous:
             if danger in script:
                 return {
-                    'success': False,
-                    'error': f'Dangerous command detected: {danger}',
-                    'language': 'shell'
+                    "success": False,
+                    "error": f"Dangerous command detected: {danger}",
+                    "language": "shell",
                 }
 
         # If whitelist provided, check commands
@@ -293,12 +287,12 @@ class CodeSandbox:
             for cmd in script_commands:
                 if cmd not in allowed_commands:
                     return {
-                        'success': False,
-                        'error': f'Command not in whitelist: {cmd}',
-                        'language': 'shell'
+                        "success": False,
+                        "error": f"Command not in whitelist: {cmd}",
+                        "language": "shell",
                     }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
             f.write(script)
             script_path = f.name
 
@@ -306,37 +300,33 @@ class CodeSandbox:
             start_time = time.time()
 
             result = subprocess.run(
-                ['bash', script_path],
+                ["bash", script_path],
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=str(self.sandbox_dir)  # Run in sandbox directory
+                cwd=str(self.sandbox_dir),  # Run in sandbox directory
             )
 
             execution_time = time.time() - start_time
 
             return {
-                'success': result.returncode == 0,
-                'output': result.stdout,
-                'error': result.stderr if result.returncode != 0 else None,
-                'exit_code': result.returncode,
-                'execution_time': execution_time,
-                'language': 'shell'
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "error": result.stderr if result.returncode != 0 else None,
+                "exit_code": result.returncode,
+                "execution_time": execution_time,
+                "language": "shell",
             }
 
         except subprocess.TimeoutExpired:
             return {
-                'success': False,
-                'error': f'Execution timed out after {timeout} seconds',
-                'language': 'shell'
+                "success": False,
+                "error": f"Execution timed out after {timeout} seconds",
+                "language": "shell",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'language': 'shell'
-            }
+            return {"success": False, "error": str(e), "language": "shell"}
 
         finally:
             try:
@@ -348,12 +338,12 @@ class CodeSandbox:
         """Extract base commands from shell script"""
 
         commands = []
-        for line in script.split('\n'):
+        for line in script.split("\n"):
             line = line.strip()
-            if line and not line.startswith('#'):
+            if line and not line.startswith("#"):
                 # Get first word (command)
-                cmd = line.split()[0] if line.split() else ''
-                if cmd and '=' not in cmd:  # Not a variable assignment
+                cmd = line.split()[0] if line.split() else ""
+                if cmd and "=" not in cmd:  # Not a variable assignment
                     commands.append(cmd)
 
         return commands
@@ -361,7 +351,7 @@ class CodeSandbox:
     def test_code(self, code: str, language: str, tests: List[str]) -> Dict[str, Any]:
         """Execute code with test cases"""
 
-        if language == 'python':
+        if language == "python":
             # Add test assertions to code
             full_code = f"""{code}
 
@@ -370,7 +360,7 @@ class CodeSandbox:
 """
             result = self.execute_python(full_code)
 
-        elif language == 'javascript':
+        elif language == "javascript":
             # Add test assertions
             full_code = f"""{code}
 
@@ -381,13 +371,13 @@ class CodeSandbox:
 
         else:
             return {
-                'success': False,
-                'error': f'Testing not supported for language: {language}'
+                "success": False,
+                "error": f"Testing not supported for language: {language}",
             }
 
-        if result['success']:
-            result['tests_passed'] = True
-            result['test_count'] = len(tests)
+        if result["success"]:
+            result["tests_passed"] = True
+            result["test_count"] = len(tests)
 
         return result
 
@@ -395,11 +385,11 @@ class CodeSandbox:
         """Get information about sandbox environment"""
 
         return {
-            'docker_available': self.docker_enabled,
-            'docker_version': self.client.version() if self.docker_enabled else None,
-            'sandbox_directory': str(self.sandbox_dir),
-            'resource_limits': self.default_limits,
-            'supported_languages': ['python', 'javascript', 'shell']
+            "docker_available": self.docker_enabled,
+            "docker_version": self.client.version() if self.docker_enabled else None,
+            "sandbox_directory": str(self.sandbox_dir),
+            "resource_limits": self.default_limits,
+            "supported_languages": ["python", "javascript", "shell"],
         }
 
 
@@ -416,13 +406,26 @@ def run_javascript_code(code: str, timeout: int = 30) -> Dict[str, Any]:
     return sandbox.execute_javascript(code, timeout)
 
 
-def run_shell_script(script: str, timeout: int = 30, safe_mode: bool = True) -> Dict[str, Any]:
+def run_shell_script(
+    script: str, timeout: int = 30, safe_mode: bool = True
+) -> Dict[str, Any]:
     """Quick function to run shell script"""
     sandbox = CodeSandbox()
 
     if safe_mode:
         # Whitelist of safe commands
-        allowed = ['echo', 'ls', 'cat', 'grep', 'find', 'wc', 'sort', 'uniq', 'head', 'tail']
+        allowed = [
+            "echo",
+            "ls",
+            "cat",
+            "grep",
+            "find",
+            "wc",
+            "sort",
+            "uniq",
+            "head",
+            "tail",
+        ]
         return sandbox.execute_shell(script, timeout, allowed_commands=allowed)
     else:
         return sandbox.execute_shell(script, timeout)
@@ -450,7 +453,7 @@ print(f"2 + 2 = {result}")
 
     result = sandbox.execute_python(test_code)
     print(f"  Success: {result['success']}")
-    if result['success']:
+    if result["success"]:
         print(f"  Output: {result['output'][:100]}")
 
     print("\n✓ Sandbox system ready!")

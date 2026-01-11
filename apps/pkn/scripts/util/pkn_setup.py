@@ -10,6 +10,7 @@ import os
 import shutil
 from pathlib import Path
 
+
 class PKNSetup:
     def __init__(self, project_root: str = "/home/gh0st/pkn"):
         self.project_root = Path(project_root)
@@ -19,9 +20,9 @@ class PKNSetup:
 
     def print_header(self, text: str):
         """Print section header"""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  {text}")
-        print('='*60)
+        print("=" * 60)
 
     def print_step(self, text: str):
         """Print step"""
@@ -47,10 +48,14 @@ class PKNSetup:
 
         version = sys.version_info
         if version.major == 3 and version.minor >= 8:
-            self.print_success(f"Python {version.major}.{version.minor}.{version.micro}")
+            self.print_success(
+                f"Python {version.major}.{version.minor}.{version.micro}"
+            )
             return True
         else:
-            self.print_error(f"Python 3.8+ required, found {version.major}.{version.minor}")
+            self.print_error(
+                f"Python 3.8+ required, found {version.major}.{version.minor}"
+            )
             return False
 
     def check_venv(self) -> bool:
@@ -65,7 +70,7 @@ class PKNSetup:
                 subprocess.run(
                     [sys.executable, "-m", "venv", str(self.venv_path)],
                     check=True,
-                    capture_output=True
+                    capture_output=True,
                 )
                 self.print_success("Virtual environment created")
                 return True
@@ -92,14 +97,14 @@ class PKNSetup:
             subprocess.run(
                 [str(pip), "install", "--upgrade", "pip"],
                 check=True,
-                capture_output=True
+                capture_output=True,
             )
 
             # Install requirements
             result = subprocess.run(
                 [str(pip), "install", "-r", str(requirements)],
                 check=True,
-                capture_output=False  # Show output
+                capture_output=False,  # Show output
             )
 
             self.print_success("Dependencies installed")
@@ -115,25 +120,13 @@ class PKNSetup:
 
         pip = self.venv_path / "bin" / "pip"
 
-        critical_packages = [
-            'flask',
-            'requests',
-            'python-dotenv',
-            'phonenumbers'
-        ]
+        critical_packages = ["flask", "requests", "python-dotenv", "phonenumbers"]
 
-        optional_packages = [
-            'chromadb',
-            'sentence-transformers',
-            'docker'
-        ]
+        optional_packages = ["chromadb", "sentence-transformers", "docker"]
 
         try:
             result = subprocess.run(
-                [str(pip), "list"],
-                capture_output=True,
-                text=True,
-                check=True
+                [str(pip), "list"], capture_output=True, text=True, check=True
             )
 
             installed = result.stdout.lower()
@@ -152,7 +145,9 @@ class PKNSetup:
                 if pkg.lower() in installed:
                     self.print_success(f"{pkg} installed (optional)")
                 else:
-                    self.print_warning(f"{pkg} not installed (optional - advanced features disabled)")
+                    self.print_warning(
+                        f"{pkg} not installed (optional - advanced features disabled)"
+                    )
 
             return all_critical_ok
 
@@ -217,7 +212,9 @@ class PKNSetup:
         """Check if llama.cpp is built"""
         self.print_step("Checking llama.cpp build...")
 
-        llama_server = self.project_root / "llama.cpp" / "build" / "bin" / "llama-server"
+        llama_server = (
+            self.project_root / "llama.cpp" / "build" / "bin" / "llama-server"
+        )
 
         # Try alternate location
         if not llama_server.exists():
@@ -300,7 +297,7 @@ class PKNSetup:
             for warning in self.warnings:
                 print(f"   • {warning}")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
 
         if all_ok and has_llama and has_model:
             print("✅ PKN is fully configured and ready to use!")
@@ -323,12 +320,12 @@ def main():
     """Main entry point"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='PKN Self-Setup')
+    parser = argparse.ArgumentParser(description="PKN Self-Setup")
     parser.add_argument(
-        '--project-root',
+        "--project-root",
         type=str,
-        default='/home/gh0st/pkn',
-        help='PKN project root directory'
+        default="/home/gh0st/pkn",
+        help="PKN project root directory",
     )
 
     args = parser.parse_args()

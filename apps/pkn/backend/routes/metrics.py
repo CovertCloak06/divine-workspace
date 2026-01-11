@@ -2,6 +2,7 @@
 Metrics Routes Blueprint
 Extracted from divinenode_server.py
 """
+
 from flask import Blueprint, request, jsonify
 import json
 # TODO: Update import after agent_manager is split
@@ -9,9 +10,10 @@ import json
 
 
 # Create blueprint
-metrics_bp = Blueprint('metrics', __name__)
+metrics_bp = Blueprint("metrics", __name__)
 
-@metrics_bp.route('/api/metrics/agent/<agent_type>', methods=['GET'])
+
+@metrics_bp.route("/api/metrics/agent/<agent_type>", methods=["GET"])
 def api_get_agent_metrics(agent_type):
     """
     Get performance metrics for a specific agent.
@@ -29,29 +31,27 @@ def api_get_agent_metrics(agent_type):
     }
     """
     try:
-        days = request.args.get('days', 30, type=int)
+        days = request.args.get("days", 30, type=int)
 
         try:
             from ..agents import manager as agent_manager
 
             result = agent_manager.get_agent_metrics(agent_type, days)
 
-            return jsonify({
-                **result,
-                'status': 'success' if result.get('success') else 'error'
-            }), 200
+            return jsonify(
+                {**result, "status": "success" if result.get("success") else "error"}
+            ), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Metrics system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Metrics system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
+        return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@metrics_bp.route('/api/metrics/report', methods=['GET'])
+@metrics_bp.route("/api/metrics/report", methods=["GET"])
 def api_get_metrics_report():
     """
     Get comprehensive performance report for all agents.
@@ -66,24 +66,19 @@ def api_get_metrics_report():
     }
     """
     try:
-        days = request.args.get('days', 7, type=int)
+        days = request.args.get("days", 7, type=int)
 
         try:
             from ..agents import manager as agent_manager
 
             report = agent_manager.get_performance_report(days)
 
-            return jsonify({
-                'report': report,
-                'status': 'success'
-            }), 200
+            return jsonify({"report": report, "status": "success"}), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Metrics system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Metrics system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
-
+        return jsonify({"error": str(e), "status": "error"}), 500

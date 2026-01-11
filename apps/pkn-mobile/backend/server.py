@@ -24,29 +24,29 @@ CORS(app)
 register_routes(app)
 
 # Static file serving from frontend/
-ROOT = Path(__file__).parent.parent / 'frontend'
+ROOT = Path(__file__).parent.parent / "frontend"
 
 
-@app.route('/')
-@app.route('/pkn.html')
+@app.route("/")
+@app.route("/pkn.html")
 def index():
     """Serve main HTML file."""
-    return send_from_directory(ROOT, 'pkn.html')
+    return send_from_directory(ROOT, "pkn.html")
 
 
-@app.route('/<path:filename>')
+@app.route("/<path:filename>")
 def serve_static(filename):
     """Serve static files (CSS, JS, images)."""
     return send_from_directory(ROOT, filename)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='PKN Mobile Server')
-    parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
-    parser.add_argument('--port', type=int, default=8010, help='Port to listen on')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
+    parser = argparse.ArgumentParser(description="PKN Mobile Server")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8010, help="Port to listen on")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
     args = parser.parse_args()
 

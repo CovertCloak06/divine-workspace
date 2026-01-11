@@ -15,50 +15,53 @@ from pathlib import Path
 
 class ChainStepType(Enum):
     """Types of steps in a tool chain"""
-    TOOL_CALL = "tool_call"          # Call a tool
-    CONDITION = "condition"          # Conditional branch
-    LOOP = "loop"                    # Repeat steps
-    TRANSFORM = "transform"          # Transform data
-    AGGREGATE = "aggregate"          # Combine results
+
+    TOOL_CALL = "tool_call"  # Call a tool
+    CONDITION = "condition"  # Conditional branch
+    LOOP = "loop"  # Repeat steps
+    TRANSFORM = "transform"  # Transform data
+    AGGREGATE = "aggregate"  # Combine results
 
 
 @dataclass
 class ChainStep:
     """A single step in a tool chain"""
+
     id: str
     step_type: ChainStepType
-    tool_name: Optional[str]          # For TOOL_CALL
+    tool_name: Optional[str]  # For TOOL_CALL
     parameters: Dict[str, Any]
-    condition: Optional[str]          # For CONDITION
-    transform_func: Optional[str]     # For TRANSFORM
-    save_as: str                      # Variable name to save result
-    depends_on: List[str]             # Variable dependencies
-    status: str = "pending"           # pending, completed, failed, skipped
+    condition: Optional[str]  # For CONDITION
+    transform_func: Optional[str]  # For TRANSFORM
+    save_as: str  # Variable name to save result
+    depends_on: List[str]  # Variable dependencies
+    status: str = "pending"  # pending, completed, failed, skipped
     result: Optional[Any] = None
     error: Optional[str] = None
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['step_type'] = self.step_type.value
+        d["step_type"] = self.step_type.value
         return d
 
 
 @dataclass
 class ToolChain:
     """A chain of tool executions"""
+
     id: str
     name: str
     steps: List[ChainStep]
     description: str
     created_at: float
-    variables: Dict[str, Any]          # Shared variables across steps
+    variables: Dict[str, Any]  # Shared variables across steps
     status: str = "pending"
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['steps'] = [step.to_dict() for step in self.steps]
+        d["steps"] = [step.to_dict() for step in self.steps]
         return d
 
 
@@ -93,15 +96,20 @@ class ToolChainExecutor:
             steps=[],
             description=description,
             created_at=time.time(),
-            variables={}
+            variables={},
         )
 
         self.active_chains[chain.id] = chain
         return chain
 
-    def add_tool_step(self, chain: ToolChain, tool_name: str,
-                      parameters: Dict[str, Any], save_as: str,
-                      depends_on: List[str] = None) -> ChainStep:
+    def add_tool_step(
+        self,
+        chain: ToolChain,
+        tool_name: str,
+        parameters: Dict[str, Any],
+        save_as: str,
+        depends_on: List[str] = None,
+    ) -> ChainStep:
         """Add a tool call step to the chain"""
 
         step = ChainStep(
@@ -112,15 +120,19 @@ class ToolChainExecutor:
             condition=None,
             transform_func=None,
             save_as=save_as,
-            depends_on=depends_on or []
+            depends_on=depends_on or [],
         )
 
         chain.steps.append(step)
         return step
 
-    def add_condition_step(self, chain: ToolChain, condition: str,
-                           true_steps: List[ChainStep],
-                           false_steps: List[ChainStep] = None) -> ChainStep:
+    def add_condition_step(
+        self,
+        chain: ToolChain,
+        condition: str,
+        true_steps: List[ChainStep],
+        false_steps: List[ChainStep] = None,
+    ) -> ChainStep:
         """Add a conditional branch step"""
 
         step = ChainStep(
@@ -128,31 +140,32 @@ class ToolChainExecutor:
             step_type=ChainStepType.CONDITION,
             tool_name=None,
             parameters={
-                'true_steps': [s.to_dict() for s in true_steps],
-                'false_steps': [s.to_dict() for s in (false_steps or [])]
+                "true_steps": [s.to_dict() for s in true_steps],
+                "false_steps": [s.to_dict() for s in (false_steps or [])],
             },
             condition=condition,
             transform_func=None,
             save_as=f"condition_result_{len(chain.steps)}",
-            depends_on=[]
+            depends_on=[],
         )
 
         chain.steps.append(step)
         return step
 
-    def add_transform_step(self, chain: ToolChain, transform_func: str,
-                           input_var: str, save_as: str) -> ChainStep:
+    def add_transform_step(
+        self, chain: ToolChain, transform_func: str, input_var: str, save_as: str
+    ) -> ChainStep:
         """Add a data transformation step"""
 
         step = ChainStep(
             id=f"step_{len(chain.steps) + 1}",
             step_type=ChainStepType.TRANSFORM,
             tool_name=None,
-            parameters={'input': input_var},
+            parameters={"input": input_var},
             condition=None,
             transform_func=transform_func,
             save_as=save_as,
-            depends_on=[input_var]
+            depends_on=[input_var],
         )
 
         chain.steps.append(step)
@@ -165,14 +178,14 @@ class ToolChainExecutor:
         chain.started_at = time.time()
 
         results = {
-            'chain_id': chain.id,
-            'name': chain.name,
-            'steps_completed': 0,
-            'steps_failed': 0,
-            'step_results': [],
-            'final_variables': {},
-            'success': False,
-            'error': None
+            "chain_id": chain.id,
+            "name": chain.name,
+            "steps_completed": 0,
+            "steps_failed": 0,
+            "step_results": [],
+            "final_variables": {},
+            "success": False,
+            "error": None,
         }
 
         try:
@@ -180,35 +193,37 @@ class ToolChainExecutor:
                 # Execute step
                 step_result = self._execute_step(step, chain)
 
-                results['step_results'].append({
-                    'step_id': step.id,
-                    'type': step.step_type.value,
-                    'status': step.status,
-                    'result': step.result,
-                    'error': step.error
-                })
+                results["step_results"].append(
+                    {
+                        "step_id": step.id,
+                        "type": step.step_type.value,
+                        "status": step.status,
+                        "result": step.result,
+                        "error": step.error,
+                    }
+                )
 
-                if step.status == 'completed':
-                    results['steps_completed'] += 1
-                elif step.status == 'failed':
-                    results['steps_failed'] += 1
+                if step.status == "completed":
+                    results["steps_completed"] += 1
+                elif step.status == "failed":
+                    results["steps_failed"] += 1
 
                     # Abort on failure (could add retry logic here)
                     chain.status = "failed"
-                    results['error'] = f"Step {step.id} failed: {step.error}"
+                    results["error"] = f"Step {step.id} failed: {step.error}"
                     break
 
             # Mark as complete if no failures
             if chain.status != "failed":
                 chain.status = "completed"
-                results['success'] = True
+                results["success"] = True
 
             chain.completed_at = time.time()
-            results['final_variables'] = chain.variables.copy()
+            results["final_variables"] = chain.variables.copy()
 
         except Exception as e:
             chain.status = "failed"
-            results['error'] = str(e)
+            results["error"] = str(e)
 
         finally:
             self.chain_history.append(results)
@@ -272,9 +287,9 @@ class ToolChainExecutor:
 
         # Execute appropriate branch
         if condition_result:
-            branch_steps = step.parameters.get('true_steps', [])
+            branch_steps = step.parameters.get("true_steps", [])
         else:
-            branch_steps = step.parameters.get('false_steps', [])
+            branch_steps = step.parameters.get("false_steps", [])
 
         # Execute branch steps
         branch_results = []
@@ -284,16 +299,13 @@ class ToolChainExecutor:
             result = self._execute_step(branch_step, chain)
             branch_results.append(result)
 
-        return {
-            'condition_met': condition_result,
-            'branch_results': branch_results
-        }
+        return {"condition_met": condition_result, "branch_results": branch_results}
 
     def _execute_transform(self, step: ChainStep, chain: ToolChain) -> Any:
         """Execute a data transformation"""
 
         # Get input data
-        input_var = step.parameters.get('input')
+        input_var = step.parameters.get("input")
         input_data = chain.variables.get(input_var)
 
         if input_data is None:
@@ -302,30 +314,30 @@ class ToolChainExecutor:
         # Apply transformation
         transform_name = step.transform_func
 
-        if transform_name == 'to_json':
+        if transform_name == "to_json":
             return json.dumps(input_data, indent=2)
 
-        elif transform_name == 'from_json':
+        elif transform_name == "from_json":
             return json.loads(input_data)
 
-        elif transform_name == 'to_list':
+        elif transform_name == "to_list":
             return list(input_data) if not isinstance(input_data, list) else input_data
 
-        elif transform_name == 'count':
+        elif transform_name == "count":
             return len(input_data)
 
-        elif transform_name == 'first':
+        elif transform_name == "first":
             return input_data[0] if input_data else None
 
-        elif transform_name == 'last':
+        elif transform_name == "last":
             return input_data[-1] if input_data else None
 
-        elif transform_name == 'join':
-            separator = step.parameters.get('separator', ', ')
+        elif transform_name == "join":
+            separator = step.parameters.get("separator", ", ")
             return separator.join(str(item) for item in input_data)
 
-        elif transform_name == 'split':
-            separator = step.parameters.get('separator', ',')
+        elif transform_name == "split":
+            separator = step.parameters.get("separator", ",")
             return input_data.split(separator)
 
         else:
@@ -334,22 +346,22 @@ class ToolChainExecutor:
     def _execute_aggregate(self, step: ChainStep, chain: ToolChain) -> Any:
         """Aggregate results from multiple previous steps"""
 
-        input_vars = step.parameters.get('inputs', [])
+        input_vars = step.parameters.get("inputs", [])
         results = []
 
         for var_name in input_vars:
             if var_name in chain.variables:
                 results.append(chain.variables[var_name])
 
-        aggregate_func = step.parameters.get('function', 'collect')
+        aggregate_func = step.parameters.get("function", "collect")
 
-        if aggregate_func == 'collect':
+        if aggregate_func == "collect":
             return results
 
-        elif aggregate_func == 'concat':
-            return ''.join(str(r) for r in results)
+        elif aggregate_func == "concat":
+            return "".join(str(r) for r in results)
 
-        elif aggregate_func == 'merge':
+        elif aggregate_func == "merge":
             # Merge dictionaries
             merged = {}
             for r in results:
@@ -360,14 +372,15 @@ class ToolChainExecutor:
         else:
             raise ValueError(f"Unknown aggregate function: {aggregate_func}")
 
-    def _substitute_variables(self, params: Dict[str, Any],
-                              variables: Dict[str, Any]) -> Dict[str, Any]:
+    def _substitute_variables(
+        self, params: Dict[str, Any], variables: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Substitute $variable references in parameters"""
 
         substituted = {}
 
         for key, value in params.items():
-            if isinstance(value, str) and value.startswith('$'):
+            if isinstance(value, str) and value.startswith("$"):
                 # Variable reference
                 var_name = value[1:]  # Remove $
                 substituted[key] = variables.get(var_name)
@@ -379,7 +392,9 @@ class ToolChainExecutor:
             elif isinstance(value, list):
                 # Substitute in lists
                 substituted[key] = [
-                    variables.get(item[1:]) if isinstance(item, str) and item.startswith('$') else item
+                    variables.get(item[1:])
+                    if isinstance(item, str) and item.startswith("$")
+                    else item
                     for item in value
                 ]
 
@@ -397,44 +412,44 @@ class ToolChainExecutor:
         condition = condition.strip()
 
         # Check for "exists" condition
-        if ' exists' in condition:
-            var_name = condition.replace('exists', '').strip().lstrip('$')
+        if " exists" in condition:
+            var_name = condition.replace("exists", "").strip().lstrip("$")
             return var_name in variables
 
         # Check for comparison operators
-        for op in ['==', '!=', '>', '<', '>=', '<=']:
+        for op in ["==", "!=", ">", "<", ">=", "<="]:
             if op in condition:
                 left, right = condition.split(op, 1)
                 left = left.strip()
                 right = right.strip()
 
                 # Substitute variables
-                if left.startswith('$'):
+                if left.startswith("$"):
                     left_val = variables.get(left[1:])
                 else:
                     left_val = left
 
-                if right.startswith('$'):
+                if right.startswith("$"):
                     right_val = variables.get(right[1:])
                 else:
                     # Try to parse as number or keep as string
                     try:
                         right_val = json.loads(right)
                     except:
-                        right_val = right.strip('"\'')
+                        right_val = right.strip("\"'")
 
                 # Perform comparison
-                if op == '==':
+                if op == "==":
                     return left_val == right_val
-                elif op == '!=':
+                elif op == "!=":
                     return left_val != right_val
-                elif op == '>':
+                elif op == ">":
                     return left_val > right_val
-                elif op == '<':
+                elif op == "<":
                     return left_val < right_val
-                elif op == '>=':
+                elif op == ">=":
                     return left_val >= right_val
-                elif op == '<=':
+                elif op == "<=":
                     return left_val <= right_val
 
         return False
@@ -443,9 +458,9 @@ class ToolChainExecutor:
         """Get a predefined chain template"""
 
         templates = {
-            'code_analysis': self._create_code_analysis_chain(),
-            'file_search_and_modify': self._create_file_search_modify_chain(),
-            'research_and_summarize': self._create_research_summarize_chain()
+            "code_analysis": self._create_code_analysis_chain(),
+            "file_search_and_modify": self._create_file_search_modify_chain(),
+            "research_and_summarize": self._create_research_summarize_chain(),
         }
 
         return templates.get(name)
@@ -455,31 +470,28 @@ class ToolChainExecutor:
 
         chain = self.create_chain(
             name="code_analysis",
-            description="Search for code patterns, analyze them, and generate report"
+            description="Search for code patterns, analyze them, and generate report",
         )
 
         # Step 1: Find files
         self.add_tool_step(
             chain,
             tool_name="file_tools.glob",
-            parameters={'pattern': '*.py', 'path': '$project_root'},
-            save_as="python_files"
+            parameters={"pattern": "*.py", "path": "$project_root"},
+            save_as="python_files",
         )
 
         # Step 2: Search for specific pattern
         self.add_tool_step(
             chain,
             tool_name="file_tools.grep",
-            parameters={'pattern': '$search_pattern', 'files': '$python_files'},
-            save_as="matches"
+            parameters={"pattern": "$search_pattern", "files": "$python_files"},
+            save_as="matches",
         )
 
         # Step 3: Count results
         self.add_transform_step(
-            chain,
-            transform_func="count",
-            input_var="matches",
-            save_as="match_count"
+            chain, transform_func="count", input_var="matches", save_as="match_count"
         )
 
         return chain
@@ -489,7 +501,7 @@ class ToolChainExecutor:
 
         chain = self.create_chain(
             name="file_search_and_modify",
-            description="Search for files matching criteria and modify them"
+            description="Search for files matching criteria and modify them",
         )
 
         # Steps would be added based on specific use case
@@ -500,7 +512,7 @@ class ToolChainExecutor:
 
         chain = self.create_chain(
             name="research_and_summarize",
-            description="Research a topic and generate summary document"
+            description="Research a topic and generate summary document",
         )
 
         # Steps would be added based on specific use case
@@ -519,7 +531,7 @@ if __name__ == "__main__":
     def mock_grep(pattern, files):
         return [
             {"file": files[0], "line": 10, "content": "# TODO: Fix this"},
-            {"file": files[1], "line": 25, "content": "# TODO: Optimize"}
+            {"file": files[1], "line": 25, "content": "# TODO: Optimize"},
         ]
 
     def mock_write_file(path, content):
@@ -527,45 +539,38 @@ if __name__ == "__main__":
 
     # Create executor with mock tools
     tool_registry = {
-        'file_tools.glob': mock_glob,
-        'file_tools.grep': mock_grep,
-        'file_tools.write_file': mock_write_file
+        "file_tools.glob": mock_glob,
+        "file_tools.grep": mock_grep,
+        "file_tools.write_file": mock_write_file,
     }
 
     executor = ToolChainExecutor(tool_registry)
 
     # Create chain
     chain = executor.create_chain(
-        name="find_todos",
-        description="Find all TODO comments and create summary"
+        name="find_todos", description="Find all TODO comments and create summary"
     )
 
     # Set initial variables
-    chain.variables = {
-        'project_root': '/home/gh0st/pkn',
-        'search_pattern': 'TODO'
-    }
+    chain.variables = {"project_root": "/home/gh0st/pkn", "search_pattern": "TODO"}
 
     # Add steps
     executor.add_tool_step(
         chain,
         tool_name="file_tools.glob",
-        parameters={'pattern': '*.py', 'path': '$project_root'},
-        save_as="python_files"
+        parameters={"pattern": "*.py", "path": "$project_root"},
+        save_as="python_files",
     )
 
     executor.add_tool_step(
         chain,
         tool_name="file_tools.grep",
-        parameters={'pattern': '$search_pattern', 'files': '$python_files'},
-        save_as="todo_matches"
+        parameters={"pattern": "$search_pattern", "files": "$python_files"},
+        save_as="todo_matches",
     )
 
     executor.add_transform_step(
-        chain,
-        transform_func="count",
-        input_var="todo_matches",
-        save_as="todo_count"
+        chain, transform_func="count", input_var="todo_matches", save_as="todo_count"
     )
 
     # Execute chain

@@ -18,7 +18,14 @@ import shutil
 def clean(c):
     """Clean build artifacts and caches"""
     print("🧹 Cleaning build artifacts...")
-    dirs_to_remove = ['dist', 'build', 'coverage', 'playwright-report', '.nyc_output', '__pycache__']
+    dirs_to_remove = [
+        "dist",
+        "build",
+        "coverage",
+        "playwright-report",
+        ".nyc_output",
+        "__pycache__",
+    ]
 
     for dir_name in dirs_to_remove:
         if os.path.exists(dir_name):
@@ -26,9 +33,9 @@ def clean(c):
             print(f"   Removed {dir_name}/")
 
     # Remove log files
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk("."):
         for file in files:
-            if file.endswith('.log'):
+            if file.endswith(".log"):
                 os.remove(os.path.join(root, file))
                 print(f"   Removed {file}")
 
@@ -189,7 +196,9 @@ def health(c):
 def generate_lesson(c, lesson_id, title, category="html"):
     """Generate new lesson from template"""
     print(f"📝 Generating lesson: {lesson_id}...")
-    c.run(f"npm run generate:lesson -- {lesson_id} --title '{title}' --category {category}")
+    c.run(
+        f"npm run generate:lesson -- {lesson_id} --title '{title}' --category {category}"
+    )
     print(f"✅ Lesson {lesson_id} created!")
 
 

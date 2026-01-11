@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "editorconfig.editorconfig",
+    "visualstudioexptteam.vscodeintellicode",
+    "ms-playwright.playwright",
+    "vitest.explorer",
+    "streetsidesoftware.code-spell-checker",
+    "wayou.vscode-todo-highlight",
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "pranaygp.vscode-css-peek",
+    "bradlc.vscode-tailwindcss"
+  ]
+}

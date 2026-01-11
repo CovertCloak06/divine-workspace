@@ -13,6 +13,7 @@ import sys
 import subprocess
 from pathlib import Path
 
+
 def run_check(script_name, project_dir):
     """Run a single analysis script | Returns True if passed | ref:CLAUDE.md (Code Documentation Standard)"""
     script_path = Path(__file__).parent / script_name
@@ -23,18 +24,19 @@ def run_check(script_name, project_dir):
 
     try:
         result = subprocess.run(
-            ['python3', str(script_path), project_dir],
+            ["python3", str(script_path), project_dir],
             capture_output=False,  # Show output directly
-            text=True
+            text=True,
         )
         return result.returncode == 0
     except Exception as e:
         print(f"❌ Error running {script_name}: {e}")
         return False
 
+
 def main():
     """Run all analysis checks on PKN codebase | ref:analyze_*.py"""
-    project_dir = sys.argv[1] if len(sys.argv) > 1 else '/home/gh0st/pkn'
+    project_dir = sys.argv[1] if len(sys.argv) > 1 else "/home/gh0st/pkn"
 
     print("=" * 70)
     print("🛠️  PKN CODE ANALYSIS")
@@ -42,9 +44,9 @@ def main():
     print(f"📁 Project: {project_dir}\n")
 
     checks = [
-        ('analyze_duplicate_functions.py', 'Duplicate function definitions'),
-        ('analyze_scope_mismatches.py', 'Variable scope mismatches'),
-        ('analyze_missing_selectors.py', 'Missing CSS/HTML selectors'),
+        ("analyze_duplicate_functions.py", "Duplicate function definitions"),
+        ("analyze_scope_mismatches.py", "Variable scope mismatches"),
+        ("analyze_missing_selectors.py", "Missing CSS/HTML selectors"),
     ]
 
     results = {}
@@ -73,5 +75,6 @@ def main():
         print("⚠️  Some checks failed. Review issues above.\n")
         return 1
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(main())

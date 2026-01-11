@@ -8,6 +8,7 @@ CSS_FILE = PKN_DIR / "css" / "multi_agent.css"
 
 # Backup
 import shutil
+
 shutil.copy(CSS_FILE, str(CSS_FILE) + ".bak")
 
 content = CSS_FILE.read_text()

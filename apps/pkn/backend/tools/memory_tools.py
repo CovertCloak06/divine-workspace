@@ -29,7 +29,7 @@ def _load_json(path: Path) -> Dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding='utf-8'))
+        return json.loads(path.read_text(encoding="utf-8"))
     except:
         return {}
 
@@ -37,15 +37,12 @@ def _load_json(path: Path) -> Dict[str, Any]:
 def _save_json(path: Path, data: Dict[str, Any]) -> None:
     """Save data to JSON file"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2), encoding='utf-8')
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 @tool
 def save_context(
-    key: str,
-    value: str,
-    scope: str = "project",
-    tags: Optional[List[str]] = None
+    key: str, value: str, scope: str = "project", tags: Optional[List[str]] = None
 ) -> str:
     """
     Save information for later retrieval (persistent memory).
@@ -76,9 +73,9 @@ def save_context(
 
         # Store with metadata
         data[key] = {
-            'value': value,
-            'timestamp': datetime.now().isoformat(),
-            'tags': tags or []
+            "value": value,
+            "timestamp": datetime.now().isoformat(),
+            "tags": tags or [],
         }
 
         _save_json(memory_path, data)
@@ -113,9 +110,9 @@ def recall_context(key: str, scope: str = "project") -> str:
             return f"No memory found for key: {key}"
 
         entry = data[key]
-        timestamp = entry.get('timestamp', 'unknown')
-        value = entry.get('value', '')
-        tags = entry.get('tags', [])
+        timestamp = entry.get("timestamp", "unknown")
+        value = entry.get("value", "")
+        tags = entry.get("tags", [])
 
         result = f"Memory '{key}' (saved: {timestamp}):\n{value}"
         if tags:
@@ -133,7 +130,7 @@ def save_snippet(
     code: str,
     language: str,
     description: Optional[str] = None,
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = None,
 ) -> str:
     """
     Save a reusable code snippet.
@@ -167,11 +164,11 @@ def save_snippet(
         snippets = _load_json(CODE_SNIPPETS)
 
         snippets[name] = {
-            'code': code,
-            'language': language,
-            'description': description or '',
-            'tags': tags or [],
-            'timestamp': datetime.now().isoformat()
+            "code": code,
+            "language": language,
+            "description": description or "",
+            "tags": tags or [],
+            "timestamp": datetime.now().isoformat(),
         }
 
         _save_json(CODE_SNIPPETS, snippets)
@@ -218,13 +215,13 @@ def search_memory(query: str, scope: str = "project") -> str:
                 continue
 
             # Search in value/code
-            value = entry.get('value') or entry.get('code') or ''
+            value = entry.get("value") or entry.get("code") or ""
             if query_lower in value.lower():
                 matches.append((key, entry))
                 continue
 
             # Search in tags
-            tags = entry.get('tags', [])
+            tags = entry.get("tags", [])
             if any(query_lower in tag.lower() for tag in tags):
                 matches.append((key, entry))
 
@@ -234,12 +231,12 @@ def search_memory(query: str, scope: str = "project") -> str:
         # Format results
         results = [f"Found {len(matches)} match(es) for '{query}':\n"]
         for key, entry in matches[:10]:  # Limit to 10 results
-            timestamp = entry.get('timestamp', 'unknown')
-            preview = (entry.get('value') or entry.get('code') or '')[:100]
+            timestamp = entry.get("timestamp", "unknown")
+            preview = (entry.get("value") or entry.get("code") or "")[:100]
             results.append(f"\n• {key} ({timestamp})")
             results.append(f"  {preview}...")
 
-        return '\n'.join(results)
+        return "\n".join(results)
 
     except Exception as e:
         return f"Error searching memory: {e}"
@@ -276,12 +273,12 @@ def list_memories(scope: str = "project") -> str:
 
         results = [f"{title} ({len(data)} items):\n"]
         for key, entry in data.items():
-            timestamp = entry.get('timestamp', 'unknown')
-            tags = entry.get('tags', [])
+            timestamp = entry.get("timestamp", "unknown")
+            tags = entry.get("tags", [])
             tags_str = f" [{', '.join(tags)}]" if tags else ""
             results.append(f"  • {key} ({timestamp}){tags_str}")
 
-        return '\n'.join(results)
+        return "\n".join(results)
 
     except Exception as e:
         return f"Error listing memories: {e}"
@@ -353,10 +350,10 @@ def get_snippet(name: str) -> str:
             return f"Snippet not found: {name}"
 
         snippet = snippets[name]
-        code = snippet.get('code', '')
-        lang = snippet.get('language', 'unknown')
-        desc = snippet.get('description', '')
-        tags = snippet.get('tags', [])
+        code = snippet.get("code", "")
+        lang = snippet.get("language", "unknown")
+        desc = snippet.get("description", "")
+        tags = snippet.get("tags", [])
 
         result = f"Snippet: {name} ({lang})"
         if desc:
@@ -379,15 +376,15 @@ TOOLS = [
     get_snippet,
     search_memory,
     list_memories,
-    clear_memory
+    clear_memory,
 ]
 
 TOOL_DESCRIPTIONS = {
-    'save_context': 'Save information for later (persistent memory)',
-    'recall_context': 'Retrieve saved information',
-    'save_snippet': 'Save reusable code snippets',
-    'get_snippet': 'Retrieve saved code snippet',
-    'search_memory': 'Search through saved memories',
-    'list_memories': 'List all saved contexts/snippets',
-    'clear_memory': 'Clear specific or all memories',
+    "save_context": "Save information for later (persistent memory)",
+    "recall_context": "Retrieve saved information",
+    "save_snippet": "Save reusable code snippets",
+    "get_snippet": "Retrieve saved code snippet",
+    "search_memory": "Search through saved memories",
+    "list_memories": "List all saved contexts/snippets",
+    "clear_memory": "Clear specific or all memories",
 }

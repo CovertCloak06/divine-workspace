@@ -25,14 +25,19 @@ except ImportError:
     try:
         from duckduckgo_search import DDGS
     except Exception:
+
         class DDGS:
             """Fallback for offline mode"""
+
             def text(self, query, max_results=5):
-                return [{
-                    "title": f"Offline: '{query}'",
-                    "href": "#",
-                    "body": "Search unavailable (no network)"
-                }]
+                return [
+                    {
+                        "title": f"Offline: '{query}'",
+                        "href": "#",
+                        "body": "Search unavailable (no network)",
+                    }
+                ]
+
 
 try:
     import wikipediaapi
@@ -67,14 +72,16 @@ def web_search(query: str, max_results: int = 5) -> str:
         with DDGS() as ddgs:
             results = []
             for r in ddgs.text(query, max_results=max_results):
-                results.append({
-                    'title': r.get('title', ''),
-                    'url': r.get('href', ''),
-                    'snippet': r.get('body', '')
-                })
-            return json.dumps({'query': query, 'results': results}, indent=2)
+                results.append(
+                    {
+                        "title": r.get("title", ""),
+                        "url": r.get("href", ""),
+                        "snippet": r.get("body", ""),
+                    }
+                )
+            return json.dumps({"query": query, "results": results}, indent=2)
     except Exception as e:
-        return json.dumps({'error': str(e), 'query': query})
+        return json.dumps({"error": str(e), "query": query})
 
 
 @tool
@@ -101,18 +108,16 @@ def fetch_url(url: str, extract_text: bool = True) -> str:
         - Extract text from web pages
     """
     try:
-        headers = {
-            'User-Agent': 'PKN-Agent/1.0 (Educational AI assistant)'
-        }
+        headers = {"User-Agent": "PKN-Agent/1.0 (Educational AI assistant)"}
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        title = soup.title.string if soup.title else 'No title'
+        soup = BeautifulSoup(response.text, "html.parser")
+        title = soup.title.string if soup.title else "No title"
 
         if extract_text:
             # Remove unwanted tags
-            for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+            for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
                 tag.decompose()
 
             # Convert to markdown
@@ -122,19 +127,18 @@ def fetch_url(url: str, extract_text: bool = True) -> str:
         else:
             content = response.text
 
-        return json.dumps({
-            'url': url,
-            'title': title,
-            'content': content[:15000],  # Limit to 15k chars
-            'status': 'success'
-        }, indent=2)
+        return json.dumps(
+            {
+                "url": url,
+                "title": title,
+                "content": content[:15000],  # Limit to 15k chars
+                "status": "success",
+            },
+            indent=2,
+        )
 
     except Exception as e:
-        return json.dumps({
-            'url': url,
-            'error': str(e),
-            'status': 'failed'
-        })
+        return json.dumps({"url": url, "error": str(e), "status": "failed"})
 
 
 @tool
@@ -159,35 +163,34 @@ def wiki_lookup(topic: str) -> str:
         - Scientific/technical definitions
     """
     if wikipediaapi is None:
-        return json.dumps({
-            'error': 'wikipediaapi not installed',
-            'install': 'pip install wikipedia-api'
-        })
+        return json.dumps(
+            {
+                "error": "wikipediaapi not installed",
+                "install": "pip install wikipedia-api",
+            }
+        )
 
     try:
-        wiki = wikipediaapi.Wikipedia('PKN-Agent/1.0', 'en')
+        wiki = wikipediaapi.Wikipedia("PKN-Agent/1.0", "en")
         page = wiki.page(topic)
 
         if page.exists():
-            return json.dumps({
-                'title': page.title,
-                'summary': page.summary[:3000],  # First 3k chars
-                'url': page.fullurl,
-                'status': 'success'
-            }, indent=2)
+            return json.dumps(
+                {
+                    "title": page.title,
+                    "summary": page.summary[:3000],  # First 3k chars
+                    "url": page.fullurl,
+                    "status": "success",
+                },
+                indent=2,
+            )
         else:
-            return json.dumps({
-                'topic': topic,
-                'error': 'Page not found',
-                'status': 'not_found'
-            })
+            return json.dumps(
+                {"topic": topic, "error": "Page not found", "status": "not_found"}
+            )
 
     except Exception as e:
-        return json.dumps({
-            'topic': topic,
-            'error': str(e),
-            'status': 'failed'
-        })
+        return json.dumps({"topic": topic, "error": str(e), "status": "failed"})
 
 
 @tool
@@ -214,28 +217,27 @@ def github_search(query: str, max_results: int = 5) -> str:
     """
     try:
         api_url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc&per_page={max_results}"
-        headers = {'Accept': 'application/vnd.github.v3+json'}
+        headers = {"Accept": "application/vnd.github.v3+json"}
         response = requests.get(api_url, headers=headers, timeout=15)
         response.raise_for_status()
 
         data = response.json()
         results = []
-        for repo in data.get('items', []):
-            results.append({
-                'name': repo['full_name'],
-                'url': repo['html_url'],
-                'description': repo['description'] or 'No description',
-                'stars': repo['stargazers_count'],
-                'language': repo['language'] or 'Unknown'
-            })
+        for repo in data.get("items", []):
+            results.append(
+                {
+                    "name": repo["full_name"],
+                    "url": repo["html_url"],
+                    "description": repo["description"] or "No description",
+                    "stars": repo["stargazers_count"],
+                    "language": repo["language"] or "Unknown",
+                }
+            )
 
-        return json.dumps({
-            'query': query,
-            'results': results
-        }, indent=2)
+        return json.dumps({"query": query, "results": results}, indent=2)
 
     except Exception as e:
-        return json.dumps({'error': str(e), 'query': query})
+        return json.dumps({"error": str(e), "query": query})
 
 
 @tool
@@ -263,33 +265,32 @@ def stack_overflow_search(query: str, max_results: int = 5) -> str:
     try:
         api_url = "https://api.stackexchange.com/2.3/search/advanced"
         params = {
-            'order': 'desc',
-            'sort': 'relevance',
-            'q': query,
-            'site': 'stackoverflow',
-            'pagesize': max_results
+            "order": "desc",
+            "sort": "relevance",
+            "q": query,
+            "site": "stackoverflow",
+            "pagesize": max_results,
         }
         response = requests.get(api_url, params=params, timeout=15)
         response.raise_for_status()
 
         data = response.json()
         results = []
-        for item in data.get('items', []):
-            results.append({
-                'title': item.get('title'),
-                'url': item.get('link'),
-                'score': item.get('score'),
-                'answered': item.get('is_answered', False),
-                'views': item.get('view_count', 0)
-            })
+        for item in data.get("items", []):
+            results.append(
+                {
+                    "title": item.get("title"),
+                    "url": item.get("link"),
+                    "score": item.get("score"),
+                    "answered": item.get("is_answered", False),
+                    "views": item.get("view_count", 0),
+                }
+            )
 
-        return json.dumps({
-            'query': query,
-            'results': results
-        }, indent=2)
+        return json.dumps({"query": query, "results": results}, indent=2)
 
     except Exception as e:
-        return json.dumps({'error': str(e), 'query': query})
+        return json.dumps({"error": str(e), "query": query})
 
 
 @tool
@@ -314,15 +315,15 @@ def docs_search(library: str, query: str) -> str:
         - And many more via web search
     """
     docs_urls = {
-        'python': 'https://docs.python.org/3',
-        'flask': 'https://flask.palletsprojects.com',
-        'django': 'https://docs.djangoproject.com',
-        'fastapi': 'https://fastapi.tiangolo.com',
-        'react': 'https://react.dev',
-        'vue': 'https://vuejs.org',
-        'nodejs': 'https://nodejs.org/docs',
-        'numpy': 'https://numpy.org/doc',
-        'pandas': 'https://pandas.pydata.org/docs',
+        "python": "https://docs.python.org/3",
+        "flask": "https://flask.palletsprojects.com",
+        "django": "https://docs.djangoproject.com",
+        "fastapi": "https://fastapi.tiangolo.com",
+        "react": "https://react.dev",
+        "vue": "https://vuejs.org",
+        "nodejs": "https://nodejs.org/docs",
+        "numpy": "https://numpy.org/doc",
+        "pandas": "https://pandas.pydata.org/docs",
     }
 
     base_url = docs_urls.get(library.lower())
@@ -344,14 +345,14 @@ TOOLS = [
     wiki_lookup,
     github_search,
     stack_overflow_search,
-    docs_search
+    docs_search,
 ]
 
 TOOL_DESCRIPTIONS = {
-    'web_search': 'Search the web (DuckDuckGo)',
-    'fetch_url': 'Get and extract content from URLs',
-    'wiki_lookup': 'Wikipedia article summaries',
-    'github_search': 'Find GitHub repositories',
-    'stack_overflow_search': 'Search Stack Overflow Q&A',
-    'docs_search': 'Search library documentation',
+    "web_search": "Search the web (DuckDuckGo)",
+    "fetch_url": "Get and extract content from URLs",
+    "wiki_lookup": "Wikipedia article summaries",
+    "github_search": "Find GitHub repositories",
+    "stack_overflow_search": "Search Stack Overflow Q&A",
+    "docs_search": "Search library documentation",
 }

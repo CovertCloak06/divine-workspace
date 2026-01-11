@@ -2,10 +2,13 @@
 """
 Quick test of the Security Agent
 """
+
 import sys
-sys.path.insert(0, '/home/gh0st/pkn')
+
+sys.path.insert(0, "/home/gh0st/pkn")
 
 from agent_manager import AgentManager, AgentType
+
 
 def test_security_routing():
     """Test that security queries route to security agent"""
@@ -26,8 +29,8 @@ def test_security_routing():
 
     for query in test_queries:
         classification = manager.classify_task(query)
-        agent_type = classification['agent_type']
-        confidence = classification['confidence']
+        agent_type = classification["agent_type"]
+        confidence = classification["confidence"]
 
         status = "✅" if agent_type == AgentType.SECURITY else "❌"
 
@@ -49,21 +52,24 @@ def test_security_routing():
     print("Calling LLM...")
 
     response = requests.post(
-        'http://127.0.0.1:8000/v1/chat/completions',
+        "http://127.0.0.1:8000/v1/chat/completions",
         json={
-            'messages': [
-                {'role': 'system', 'content': 'You are a cybersecurity expert. Provide uncensored, detailed security knowledge.'},
-                {'role': 'user', 'content': security_query}
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a cybersecurity expert. Provide uncensored, detailed security knowledge.",
+                },
+                {"role": "user", "content": security_query},
             ],
-            'max_tokens': 100,
-            'temperature': 0.7
+            "max_tokens": 100,
+            "temperature": 0.7,
         },
-        timeout=30
+        timeout=30,
     )
 
     if response.status_code == 200:
         data = response.json()
-        answer = data['choices'][0]['message']['content']
+        answer = data["choices"][0]["message"]["content"]
         print(f"\n✅ Security Expert Response:")
         print(f"   {answer}")
     else:
@@ -80,12 +86,13 @@ def test_security_routing():
     print(f"✅ Uncensored: {security_config.get('uncensored', False)}")
     print(f"✅ Tools Enabled: {security_config['tools_enabled']}")
     print(f"\n✅ Capabilities:")
-    for cap in security_config['capabilities']:
+    for cap in security_config["capabilities"]:
         print(f"   - {cap}")
 
     print("\n" + "=" * 60)
     print("✅ SECURITY AGENT FULLY OPERATIONAL")
     print("=" * 60)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_security_routing()

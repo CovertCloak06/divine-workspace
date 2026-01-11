@@ -8,45 +8,45 @@ import re
 import shutil
 from pathlib import Path
 
-ROOT = Path('/home/gh0st/dvn/divine-workspace/apps/pkn')
-OLD_JS = ROOT / 'js'
-FRONTEND_JS = ROOT / 'frontend/js'
+ROOT = Path("/home/gh0st/dvn/divine-workspace/apps/pkn")
+OLD_JS = ROOT / "js"
+FRONTEND_JS = ROOT / "frontend/js"
 
 # Organization map
 ORGANIZATION = {
     # Core app functionality
-    'core': [
-        'main.js',
-        'event-bus.js',
+    "core": [
+        "main.js",
+        "event-bus.js",
     ],
     # UI components
-    'ui': [
-        'chat.js',
-        'multi_agent_ui.js',
-        'osint_ui.js',
-        'plugins-ui.js',
+    "ui": [
+        "chat.js",
+        "multi_agent_ui.js",
+        "osint_ui.js",
+        "plugins-ui.js",
     ],
     # API clients
-    'api': [
-        'capacitor-backend.js',
+    "api": [
+        "capacitor-backend.js",
     ],
     # Feature modules
-    'features': [
-        'files.js',
-        'images.js',
-        'models.js',
-        'settings.js',
-        'projects.js',
-        'autocomplete.js',
-        'agent_quality.js',
-        'plugin-manager.js',
-        'plugin-base.js',
+    "features": [
+        "files.js",
+        "images.js",
+        "models.js",
+        "settings.js",
+        "projects.js",
+        "autocomplete.js",
+        "agent_quality.js",
+        "plugin-manager.js",
+        "plugin-base.js",
     ],
     # Utilities
-    'utils': [
-        'storage.js',
-        'utils.js',
-        'theme-utils.js',
+    "utils": [
+        "storage.js",
+        "utils.js",
+        "theme-utils.js",
     ],
 }
 
@@ -56,13 +56,13 @@ def copy_and_convert_file(src, dest):
     content = src.read_text()
 
     # Add module header if not present
-    if not content.startswith('/**'):
-        header = f'''/**
+    if not content.startswith("/**"):
+        header = f"""/**
  * {src.name}
  * PKN Frontend Module
  */
 
-'''
+"""
         content = header + content
 
     dest.write_text(content)
@@ -94,8 +94,8 @@ def main():
     print(f"\n✅ Organized {total_copied} files into frontend/js/\n")
 
     # Create main entry point that imports everything
-    main_entry = FRONTEND_JS / 'pkn.js'
-    main_entry.write_text('''/**
+    main_entry = FRONTEND_JS / "pkn.js"
+    main_entry.write_text("""/**
  * PKN Frontend Entry Point
  * Imports all modules for the application
  */
@@ -130,14 +130,14 @@ import './utils/theme-utils.js';
 import './api/capacitor-backend.js';
 
 console.log('✅ PKN Frontend loaded');
-''')
+""")
 
     print(f"✅ Created entry point: frontend/js/pkn.js\n")
 
     # Copy app.js as-is to frontend/js/core/
-    app_js_src = ROOT / 'app.js'
+    app_js_src = ROOT / "app.js"
     if app_js_src.exists():
-        app_js_dest = FRONTEND_JS / 'core/app.js'
+        app_js_dest = FRONTEND_JS / "core/app.js"
         shutil.copy2(app_js_src, app_js_dest)
         print(f"✅ Copied app.js → frontend/js/core/app.js\n")
 
@@ -157,5 +157,5 @@ console.log('✅ PKN Frontend loaded');
     print("  3. Test in browser (Ctrl+Shift+R to hard refresh)")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

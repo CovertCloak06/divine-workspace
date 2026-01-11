@@ -7,9 +7,10 @@ Creates: types.py, classifier.py, manager.py (simplified)
 import re
 from pathlib import Path
 
+
 def extract_section(content, start_pattern, end_pattern=None):
     """Extract a section of code between two patterns"""
-    lines = content.split('\n')
+    lines = content.split("\n")
     result = []
     in_section = False
 
@@ -23,18 +24,19 @@ def extract_section(content, start_pattern, end_pattern=None):
         if end_pattern and re.search(end_pattern, line):
             break
 
-    return '\n'.join(result)
+    return "\n".join(result)
+
 
 def extract_class(content, class_name):
     """Extract a complete class definition"""
-    lines = content.split('\n')
+    lines = content.split("\n")
     result = []
     in_class = False
     indent_level = 0
 
     for line in lines:
         # Start of class
-        if re.match(f'^class {class_name}', line):
+        if re.match(f"^class {class_name}", line):
             in_class = True
             indent_level = len(line) - len(line.lstrip())
 
@@ -42,21 +44,22 @@ def extract_class(content, class_name):
             result.append(line)
 
             # End of class (next class or unindented line that's not empty/comment)
-            if line.strip() and not line.strip().startswith('#'):
+            if line.strip() and not line.strip().startswith("#"):
                 current_indent = len(line) - len(line.lstrip())
                 if current_indent <= indent_level and len(result) > 1:
                     # Remove the last line (it's the next class/section)
                     result.pop()
                     break
 
-    return '\n'.join(result)
+    return "\n".join(result)
+
 
 def extract_method(content, method_name, is_async=False):
     """Extract a method definition"""
-    prefix = 'async def' if is_async else 'def'
-    pattern = f'    {prefix} {method_name}'
+    prefix = "async def" if is_async else "def"
+    pattern = f"    {prefix} {method_name}"
 
-    lines = content.split('\n')
+    lines = content.split("\n")
     result = []
     in_method = False
     method_indent = 0
@@ -76,11 +79,14 @@ def extract_method(content, method_name, is_async=False):
                     break
             result.append(line)
 
-    return '\n'.join(result)
+    return "\n".join(result)
+
 
 def main():
     # Paths
-    manager_file = Path('/home/gh0st/dvn/divine-workspace/apps/pkn/backend/agents/manager.py')
+    manager_file = Path(
+        "/home/gh0st/dvn/divine-workspace/apps/pkn/backend/agents/manager.py"
+    )
     agents_dir = manager_file.parent
 
     print(f"📖 Reading {manager_file}")
@@ -106,11 +112,11 @@ from enum import Enum
 '''
 
     # Extract enums
-    types_content += extract_class(content, 'AgentType') + '\n\n\n'
-    types_content += extract_class(content, 'TaskComplexity') + '\n\n\n'
-    types_content += extract_class(content, 'AgentMessage') + '\n'
+    types_content += extract_class(content, "AgentType") + "\n\n\n"
+    types_content += extract_class(content, "TaskComplexity") + "\n\n\n"
+    types_content += extract_class(content, "AgentMessage") + "\n"
 
-    types_file = agents_dir / 'types.py'
+    types_file = agents_dir / "types.py"
     types_file.write_text(types_content)
     print(f"✅ Created {types_file} ({len(types_content.splitlines())} lines)")
 
@@ -138,19 +144,23 @@ class TaskClassifier:
 '''
 
     # Extract classify_task method
-    classify_method = extract_method(content, 'classify_task')
+    classify_method = extract_method(content, "classify_task")
     # Convert to class method (adjust indentation)
-    classify_method = classify_method.replace('    def classify_task', '    def classify')
-    classifier_content += classify_method + '\n\n'
+    classify_method = classify_method.replace(
+        "    def classify_task", "    def classify"
+    )
+    classifier_content += classify_method + "\n\n"
 
     # Extract route_task method
-    route_method = extract_method(content, 'route_task')
-    route_method = route_method.replace('    def route_task', '    def route')
-    classifier_content += route_method + '\n'
+    route_method = extract_method(content, "route_task")
+    route_method = route_method.replace("    def route_task", "    def route")
+    classifier_content += route_method + "\n"
 
-    classifier_file = agents_dir / 'classifier.py'
+    classifier_file = agents_dir / "classifier.py"
     classifier_file.write_text(classifier_content)
-    print(f"✅ Created {classifier_file} ({len(classifier_content.splitlines())} lines)")
+    print(
+        f"✅ Created {classifier_file} ({len(classifier_content.splitlines())} lines)"
+    )
 
     # ==========================================
     # 3. Create simplified manager.py
@@ -159,16 +169,17 @@ class TaskClassifier:
     print("📝 Creating simplified manager.py...")
 
     # Extract header and imports
-    imports_end = content.find('class AgentType')
+    imports_end = content.find("class AgentType")
     imports_section = content[:imports_end]
 
     # Update imports
     imports_section = imports_section.replace(
-        'from tools import',
-        'from ..tools import'
+        "from tools import", "from ..tools import"
     )
 
-    manager_content = imports_section + '''
+    manager_content = (
+        imports_section
+        + '''
 # Import local modules
 from .types import AgentType, TaskComplexity, AgentMessage
 from .classifier import TaskClassifier
@@ -234,15 +245,16 @@ class AgentManager:
             self.evaluator = None
 
 '''
+    )
 
     # Extract _init_agents method
-    init_agents = extract_method(content, '_init_agents')
-    manager_content += init_agents + '\n\n'
+    init_agents = extract_method(content, "_init_agents")
+    manager_content += init_agents + "\n\n"
 
     # Extract tool-related methods
-    manager_content += extract_method(content, 'get_tools_for_agent') + '\n\n'
-    manager_content += extract_method(content, '_get_tool_registry') + '\n\n'
-    manager_content += extract_method(content, '_make_json_safe') + '\n\n'
+    manager_content += extract_method(content, "get_tools_for_agent") + "\n\n"
+    manager_content += extract_method(content, "_get_tool_registry") + "\n\n"
+    manager_content += extract_method(content, "_make_json_safe") + "\n\n"
 
     # Add delegation methods (reference classifier)
     manager_content += '''
@@ -257,27 +269,37 @@ class AgentManager:
 '''
 
     # Extract async methods (keep in manager)
-    manager_content += extract_method(content, 'execute_task', is_async=True) + '\n\n'
-    manager_content += extract_method(content, 'execute_task_streaming', is_async=True) + '\n\n'
-    manager_content += extract_method(content, 'vote_on_decision', is_async=True) + '\n\n'
-    manager_content += extract_method(content, '_parse_choice_from_response') + '\n\n'
-    manager_content += extract_method(content, 'delegate_to_agent', is_async=True) + '\n\n'
-    manager_content += extract_method(content, 'collaborate_agents', is_async=True) + '\n\n'
+    manager_content += extract_method(content, "execute_task", is_async=True) + "\n\n"
+    manager_content += (
+        extract_method(content, "execute_task_streaming", is_async=True) + "\n\n"
+    )
+    manager_content += (
+        extract_method(content, "vote_on_decision", is_async=True) + "\n\n"
+    )
+    manager_content += extract_method(content, "_parse_choice_from_response") + "\n\n"
+    manager_content += (
+        extract_method(content, "delegate_to_agent", is_async=True) + "\n\n"
+    )
+    manager_content += (
+        extract_method(content, "collaborate_agents", is_async=True) + "\n\n"
+    )
 
     # Extract metrics methods
-    manager_content += extract_method(content, 'get_agent_metrics') + '\n\n'
-    manager_content += extract_method(content, 'get_performance_report') + '\n\n'
-    manager_content += extract_method(content, 'get_agent_stats') + '\n\n'
-    manager_content += extract_method(content, 'get_available_agents') + '\n'
+    manager_content += extract_method(content, "get_agent_metrics") + "\n\n"
+    manager_content += extract_method(content, "get_performance_report") + "\n\n"
+    manager_content += extract_method(content, "get_agent_stats") + "\n\n"
+    manager_content += extract_method(content, "get_available_agents") + "\n"
 
     # Backup old file
-    backup_file = manager_file.with_suffix('.py.bak')
+    backup_file = manager_file.with_suffix(".py.bak")
     manager_file.rename(backup_file)
     print(f"💾 Backed up original to {backup_file}")
 
     # Write new manager.py
     manager_file.write_text(manager_content)
-    print(f"✅ Created simplified {manager_file} ({len(manager_content.splitlines())} lines)")
+    print(
+        f"✅ Created simplified {manager_file} ({len(manager_content.splitlines())} lines)"
+    )
 
     # ==========================================
     # Summary
@@ -288,9 +310,11 @@ class AgentManager:
     print(f"  types.py:          {len(types_content.splitlines()):4d} lines")
     print(f"  classifier.py:     {len(classifier_content.splitlines()):4d} lines")
     print(f"  manager.py (new):  {len(manager_content.splitlines()):4d} lines")
-    print(f"  Total:             {len(types_content.splitlines()) + len(classifier_content.splitlines()) + len(manager_content.splitlines()):4d} lines")
+    print(
+        f"  Total:             {len(types_content.splitlines()) + len(classifier_content.splitlines()) + len(manager_content.splitlines()):4d} lines"
+    )
     print("\n✅ Agent manager split complete!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

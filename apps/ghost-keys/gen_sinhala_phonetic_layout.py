@@ -34,48 +34,48 @@ from xml.etree import ElementTree
 
 
 class Placement(StrEnum):
-    C = 'c'
-    NW = 'nw'
-    N = 'n'
-    NE = 'ne'
-    E = 'e'
-    SE = 'se'
-    S = 's'
-    SW = 'sw'
-    W = 'w'
+    C = "c"
+    NW = "nw"
+    N = "n"
+    NE = "ne"
+    E = "e"
+    SE = "se"
+    S = "s"
+    SW = "sw"
+    W = "w"
 
 
 # Based on XKB Sinhala (phonetic)
 KEYS_MAP: dict[str, tuple[str, str, str, str]] = {
     # Row 1 ###########################################
-    'q': ('ඍ', 'ඎ', '\u0DD8', '\u0DF2'),
-    'w': ('ඇ', 'ඈ', '\u0DD0', '\u0DD1'),
-    'e': ('එ', 'ඒ', '\u0DD9', '\u0DDA'),
-    'r': ('ර', '', '', ''),  # In XKB virama is on layer 2
-    't': ('ත', 'ථ', 'ට', 'ඨ'),
-    'y': ('ය', '', '', ''),  # In XKB virama is on layer 2
-    'u': ('උ', 'ඌ', '\u0DD4', '\u0DD6'),
-    'i': ('ඉ', 'ඊ', '\u0DD2', '\u0DD3'),
-    'o': ('ඔ', 'ඕ', '\u0DDC', '\u0DDD'),
-    'p': ('ප', 'ඵ', '', ''),
+    "q": ("ඍ", "ඎ", "\u0dd8", "\u0df2"),
+    "w": ("ඇ", "ඈ", "\u0dd0", "\u0dd1"),
+    "e": ("එ", "ඒ", "\u0dd9", "\u0dda"),
+    "r": ("ර", "", "", ""),  # In XKB virama is on layer 2
+    "t": ("ත", "ථ", "ට", "ඨ"),
+    "y": ("ය", "", "", ""),  # In XKB virama is on layer 2
+    "u": ("උ", "ඌ", "\u0dd4", "\u0dd6"),
+    "i": ("ඉ", "ඊ", "\u0dd2", "\u0dd3"),
+    "o": ("ඔ", "ඕ", "\u0ddc", "\u0ddd"),
+    "p": ("ප", "ඵ", "", ""),
     # Row 2 ###########################################
-    'a': ('අ', 'ආ', '\u0DCA', '\u0DCF'),
-    's': ('ස', 'ශ', 'ෂ', ''),
-    'd': ('ද', 'ධ', 'ඩ', 'ඪ'),
-    'f': ('ෆ', '\u0D93', '', '\u0DDB'),  # In XKB aiyanna placed otherwise
-    'g': ('ග', 'ඝ', 'ඟ', ''),
-    'h': ('හ', '\u0D83', '\u0DDE', 'ඖ'),
-    'j': ('ජ', 'ඣ', 'ඦ', ''),
-    'k': ('ක', 'ඛ', 'ඦ', 'ඐ'),
-    'l': ('ල', 'ළ', '\u0DDF', '\u0DF3'),
+    "a": ("අ", "ආ", "\u0dca", "\u0dcf"),
+    "s": ("ස", "ශ", "ෂ", ""),
+    "d": ("ද", "ධ", "ඩ", "ඪ"),
+    "f": ("ෆ", "\u0d93", "", "\u0ddb"),  # In XKB aiyanna placed otherwise
+    "g": ("ග", "ඝ", "ඟ", ""),
+    "h": ("හ", "\u0d83", "\u0dde", "ඖ"),
+    "j": ("ජ", "ඣ", "ඦ", ""),
+    "k": ("ක", "ඛ", "ඦ", "ඐ"),
+    "l": ("ල", "ළ", "\u0ddf", "\u0df3"),
     # Row 3 ###########################################
-    'z': ('ඤ', 'ඥ', '', ''),  # In XKB contains bar, broken bar
-    'x': ('ඳ', 'ඬ', '', ''),
-    'c': ('ච', 'ඡ', '', ''),
-    'v': ('ව', '', '', ''),
-    'b': ('බ', 'භ', '', ''),
-    'n': ('න', 'ණ', '\u0D82', 'ඞ'),
-    'm': ('ම', 'ඹ', '', ''),
+    "z": ("ඤ", "ඥ", "", ""),  # In XKB contains bar, broken bar
+    "x": ("ඳ", "ඬ", "", ""),
+    "c": ("ච", "ඡ", "", ""),
+    "v": ("ව", "", "", ""),
+    "b": ("බ", "භ", "", ""),
+    "n": ("න", "ණ", "\u0d82", "ඞ"),
+    "m": ("ම", "ඹ", "", ""),
 }
 
 # How to place four levels of Key.
@@ -86,8 +86,8 @@ KEYS_MAP: dict[str, tuple[str, str, str, str]] = {
 LEVELS_MAP = {
     0: Placement.C,
     1: Placement.NE,
-    2: '0+shift',
-    3: '1+shift',
+    2: "0+shift",
+    3: "1+shift",
 }
 
 # Additional modify keys combinations.
@@ -95,49 +95,49 @@ LEVELS_MAP = {
 #   MODKEY: { A: B }
 #
 MODMAP_EXTRA: dict[str, dict[str, str]] = {
-    'shift': {
+    "shift": {
         # Astrological numbers
-        '1': '෧',
-        '2': '෨',
-        '3': '෩',
-        '4': '෪',
-        '5': '෫',
-        '6': '෬',
-        '7': '෭',
-        '8': '෮',
-        '9': '෯',
-        '0': '෦',
+        "1": "෧",
+        "2": "෨",
+        "3": "෩",
+        "4": "෪",
+        "5": "෫",
+        "6": "෬",
+        "7": "෭",
+        "8": "෮",
+        "9": "෯",
+        "0": "෦",
         # Kunddaliya
-        '.': '෴',
+        ".": "෴",
         # Extra broken bar intead z key in XKB
-        '\u007C': '\u00A6',
+        "\u007c": "\u00a6",
         # Special whitespaces
-        'zwj': 'zwnj',
+        "zwj": "zwnj",
     },
-    'fn': {
+    "fn": {
         # Sinhala archaic digits
-        'ඍ': '𑇡',  # 1
-        'ඇ': '𑇢',  # 2
-        'එ': '𑇣',  # 3
-        'ර': '𑇤',  # 4
-        'ත': '𑇥',  # 5
-        'ය': '𑇦',  # 6
-        'උ': '𑇧',  # 7
-        'ඉ': '𑇨',  # 8
-        'ඔ': '𑇩',  # 9
-        'ප': '𑇪',  # 10
-        'අ': '𑇫',  # 20
-        'ස': '𑇬',  # 30
-        'ද': '𑇭',  # 40
-        'ෆ': '𑇮',  # 50
-        'ග': '𑇯',  # 60
-        'හ': '𑇰',  # 70
-        'ජ': '𑇱',  # 80
-        'ක': '𑇲',  # 90
-        'ල': '𑇳',  # 100
-        'ළ': '𑇴',  # 1000
+        "ඍ": "𑇡",  # 1
+        "ඇ": "𑇢",  # 2
+        "එ": "𑇣",  # 3
+        "ර": "𑇤",  # 4
+        "ත": "𑇥",  # 5
+        "ය": "𑇦",  # 6
+        "උ": "𑇧",  # 7
+        "ඉ": "𑇨",  # 8
+        "ඔ": "𑇩",  # 9
+        "ප": "𑇪",  # 10
+        "අ": "𑇫",  # 20
+        "ස": "𑇬",  # 30
+        "ද": "𑇭",  # 40
+        "ෆ": "𑇮",  # 50
+        "ග": "𑇯",  # 60
+        "හ": "𑇰",  # 70
+        "ජ": "𑇱",  # 80
+        "ක": "𑇲",  # 90
+        "ල": "𑇳",  # 100
+        "ළ": "𑇴",  # 1000
         # Sinhala candrabindu for Sanskrit
-        'ණ': '\u0D81',
+        "ණ": "\u0d81",
     },
 }
 
@@ -153,43 +153,32 @@ MODMAP_EXTRA: dict[str, dict[str, str]] = {
 # Moving of main char in central placement is not supported.
 #
 TRANSITIONS_MAP: dict[tuple[str, Placement], tuple[str, Placement | None]] = {
-    ('q', Placement.SE): ('q', Placement.SW),  # loc esc
-    ('q', Placement.NE): ('q', Placement.SE),  # 1
-
-    ('w', Placement.NE): ('w', Placement.SE),  # 2
-
-    ('e', Placement.SE): ('r', Placement.NW),  # loc €
-    ('e', Placement.NE): ('e', Placement.SE),  # 3
-
-    ('r', Placement.NE): ('r', Placement.SE),  # 4
-    ('t', Placement.NE): ('t', Placement.SE),  # 5
-    ('y', Placement.NE): ('y', Placement.SE),  # 6
-    ('u', Placement.NE): ('u', Placement.SE),  # 7
-    ('i', Placement.NE): ('i', Placement.SE),  # 8
-
-    ('o', Placement.SE): ('p', Placement.SW),  # )
-    ('o', Placement.NE): ('o', Placement.SE),  # 9
-
-    ('p', Placement.NE): ('p', Placement.SE),  # 0
-
-    ('a', Placement.NE): ('a', Placement.NW),  # `
-    ('a', Placement.NW): ('a', Placement.SW),  # loc tab
-
-    ('s', Placement.NE): ('s', Placement.NW),  # loc §
-
-    ('g', Placement.SW): ('g', Placement.NW),  # _
-    ('g', Placement.NE): ('g', Placement.SW),  # -
-
-    ('h', Placement.SW): ('h', Placement.NW),  # +
-    ('h', Placement.NE): ('h', Placement.SW),  # =
-
-    ('l', Placement.NE): ('l', Placement.NW),  # |
-
-    ('x', Placement.NE): ('x', Placement.NW),  # loc †
-    ('c', Placement.NE): ('c', Placement.NW),  # <
-    ('b', Placement.NE): ('b', Placement.NW),  # ?
-    ('n', Placement.NE): ('n', Placement.NW),  # :
-    ('m', Placement.NE): ('m', Placement.NW),  # "
+    ("q", Placement.SE): ("q", Placement.SW),  # loc esc
+    ("q", Placement.NE): ("q", Placement.SE),  # 1
+    ("w", Placement.NE): ("w", Placement.SE),  # 2
+    ("e", Placement.SE): ("r", Placement.NW),  # loc €
+    ("e", Placement.NE): ("e", Placement.SE),  # 3
+    ("r", Placement.NE): ("r", Placement.SE),  # 4
+    ("t", Placement.NE): ("t", Placement.SE),  # 5
+    ("y", Placement.NE): ("y", Placement.SE),  # 6
+    ("u", Placement.NE): ("u", Placement.SE),  # 7
+    ("i", Placement.NE): ("i", Placement.SE),  # 8
+    ("o", Placement.SE): ("p", Placement.SW),  # )
+    ("o", Placement.NE): ("o", Placement.SE),  # 9
+    ("p", Placement.NE): ("p", Placement.SE),  # 0
+    ("a", Placement.NE): ("a", Placement.NW),  # `
+    ("a", Placement.NW): ("a", Placement.SW),  # loc tab
+    ("s", Placement.NE): ("s", Placement.NW),  # loc §
+    ("g", Placement.SW): ("g", Placement.NW),  # _
+    ("g", Placement.NE): ("g", Placement.SW),  # -
+    ("h", Placement.SW): ("h", Placement.NW),  # +
+    ("h", Placement.NE): ("h", Placement.SW),  # =
+    ("l", Placement.NE): ("l", Placement.NW),  # |
+    ("x", Placement.NE): ("x", Placement.NW),  # loc †
+    ("c", Placement.NE): ("c", Placement.NW),  # <
+    ("b", Placement.NE): ("b", Placement.NW),  # ?
+    ("n", Placement.NE): ("n", Placement.NW),  # :
+    ("m", Placement.NE): ("m", Placement.NW),  # "
 }
 
 # Add additional characters to arbitrary places.
@@ -197,7 +186,7 @@ TRANSITIONS_MAP: dict[tuple[str, Placement], tuple[str, Placement | None]] = {
 #
 CHARS_EXTRA = {
     # In XKB ZWJ is on `/` key, and ZWNJ is on spacebar
-    'zwj': ('m', Placement.SE),
+    "zwj": ("m", Placement.SE),
 }
 
 
@@ -213,43 +202,41 @@ ESCAPE_LIST: list[int | tuple[int, int]] = [
 ]
 
 # Default filename. Output path can be overrided with `-o` flag also.
-LAYOUT_FILENAME = 'sinhala_phonetic.xml'
+LAYOUT_FILENAME = "sinhala_phonetic.xml"
 
 # Will be placed after XML declaration. Need to have proper <!-- --> tags.
-COMMENT = '''
+COMMENT = """
 <!-- This file defines Sinhala layout.
 
 Based on XKB Sinhala (phonetic) layout.
 -->
-'''
+"""
 
 BASE_DIR = Path(__file__).parent
-REFERENCE_LAYOUT_FILE = BASE_DIR / 'srcs/layouts/latn_qwerty_us.xml'
+REFERENCE_LAYOUT_FILE = BASE_DIR / "srcs/layouts/latn_qwerty_us.xml"
 
 LOGGER = logging.getLogger(__name__)
 KeysMapType = list[list[ElementTree.Element]]
 
 
-class LayoutGenError(RuntimeError):
-    ...
+class LayoutGenError(RuntimeError): ...
 
 
 def xml_elem_to_str(element: ElementTree.Element) -> str:
     return ElementTree.tostring(
-        element,
-        xml_declaration=False,
-        encoding='unicode').strip()
+        element, xml_declaration=False, encoding="unicode"
+    ).strip()
 
 
 def keys_map_to_str(keys_map: KeysMapType) -> str:
-    """ Make laout rows map printable for debug purposes """
-    result = '[\n'
+    """Make laout rows map printable for debug purposes"""
+    result = "[\n"
     for row in keys_map:
-        result += ' ' * 4
+        result += " " * 4
         for key in row:
-            result += str(key.attrib) + ', '
-        result += '\n'
-    result += ']'
+            result += str(key.attrib) + ", "
+        result += "\n"
+    result += "]"
     return result
 
 
@@ -263,15 +250,15 @@ def is_in_escape_list(char: str | int) -> bool:
             if char == item:
                 return True
         else:
-            TypeError(f'Unexpected item {item} of ESCAPE_LIST')
+            TypeError(f"Unexpected item {item} of ESCAPE_LIST")
     return False
 
 
 def xml_encode_char(ch: str | int) -> str:
     if isinstance(ch, str):
         ch = ord(ch)
-    hex_val = hex(ch).split('x')[-1]
-    return f'&#x{hex_val.upper().zfill(4)};'
+    hex_val = hex(ch).split("x")[-1]
+    return f"&#x{hex_val.upper().zfill(4)};"
 
 
 class LayoutBuilder:
@@ -279,35 +266,34 @@ class LayoutBuilder:
 
     def __init__(
         self,
-        name: str = '',
-        script: str = '',
-        numpad_script: str = '',
-        comment: str = '',
+        name: str = "",
+        script: str = "",
+        numpad_script: str = "",
+        comment: str = "",
     ) -> None:
         """
         :param comment: MUST be a valid XML comment wrapped in <!-- tags -->
         """
         attrs = {}
         if name:
-            attrs['name'] = name
+            attrs["name"] = name
         if script:
-            attrs['script'] = script
+            attrs["script"] = script
         if numpad_script:
-            attrs['numpad_script'] = numpad_script
+            attrs["numpad_script"] = numpad_script
         self._comment = None
         if comment:
             self._comment = comment.strip() or None
-        self._xml_keyboard = ElementTree.Element('keyboard', attrib=attrs)
-        self._modmap = ElementTree.Element('modmap')
+        self._xml_keyboard = ElementTree.Element("keyboard", attrib=attrs)
+        self._modmap = ElementTree.Element("modmap")
 
     @staticmethod
     def _parse_reference_layout() -> list[ElementTree.Element]:
-        return ElementTree.parse(REFERENCE_LAYOUT_FILE).findall('row')
+        return ElementTree.parse(REFERENCE_LAYOUT_FILE).findall("row")
 
     @staticmethod
     def _move_untransited_to_new_map(
-        ref_map: KeysMapType,
-        new_map: KeysMapType
+        ref_map: KeysMapType, new_map: KeysMapType
     ) -> None:
         coordinates = [
             (row_num, key_num)
@@ -321,16 +307,16 @@ class LayoutBuilder:
             for k, val in old_key.attrib.items():
                 if (transited := new_key.attrib.get(k)) is not None:
                     msg = (
-                        f'Transition of {transited} to'
-                        f' {new_key.get(Placement.C)}:{k} conflictls with'
-                        f' existing value "{val}"')
+                        f"Transition of {transited} to"
+                        f" {new_key.get(Placement.C)}:{k} conflictls with"
+                        f' existing value "{val}"'
+                    )
                     raise LayoutGenError(msg)
                 new_key.set(k, val)
 
     @staticmethod
     def _add_extra_chars_to_ref_map(
-        coord_map: dict[str, tuple[int, int]],
-        new_map: KeysMapType
+        coord_map: dict[str, tuple[int, int]], new_map: KeysMapType
     ) -> None:
         for char, (to_key_name, to_plc) in CHARS_EXTRA.items():
             if not (to_coord := coord_map.get(to_key_name)):
@@ -342,9 +328,7 @@ class LayoutBuilder:
                 msg = f'Trying to add char to <{to_key_name}:{to_plc}>, but already contains "{existing}"'
                 raise LayoutGenError(msg)
             key.set(to_plc, char)
-            LOGGER.info(
-                'Added "%s" to <%s:%s>',
-                char, to_key_name, to_plc)
+            LOGGER.info('Added "%s" to <%s:%s>', char, to_key_name, to_plc)
 
     @classmethod
     def _apply_transitions(cls, ref_map: list) -> list:
@@ -366,35 +350,38 @@ class LayoutBuilder:
             coord_map[key_name] = (row_num, key_num)
 
         # Make new map with empty keys
-        result_map = [[ElementTree.Element('key') for key in row] for row in ref_map]
+        result_map = [[ElementTree.Element("key") for key in row] for row in ref_map]
 
         # Place by transitions map on new places
         for (from_key_name, from_plc), (to_key_name, to_plc) in TRANSITIONS_MAP.items():
             if Placement.C in (from_plc, to_plc):
                 raise NotImplementedError('Transition from or to placment "c"')
             if not (from_coord := coord_map.get(from_key_name)):
-                raise LayoutGenError(f'Transition from missing key {from_key_name}')
+                raise LayoutGenError(f"Transition from missing key {from_key_name}")
             if not (to_coord := coord_map.get(to_key_name)):
-                raise LayoutGenError(f'Transition to missing key {to_key_name}')
+                raise LayoutGenError(f"Transition to missing key {to_key_name}")
             from_key = ref_map[from_coord[0]][from_coord[1]]
             to_key = result_map[to_coord[0]][to_coord[1]]
             try:
                 val = from_key.attrib.pop(from_plc)
             except KeyError:
-                msg = f'No value in key {from_key_name}, placement {from_plc} to move'
+                msg = f"No value in key {from_key_name}, placement {from_plc} to move"
                 raise LayoutGenError(msg)
             if to_plc is not None:
                 if to_key.get(to_plc):
-                    msg = f'Second transition to key {to_key_name}, placement {to_plc}'
+                    msg = f"Second transition to key {to_key_name}, placement {to_plc}"
                     raise LayoutGenError(msg)
                 to_key.set(to_plc, val)
                 LOGGER.info(
                     'Moved "%s" from <%s:%s> to <%s:%s>',
-                    val, from_key_name, from_plc, to_key_name, to_plc)
+                    val,
+                    from_key_name,
+                    from_plc,
+                    to_key_name,
+                    to_plc,
+                )
             else:
-                LOGGER.info(
-                    'Deleted "%s" from <%s:%s>',
-                    val, from_key_name, from_plc)
+                LOGGER.info('Deleted "%s" from <%s:%s>', val, from_key_name, from_plc)
 
         # Fill new map with other values
         cls._move_untransited_to_new_map(ref_map, new_map=result_map)
@@ -406,17 +393,18 @@ class LayoutBuilder:
 
     @staticmethod
     def _resolve_placement(
-        key: ElementTree.Element,
-        placement: Placement,
-        new_char: str
+        key: ElementTree.Element, placement: Placement, new_char: str
     ) -> None:
         if placement != Placement.C:
             central_char = key.get(Placement.C)
             existing = key.get(placement)
             if existing:
                 LOGGER.warning(
-                    'Placement %s of key %s already occupied with %s',
-                    placement, central_char, existing)
+                    "Placement %s of key %s already occupied with %s",
+                    placement,
+                    central_char,
+                    existing,
+                )
         key.set(placement, new_char)
 
     def _process_key(self, key: ElementTree.Element) -> ElementTree.Element:
@@ -430,13 +418,13 @@ class LayoutBuilder:
         for level, placement_spec in LEVELS_MAP.items():
             if not (new_char := new_key_entry[level]):
                 continue
-            if '+' in placement_spec:
-                pair = placement_spec.split('+')
+            if "+" in placement_spec:
+                pair = placement_spec.split("+")
                 from_level, modkey = int(pair[0]), pair[1]
                 key_a = new_key_entry[from_level]
                 key_b = new_char
                 if key_a is None:
-                    raise LayoutGenError(f'Tried to modife {key_a} to {key_b}')
+                    raise LayoutGenError(f"Tried to modife {key_a} to {key_b}")
                 ElementTree.SubElement(self._modmap, modkey, a=key_a, b=key_b)
             else:
                 placement = Placement(placement_spec)
@@ -453,11 +441,11 @@ class LayoutBuilder:
 
     @staticmethod
     def _post_escape(data: str) -> str:
-        buf = ''
+        buf = ""
         lines = data.splitlines(keepends=True)
         for line in lines:
             # Skip keyboard tag line to keep attributes
-            if '<keyboard ' in line:
+            if "<keyboard " in line:
                 buf += line
                 continue
             for ch in line:
@@ -470,11 +458,9 @@ class LayoutBuilder:
         raw_ref_rows = self._parse_reference_layout()
         ref_rows = self._apply_transitions(raw_ref_rows)
         for row in ref_rows:
-            new_row = ElementTree.SubElement(self._xml_keyboard, 'row')
+            new_row = ElementTree.SubElement(self._xml_keyboard, "row")
             for key in row:
-                LOGGER.debug(
-                    'Processing reference entry %s',
-                    xml_elem_to_str(key))
+                LOGGER.debug("Processing reference entry %s", xml_elem_to_str(key))
                 new_row.append(self._process_key(key))
         self._modmap = self._make_extra_modmap(self._modmap)
         self._xml_keyboard.append(self._modmap)
@@ -484,41 +470,42 @@ class LayoutBuilder:
         body_raw = xml_elem_to_str(self._xml_keyboard)
         body = self._post_escape(body_raw)
 
-        result = self.XML_DECLARATION + '\n'
+        result = self.XML_DECLARATION + "\n"
         if self._comment:
-            result += self._comment + '\n'
-        result += body + '\n'
+            result += self._comment + "\n"
+        result += body + "\n"
 
         return result
 
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog='gen_sinhala_phonetic_layout',
-        description='Generate XKB-based Sinhala layout',)
+        prog="gen_sinhala_phonetic_layout",
+        description="Generate XKB-based Sinhala layout",
+    )
     parser.add_argument(
-        '-o',
-        '--output',
-        default=BASE_DIR / f'srcs/layouts/{LAYOUT_FILENAME}',
-        help='File to write result, `-` for stdout')
+        "-o",
+        "--output",
+        default=BASE_DIR / f"srcs/layouts/{LAYOUT_FILENAME}",
+        help="File to write result, `-` for stdout",
+    )
     parser.add_argument(
-        '-v',
-        '--verbose',
-        help='More verbose logging',
-        action='store_true')
+        "-v", "--verbose", help="More verbose logging", action="store_true"
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = get_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.WARNING,
-        format='%(levelname)s: %(message)s')
-    builder = LayoutBuilder(name='සිංහල', script='sinhala', comment=COMMENT)
+        format="%(levelname)s: %(message)s",
+    )
+    builder = LayoutBuilder(name="සිංහල", script="sinhala", comment=COMMENT)
     builder.build()
     content = builder.get_xml()
-    if args.output == '-':
+    if args.output == "-":
         print(content)
     else:
-        with open(args.output, 'w') as file:
+        with open(args.output, "w") as file:
             file.write(content)

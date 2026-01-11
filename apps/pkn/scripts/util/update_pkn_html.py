@@ -7,7 +7,8 @@ Replaces old script tags with ES6 module imports
 import re
 from pathlib import Path
 
-HTML_FILE = Path('/home/gh0st/dvn/divine-workspace/apps/pkn/pkn.html')
+HTML_FILE = Path("/home/gh0st/dvn/divine-workspace/apps/pkn/pkn.html")
+
 
 def update_html():
     print("📝 Updating pkn.html...\n")
@@ -32,15 +33,15 @@ def update_html():
 
     # Remove old script tags
     for pattern in old_scripts:
-        content = re.sub(pattern, '', content, flags=re.MULTILINE)
+        content = re.sub(pattern, "", content, flags=re.MULTILINE)
 
     # Find the tools.js script tag and add our module imports after it
     tools_pattern = r'(<script src="tools\.js"></script>)'
 
-    replacement = r'''\1
+    replacement = r"""\1
 <!-- PKN Frontend Modules -->
 <script type="module" src="frontend/js/pkn.js"></script>
-<script src="frontend/js/core/app.js"></script>'''
+<script src="frontend/js/core/app.js"></script>"""
 
     content = re.sub(tools_pattern, replacement, content)
 
@@ -57,5 +58,5 @@ def update_html():
     print("  - ES6 module system enabled")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     update_html()

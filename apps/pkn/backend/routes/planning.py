@@ -2,6 +2,7 @@
 Planning Routes Blueprint
 Extracted from divinenode_server.py
 """
+
 from flask import Blueprint, request, jsonify
 import json
 import uuid
@@ -10,9 +11,10 @@ import uuid
 
 
 # Create blueprint
-planning_bp = Blueprint('planning', __name__)
+planning_bp = Blueprint("planning", __name__)
 
-@planning_bp.route('/api/planning/create', methods=['POST'])
+
+@planning_bp.route("/api/planning/create", methods=["POST"])
 def api_create_plan():
     """
     Create a structured execution plan for a complex task.
@@ -34,11 +36,11 @@ def api_create_plan():
     """
     try:
         data = request.get_json() or {}
-        task = data.get('task', '')
-        context = data.get('context')
+        task = data.get("task", "")
+        context = data.get("context")
 
         if not task:
-            return jsonify({'error': 'No task provided', 'status': 'error'}), 400
+            return jsonify({"error": "No task provided", "status": "error"}), 400
 
         try:
             from ..agents import manager as agent_manager
@@ -46,22 +48,20 @@ def api_create_plan():
 
             result = asyncio.run(agent_manager.create_task_plan(task, context))
 
-            return jsonify({
-                **result,
-                'status': 'success' if result.get('success') else 'error'
-            }), 200
+            return jsonify(
+                {**result, "status": "success" if result.get("success") else "error"}
+            ), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Planning system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Planning system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
+        return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@planning_bp.route('/api/planning/execute/<plan_id>', methods=['POST'])
+@planning_bp.route("/api/planning/execute/<plan_id>", methods=["POST"])
 def api_execute_plan(plan_id):
     """
     Execute a created plan step by step.
@@ -80,7 +80,7 @@ def api_execute_plan(plan_id):
     """
     try:
         data = request.get_json() or {}
-        session_id = data.get('session_id', str(uuid.uuid4()))
+        session_id = data.get("session_id", str(uuid.uuid4()))
 
         try:
             from ..agents import manager as agent_manager
@@ -88,17 +88,14 @@ def api_execute_plan(plan_id):
 
             result = asyncio.run(agent_manager.execute_plan(plan_id, session_id))
 
-            return jsonify({
-                **result,
-                'status': 'success' if result.get('success') else 'error'
-            }), 200
+            return jsonify(
+                {**result, "status": "success" if result.get("success") else "error"}
+            ), 200
 
         except ImportError as e:
-            return jsonify({
-                'error': 'Planning system not available',
-                'status': 'error'
-            }), 503
+            return jsonify(
+                {"error": "Planning system not available", "status": "error"}
+            ), 503
 
     except Exception as e:
-        return jsonify({'error': str(e), 'status': 'error'}), 500
-
+        return jsonify({"error": str(e), "status": "error"}), 500

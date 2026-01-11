@@ -13,32 +13,39 @@ from pathlib import Path
 BASE_URL = "http://localhost:8010"
 PKN_DIR = "/home/gh0st/pkn"
 
+
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+
 
 def print_header(text):
-    print(f"\n{bcolors.HEADER}{bcolors.BOLD}{'='*60}{bcolors.ENDC}")
+    print(f"\n{bcolors.HEADER}{bcolors.BOLD}{'=' * 60}{bcolors.ENDC}")
     print(f"{bcolors.HEADER}{bcolors.BOLD}{text}{bcolors.ENDC}")
-    print(f"{bcolors.HEADER}{bcolors.BOLD}{'='*60}{bcolors.ENDC}\n")
+    print(f"{bcolors.HEADER}{bcolors.BOLD}{'=' * 60}{bcolors.ENDC}\n")
+
 
 def print_ok(text):
     print(f"{bcolors.OKGREEN}✓ {text}{bcolors.ENDC}")
 
+
 def print_fail(text):
     print(f"{bcolors.FAIL}✗ {text}{bcolors.ENDC}")
+
 
 def print_warn(text):
     print(f"{bcolors.WARNING}⚠ {text}{bcolors.ENDC}")
 
+
 def print_info(text):
     print(f"{bcolors.OKCYAN}ℹ {text}{bcolors.ENDC}")
+
 
 # Test 1: Server Health
 print_header("1. SERVER HEALTH CHECK")
@@ -68,16 +75,18 @@ try:
     else:
         print_fail("main.js NOT loaded - plugins won't work!")
 
-    if 'type="module"' in html and 'main.js' in html:
+    if 'type="module"' in html and "main.js" in html:
         print_ok("main.js loaded as ES6 module (correct)")
     else:
         print_fail("main.js NOT loaded as module - imports will fail!")
 
     if 'src="js/files.js' in html:
-        if '?v=' in html:
+        if "?v=" in html:
             print_ok("files.js has cache-busting parameter")
         else:
-            print_warn("files.js loaded but no cache-busting (may use old cached version)")
+            print_warn(
+                "files.js loaded but no cache-busting (may use old cached version)"
+            )
 
 except Exception as e:
     print_fail(f"Cannot load HTML: {e}")
@@ -85,15 +94,15 @@ except Exception as e:
 # Test 3: JavaScript Files Exist
 print_header("3. JAVASCRIPT FILES")
 js_files = [
-    'app.js',
-    'js/main.js',
-    'js/plugin-manager.js',
-    'js/plugin-base.js',
-    'js/event-bus.js',
-    'js/plugins-ui.js',
-    'js/utils.js',
-    'js/chat.js',
-    'js/files.js'
+    "app.js",
+    "js/main.js",
+    "js/plugin-manager.js",
+    "js/plugin-base.js",
+    "js/event-bus.js",
+    "js/plugins-ui.js",
+    "js/utils.js",
+    "js/chat.js",
+    "js/files.js",
 ]
 
 for js_file in js_files:
@@ -111,7 +120,9 @@ for js_file in js_files:
 print_header("4. PLUGIN FILES")
 plugins_dir = Path(PKN_DIR) / "plugins"
 if plugins_dir.exists():
-    plugin_folders = [p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith('.')]
+    plugin_folders = [
+        p for p in plugins_dir.iterdir() if p.is_dir() and not p.name.startswith(".")
+    ]
     print_info(f"Found {len(plugin_folders)} plugin folders")
 
     for plugin_folder in plugin_folders:
@@ -124,7 +135,9 @@ if plugins_dir.exists():
             try:
                 with open(manifest) as f:
                     data = json.load(f)
-                    print_ok(f"{plugin_name}: {data.get('name', 'Unknown')} v{data.get('version', '?')}")
+                    print_ok(
+                        f"{plugin_name}: {data.get('name', 'Unknown')} v{data.get('version', '?')}"
+                    )
             except json.JSONDecodeError as e:
                 print_fail(f"{plugin_name}: Invalid manifest.json - {e}")
         else:
@@ -145,18 +158,20 @@ if main_js_path.exists():
         content = f.read()
 
     # Check for window exports
-    if 'window.pluginManager' in content:
+    if "window.pluginManager" in content:
         print_ok("window.pluginManager export found")
     else:
-        print_fail("window.pluginManager NOT exported - won't be accessible in console!")
+        print_fail(
+            "window.pluginManager NOT exported - won't be accessible in console!"
+        )
 
-    if 'window.openPluginsManager' in content:
+    if "window.openPluginsManager" in content:
         print_ok("window.openPluginsManager export found")
     else:
         print_fail("window.openPluginsManager NOT exported - button won't work!")
 
     # Count plugin registrations
-    registrations = content.count('pluginManager.register(')
+    registrations = content.count("pluginManager.register(")
     print_info(f"Found {registrations} plugin registrations in main.js")
 
     # Check for plugin imports
@@ -172,13 +187,13 @@ files_js_path = Path(PKN_DIR) / "js" / "files.js"
 if files_js_path.exists():
     with open(files_js_path) as f:
         content = f.read()
-        lines = content.split('\n')
+        lines = content.split("\n")
 
     # Look for the problematic pattern
     for i, line in enumerate(lines[:50], 1):
-        if 'function showToast' in line and 'window.showToast' not in lines[i-5:i]:
+        if "function showToast" in line and "window.showToast" not in lines[i - 5 : i]:
             print_warn(f"Line {i}: Old showToast pattern found - may cause recursion")
-        if 'if (!window.showToast)' in line:
+        if "if (!window.showToast)" in line:
             print_ok(f"Line {i}: Fixed showToast pattern found - recursion prevented")
             break
 else:
@@ -189,17 +204,17 @@ print_header("7. JAVASCRIPT SYNTAX CHECK")
 import subprocess
 import tempfile
 
-js_files_to_check = ['js/main.js', 'js/plugin-manager.js', 'js/plugins-ui.js']
+js_files_to_check = ["js/main.js", "js/plugin-manager.js", "js/plugins-ui.js"]
 for js_file in js_files_to_check:
     file_path = Path(PKN_DIR) / js_file
     if file_path.exists():
         try:
             # Use node --check to validate syntax
             result = subprocess.run(
-                ['node', '--check', str(file_path)],
+                ["node", "--check", str(file_path)],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if result.returncode == 0:
                 print_ok(f"{js_file} - syntax OK")
@@ -218,10 +233,10 @@ issues_found = []
 
 # Check specific issues
 html_content = requests.get(f"{BASE_URL}/pkn.html").text
-if 'window.pluginManager' not in open(main_js_path).read():
+if "window.pluginManager" not in open(main_js_path).read():
     issues_found.append("main.js doesn't export pluginManager to window")
 
-if 'type="module"' not in html_content or 'main.js' not in html_content:
+if 'type="module"' not in html_content or "main.js" not in html_content:
     issues_found.append("main.js not loaded as ES6 module in HTML")
 
 if issues_found:
@@ -232,7 +247,7 @@ if issues_found:
     print(f"\n{bcolors.WARNING}Generating auto-fix script...{bcolors.ENDC}")
 
     # Write fix script
-    with open('/home/gh0st/pkn/auto_fix_plugins.sh', 'w') as f:
+    with open("/home/gh0st/pkn/auto_fix_plugins.sh", "w") as f:
         f.write("""#!/bin/bash
 # Auto-generated fix script for PKN plugin system
 
@@ -247,7 +262,7 @@ fi
 echo "✓ Fixes applied"
 echo "Now refresh browser with Ctrl+Shift+R"
 """)
-    os.chmod('/home/gh0st/pkn/auto_fix_plugins.sh', 0o755)
+    os.chmod("/home/gh0st/pkn/auto_fix_plugins.sh", 0o755)
     print_info("Auto-fix script created: auto_fix_plugins.sh")
 else:
     print_ok("No critical issues found!")

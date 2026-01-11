@@ -41,9 +41,7 @@ def _validate_path(path: str, must_exist: bool = False) -> tuple[bool, str, Path
 
 @tool
 def read_file(
-    file_path: str,
-    offset: Optional[int] = None,
-    limit: Optional[int] = None
+    file_path: str, offset: Optional[int] = None, limit: Optional[int] = None
 ) -> str:
     """
     Read a file from the local filesystem with optional line ranges.
@@ -65,7 +63,7 @@ def read_file(
         return msg
 
     try:
-        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
 
         # Apply offset and limit
@@ -81,7 +79,7 @@ def read_file(
             # Remove trailing newline, format with line number
             result.append(f"{i:6d}→{line.rstrip()}")
 
-        output = '\n'.join(result)
+        output = "\n".join(result)
 
         # Add context info
         if offset or limit:
@@ -97,10 +95,7 @@ def read_file(
 
 @tool
 def edit_file(
-    file_path: str,
-    old_string: str,
-    new_string: str,
-    replace_all: bool = False
+    file_path: str, old_string: str, new_string: str, replace_all: bool = False
 ) -> str:
     """
     Perform exact string replacement in a file (surgical editing).
@@ -135,7 +130,7 @@ def edit_file(
 
     try:
         # Read original content
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Check if old_string exists
@@ -146,12 +141,14 @@ def edit_file(
         if not replace_all:
             count = content.count(old_string)
             if count > 1:
-                return (f"Error: old_string appears {count} times in {path}. "
-                       f"Provide more context or use replace_all=True")
+                return (
+                    f"Error: old_string appears {count} times in {path}. "
+                    f"Provide more context or use replace_all=True"
+                )
 
         # Create backup
-        backup_path = Path(str(path) + '.bak')
-        with open(backup_path, 'w', encoding='utf-8') as f:
+        backup_path = Path(str(path) + ".bak")
+        with open(backup_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         # Perform replacement
@@ -163,12 +160,14 @@ def edit_file(
             count = 1
 
         # Write new content
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(new_content)
 
-        return (f"✅ Successfully edited {path}\n"
-               f"   Replaced {count} occurrence(s)\n"
-               f"   Backup: {backup_path}")
+        return (
+            f"✅ Successfully edited {path}\n"
+            f"   Replaced {count} occurrence(s)\n"
+            f"   Backup: {backup_path}"
+        )
 
     except Exception as e:
         return f"Error editing {path}: {e}"
@@ -198,10 +197,10 @@ def write_file(file_path: str, content: str) -> str:
     try:
         # Create backup if file exists
         if path.exists():
-            backup_path = Path(str(path) + '.bak')
-            with open(path, 'r', encoding='utf-8') as f:
+            backup_path = Path(str(path) + ".bak")
+            with open(path, "r", encoding="utf-8") as f:
                 backup_content = f.read()
-            with open(backup_path, 'w', encoding='utf-8') as f:
+            with open(backup_path, "w", encoding="utf-8") as f:
                 f.write(backup_content)
             backup_msg = f"\n   Backup: {backup_path}"
         else:
@@ -211,14 +210,16 @@ def write_file(file_path: str, content: str) -> str:
         path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
 
-        lines = content.count('\n') + 1
+        lines = content.count("\n") + 1
         size = len(content)
 
-        return (f"✅ Successfully wrote {path}\n"
-               f"   Size: {size} bytes, {lines} lines{backup_msg}")
+        return (
+            f"✅ Successfully wrote {path}\n"
+            f"   Size: {size} bytes, {lines} lines{backup_msg}"
+        )
 
     except Exception as e:
         return f"Error writing {path}: {e}"
@@ -241,7 +242,7 @@ def append_file(file_path: str, content: str) -> str:
         return msg
 
     try:
-        with open(path, 'a', encoding='utf-8') as f:
+        with open(path, "a", encoding="utf-8") as f:
             f.write(content)
 
         return f"✅ Appended {len(content)} bytes to {path}"
@@ -255,8 +256,8 @@ TOOLS = [read_file, edit_file, write_file, append_file]
 
 # Tool descriptions for LLM
 TOOL_DESCRIPTIONS = {
-    'read_file': 'Read files with optional line ranges (like cat -n)',
-    'edit_file': 'Surgical string replacement in files (exact match required)',
-    'write_file': 'Create or overwrite files (use edit_file for changes)',
-    'append_file': 'Add content to end of existing file',
+    "read_file": "Read files with optional line ranges (like cat -n)",
+    "edit_file": "Surgical string replacement in files (exact match required)",
+    "write_file": "Create or overwrite files (use edit_file for changes)",
+    "append_file": "Add content to end of existing file",
 }

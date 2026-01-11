@@ -7,7 +7,8 @@ Replaces old script tags with ES6 module import
 import re
 from pathlib import Path
 
-HTML_FILE = Path('/home/gh0st/dvn/divine-workspace/apps/code-academy/index.html')
+HTML_FILE = Path("/home/gh0st/dvn/divine-workspace/apps/code-academy/index.html")
+
 
 def update_html():
     print("📝 Updating index.html...\n")
@@ -26,21 +27,21 @@ def update_html():
         match = re.search(pattern, content)
         if match:
             print(f"  ✓ Removing: {match.group()}")
-            content = re.sub(pattern, '', content)
+            content = re.sub(pattern, "", content)
 
     # Find where to insert new script tag (before </body>)
     # Look for the last script tag or </body>
-    insertion_point = content.rfind('</body>')
+    insertion_point = content.rfind("</body>")
 
     if insertion_point == -1:
         print("  ❌ Could not find </body> tag")
         return
 
     # Insert new module script
-    new_script = '''    <!-- Code Academy - ES6 Modules -->
+    new_script = """    <!-- Code Academy - ES6 Modules -->
     <script type="module" src="src/main.js"></script>
 
-'''
+"""
 
     content = content[:insertion_point] + new_script + content[insertion_point:]
 
@@ -56,5 +57,5 @@ def update_html():
     print("  - Legacy js/ files no longer loaded directly")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     update_html()

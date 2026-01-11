@@ -12,34 +12,35 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+
 class PKNHealthMonitor:
     def __init__(self, project_root: str = "/home/gh0st/pkn"):
         self.project_root = Path(project_root)
         self.services = {
-            'divinenode': {
-                'port': 8010,
-                'health': '/health',
-                'start_cmd': 'start-divinenode',
-                'critical': True
+            "divinenode": {
+                "port": 8010,
+                "health": "/health",
+                "start_cmd": "start-divinenode",
+                "critical": True,
             },
-            'llama': {
-                'port': 8000,
-                'health': '/v1/models',
-                'start_cmd': 'start-llama',
-                'critical': True
+            "llama": {
+                "port": 8000,
+                "health": "/v1/models",
+                "start_cmd": "start-llama",
+                "critical": True,
             },
-            'parakleon': {
-                'port': 9000,
-                'health': '/health',
-                'start_cmd': 'start-parakleon',
-                'critical': False
+            "parakleon": {
+                "port": 9000,
+                "health": "/health",
+                "start_cmd": "start-parakleon",
+                "critical": False,
             },
-            'ollama': {
-                'port': 11434,
-                'health': '/api/tags',
-                'start_cmd': 'start-ollama',
-                'critical': False
-            }
+            "ollama": {
+                "port": 11434,
+                "health": "/api/tags",
+                "start_cmd": "start-ollama",
+                "critical": False,
+            },
         }
         self.restart_counts = {k: 0 for k in self.services.keys()}
         self.max_restarts = 3
@@ -48,13 +49,13 @@ class PKNHealthMonitor:
 
     def log(self, message: str):
         """Log message to file and console"""
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_msg = f"[{timestamp}] {message}"
 
         print(log_msg)
 
-        with open(self.log_file, 'a') as f:
-            f.write(log_msg + '\n')
+        with open(self.log_file, "a") as f:
+            f.write(log_msg + "\n")
 
     def check_service(self, name: str, config: dict) -> bool:
         """Check if service is healthy"""
@@ -72,20 +73,16 @@ class PKNHealthMonitor:
         """Restart a failed service"""
         if self.restart_counts[name] >= self.max_restarts:
             self.log(f"❌ {name} exceeded max restarts ({self.max_restarts})")
-            if config['critical']:
+            if config["critical"]:
                 self.log(f"🚨 CRITICAL SERVICE DOWN: {name}")
             return False
 
         self.log(f"🔄 Restarting {name}...")
         try:
             # Use pkn_control.sh to start service
-            cmd = [str(self.project_root / "pkn_control.sh"), config['start_cmd']]
+            cmd = [str(self.project_root / "pkn_control.sh"), config["start_cmd"]]
             result = subprocess.run(
-                cmd,
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-                timeout=30
+                cmd, cwd=self.project_root, capture_output=True, text=True, timeout=30
             )
 
             if result.returncode != 0:
@@ -119,10 +116,10 @@ class PKNHealthMonitor:
         for name, config in self.services.items():
             healthy = self.check_service(name, config)
             status[name] = {
-                'healthy': healthy,
-                'port': config['port'],
-                'critical': config['critical'],
-                'restart_count': self.restart_counts[name]
+                "healthy": healthy,
+                "port": config["port"],
+                "critical": config["critical"],
+                "restart_count": self.restart_counts[name],
             }
 
             if healthy:
@@ -139,7 +136,7 @@ class PKNHealthMonitor:
         self.log("🏥 PKN Health Monitor started")
         self.log(f"   Checking every {self.check_interval} seconds")
         self.log(f"   Max restarts per service: {self.max_restarts}")
-        self.log("="*60)
+        self.log("=" * 60)
 
         try:
             while True:
@@ -158,7 +155,7 @@ class PKNHealthMonitor:
                         all_healthy = False
                         self.log(f"   ✗ {name:12s} (:{config['port']}) - DOWN")
 
-                        if config['critical']:
+                        if config["critical"]:
                             critical_down = True
 
                         # Attempt restart
@@ -169,7 +166,7 @@ class PKNHealthMonitor:
                 elif critical_down:
                     self.log("   ⚠️  CRITICAL SERVICES DOWN")
 
-                self.log("-"*60)
+                self.log("-" * 60)
                 time.sleep(self.check_interval)
 
         except KeyboardInterrupt:
@@ -184,11 +181,11 @@ class PKNHealthMonitor:
         self.log("🔍 Running health check...")
 
         status = self.check_all_services()
-        all_healthy = all(s['healthy'] for s in status.values())
+        all_healthy = all(s["healthy"] for s in status.values())
 
         for name, info in status.items():
-            symbol = "✓" if info['healthy'] else "✗"
-            critical = " [CRITICAL]" if info['critical'] and not info['healthy'] else ""
+            symbol = "✓" if info["healthy"] else "✗"
+            critical = " [CRITICAL]" if info["critical"] and not info["healthy"] else ""
             self.log(f"   {symbol} {name:12s} (:{info['port']}){critical}")
 
         if all_healthy:
@@ -203,23 +200,19 @@ def main():
     """Main entry point"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='PKN Health Monitor')
+    parser = argparse.ArgumentParser(description="PKN Health Monitor")
+    parser.add_argument("--once", action="store_true", help="Run single check and exit")
     parser.add_argument(
-        '--once',
-        action='store_true',
-        help='Run single check and exit'
-    )
-    parser.add_argument(
-        '--interval',
+        "--interval",
         type=int,
         default=60,
-        help='Check interval in seconds (default: 60)'
+        help="Check interval in seconds (default: 60)",
     )
     parser.add_argument(
-        '--project-root',
+        "--project-root",
         type=str,
-        default='/home/gh0st/pkn',
-        help='PKN project root directory'
+        default="/home/gh0st/pkn",
+        help="PKN project root directory",
     )
 
     args = parser.parse_args()

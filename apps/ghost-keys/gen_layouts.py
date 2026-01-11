@@ -9,14 +9,16 @@ import xml.etree.ElementTree as XML
 
 # Layouts first in the list (these are the programming layouts). Other layouts
 # are sorted alphabetically.
-FIRST_LAYOUTS = [ "latn_qwerty_us", "latn_colemak", "latn_dvorak" ]
+FIRST_LAYOUTS = ["latn_qwerty_us", "latn_colemak", "latn_dvorak"]
+
 
 # Read a layout from a file. Returns [None] if [fname] is not a layout.
 def read_layout(fname):
     root = XML.parse(fname).getroot()
     if root.tag != "keyboard":
         return None
-    return { "name": root.get("name") }
+    return {"name": root.get("name")}
+
 
 # Yields the id (based on the file name) and the display name for every layouts
 def read_layouts(files):
@@ -30,13 +32,15 @@ def read_layouts(files):
         else:
             yield (layout_id, layout["name"])
 
+
 # Sort layouts alphabetically, except for layouts in FIRST_LAYOUTS, which are
 # placed at the top.
 # Returns a list. 'layouts' can be an iterator.
 def sort_layouts(layouts):
     layouts = dict(layouts)
-    head = [ (lid, layouts.pop(lid)) for lid in FIRST_LAYOUTS ]
+    head = [(lid, layouts.pop(lid)) for lid in FIRST_LAYOUTS]
     return head + sorted(layouts.items())
+
 
 # Write the XML arrays used in the preferences.
 def generate_arrays(out, layouts):
@@ -47,17 +51,25 @@ def generate_arrays(out, layouts):
             item.text = s
             elem.append(item)
         return elem
-    system_item = [ ("system", "@string/pref_layout_e_system") ]
-    custom_item = [ ("custom", "@string/pref_layout_e_custom") ]
-    values_items, entries_items = zip(*(system_item + layouts + custom_item)) # unzip
-    ids_items = map(lambda s: "@xml/%s" % s if s not in ["system", "custom"] else "-1", values_items)
+
+    system_item = [("system", "@string/pref_layout_e_system")]
+    custom_item = [("custom", "@string/pref_layout_e_custom")]
+    values_items, entries_items = zip(*(system_item + layouts + custom_item))  # unzip
+    ids_items = map(
+        lambda s: "@xml/%s" % s if s not in ["system", "custom"] else "-1", values_items
+    )
     root = XML.Element("resources")
-    root.append(XML.Comment(text=" DO NOT EDIT. This file is generated, run 'gradle genLayoutsList'. "))
+    root.append(
+        XML.Comment(
+            text=" DO NOT EDIT. This file is generated, run 'gradle genLayoutsList'. "
+        )
+    )
     root.append(mk_array("string-array", "pref_layout_values", values_items))
     root.append(mk_array("string-array", "pref_layout_entries", entries_items))
     root.append(mk_array("integer-array", "layout_ids", ids_items))
     XML.indent(root)
     XML.ElementTree(element=root).write(out, encoding="utf-8", xml_declaration=True)
+
 
 layouts = sort_layouts(read_layouts(glob.glob("srcs/layouts/*.xml")))
 with open("res/values/layouts.xml", "wb") as out:

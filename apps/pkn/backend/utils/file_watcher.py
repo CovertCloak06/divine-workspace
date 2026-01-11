@@ -14,13 +14,15 @@ PKN_DIR = Path(__file__).parent
 JS_DIR = PKN_DIR / "js"
 PLUGINS_DIR = PKN_DIR / "plugins"
 
+
 class Colors:
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
+
 
 class JSFileHandler(FileSystemEventHandler):
     def __init__(self):
@@ -32,7 +34,7 @@ class JSFileHandler(FileSystemEventHandler):
             return
 
         # Only check .js files
-        if not event.src_path.endswith('.js'):
+        if not event.src_path.endswith(".js"):
             return
 
         # Debounce multiple rapid changes
@@ -42,15 +44,17 @@ class JSFileHandler(FileSystemEventHandler):
 
         self.last_check = now
 
-        print(f"\n{Colors.CYAN}📝 File changed: {Path(event.src_path).name}{Colors.END}")
+        print(
+            f"\n{Colors.CYAN}📝 File changed: {Path(event.src_path).name}{Colors.END}"
+        )
         print(f"{Colors.YELLOW}Running checks...{Colors.END}\n")
 
         # Run the error checker
         try:
             result = subprocess.run(
-                ['python3', str(PKN_DIR / 'check_js_errors.py')],
+                ["python3", str(PKN_DIR / "check_js_errors.py")],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             if result.returncode == 0:
@@ -60,6 +64,7 @@ class JSFileHandler(FileSystemEventHandler):
 
         except Exception as e:
             print(f"{Colors.RED}Error running checks: {e}{Colors.END}\n")
+
 
 def main():
     print(f"{Colors.CYAN}{Colors.BOLD}PKN File Watcher{Colors.END}\n")
@@ -90,10 +95,12 @@ def main():
 
     observer.join()
 
+
 if __name__ == "__main__":
     try:
         from watchdog.observers import Observer
         from watchdog.events import FileSystemEventHandler
+
         main()
     except ImportError:
         print(f"{Colors.RED}Error: watchdog module not installed{Colors.END}")

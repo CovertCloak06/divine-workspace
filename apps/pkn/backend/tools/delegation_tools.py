@@ -15,24 +15,27 @@ from pathlib import Path
 
 class MessageType(Enum):
     """Types of inter-agent messages"""
-    REQUEST = "request"          # Request for help
-    RESPONSE = "response"        # Response to request
-    QUERY = "query"              # Question to another agent
-    RESULT = "result"            # Result of delegated task
-    ERROR = "error"              # Error notification
+
+    REQUEST = "request"  # Request for help
+    RESPONSE = "response"  # Response to request
+    QUERY = "query"  # Question to another agent
+    RESULT = "result"  # Result of delegated task
+    ERROR = "error"  # Error notification
 
 
 class DelegationPriority(Enum):
     """Priority of delegation request"""
-    URGENT = "urgent"            # Must be handled immediately
-    HIGH = "high"                # Important, handle soon
-    NORMAL = "normal"            # Standard priority
-    LOW = "low"                  # Can wait
+
+    URGENT = "urgent"  # Must be handled immediately
+    HIGH = "high"  # Important, handle soon
+    NORMAL = "normal"  # Standard priority
+    LOW = "low"  # Can wait
 
 
 @dataclass
 class AgentMessage:
     """Message for agent-to-agent communication"""
+
     id: str
     from_agent: str
     to_agent: str
@@ -46,14 +49,15 @@ class AgentMessage:
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['message_type'] = self.message_type.value
-        d['priority'] = self.priority.value
+        d["message_type"] = self.message_type.value
+        d["priority"] = self.priority.value
         return d
 
 
 @dataclass
 class DelegationTask:
     """A task delegated from one agent to another"""
+
     id: str
     parent_task_id: str
     from_agent: str
@@ -70,7 +74,7 @@ class DelegationTask:
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['priority'] = self.priority.value
+        d["priority"] = self.priority.value
         return d
 
 
@@ -94,47 +98,53 @@ class AgentDelegationManager:
 
         # Agent capabilities (what each agent can help with)
         self.agent_capabilities = {
-            'coder': [
-                'write code',
-                'debug code',
-                'refactor code',
-                'review code',
-                'explain code',
-                'optimize code'
+            "coder": [
+                "write code",
+                "debug code",
+                "refactor code",
+                "review code",
+                "explain code",
+                "optimize code",
             ],
-            'reasoner': [
-                'create plan',
-                'analyze problem',
-                'make decision',
-                'evaluate options',
-                'find solution',
-                'explain logic'
+            "reasoner": [
+                "create plan",
+                "analyze problem",
+                "make decision",
+                "evaluate options",
+                "find solution",
+                "explain logic",
             ],
-            'researcher': [
-                'find information',
-                'search documentation',
-                'compare alternatives',
-                'gather context',
-                'verify facts'
+            "researcher": [
+                "find information",
+                "search documentation",
+                "compare alternatives",
+                "gather context",
+                "verify facts",
             ],
-            'executor': [
-                'run command',
-                'execute script',
-                'test code',
-                'deploy changes',
-                'manage files'
+            "executor": [
+                "run command",
+                "execute script",
+                "test code",
+                "deploy changes",
+                "manage files",
             ],
-            'general': [
-                'answer question',
-                'have conversation',
-                'explain concept',
-                'summarize text'
-            ]
+            "general": [
+                "answer question",
+                "have conversation",
+                "explain concept",
+                "summarize text",
+            ],
         }
 
-    def delegate_task(self, from_agent: str, to_agent: str, task: str,
-                      context: Dict[str, Any], parent_task_id: str,
-                      priority: DelegationPriority = DelegationPriority.NORMAL) -> DelegationTask:
+    def delegate_task(
+        self,
+        from_agent: str,
+        to_agent: str,
+        task: str,
+        context: Dict[str, Any],
+        parent_task_id: str,
+        priority: DelegationPriority = DelegationPriority.NORMAL,
+    ) -> DelegationTask:
         """Delegate a task from one agent to another"""
 
         delegation = DelegationTask(
@@ -146,7 +156,7 @@ class AgentDelegationManager:
             context=context,
             priority=priority,
             status="pending",
-            created_at=time.time()
+            created_at=time.time(),
         )
 
         self.active_delegations[delegation.id] = delegation
@@ -157,15 +167,11 @@ class AgentDelegationManager:
             from_agent=from_agent,
             to_agent=to_agent,
             message_type=MessageType.REQUEST,
-            content={
-                'task': task,
-                'context': context,
-                'delegation_id': delegation.id
-            },
+            content={"task": task, "context": context, "delegation_id": delegation.id},
             task_id=parent_task_id,
             priority=priority,
             requires_response=True,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
         self.message_queue.append(message)
@@ -178,7 +184,7 @@ class AgentDelegationManager:
 
         delegation = self.active_delegations.get(delegation_id)
         if not delegation:
-            return {'error': 'Delegation not found'}
+            return {"error": "Delegation not found"}
 
         delegation.status = "in_progress"
         delegation.started_at = time.time()
@@ -189,7 +195,7 @@ class AgentDelegationManager:
                 agent_type=delegation.to_agent,
                 task=delegation.task_description,
                 session_id=session_id,
-                context=delegation.context
+                context=delegation.context,
             )
 
             delegation.status = "completed"
@@ -202,10 +208,10 @@ class AgentDelegationManager:
             self._save_delegation(delegation)
 
             return {
-                'success': True,
-                'delegation_id': delegation_id,
-                'result': result,
-                'duration': delegation.completed_at - delegation.started_at
+                "success": True,
+                "delegation_id": delegation_id,
+                "result": result,
+                "duration": delegation.completed_at - delegation.started_at,
             }
 
         except Exception as e:
@@ -216,14 +222,15 @@ class AgentDelegationManager:
             self._send_error_message(delegation, str(e))
             self._save_delegation(delegation)
 
-            return {
-                'success': False,
-                'delegation_id': delegation_id,
-                'error': str(e)
-            }
+            return {"success": False, "delegation_id": delegation_id, "error": str(e)}
 
-    def request_help(self, requesting_agent: str, help_needed: str,
-                     context: Dict[str, Any], task_id: str) -> Dict[str, Any]:
+    def request_help(
+        self,
+        requesting_agent: str,
+        help_needed: str,
+        context: Dict[str, Any],
+        task_id: str,
+    ) -> Dict[str, Any]:
         """Request help from the most appropriate agent"""
 
         # Determine which agent can best help
@@ -231,8 +238,8 @@ class AgentDelegationManager:
 
         if not best_agent:
             return {
-                'success': False,
-                'error': 'No suitable agent found for this request'
+                "success": False,
+                "error": "No suitable agent found for this request",
             }
 
         # Delegate to the selected agent
@@ -242,14 +249,14 @@ class AgentDelegationManager:
             task=help_needed,
             context=context,
             parent_task_id=task_id,
-            priority=DelegationPriority.HIGH
+            priority=DelegationPriority.HIGH,
         )
 
         return {
-            'success': True,
-            'delegation_id': delegation.id,
-            'helper_agent': best_agent,
-            'message': f'Delegated to {best_agent} agent'
+            "success": True,
+            "delegation_id": delegation.id,
+            "helper_agent": best_agent,
+            "message": f"Delegated to {best_agent} agent",
         }
 
     def _select_helper_agent(self, task: str, exclude_agent: str) -> Optional[str]:
@@ -275,18 +282,23 @@ class AgentDelegationManager:
 
         # If no match, use reasoner as default helper
         if not best_match or best_score == 0:
-            best_match = 'reasoner' if exclude_agent != 'reasoner' else 'general'
+            best_match = "reasoner" if exclude_agent != "reasoner" else "general"
 
         return best_match
 
-    def collaborate(self, agents: List[str], task: str, session_id: str,
-                    coordinator: str = 'reasoner') -> Dict[str, Any]:
+    def collaborate(
+        self,
+        agents: List[str],
+        task: str,
+        session_id: str,
+        coordinator: str = "reasoner",
+    ) -> Dict[str, Any]:
         """Multiple agents collaborate on a complex task"""
 
         collaboration_id = str(uuid.uuid4())
 
         # Step 1: Coordinator creates plan
-        plan_request = f"""Create a collaboration plan for this task involving these agents: {', '.join(agents)}
+        plan_request = f"""Create a collaboration plan for this task involving these agents: {", ".join(agents)}
 
 Task: {task}
 
@@ -301,24 +313,24 @@ Format as JSON with agent roles and dependencies."""
             agent_type=coordinator,
             task=plan_request,
             session_id=session_id,
-            context={'collaboration_id': collaboration_id}
+            context={"collaboration_id": collaboration_id},
         )
 
         # Step 2: Execute plan with each agent
         results = {
-            'collaboration_id': collaboration_id,
-            'coordinator': coordinator,
-            'participants': agents,
-            'task': task,
-            'agent_results': []
+            "collaboration_id": collaboration_id,
+            "coordinator": coordinator,
+            "participants": agents,
+            "task": task,
+            "agent_results": [],
         }
 
         for agent in agents:
             # Build context from previous agent results
             agent_context = {
-                'collaboration_id': collaboration_id,
-                'previous_results': results['agent_results'],
-                'full_task': task
+                "collaboration_id": collaboration_id,
+                "previous_results": results["agent_results"],
+                "full_task": task,
             }
 
             # Delegate specific subtask to this agent
@@ -330,18 +342,20 @@ Format as JSON with agent roles and dependencies."""
                 task=subtask,
                 context=agent_context,
                 parent_task_id=collaboration_id,
-                priority=DelegationPriority.HIGH
+                priority=DelegationPriority.HIGH,
             )
 
             # Execute delegation
             agent_result = self.execute_delegation(delegation.id, session_id)
 
-            results['agent_results'].append({
-                'agent': agent,
-                'delegation_id': delegation.id,
-                'result': agent_result.get('result'),
-                'success': agent_result.get('success', False)
-            })
+            results["agent_results"].append(
+                {
+                    "agent": agent,
+                    "delegation_id": delegation.id,
+                    "result": agent_result.get("result"),
+                    "success": agent_result.get("success", False),
+                }
+            )
 
         # Step 3: Coordinator synthesizes results
         synthesis_task = f"""Synthesize these collaboration results into a final answer:
@@ -349,7 +363,7 @@ Format as JSON with agent roles and dependencies."""
 Original task: {task}
 
 Agent results:
-{json.dumps(results['agent_results'], indent=2)}
+{json.dumps(results["agent_results"], indent=2)}
 
 Provide a unified, coherent response that combines the best of each agent's contribution."""
 
@@ -357,11 +371,11 @@ Provide a unified, coherent response that combines the best of each agent's cont
             agent_type=coordinator,
             task=synthesis_task,
             session_id=session_id,
-            context={'collaboration_id': collaboration_id}
+            context={"collaboration_id": collaboration_id},
         )
 
-        results['final_result'] = final_result
-        results['success'] = True
+        results["final_result"] = final_result
+        results["success"] = True
 
         return results
 
@@ -373,14 +387,11 @@ Provide a unified, coherent response that combines the best of each agent's cont
             from_agent=delegation.to_agent,
             to_agent=delegation.from_agent,
             message_type=MessageType.RESULT,
-            content={
-                'delegation_id': delegation.id,
-                'result': result
-            },
+            content={"delegation_id": delegation.id, "result": result},
             task_id=delegation.parent_task_id,
             priority=delegation.priority,
             requires_response=False,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
         self.message_queue.append(message)
@@ -393,14 +404,11 @@ Provide a unified, coherent response that combines the best of each agent's cont
             from_agent=delegation.to_agent,
             to_agent=delegation.from_agent,
             message_type=MessageType.ERROR,
-            content={
-                'delegation_id': delegation.id,
-                'error': error
-            },
+            content={"delegation_id": delegation.id, "error": error},
             task_id=delegation.parent_task_id,
             priority=delegation.priority,
             requires_response=False,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
         self.message_queue.append(message)
@@ -409,7 +417,7 @@ Provide a unified, coherent response that combines the best of each agent's cont
         """Save delegation to disk"""
 
         delegation_file = self.delegation_dir / f"delegation_{delegation.id}.json"
-        with open(delegation_file, 'w') as f:
+        with open(delegation_file, "w") as f:
             json.dump(delegation.to_dict(), f, indent=2)
 
     def get_delegation_status(self, delegation_id: str) -> Optional[Dict]:
@@ -420,14 +428,16 @@ Provide a unified, coherent response that combines the best of each agent's cont
             return None
 
         return {
-            'id': delegation.id,
-            'from_agent': delegation.from_agent,
-            'to_agent': delegation.to_agent,
-            'task': delegation.task_description,
-            'status': delegation.status,
-            'created_at': delegation.created_at,
-            'completed_at': delegation.completed_at,
-            'duration': delegation.completed_at - delegation.created_at if delegation.completed_at else None
+            "id": delegation.id,
+            "from_agent": delegation.from_agent,
+            "to_agent": delegation.to_agent,
+            "task": delegation.task_description,
+            "status": delegation.status,
+            "created_at": delegation.created_at,
+            "completed_at": delegation.completed_at,
+            "duration": delegation.completed_at - delegation.created_at
+            if delegation.completed_at
+            else None,
         }
 
     def get_active_delegations(self, agent: Optional[str] = None) -> List[Dict]:
@@ -435,8 +445,12 @@ Provide a unified, coherent response that combines the best of each agent's cont
 
         delegations = []
         for delegation in self.active_delegations.values():
-            if delegation.status in ['pending', 'in_progress']:
-                if agent is None or delegation.to_agent == agent or delegation.from_agent == agent:
+            if delegation.status in ["pending", "in_progress"]:
+                if (
+                    agent is None
+                    or delegation.to_agent == agent
+                    or delegation.from_agent == agent
+                ):
                     delegations.append(delegation.to_dict())
 
         return delegations
@@ -445,7 +459,9 @@ Provide a unified, coherent response that combines the best of each agent's cont
         """Get messages in queue, optionally filtered by recipient"""
 
         if agent:
-            return [msg.to_dict() for msg in self.message_queue if msg.to_agent == agent]
+            return [
+                msg.to_dict() for msg in self.message_queue if msg.to_agent == agent
+            ]
         return [msg.to_dict() for msg in self.message_queue]
 
     def clear_message_queue(self):

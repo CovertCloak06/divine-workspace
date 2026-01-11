@@ -7,51 +7,50 @@ Moves remaining js/ files to src/ with proper organization
 import shutil
 from pathlib import Path
 
-ROOT = Path('/home/gh0st/dvn/divine-workspace/apps/code-academy')
-JS_DIR = ROOT / 'js'
-SRC_DIR = ROOT / 'src'
+ROOT = Path("/home/gh0st/dvn/divine-workspace/apps/code-academy")
+JS_DIR = ROOT / "js"
+SRC_DIR = ROOT / "src"
 
 # Migration mapping
 MIGRATIONS = {
     # Managers
-    'theme-manager.js': 'managers/ThemeManager.js',
-    'progress-tracker.js': 'managers/ProgressTracker.js',
-
+    "theme-manager.js": "managers/ThemeManager.js",
+    "progress-tracker.js": "managers/ProgressTracker.js",
     # Components
-    'code-playground.js': 'components/CodePlayground.js',
-    'challenge-editor.js': 'components/ChallengeEditor.js',
-    'guided-editor.js': 'components/GuidedEditor.js',
-    'terminal-widget.js': 'components/TerminalWidget.js',
-    'visual-adjuster.js': 'components/VisualAdjuster.js',
-    'error-boundary.js': 'components/ErrorBoundary.js',
-
+    "code-playground.js": "components/CodePlayground.js",
+    "challenge-editor.js": "components/ChallengeEditor.js",
+    "guided-editor.js": "components/GuidedEditor.js",
+    "terminal-widget.js": "components/TerminalWidget.js",
+    "visual-adjuster.js": "components/VisualAdjuster.js",
+    "error-boundary.js": "components/ErrorBoundary.js",
     # Core
-    'academy.js': 'core/Academy.js',
-
+    "academy.js": "core/Academy.js",
     # Utils (if not already in src/utils)
-    'web-vitals-tracker.js': 'utils/web-vitals-tracker.js',
+    "web-vitals-tracker.js": "utils/web-vitals-tracker.js",
 }
+
 
 def convert_to_es6_module(content, filename):
     """Add ES6 module header and convert class exports"""
     # Add header
-    header = f'''/**
+    header = f"""/**
  * {filename}
  * Code Academy Module
  */
 
-'''
+"""
 
     # If file has a class, export it
-    if 'class ' in content:
+    if "class " in content:
         # Find main class name
         import re
-        match = re.search(r'class\s+(\w+)', content)
+
+        match = re.search(r"class\s+(\w+)", content)
         if match:
             class_name = match.group(1)
             # Add export default at the end if not already there
-            if 'export default' not in content and 'export {' not in content:
-                content = content.rstrip() + f'\n\nexport default {class_name};\n'
+            if "export default" not in content and "export {" not in content:
+                content = content.rstrip() + f"\n\nexport default {class_name};\n"
 
     return header + content
 
@@ -106,8 +105,8 @@ def main():
     # Create main entry point
     print("\n📝 Creating main entry point...")
 
-    main_js = SRC_DIR / 'main.js'
-    main_js.write_text('''/**
+    main_js = SRC_DIR / "main.js"
+    main_js.write_text("""/**
  * Code Academy - Main Entry Point
  * Loads all modules and initializes the application
  */
@@ -166,17 +165,23 @@ export {
     formatContent,
     validators
 };
-''')
+""")
 
     print(f"✅ Created src/main.js entry point\n")
 
     print("=" * 60)
     print("📊 SUMMARY")
     print("=" * 60)
-    print(f"  Files in src/components/: {len(list((SRC_DIR / 'components').glob('*.js')))}")
-    print(f"  Files in src/managers/:   {len(list((SRC_DIR / 'managers').glob('*.js')))}")
+    print(
+        f"  Files in src/components/: {len(list((SRC_DIR / 'components').glob('*.js')))}"
+    )
+    print(
+        f"  Files in src/managers/:   {len(list((SRC_DIR / 'managers').glob('*.js')))}"
+    )
     print(f"  Files in src/core/:       {len(list((SRC_DIR / 'core').glob('*.js')))}")
-    print(f"  Files in src/services/:   {len(list((SRC_DIR / 'services').glob('*.js')))}")
+    print(
+        f"  Files in src/services/:   {len(list((SRC_DIR / 'services').glob('*.js')))}"
+    )
     print(f"  Files in src/utils/:      {len(list((SRC_DIR / 'utils').glob('*.js')))}")
     print("\n✅ Code Academy migration complete!")
     print("\n⚠️  NEXT STEPS:")
@@ -186,5 +191,5 @@ export {
     print("  3. Test in browser")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

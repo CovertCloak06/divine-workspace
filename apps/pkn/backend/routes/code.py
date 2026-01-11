@@ -2,14 +2,16 @@
 Code Routes Blueprint
 Extracted from divinenode_server.py
 """
+
 from flask import Blueprint, request, jsonify, current_app
 import json
 
 
 # Create blueprint
-code_bp = Blueprint('code', __name__)
+code_bp = Blueprint("code", __name__)
 
-@code_bp.route('/api/code/analyze', methods=['POST'])
+
+@code_bp.route("/api/code/analyze", methods=["POST"])
 def api_code_analyze():
     """
     Analyze a code file and return symbols, imports, structure.
@@ -29,39 +31,37 @@ def api_code_analyze():
     """
     try:
         data = request.get_json() or {}
-        file_path = data.get('file_path', '')
+        file_path = data.get("file_path", "")
 
         if not file_path:
-            return jsonify({'error': 'No file_path provided', 'status': 'error'}), 400
+            return jsonify({"error": "No file_path provided", "status": "error"}), 400
 
         try:
             from ..memory import code_context
 
             # Analyze the file
             result = code_context.analyze_file(file_path)
-            result['status'] = 'success'
+            result["status"] = "success"
 
             return jsonify(result), 200
 
         except ImportError as e:
-            current_app.logger.error(f'Failed to from ..memory import code_context: {e}')
-            return jsonify({
-                'error': 'Code context system not available',
-                'status': 'error'
-            }), 503
+            current_app.logger.error(
+                f"Failed to from ..memory import code_context: {e}"
+            )
+            return jsonify(
+                {"error": "Code context system not available", "status": "error"}
+            ), 503
         except Exception as e:
-            current_app.logger.error(f'File analysis error: {e}')
-            return jsonify({
-                'error': str(e),
-                'status': 'error'
-            }), 500
+            current_app.logger.error(f"File analysis error: {e}")
+            return jsonify({"error": str(e), "status": "error"}), 500
 
     except Exception as e:
-        current_app.logger.error(f'Code analyze endpoint error: {e}')
-        return jsonify({'error': str(e), 'status': 'error'}), 500
+        current_app.logger.error(f"Code analyze endpoint error: {e}")
+        return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@code_bp.route('/api/code/scan-project', methods=['POST'])
+@code_bp.route("/api/code/scan-project", methods=["POST"])
 def api_code_scan_project():
     """
     Scan entire project and build symbol index.
@@ -80,7 +80,7 @@ def api_code_scan_project():
     """
     try:
         data = request.get_json() or {}
-        extensions = data.get('extensions', ['.py', '.js', '.html', '.css'])
+        extensions = data.get("extensions", [".py", ".js", ".html", ".css"])
 
         try:
             from ..memory import code_context
@@ -89,26 +89,21 @@ def api_code_scan_project():
             stats = code_context.scan_project(extensions)
             project_stats = code_context.get_project_stats()
 
-            return jsonify({
-                'stats': stats,
-                'project_stats': project_stats,
-                'status': 'success'
-            }), 200
+            return jsonify(
+                {"stats": stats, "project_stats": project_stats, "status": "success"}
+            ), 200
 
         except ImportError as e:
-            current_app.logger.error(f'Failed to from ..memory import code_context: {e}')
-            return jsonify({
-                'error': 'Code context system not available',
-                'status': 'error'
-            }), 503
+            current_app.logger.error(
+                f"Failed to from ..memory import code_context: {e}"
+            )
+            return jsonify(
+                {"error": "Code context system not available", "status": "error"}
+            ), 503
         except Exception as e:
-            current_app.logger.error(f'Project scan error: {e}')
-            return jsonify({
-                'error': str(e),
-                'status': 'error'
-            }), 500
+            current_app.logger.error(f"Project scan error: {e}")
+            return jsonify({"error": str(e), "status": "error"}), 500
 
     except Exception as e:
-        current_app.logger.error(f'Project scan endpoint error: {e}')
-        return jsonify({'error': str(e), 'status': 'error'}), 500
-
+        current_app.logger.error(f"Project scan endpoint error: {e}")
+        return jsonify({"error": str(e), "status": "error"}), 500

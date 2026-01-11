@@ -18,6 +18,7 @@ from langchain_core.messages import (
 # Import web tools for enhanced agent capabilities
 try:
     from web_tools import search, fetch, wiki, github, web_tools
+
     WEB_TOOLS_AVAILABLE = True
 except ImportError:
     WEB_TOOLS_AVAILABLE = False
@@ -72,6 +73,7 @@ def _save_json(path: Path, data: Dict[str, Any]) -> str:
 # ============================================================================
 # Tools
 # ============================================================================
+
 
 @tool
 def list_project_files(path: str) -> List[str]:
@@ -212,6 +214,7 @@ def write_file_with_backup(path: str, content: str) -> str:
 # ============================================================================
 
 if WEB_TOOLS_AVAILABLE:
+
     @tool
     def web_search(query: str, max_results: int = 5) -> str:
         """
@@ -267,18 +270,21 @@ tools = [
 
 # Add web tools if available
 if WEB_TOOLS_AVAILABLE:
-    tools.extend([
-        web_search,
-        fetch_url,
-        wikipedia_search,
-        search_github,
-    ])
+    tools.extend(
+        [
+            web_search,
+            fetch_url,
+            wikipedia_search,
+            search_github,
+        ]
+    )
 llm_with_tools = llm.bind_tools(tools)
 tool_map = {t.name: t for t in tools}
 
 # ============================================================================
 # Core agent runner
 # ============================================================================
+
 
 def run_agent(user_instruction: str) -> str:
     """

@@ -15,6 +15,7 @@ from pathlib import Path
 
 class StepStatus(Enum):
     """Status of a plan step"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -24,15 +25,17 @@ class StepStatus(Enum):
 
 class StepPriority(Enum):
     """Priority levels for steps"""
-    CRITICAL = "critical"      # Must succeed for plan to continue
-    HIGH = "high"              # Important but not blocking
-    MEDIUM = "medium"          # Nice to have
-    LOW = "low"                # Optional
+
+    CRITICAL = "critical"  # Must succeed for plan to continue
+    HIGH = "high"  # Important but not blocking
+    MEDIUM = "medium"  # Nice to have
+    LOW = "low"  # Optional
 
 
 @dataclass
 class PlanStep:
     """Individual step in an execution plan"""
+
     id: str
     action: str
     agent_type: str
@@ -47,14 +50,15 @@ class PlanStep:
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['priority'] = self.priority.value
-        d['status'] = self.status.value
+        d["priority"] = self.priority.value
+        d["status"] = self.status.value
         return d
 
 
 @dataclass
 class ExecutionPlan:
     """Complete execution plan for a task"""
+
     id: str
     task: str
     goal: str
@@ -71,7 +75,7 @@ class ExecutionPlan:
 
     def to_dict(self) -> Dict:
         d = asdict(self)
-        d['steps'] = [step.to_dict() for step in self.steps]
+        d["steps"] = [step.to_dict() for step in self.steps]
         return d
 
 
@@ -97,7 +101,7 @@ class TaskPlanner:
         response = self.llm_client.call(
             prompt=plan_prompt,
             temperature=0.3,  # Lower temp for structured planning
-            max_tokens=2000
+            max_tokens=2000,
         )
 
         # Parse the structured plan
@@ -107,14 +111,16 @@ class TaskPlanner:
         plan = ExecutionPlan(
             id=str(uuid.uuid4()),
             task=task,
-            goal=plan_data['goal'],
-            steps=plan_data['steps'],
-            required_agents=plan_data['required_agents'],
-            required_tools=plan_data['required_tools'],
-            expected_output=plan_data['expected_output'],
-            risks=plan_data['risks'],
-            estimated_total_duration=plan_data.get('estimated_total_duration', plan_data.get('estimated_duration', 60)),
-            created_at=time.time()
+            goal=plan_data["goal"],
+            steps=plan_data["steps"],
+            required_agents=plan_data["required_agents"],
+            required_tools=plan_data["required_tools"],
+            expected_output=plan_data["expected_output"],
+            risks=plan_data["risks"],
+            estimated_total_duration=plan_data.get(
+                "estimated_total_duration", plan_data.get("estimated_duration", 60)
+            ),
+            created_at=time.time(),
         )
 
         # Save plan
@@ -181,8 +187,8 @@ Plan:"""
 
         try:
             # Try to extract JSON from response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 plan_data = json.loads(json_str)
@@ -192,23 +198,25 @@ Plan:"""
 
             # Convert steps to PlanStep objects
             steps = []
-            for i, step_data in enumerate(plan_data.get('steps', [])):
+            for i, step_data in enumerate(plan_data.get("steps", [])):
                 step = PlanStep(
-                    id=f"step_{i+1}",
-                    action=step_data.get('action', ''),
-                    agent_type=step_data.get('agent', 'general'),
-                    tools_required=step_data.get('tools', []),
-                    depends_on=[f"step_{d}" for d in step_data.get('depends_on', [])],
-                    priority=StepPriority(step_data.get('priority', 'medium')),
-                    estimated_duration=step_data.get('estimated_duration', 30)
+                    id=f"step_{i + 1}",
+                    action=step_data.get("action", ""),
+                    agent_type=step_data.get("agent", "general"),
+                    tools_required=step_data.get("tools", []),
+                    depends_on=[f"step_{d}" for d in step_data.get("depends_on", [])],
+                    priority=StepPriority(step_data.get("priority", "medium")),
+                    estimated_duration=step_data.get("estimated_duration", 30),
                 )
                 steps.append(step)
 
-            plan_data['steps'] = steps
+            plan_data["steps"] = steps
 
             # Ensure required fields exist
-            if 'estimated_total_duration' not in plan_data:
-                plan_data['estimated_total_duration'] = plan_data.get('estimated_duration', 60)
+            if "estimated_total_duration" not in plan_data:
+                plan_data["estimated_total_duration"] = plan_data.get(
+                    "estimated_duration", 60
+                )
 
             return plan_data
 
@@ -220,15 +228,15 @@ Plan:"""
         """Parse text-format plan (fallback)"""
 
         # Simple text parsing
-        lines = text.split('\n')
+        lines = text.split("\n")
         plan = {
-            'goal': '',
-            'steps': [],
-            'required_agents': ['general'],
-            'required_tools': [],
-            'expected_output': '',
-            'risks': [],
-            'estimated_total_duration': 60
+            "goal": "",
+            "steps": [],
+            "required_agents": ["general"],
+            "required_tools": [],
+            "expected_output": "",
+            "risks": [],
+            "estimated_total_duration": 60,
         }
 
         current_section = None
@@ -237,19 +245,21 @@ Plan:"""
             if not line:
                 continue
 
-            if 'GOAL:' in line.upper():
-                current_section = 'goal'
-                plan['goal'] = line.split(':', 1)[1].strip() if ':' in line else ''
-            elif 'STEP' in line.upper() and (':' in line or '.' in line):
-                action = line.split(':', 1)[1].strip() if ':' in line else line
-                plan['steps'].append({
-                    'action': action,
-                    'agent': 'general',
-                    'tools': [],
-                    'priority': 'medium',
-                    'estimated_duration': 30,
-                    'depends_on': []
-                })
+            if "GOAL:" in line.upper():
+                current_section = "goal"
+                plan["goal"] = line.split(":", 1)[1].strip() if ":" in line else ""
+            elif "STEP" in line.upper() and (":" in line or "." in line):
+                action = line.split(":", 1)[1].strip() if ":" in line else line
+                plan["steps"].append(
+                    {
+                        "action": action,
+                        "agent": "general",
+                        "tools": [],
+                        "priority": "medium",
+                        "estimated_duration": 30,
+                        "depends_on": [],
+                    }
+                )
 
         return plan
 
@@ -257,29 +267,29 @@ Plan:"""
         """Create a simple fallback plan if parsing fails"""
 
         return {
-            'goal': f'Complete task: {task}',
-            'steps': [
+            "goal": f"Complete task: {task}",
+            "steps": [
                 {
-                    'action': task,
-                    'agent': 'general',
-                    'tools': [],
-                    'priority': 'critical',
-                    'estimated_duration': 60,
-                    'depends_on': []
+                    "action": task,
+                    "agent": "general",
+                    "tools": [],
+                    "priority": "critical",
+                    "estimated_duration": 60,
+                    "depends_on": [],
                 }
             ],
-            'required_agents': ['general'],
-            'required_tools': [],
-            'expected_output': 'Task completed',
-            'risks': [f'Plan parsing failed: {error}'],
-            'estimated_total_duration': 60
+            "required_agents": ["general"],
+            "required_tools": [],
+            "expected_output": "Task completed",
+            "risks": [f"Plan parsing failed: {error}"],
+            "estimated_total_duration": 60,
         }
 
     def _save_plan(self, plan: ExecutionPlan):
         """Save plan to disk"""
 
         plan_file = self.plans_dir / f"plan_{plan.id}.json"
-        with open(plan_file, 'w') as f:
+        with open(plan_file, "w") as f:
             json.dump(plan.to_dict(), f, indent=2)
 
     def load_plan(self, plan_id: str) -> Optional[ExecutionPlan]:
@@ -289,28 +299,28 @@ Plan:"""
         if not plan_file.exists():
             return None
 
-        with open(plan_file, 'r') as f:
+        with open(plan_file, "r") as f:
             data = json.load(f)
 
         # Reconstruct PlanStep objects
         steps = []
-        for step_data in data['steps']:
+        for step_data in data["steps"]:
             step = PlanStep(
-                id=step_data['id'],
-                action=step_data['action'],
-                agent_type=step_data['agent_type'],
-                tools_required=step_data['tools_required'],
-                depends_on=step_data['depends_on'],
-                priority=StepPriority(step_data['priority']),
-                estimated_duration=step_data['estimated_duration'],
-                status=StepStatus(step_data['status']),
-                result=step_data.get('result'),
-                error=step_data.get('error'),
-                actual_duration=step_data.get('actual_duration')
+                id=step_data["id"],
+                action=step_data["action"],
+                agent_type=step_data["agent_type"],
+                tools_required=step_data["tools_required"],
+                depends_on=step_data["depends_on"],
+                priority=StepPriority(step_data["priority"]),
+                estimated_duration=step_data["estimated_duration"],
+                status=StepStatus(step_data["status"]),
+                result=step_data.get("result"),
+                error=step_data.get("error"),
+                actual_duration=step_data.get("actual_duration"),
             )
             steps.append(step)
 
-        data['steps'] = steps
+        data["steps"] = steps
         return ExecutionPlan(**data)
 
 
@@ -332,13 +342,13 @@ class PlanExecutor:
         plan.started_at = time.time()
 
         results = {
-            'plan_id': plan.id,
-            'task': plan.task,
-            'steps_completed': 0,
-            'steps_failed': 0,
-            'step_results': [],
-            'success': False,
-            'error': None
+            "plan_id": plan.id,
+            "task": plan.task,
+            "steps_completed": 0,
+            "steps_failed": 0,
+            "step_results": [],
+            "success": False,
+            "error": None,
         }
 
         try:
@@ -347,38 +357,40 @@ class PlanExecutor:
                 # Check if dependencies are met
                 if not self._dependencies_met(step, plan):
                     step.status = StepStatus.SKIPPED
-                    results['step_results'].append({
-                        'step_id': step.id,
-                        'status': 'skipped',
-                        'reason': 'Dependencies not met'
-                    })
+                    results["step_results"].append(
+                        {
+                            "step_id": step.id,
+                            "status": "skipped",
+                            "reason": "Dependencies not met",
+                        }
+                    )
                     continue
 
                 # Execute step
                 step_result = self._execute_step(step, session_id, plan)
 
-                results['step_results'].append(step_result)
+                results["step_results"].append(step_result)
 
-                if step_result['status'] == 'completed':
-                    results['steps_completed'] += 1
-                elif step_result['status'] == 'failed':
-                    results['steps_failed'] += 1
+                if step_result["status"] == "completed":
+                    results["steps_completed"] += 1
+                elif step_result["status"] == "failed":
+                    results["steps_failed"] += 1
 
                     # If critical step fails, abort plan
                     if step.priority == StepPriority.CRITICAL:
-                        results['error'] = f"Critical step failed: {step.action}"
+                        results["error"] = f"Critical step failed: {step.action}"
                         plan.status = "failed"
                         break
 
             # Mark plan as complete if no critical failures
             if plan.status != "failed":
                 plan.status = "completed"
-                results['success'] = True
+                results["success"] = True
 
             plan.completed_at = time.time()
 
         except Exception as e:
-            results['error'] = str(e)
+            results["error"] = str(e)
             plan.status = "failed"
 
         finally:
@@ -400,7 +412,9 @@ class PlanExecutor:
 
         return True
 
-    def _execute_step(self, step: PlanStep, session_id: str, plan: ExecutionPlan) -> Dict:
+    def _execute_step(
+        self, step: PlanStep, session_id: str, plan: ExecutionPlan
+    ) -> Dict:
         """Execute a single step"""
 
         step.status = StepStatus.IN_PROGRESS
@@ -418,7 +432,7 @@ class PlanExecutor:
                 task=step.action,
                 session_id=session_id,
                 context=context,
-                tools_hint=step.tools_required
+                tools_hint=step.tools_required,
             )
 
             step.status = StepStatus.COMPLETED
@@ -426,12 +440,12 @@ class PlanExecutor:
             step.actual_duration = int(time.time() - start_time)
 
             return {
-                'step_id': step.id,
-                'status': 'completed',
-                'action': step.action,
-                'agent_used': step.agent_type,
-                'duration': step.actual_duration,
-                'result': result
+                "step_id": step.id,
+                "status": "completed",
+                "action": step.action,
+                "agent_used": step.agent_type,
+                "duration": step.actual_duration,
+                "result": result,
             }
 
         except Exception as e:
@@ -440,31 +454,33 @@ class PlanExecutor:
             step.actual_duration = int(time.time() - start_time)
 
             return {
-                'step_id': step.id,
-                'status': 'failed',
-                'action': step.action,
-                'error': str(e),
-                'duration': step.actual_duration
+                "step_id": step.id,
+                "status": "failed",
+                "action": step.action,
+                "error": str(e),
+                "duration": step.actual_duration,
             }
 
     def _build_step_context(self, step: PlanStep, plan: ExecutionPlan) -> Dict:
         """Build context for step execution from previous steps"""
 
         context = {
-            'plan_goal': plan.goal,
-            'current_step': step.id,
-            'previous_results': []
+            "plan_goal": plan.goal,
+            "current_step": step.id,
+            "previous_results": [],
         }
 
         # Include results from dependency steps
         for dep_id in step.depends_on:
             dep_step = next((s for s in plan.steps if s.id == dep_id), None)
             if dep_step and dep_step.result:
-                context['previous_results'].append({
-                    'step_id': dep_id,
-                    'action': dep_step.action,
-                    'result': dep_step.result
-                })
+                context["previous_results"].append(
+                    {
+                        "step_id": dep_id,
+                        "action": dep_step.action,
+                        "result": dep_step.result,
+                    }
+                )
 
         return context
 
@@ -472,21 +488,21 @@ class PlanExecutor:
         """Map plan agent string to AgentType enum"""
 
         mapping = {
-            'coder': 'coder',
-            'reasoner': 'reasoner',
-            'researcher': 'researcher',
-            'executor': 'executor',
-            'general': 'general',
-            'consultant': 'consultant'
+            "coder": "coder",
+            "reasoner": "reasoner",
+            "researcher": "researcher",
+            "executor": "executor",
+            "general": "general",
+            "consultant": "consultant",
         }
 
-        return mapping.get(agent_str.lower(), 'general')
+        return mapping.get(agent_str.lower(), "general")
 
     def _save_plan_state(self, plan: ExecutionPlan):
         """Save current plan state"""
 
         plan_file = Path(f"/home/gh0st/pkn/memory/plans/plan_{plan.id}.json")
-        with open(plan_file, 'w') as f:
+        with open(plan_file, "w") as f:
             json.dump(plan.to_dict(), f, indent=2)
 
     def get_plan_status(self, plan_id: str) -> Optional[Dict]:
@@ -497,14 +513,18 @@ class PlanExecutor:
             return None
 
         return {
-            'plan_id': plan.id,
-            'status': plan.status,
-            'steps_total': len(plan.steps),
-            'steps_completed': sum(1 for s in plan.steps if s.status == StepStatus.COMPLETED),
-            'steps_failed': sum(1 for s in plan.steps if s.status == StepStatus.FAILED),
-            'steps_pending': sum(1 for s in plan.steps if s.status == StepStatus.PENDING),
-            'started_at': plan.started_at,
-            'completed_at': plan.completed_at
+            "plan_id": plan.id,
+            "status": plan.status,
+            "steps_total": len(plan.steps),
+            "steps_completed": sum(
+                1 for s in plan.steps if s.status == StepStatus.COMPLETED
+            ),
+            "steps_failed": sum(1 for s in plan.steps if s.status == StepStatus.FAILED),
+            "steps_pending": sum(
+                1 for s in plan.steps if s.status == StepStatus.PENDING
+            ),
+            "started_at": plan.started_at,
+            "completed_at": plan.completed_at,
         }
 
 

@@ -30,27 +30,31 @@ class GroqVision:
     def _load_api_key(self) -> str:
         """Load Groq API key from environment or .env"""
         # Try environment first
-        api_key = os.getenv('GROQ_API_KEY', '')
+        api_key = os.getenv("GROQ_API_KEY", "")
 
         # Try .env file
         if not api_key:
-            env_file = Path(__file__).parent / '.env'
+            env_file = Path(__file__).parent / ".env"
             if env_file.exists():
-                with open(env_file, 'r') as f:
+                with open(env_file, "r") as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#'):
-                            if line.startswith('GROQ_API_KEY'):
-                                api_key = line.split('=', 1)[1].strip().strip('"').strip("'")
+                        if line and not line.startswith("#"):
+                            if line.startswith("GROQ_API_KEY"):
+                                api_key = (
+                                    line.split("=", 1)[1].strip().strip('"').strip("'")
+                                )
                                 break
 
         return api_key
 
     def is_available(self) -> bool:
         """Check if Groq API is configured and available"""
-        return bool(self.api_key and self.api_key != '')
+        return bool(self.api_key and self.api_key != "")
 
-    def analyze_image(self, image_url: str, prompt: str = "Describe this image in detail.") -> Dict[str, Any]:
+    def analyze_image(
+        self, image_url: str, prompt: str = "Describe this image in detail."
+    ) -> Dict[str, Any]:
         """
         Analyze an image using Groq's vision model.
 
@@ -71,8 +75,8 @@ class GroqVision:
 
         if not self.is_available():
             return {
-                'success': False,
-                'error': 'Groq API key not configured. Get a free key at https://console.groq.com'
+                "success": False,
+                "error": "Groq API key not configured. Get a free key at https://console.groq.com",
             }
 
         start_time = time.time()
@@ -80,77 +84,69 @@ class GroqVision:
         try:
             # Build vision request
             headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
             }
 
             # Groq uses OpenAI-compatible format
             payload = {
-                'model': self.model,
-                'messages': [
+                "model": self.model,
+                "messages": [
                     {
-                        'role': 'system',
-                        'content': 'You are a vision analysis expert. Always respond in English only. Provide clear, detailed descriptions.'
+                        "role": "system",
+                        "content": "You are a vision analysis expert. Always respond in English only. Provide clear, detailed descriptions.",
                     },
                     {
-                        'role': 'user',
-                        'content': [
-                            {
-                                'type': 'text',
-                                'text': prompt
-                            },
-                            {
-                                'type': 'image_url',
-                                'image_url': {
-                                    'url': image_url
-                                }
-                            }
-                        ]
-                    }
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                        ],
+                    },
                 ],
-                'temperature': 0.3,
-                'max_tokens': 1024
+                "temperature": 0.3,
+                "max_tokens": 1024,
             }
 
             response = requests.post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=30,
             )
 
             response.raise_for_status()
             data = response.json()
 
             # Extract response
-            if 'choices' in data and len(data['choices']) > 0:
-                content = data['choices'][0]['message']['content']
+            if "choices" in data and len(data["choices"]) > 0:
+                content = data["choices"][0]["message"]["content"]
 
                 return {
-                    'success': True,
-                    'response': content,
-                    'model': self.model,
-                    'execution_time': time.time() - start_time,
-                    'provider': 'groq_cloud'
+                    "success": True,
+                    "response": content,
+                    "model": self.model,
+                    "execution_time": time.time() - start_time,
+                    "provider": "groq_cloud",
                 }
             else:
                 return {
-                    'success': False,
-                    'error': 'No response from Groq API',
-                    'execution_time': time.time() - start_time
+                    "success": False,
+                    "error": "No response from Groq API",
+                    "execution_time": time.time() - start_time,
                 }
 
         except requests.exceptions.RequestException as e:
             return {
-                'success': False,
-                'error': f'Groq API request failed: {str(e)}',
-                'execution_time': time.time() - start_time
+                "success": False,
+                "error": f"Groq API request failed: {str(e)}",
+                "execution_time": time.time() - start_time,
             }
         except Exception as e:
             return {
-                'success': False,
-                'error': f'Error: {str(e)}',
-                'execution_time': time.time() - start_time
+                "success": False,
+                "error": f"Error: {str(e)}",
+                "execution_time": time.time() - start_time,
             }
 
     def analyze_text(self, prompt: str) -> Dict[str, Any]:
@@ -167,68 +163,62 @@ class GroqVision:
         import time
 
         if not self.is_available():
-            return {
-                'success': False,
-                'error': 'Groq API key not configured'
-            }
+            return {"success": False, "error": "Groq API key not configured"}
 
         start_time = time.time()
 
         try:
             headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
             }
 
             # Use fast text model for non-vision queries
             payload = {
-                'model': 'llama-3.3-70b-versatile',  # Faster for text-only
-                'messages': [
+                "model": "llama-3.3-70b-versatile",  # Faster for text-only
+                "messages": [
                     {
-                        'role': 'system',
-                        'content': 'You are a helpful assistant. Always respond in English only.'
+                        "role": "system",
+                        "content": "You are a helpful assistant. Always respond in English only.",
                     },
-                    {
-                        'role': 'user',
-                        'content': prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
-                'temperature': 0.3,
-                'max_tokens': 1024
+                "temperature": 0.3,
+                "max_tokens": 1024,
             }
 
             response = requests.post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=30,
             )
 
             response.raise_for_status()
             data = response.json()
 
-            if 'choices' in data and len(data['choices']) > 0:
-                content = data['choices'][0]['message']['content']
+            if "choices" in data and len(data["choices"]) > 0:
+                content = data["choices"][0]["message"]["content"]
 
                 return {
-                    'success': True,
-                    'response': content,
-                    'model': 'llama-3.3-70b-versatile',
-                    'execution_time': time.time() - start_time,
-                    'provider': 'groq_cloud'
+                    "success": True,
+                    "response": content,
+                    "model": "llama-3.3-70b-versatile",
+                    "execution_time": time.time() - start_time,
+                    "provider": "groq_cloud",
                 }
             else:
                 return {
-                    'success': False,
-                    'error': 'No response from Groq',
-                    'execution_time': time.time() - start_time
+                    "success": False,
+                    "error": "No response from Groq",
+                    "execution_time": time.time() - start_time,
                 }
 
         except Exception as e:
             return {
-                'success': False,
-                'error': str(e),
-                'execution_time': time.time() - start_time
+                "success": False,
+                "error": str(e),
+                "execution_time": time.time() - start_time,
             }
 
 
@@ -236,7 +226,7 @@ class GroqVision:
 groq_vision = GroqVision()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Test the API
     print("=" * 60)
     print("GROQ VISION API TEST")
@@ -249,7 +239,7 @@ if __name__ == '__main__':
         # Test text query
         print("\nTesting text query...")
         result = groq_vision.analyze_text("What is the capital of France?")
-        if result['success']:
+        if result["success"]:
             print(f"✓ Response: {result['response'][:100]}...")
             print(f"  Time: {result['execution_time']:.2f}s")
         else:
