@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@biomejs/biome':
+        specifier: ^2.3.11
+        version: 2.3.11
     devDependencies:
       turbo:
         specifier: ^2.7.3
@@ -109,6 +113,16 @@ importers:
       '@divine/pkn-plugins':
         specifier: workspace:*
         version: link:../../packages/pkn-plugins
+
+  apps/pkn-mobile:
+    devDependencies:
+      '@divine/shared-config':
+        specifier: workspace:*
+        version: link:../../packages/shared-config
+
+  apps/scripture-alarm: {}
+
+  packages/dev-dashboard: {}
 
   packages/divine-scripts: {}
 
