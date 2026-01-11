@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Workspace IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-darker: #181818;
+            --bg-lighter: #252526;
+            --border: #333;
+            --text: #cccccc;
+            --text-dim: #858585;
+            --accent: #007acc;
+            --accent-hover: #1c97ea;
+        }
+
+        /* Interface Themes */
+        [data-interface-theme="minimal"] {
+            --bg-dark: #1e1e1e;
+            --bg-darker: #121212;
+            --bg-lighter: #2a2a2a;
+            --border: #333;
+            --text: #d4d4d4;
+            --text-dim: #888;
+            --accent: #888;
+            --accent-hover: #aaa;
+        }
+
+        [data-interface-theme="purple"] {
+            --bg-dark: #1a1a1a;
+            --bg-darker: #0a0a0a;
+            --bg-lighter: #252525;
+            --border: #333;
+            --text: #fff;
+            --text-dim: #ccc;
+            --accent: #b366ff;
+            --accent-hover: #cc99ff;
+        }
+
+        [data-interface-theme="matrix"] {
+            --bg-dark: #0a0a0a;
+            --bg-darker: #000;
+            --bg-lighter: #1a1a1a;
+            --border: #003311;
+            --text: #00ff41;
+            --text-dim: #008822;
+            --accent: #00ff41;
+            --accent-hover: #33ff66;
+        }
+
+        [data-interface-theme="ocean"] {
+            --bg-dark: #132f4c;
+            --bg-darker: #0a1929;
+            --bg-lighter: #1e4976;
+            --border: #1e4976;
+            --text: #e0f7fa;
+            --text-dim: #80deea;
+            --accent: #00bcd4;
+            --accent-hover: #26c6da;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* VS Code Layout */
+        .vscode-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        /* Title Bar */
+        .title-bar {
+            height: 35px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            justify-content: space-between;
+        }
+
+        .title-bar-left {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .title-bar h1 {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .project-badge {
+            background: var(--accent);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Activity Bar (Left-most icons) */
+        .activity-bar {
+            width: 48px;
+            background: var(--bg-darker);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .activity-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 24px;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .activity-icon:hover {
+            color: var(--text);
+        }
+
+        .activity-icon.active {
+            color: var(--text);
+            border-left-color: var(--accent);
+        }
+
+        /* Sidebar (File Explorer, Search, Git) */
+        .sidebar-panel {
+            width: 300px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+        }
+
+        .sidebar-panel.active {
+            display: flex;
+        }
+
+        .sidebar-header {
+            height: 35px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        /* File Tree */
+        .file-tree {
+            font-size: 13px;
+        }
+
+        .file-item {
+            padding: 3px 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .file-item:hover {
+            background: var(--bg-lighter);
+        }
+
+        .file-icon {
+            font-size: 16px;
+        }
+
+        .folder-item {
+            font-weight: 500;
+        }
+
+        .folder-children {
+            margin-left: 16px;
+        }
+
+        /* Editor Area */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-darker);
+        }
+
+        .editor-tabs {
+            height: 35px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            overflow-x: auto;
+        }
+
+        .editor-tab {
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .editor-tab.active {
+            background: var(--bg-darker);
+        }
+
+        .tab-close {
+            cursor: pointer;
+            color: var(--text-dim);
+        }
+
+        .tab-close:hover {
+            color: var(--text);
+        }
+
+        .editor-content {
+            flex: 1;
+            position: relative;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        /* Bottom Panel */
+        .bottom-panel {
+            height: 250px;
+            background: var(--bg-dark);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-tabs {
+            height: 35px;
+            background: var(--bg-dark);
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-tab {
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 2px solid transparent;
+        }
+
+        .panel-tab.active {
+            border-bottom-color: var(--accent);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        /* Git Panel */
+        .git-changes {
+            padding: 5px 0;
+        }
+
+        .git-file {
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .git-file:hover {
+            background: var(--bg-lighter);
+        }
+
+        .git-status {
+            width: 15px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .git-status.modified { color: #f0ad4e; }
+        .git-status.added { color: #5cb85c; }
+        .git-status.deleted { color: #d9534f; }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        /* Resizable panels */
+        .sidebar-panel {
+            resize: horizontal;
+            overflow: auto;
+            min-width: 200px;
+            max-width: 600px;
+        }
+
+        .resize-handle {
+            width: 4px;
+            background: transparent;
+            cursor: ew-resize;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+
+        .resize-handle:hover {
+            background: var(--accent);
+        }
+
+        .panel-close {
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 18px;
+            padding: 0 5px;
+        }
+
+        .panel-close:hover {
+            color: var(--text);
+        }
+
+        .bottom-panel {
+            resize: vertical;
+            overflow: auto;
+            min-height: 100px;
+            max-height: 600px;
+        }
+
+        /* Search Input */
+        input[type="text"], textarea {
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 3px;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-result {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .search-result:hover {
+            background: var(--bg-lighter);
+        }
+
+        .search-result-file {
+            font-size: 12px;
+            color: var(--accent);
+            margin-bottom: 3px;
+        }
+
+        .search-result-text {
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        /* Settings Modal */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-overlay.active {
+            display: flex;
+        }
+
+        .settings-modal {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 6px;
+        }
+
+        .settings-modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-modal-header h2 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .close-btn:hover {
+            color: var(--text);
+        }
+
+        .settings-modal-body {
+            padding: 20px;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+
+        .setting-group h3 {
+            font-size: 13px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .setting-row label {
+            font-size: 13px;
+        }
+
+        .setting-row select {
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .setting-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* Better file tree styling */
+        .file-item {
+            user-select: none;
+        }
+
+        .folder-item {
+            color: var(--text);
+        }
+
+        .folder-item .file-icon {
+            color: #dcb67a;
+        }
+
+        .file-item .file-icon {
+            color: var(--text-dim);
+        }
+
+        /* File type specific icons */
+        .file-item[data-ext="js"] .file-icon { color: #f7df1e; }
+        .file-item[data-ext="py"] .file-icon { color: #3776ab; }
+        .file-item[data-ext="css"] .file-icon { color: #264de4; }
+        .file-item[data-ext="html"] .file-icon { color: #e44d26; }
+        .file-item[data-ext="json"] .file-icon { color: #00ff00; }
+        .file-item[data-ext="md"] .file-icon { color: #ffffff; }
+
+        .folder-toggle {
+            display: inline-block;
+            width: 16px;
+            cursor: pointer;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+<body>
+    <div class="vscode-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <h1>Divine Workspace IDE</h1>
+                <span class="project-badge" id="project-badge">PKN</span>
+            </div>
+            <div>
+                <select id="project-select" onchange="switchProject()" style="background: var(--bg-lighter); color: var(--text); border: 1px solid var(--border); padding: 4px 8px; border-radius: 3px;">
+                    <option value="pkn">PKN (Desktop AI)</option>
+                    <option value="code-academy">Code Academy</option>
+                    <option value="pkn-mobile">PKN Mobile</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Activity Bar -->
+            <div class="activity-bar">
+                <div class="activity-icon active" onclick="showPanel('explorer')" title="Explorer">📁</div>
+                <div class="activity-icon" onclick="showPanel('search')" title="Search">🔍</div>
+                <div class="activity-icon" onclick="showPanel('git')" title="Source Control">🔀</div>
+                <div class="activity-icon" onclick="showPanel('build')" title="Build">🔨</div>
+                <div class="activity-icon" onclick="showPanel('tools')" title="Tools & Scripts">🛠️</div>
+                <div class="activity-icon" onclick="showPanel('health')" title="Health Dashboard">💊</div>
+                <div style="flex: 1;"></div>
+                <div class="activity-icon" onclick="toggleSettings()" title="Settings">⚙️</div>
+            </div>
+
+            <!-- Sidebar Panels -->
+            <!-- Explorer Panel -->
+            <div class="sidebar-panel active" id="explorer-panel">
+                <div class="sidebar-header">
+                    <span>EXPLORER</span>
+                    <div style="display: flex; gap: 10px;">
+                        <span style="cursor: pointer;" onclick="refreshFileTree()">↻</span>
+                        <span class="panel-close" onclick="closePanel('explorer')">×</span>
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <div id="file-tree" class="file-tree"></div>
+                </div>
+            </div>
+
+            <!-- Search Panel -->
+            <div class="sidebar-panel" id="search-panel">
+                <div class="sidebar-header">
+                    <span>SEARCH</span>
+                    <span class="panel-close" onclick="closePanel('search')">×</span>
+                </div>
+                <div class="sidebar-content">
+                    <input type="text" id="search-input" placeholder="Search..." onkeyup="searchFiles()">
+                    <div id="search-results" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Git Panel -->
+            <div class="sidebar-panel" id="git-panel">
+                <div class="sidebar-header">
+                    <span>SOURCE CONTROL</span>
+                    <div style="display: flex; gap: 10px;">
+                        <span style="cursor: pointer;" onclick="refreshGitStatus()">↻</span>
+                        <span class="panel-close" onclick="closePanel('git')">×</span>
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <textarea id="commit-message" placeholder="Commit message..." rows="3"></textarea>
+                    <button class="btn" onclick="gitCommit()" style="margin: 10px 0; width: 100%;">✓ Commit</button>
+                    <button class="btn" onclick="gitPush()" style="width: 100%;">⬆ Push</button>
+                    <div id="git-changes" class="git-changes" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <!-- Build Panel -->
+            <div class="sidebar-panel" id="build-panel">
+                <div class="sidebar-header">
+                    <span>BUILD & TEST</span>
+                    <span class="panel-close" onclick="closePanel('build')">×</span>
+                </div>
+                <div class="sidebar-content">
+                    <button class="btn" onclick="buildCurrentProject()" style="width: 100%; margin: 5px 0;">🔨 Build Project</button>
+                    <button class="btn" onclick="testCurrentProject()" style="width: 100%; margin: 5px 0;">🧪 Run Tests</button>
+                    <button class="btn" onclick="runCI()" style="width: 100%; margin: 5px 0;">🚦 Run CI</button>
+                    <button class="btn" onclick="cleanBuild()" style="width: 100%; margin: 5px 0;">🧹 Clean Build</button>
+                    <hr style="margin: 15px 0; border-color: var(--border);">
+                    <button class="btn" onclick="runCheckImports()" style="width: 100%; margin: 5px 0;">✓ Check Imports</button>
+                    <button class="btn" onclick="runFixImports()" style="width: 100%; margin: 5px 0;">🔧 Fix Imports</button>
+                </div>
+            </div>
+
+            <!-- Tools Panel -->
+            <div class="sidebar-panel" id="tools-panel">
+                <div class="sidebar-header">
+                    <span>TOOLS & SCRIPTS</span>
+                    <span class="panel-close" onclick="closePanel('tools')">×</span>
+                </div>
+                <div class="sidebar-content">
+                    <h4 style="color: var(--text-dim); font-size: 11px; margin: 10px 0 5px 0; text-transform: uppercase;">Code Quality</h4>
+                    <button class="btn" onclick="runTool('check-imports')" style="width: 100%; margin: 3px 0;">✓ Check Imports</button>
+                    <button class="btn" onclick="runTool('fix-imports')" style="width: 100%; margin: 3px 0;">🔧 Fix Imports</button>
+                    <button class="btn" onclick="runTool('check-file-sizes')" style="width: 100%; margin: 3px 0;">📏 Check File Sizes (200 line limit)</button>
+                    <button class="btn" onclick="runTool('lint')" style="width: 100%; margin: 3px 0;">🔍 Lint Code</button>
+                    <button class="btn" onclick="runTool('format')" style="width: 100%; margin: 3px 0;">✨ Format Code</button>
+
+                    <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase;">Just Commands</h4>
+                    <button class="btn" onclick="runJust('setup')" style="width: 100%; margin: 3px 0;">⚙️ Setup Workspace</button>
+                    <button class="btn" onclick="runJust('dev')" style="width: 100%; margin: 3px 0;">🚀 Start All Dev Servers</button>
+                    <button class="btn" onclick="runJust('build')" style="width: 100%; margin: 3px 0;">🔨 Build All Apps</button>
+                    <button class="btn" onclick="runJust('test')" style="width: 100%; margin: 3px 0;">🧪 Test All Apps</button>
+                    <button class="btn" onclick="runJust('backup')" style="width: 100%; margin: 3px 0;">💾 Backup Workspace</button>
+
+                    <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase;">Debugger Extension</h4>
+                    <button class="btn" onclick="openDebuggerExtension()" style="width: 100%; margin: 3px 0;">🐛 Open Chrome Debugger</button>
+                    <button class="btn" onclick="runDebuggerAnalysis()" style="width: 100%; margin: 3px 0;">🔬 Run Full Analysis</button>
+
+                    <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase;">Dependencies</h4>
+                    <button class="btn" onclick="runTool('install-deps')" style="width: 100%; margin: 3px 0;">📦 Install Dependencies</button>
+                    <button class="btn" onclick="runTool('update-deps')" style="width: 100%; margin: 3px 0;">🔄 Update Dependencies</button>
+
+                    <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase;">Pre-Commit Hooks</h4>
+                    <button class="btn" onclick="runPreCommit('all')" style="width: 100%; margin: 3px 0;">✅ Run All Pre-Commit Hooks</button>
+                    <button class="btn" onclick="runPreCommit('update')" style="width: 100%; margin: 3px 0;">🔄 Update Pre-Commit Hooks</button>
+                </div>
+            </div>
+
+            <!-- Health Dashboard Panel -->
+            <div class="sidebar-panel" id="health-panel">
+                <div class="sidebar-header">
+                    <span>HEALTH DASHBOARD</span>
+                    <div style="display: flex; gap: 10px;">
+                        <span style="cursor: pointer;" onclick="refreshHealth()">↻</span>
+                        <span class="panel-close" onclick="closePanel('health')">×</span>
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <div id="health-status">
+                        <h4 style="color: var(--text-dim); font-size: 11px; margin: 10px 0 5px 0;">Services</h4>
+                        <div style="padding: 5px 0;">
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>PKN Server (8010)</span>
+                                <span id="health-pkn" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>Code Academy (8011)</span>
+                                <span id="health-academy" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>Mobile PKN (8012)</span>
+                                <span id="health-mobile" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                        </div>
+
+                        <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0;">Tools</h4>
+                        <div style="padding: 5px 0;">
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>Node.js</span>
+                                <span id="health-node" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>pnpm</span>
+                                <span id="health-pnpm" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>Python</span>
+                                <span id="health-python" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                                <span>just</span>
+                                <span id="health-just" style="color: var(--text-dim);">checking...</span>
+                            </div>
+                        </div>
+
+                        <h4 style="color: var(--text-dim); font-size: 11px; margin: 15px 0 5px 0;">Actions</h4>
+                        <button class="btn" onclick="runFullHealthCheck()" style="width: 100%; margin: 5px 0;">🏥 Run Full Health Check</button>
+                        <button class="btn" onclick="openClassicDashboard()" style="width: 100%; margin: 5px 0;">📊 Open Classic Dashboard</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="editor-area">
+                <div class="editor-tabs" id="editor-tabs">
+                    <div class="editor-tab">No file open</div>
+                </div>
+                <div class="editor-content" id="editor-content">
+                    <textarea id="code-editor"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div class="bottom-panel" id="bottom-panel">
+            <div class="panel-tabs">
+                <div class="panel-tab active" onclick="switchBottomTab('terminal')">TERMINAL</div>
+                <div class="panel-tab" onclick="switchBottomTab('output')">OUTPUT</div>
+                <div class="panel-tab" onclick="switchBottomTab('problems')">PROBLEMS</div>
+                <div style="flex: 1;"></div>
+                <span class="panel-close" onclick="closeBottomPanel()" style="padding: 10px;">×</span>
+            </div>
+            <div class="panel-content" id="terminal-content" style="background: #000; color: #0f0;"></div>
+            <div class="panel-content" id="output-content" style="display: none;"></div>
+            <div class="panel-content" id="problems-content" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentProject = 'pkn';
+        let editor;
+        let currentFile = null;
+        let openTabs = [];
+
+        // Initialize CodeMirror
+        window.addEventListener('DOMContentLoaded', () => {
+            editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+                mode: 'javascript',
+                theme: 'monokai',
+                lineNumbers: true,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                indentUnit: 4,
+                tabSize: 4,
+                indentWithTabs: false
+            });
+
+            editor.on('change', () => {
+                if (currentFile) {
+                    markFileModified(currentFile);
+                }
+            });
+
+            refreshFileTree();
+            refreshGitStatus();
+            loadSettings();
+            refreshHealth();
+            logTerminal('Divine Workspace IDE Ready');
+
+            // Auto-refresh health every 30 seconds
+            setInterval(refreshHealth, 30000);
+        });
+
+        function showPanel(panelName) {
+            // Hide all panels
+            document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+
+            // Show selected panel
+            document.getElementById(panelName + '-panel').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function closePanel(panelName) {
+            const panel = document.getElementById(panelName + '-panel');
+            panel.classList.remove('active');
+
+            // Also remove active state from activity icon
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+
+            logTerminal(`${panelName.toUpperCase()} panel closed. Click the icon to reopen.`, 'info');
+        }
+
+        function closeBottomPanel() {
+            const panel = document.getElementById('bottom-panel');
+            panel.style.display = 'none';
+            logTerminal('Bottom panel closed. Press Ctrl+` to reopen.', 'info');
+        }
+
+        function toggleBottomPanel() {
+            const panel = document.getElementById('bottom-panel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'flex';
+                logTerminal('Bottom panel reopened', 'success');
+            } else {
+                closeBottomPanel();
+            }
+        }
+
+        async function refreshFileTree() {
+            try {
+                const res = await fetch(`/api/files/tree?project=${currentProject}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    renderFileTree(data.tree, document.getElementById('file-tree'));
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        function renderFileTree(items, container) {
+            container.innerHTML = '';
+
+            // Sort: directories first, then files alphabetically
+            const sorted = [...items].sort((a, b) => {
+                if (a.type === 'directory' && b.type !== 'directory') return -1;
+                if (a.type !== 'directory' && b.type === 'directory') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sorted.forEach(item => {
+                const div = document.createElement('div');
+
+                if (item.type === 'directory') {
+                    // Important folders should be expanded by default
+                    const importantFolders = ['backend', 'frontend', 'src', 'components', 'routes'];
+                    const shouldExpand = importantFolders.includes(item.name.toLowerCase());
+
+                    div.innerHTML = `
+                        <div class="file-item folder-item">
+                            <span class="folder-toggle">▸</span>
+                            <span class="file-icon">📁</span>
+                            <span>${item.name}</span>
+                        </div>
+                        <div class="folder-children" style="display: ${shouldExpand ? 'block' : 'none'}; margin-left: 20px;"></div>
+                    `;
+                    const folderItem = div.querySelector('.file-item');
+                    const toggle = div.querySelector('.folder-toggle');
+                    const children = div.querySelector('.folder-children');
+
+                    folderItem.onclick = (e) => {
+                        e.stopPropagation();
+                        const isOpen = children.style.display !== 'none';
+                        children.style.display = isOpen ? 'none' : 'block';
+                        toggle.textContent = isOpen ? '▸' : '▾';
+                    };
+
+                    // Set initial toggle state
+                    if (shouldExpand) {
+                        toggle.textContent = '▾';
+                    }
+
+                    if (item.children && item.children.length > 0) {
+                        renderFileTree(item.children, children);
+                    }
+                } else {
+                    const ext = item.name.split('.').pop();
+                    const icons = {
+                        'js': '📜',
+                        'py': '🐍',
+                        'css': '🎨',
+                        'html': '🌐',
+                        'json': '📋',
+                        'md': '📝',
+                        'txt': '📄',
+                        'sh': '🔧',
+                        'yml': '⚙️',
+                        'yaml': '⚙️'
+                    };
+                    const icon = icons[ext] || '📄';
+
+                    div.innerHTML = `
+                        <div class="file-item" data-ext="${ext}" onclick="openFile('${item.path}')">
+                            <span style="width: 16px; display: inline-block;"></span>
+                            <span class="file-icon">${icon}</span>
+                            <span>${item.name}</span>
+                        </div>
+                    `;
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        async function openFile(path) {
+            try {
+                const res = await fetch(`/api/files/read?path=${encodeURIComponent(path)}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    currentFile = path;
+                    editor.setValue(data.content);
+
+                    // Set mode based on file extension
+                    const ext = path.split('.').pop();
+                    const modes = {
+                        'js': 'javascript',
+                        'py': 'python',
+                        'css': 'css',
+                        'html': 'htmlmixed',
+                        'json': 'javascript'
+                    };
+                    editor.setOption('mode', modes[ext] || 'text');
+
+                    // Add tab
+                    addTab(path);
+                    logTerminal(`Opened: ${path}`);
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function saveFile() {
+            if (!currentFile) return;
+
+            try {
+                const res = await fetch('/api/files/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: currentFile,
+                        content: editor.getValue()
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    logTerminal(`Saved: ${currentFile}`, 'success');
+                    refreshGitStatus();
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+S to save
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveFile();
+            }
+            // Ctrl+` to toggle bottom panel
+            if (e.ctrlKey && e.key === '`') {
+                e.preventDefault();
+                toggleBottomPanel();
+            }
+        });
+
+        function addTab(path) {
+            const filename = path.split('/').pop();
+            const tabsContainer = document.getElementById('editor-tabs');
+
+            if (!openTabs.includes(path)) {
+                openTabs.push(path);
+            }
+
+            tabsContainer.innerHTML = openTabs.map(tab => {
+                const name = tab.split('/').pop();
+                const active = tab === currentFile ? 'active' : '';
+                return `
+                    <div class="editor-tab ${active}" onclick="switchTab('${tab}')">
+                        <span>${name}</span>
+                        <span class="tab-close" onclick="closeTab('${tab}', event)">×</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchTab(path) {
+            openFile(path);
+        }
+
+        function closeTab(path, event) {
+            event.stopPropagation();
+            openTabs = openTabs.filter(t => t !== path);
+            if (currentFile === path) {
+                currentFile = openTabs[0] || null;
+                if (currentFile) {
+                    openFile(currentFile);
+                } else {
+                    editor.setValue('');
+                    document.getElementById('editor-tabs').innerHTML = '<div class="editor-tab">No file open</div>';
+                }
+            } else {
+                addTab(currentFile);
+            }
+        }
+
+        async function searchFiles() {
+            const query = document.getElementById('search-input').value;
+            if (!query) return;
+
+            try {
+                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&project=${currentProject}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const resultsDiv = document.getElementById('search-results');
+                    resultsDiv.innerHTML = data.matches.map(m => `
+                        <div class="search-result" onclick="openFile('apps/${currentProject}/${m.file}')">
+                            <div class="search-result-file">${m.file}:${m.line}</div>
+                            <div class="search-result-text">${m.text}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function refreshGitStatus() {
+            try {
+                const res = await fetch('/api/git/status');
+                const data = await res.json();
+
+                if (data.success) {
+                    const changesDiv = document.getElementById('git-changes');
+                    const lines = data.status.split('\n').filter(l => l);
+
+                    changesDiv.innerHTML = lines.map(line => {
+                        const status = line.substring(0, 2).trim();
+                        const file = line.substring(3);
+                        const statusClass = status === 'M' ? 'modified' : status === 'A' ? 'added' : 'deleted';
+                        const statusText = status === 'M' ? 'M' : status === 'A' ? 'A' : 'D';
+
+                        return `
+                            <div class="git-file">
+                                <span class="git-status ${statusClass}">${statusText}</span>
+                                <span>${file}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                logTerminal('ERROR: Git status failed');
+            }
+        }
+
+        async function gitCommit() {
+            const message = document.getElementById('commit-message').value;
+            if (!message) {
+                alert('Please enter a commit message');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/git/commit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+
+                if (data.success) {
+                    document.getElementById('commit-message').value = '';
+                    refreshGitStatus();
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function gitPush() {
+            try {
+                logTerminal('Pushing to remote...', 'info');
+                const res = await fetch('/api/git/push', { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        function switchProject() {
+            currentProject = document.getElementById('project-select').value;
+            document.getElementById('project-badge').textContent = currentProject.toUpperCase();
+            refreshFileTree();
+            logTerminal(`Switched to project: ${currentProject}`);
+        }
+
+        async function buildCurrentProject() {
+            logTerminal(`Building ${currentProject}...`, 'info');
+            try {
+                const res = await fetch(`/api/build/${currentProject}`, { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function testCurrentProject() {
+            logTerminal(`Testing ${currentProject}...`, 'info');
+            try {
+                const res = await fetch(`/api/test/${currentProject}`, { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function runCI() {
+            logTerminal('Running CI pipeline...', 'info');
+            try {
+                const res = await fetch('/api/ci', { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function cleanBuild() {
+            try {
+                const res = await fetch('/api/clean', { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function runCheckImports() {
+            try {
+                const res = await fetch('/api/check-imports');
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function runFixImports() {
+            try {
+                const res = await fetch('/api/fix-imports', { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, 'success');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        function switchBottomTab(tab) {
+            document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel-content').forEach(c => c.style.display = 'none');
+
+            event.target.classList.add('active');
+            document.getElementById(tab + '-content').style.display = 'block';
+        }
+
+        function logTerminal(message, type = 'info') {
+            const terminal = document.getElementById('terminal-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff4444' : type === 'success' ? '#4caf50' : '#0f0';
+            terminal.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Tools & Scripts Functions
+        async function runTool(tool) {
+            logTerminal(`Running tool: ${tool}...`, 'info');
+
+            const toolMap = {
+                'check-imports': '/api/check-imports',
+                'fix-imports': '/api/fix-imports',
+                'check-file-sizes': '/api/check-file-sizes',
+                'lint': '/api/lint',
+                'format': '/api/format',
+                'install-deps': '/api/deps/install',
+                'update-deps': '/api/deps/update'
+            };
+
+            try {
+                const url = toolMap[tool];
+                const method = tool.includes('fix') || tool.includes('install') || tool.includes('update') || tool.includes('format') ? 'POST' : 'GET';
+
+                const res = await fetch(url, { method });
+                const data = await res.json();
+
+                logTerminal(data.output || JSON.stringify(data), data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function runJust(command) {
+            logTerminal(`Running: just ${command}`, 'info');
+
+            try {
+                const res = await fetch(`/api/just/${command}`, { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        function openDebuggerExtension() {
+            logTerminal('Opening Chrome DevTools...', 'info');
+            logTerminal('Press F12 → Click "Divine Debugger" tab', 'info');
+            window.open('http://localhost:8010', '_blank');
+        }
+
+        async function runDebuggerAnalysis() {
+            logTerminal('Running debugger analysis...', 'info');
+            logTerminal('This requires the Chrome extension to be loaded', 'info');
+            logTerminal('Go to: apps/debugger-extension/', 'info');
+            logTerminal('Run: python3 run_all_checks.py ../pkn', 'info');
+
+            try {
+                const res = await fetch('/api/run-debugger', { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('Note: Run manually from apps/debugger-extension/', 'info');
+            }
+        }
+
+        async function runPreCommit(action) {
+            const command = action === 'all' ? 'pre-commit-all' : 'pre-commit-update';
+            logTerminal(`Running: just ${command}`, 'info');
+
+            try {
+                const res = await fetch(`/api/just/${command}`, { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function refreshHealth() {
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+
+                // Update service status
+                updateHealthStatus('health-pkn', data.pkn);
+                updateHealthStatus('health-academy', data.code_academy);
+                updateHealthStatus('health-mobile', data.mobile_pkn);
+
+                // Update tool status
+                updateHealthStatus('health-node', data.tools.node);
+                updateHealthStatus('health-pnpm', data.tools.pnpm);
+                updateHealthStatus('health-python', data.tools.python);
+                updateHealthStatus('health-just', data.tools.just);
+
+                logTerminal('Health check complete', 'success');
+            } catch (err) {
+                logTerminal('Health check failed: ' + err.message, 'error');
+            }
+        }
+
+        function updateHealthStatus(elementId, running) {
+            const elem = document.getElementById(elementId);
+            if (running) {
+                elem.textContent = '✓ Running';
+                elem.style.color = '#4caf50';
+            } else {
+                elem.textContent = '✗ Stopped';
+                elem.style.color = '#f44336';
+            }
+        }
+
+        async function runFullHealthCheck() {
+            logTerminal('Running full health check...', 'info');
+            await refreshHealth();
+            await runTool('check-imports');
+            logTerminal('✓ Full health check complete', 'success');
+        }
+
+        function openClassicDashboard() {
+            window.open('http://localhost:9000/classic', '_blank');
+        }
+
+        function toggleSettings() {
+            const overlay = document.getElementById('settings-overlay');
+            overlay.classList.toggle('active');
+        }
+
+        function applySettings() {
+            const theme = document.getElementById('editor-theme').value;
+            editor.setOption('theme', theme);
+            localStorage.setItem('editor-theme', theme);
+
+            const fontSize = document.getElementById('editor-fontsize').value;
+            document.querySelector('.CodeMirror').style.fontSize = fontSize;
+            localStorage.setItem('editor-fontsize', fontSize);
+
+            const autoSave = document.getElementById('auto-save').checked;
+            localStorage.setItem('auto-save', autoSave);
+
+            logTerminal('Settings saved', 'success');
+        }
+
+        function applyInterfaceTheme() {
+            const theme = document.getElementById('interface-theme').value;
+
+            if (theme === 'default') {
+                document.body.removeAttribute('data-interface-theme');
+            } else {
+                document.body.setAttribute('data-interface-theme', theme);
+            }
+
+            localStorage.setItem('interface-theme', theme);
+            logTerminal(`Interface theme changed to: ${theme}`, 'success');
+        }
+
+        function loadSettings() {
+            // Load interface theme
+            const interfaceTheme = localStorage.getItem('interface-theme') || 'default';
+            if (document.getElementById('interface-theme')) {
+                document.getElementById('interface-theme').value = interfaceTheme;
+                if (interfaceTheme !== 'default') {
+                    document.body.setAttribute('data-interface-theme', interfaceTheme);
+                }
+            }
+
+            // Load editor theme
+            const theme = localStorage.getItem('editor-theme') || 'monokai';
+            const fontSize = localStorage.getItem('editor-fontsize') || '14px';
+            const autoSave = localStorage.getItem('auto-save') === 'true';
+
+            if (document.getElementById('editor-theme')) {
+                document.getElementById('editor-theme').value = theme;
+                editor.setOption('theme', theme);
+            }
+
+            if (document.getElementById('editor-fontsize')) {
+                document.getElementById('editor-fontsize').value = fontSize;
+                document.querySelector('.CodeMirror').style.fontSize = fontSize;
+            }
+
+            if (document.getElementById('auto-save')) {
+                document.getElementById('auto-save').checked = autoSave;
+            }
+        }
+    </script>
+
+    <!-- Settings Modal -->
+    <div class="settings-overlay" id="settings-overlay" onclick="if(event.target === this) toggleSettings()">
+        <div class="settings-modal">
+            <div class="settings-modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" onclick="toggleSettings()">×</button>
+            </div>
+            <div class="settings-modal-body">
+                <div class="setting-group">
+                    <h3>Interface</h3>
+                    <div class="setting-row">
+                        <label>Color Theme</label>
+                        <select id="interface-theme" onchange="applyInterfaceTheme()">
+                            <option value="default">Blue (Default)</option>
+                            <option value="minimal">Minimal Gray</option>
+                            <option value="purple">Cyberpunk Purple</option>
+                            <option value="matrix">Matrix Green</option>
+                            <option value="ocean">Ocean Blue</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Editor</h3>
+                    <div class="setting-row">
+                        <label>Editor Theme</label>
+                        <select id="editor-theme" onchange="applySettings()">
+                            <option value="monokai">Monokai</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="material">Material</option>
+                            <option value="nord">Nord</option>
+                            <option value="default">Light</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>Font Size</label>
+                        <select id="editor-fontsize" onchange="applySettings()">
+                            <option value="12px">12px</option>
+                            <option value="13px">13px</option>
+                            <option value="14px">14px</option>
+                            <option value="15px">15px</option>
+                            <option value="16px">16px</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>Auto Save</label>
+                        <input type="checkbox" id="auto-save" onchange="applySettings()">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Files</h3>
+                    <div class="setting-row">
+                        <label>Auto Refresh</label>
+                        <input type="checkbox" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label>Show Hidden Files</label>
+                        <input type="checkbox" id="show-hidden">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Terminal</h3>
+                    <div class="setting-row">
+                        <label>Max Output Lines</label>
+                        <select>
+                            <option value="500">500</option>
+                            <option value="1000" selected>1000</option>
+                            <option value="2000">2000</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Git</h3>
+                    <div class="setting-row">
+                        <label>Auto Refresh Status</label>
+                        <input type="checkbox" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label>Show Branch in Title</label>
+                        <input type="checkbox">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

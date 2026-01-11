@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Workspace - Build Dashboard</title>
+    <style>
+        /* Default Theme - Minimal Dark (Less Colorful) */
+        :root {
+            --accent: #4a9eff;
+            --accent-dark: #3a7ed8;
+            --accent-light: #6bb3ff;
+            --accent-glow: rgba(74, 158, 255, 0.15);
+            --accent-fade: rgba(74, 158, 255, 0.03);
+            --bg-primary: #0e0e0e;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #242424;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border: #2a2a2a;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+        }
+
+        /* Cyberpunk Purple Theme */
+        [data-theme="purple"] {
+            --accent: #b366ff;
+            --accent-dark: #9933ff;
+            --accent-light: #cc99ff;
+            --accent-glow: rgba(179, 102, 255, 0.3);
+            --accent-fade: rgba(179, 102, 255, 0.05);
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border: #333333;
+            --success: #00ff41;
+            --warning: #ffaa00;
+            --error: #ff4444;
+        }
+
+        /* Matrix Green Theme */
+        [data-theme="matrix"] {
+            --accent: #00ff41;
+            --accent-dark: #00cc33;
+            --accent-light: #33ff66;
+            --accent-glow: rgba(0, 255, 65, 0.2);
+            --accent-fade: rgba(0, 255, 65, 0.03);
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #00ff41;
+            --text-secondary: #008822;
+            --border: #003311;
+            --success: #00ff41;
+            --warning: #ffaa00;
+            --error: #ff4444;
+        }
+
+        /* Minimal Gray Theme */
+        [data-theme="minimal"] {
+            --accent: #888888;
+            --accent-dark: #666666;
+            --accent-light: #aaaaaa;
+            --accent-glow: rgba(136, 136, 136, 0.1);
+            --accent-fade: rgba(136, 136, 136, 0.02);
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #d4d4d4;
+            --text-secondary: #888888;
+            --border: #333333;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+        }
+
+        /* Ocean Blue Theme */
+        [data-theme="ocean"] {
+            --accent: #00bcd4;
+            --accent-dark: #0097a7;
+            --accent-light: #26c6da;
+            --accent-glow: rgba(0, 188, 212, 0.15);
+            --accent-fade: rgba(0, 188, 212, 0.03);
+            --bg-primary: #0a1929;
+            --bg-secondary: #132f4c;
+            --bg-tertiary: #1e4976;
+            --text-primary: #e0f7fa;
+            --text-secondary: #80deea;
+            --border: #1e4976;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* VS Code-like Layout */
+        .workspace {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--accent);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .project-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-tertiary);
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .project-selector label {
+            color: var(--accent-light);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .project-selector select {
+            background: var(--bg-primary);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .project-selector select:hover {
+            background: var(--bg-secondary);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .project-indicator {
+            background: var(--accent);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar (File Explorer + Actions) */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--border);
+            padding: 15px;
+        }
+
+        .sidebar-section h3 {
+            color: var(--accent);
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Center Panel (Main Work Area) */
+        .center-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Tabs */
+        .tabs {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            padding: 0 10px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: var(--accent-light);
+            background: var(--accent-fade);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Bottom Panel (Terminal/Output) */
+        .bottom-panel {
+            height: 300px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .bottom-panel-header {
+            background: var(--bg-tertiary);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bottom-panel-header h4 {
+            color: var(--accent);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .terminal {
+            flex: 1;
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 15px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: var(--error);
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        /* Status Indicators */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .status-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.green { background: var(--success); }
+        .status-dot.red { background: var(--error); }
+        .status-dot.yellow { background: var(--warning); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Build Progress */
+        .build-progress {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent-light));
+            width: 0%;
+            transition: width 0.5s;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--accent-glow);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .settings-btn:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* Settings Modal */
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-modal.active {
+            display: flex;
+        }
+
+        .settings-content {
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .settings-header {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-header h2 {
+            color: var(--accent);
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 28px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: var(--accent);
+        }
+
+        .settings-body {
+            padding: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-section h3 {
+            color: var(--accent);
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .setting-item label {
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .setting-item select,
+        .setting-item input {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+
+        .setting-item input[type="checkbox"] {
+            min-width: auto;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* File Tree */
+        .file-tree {
+            font-size: 13px;
+        }
+
+        .file-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-item:hover {
+            background: var(--accent-fade);
+            color: var(--accent-light);
+        }
+
+        .file-icon {
+            font-size: 16px;
+        }
+
+        /* Logs */
+        .log-entry {
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .log-entry.error { color: var(--error); }
+        .log-entry.warning { color: var(--warning); }
+        .log-entry.success { color: var(--success); }
+        .log-entry.info { color: var(--accent-light); }
+
+        /* Cards */
+        .card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="workspace">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚡ Divine Workspace Builder</h1>
+            <div class="header-center">
+                <div class="project-selector">
+                    <label>PROJECT:</label>
+                    <select id="project-select" onchange="switchProject()">
+                        <option value="pkn">PKN (Desktop AI)</option>
+                        <option value="code-academy">Code Academy</option>
+                        <option value="pkn-mobile">PKN Mobile</option>
+                    </select>
+                </div>
+                <div class="project-selector">
+                    <label>THEME:</label>
+                    <select id="theme-select" onchange="switchTheme()">
+                        <option value="default">Blue (Default)</option>
+                        <option value="minimal">Minimal Gray</option>
+                        <option value="purple">Cyberpunk Purple</option>
+                        <option value="matrix">Matrix Green</option>
+                        <option value="ocean">Ocean Blue</option>
+                    </select>
+                </div>
+                <div class="project-indicator" id="project-indicator">
+                    Building: PKN (Desktop AI)
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-sm btn-success" onclick="refreshAll()">↻ Refresh</button>
+                <button class="btn btn-sm" onclick="openBrowser('http://localhost:8010')" id="open-app-btn">🚀 Open PKN</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Services Status -->
+                <div class="sidebar-section">
+                    <h3>📦 Services</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span>PKN</span>
+                            <div class="status-dot" id="pkn-status"></div>
+                        </div>
+                        <div class="status-item">
+                            <span>Academy</span>
+                            <div class="status-dot" id="academy-status"></div>
+                        </div>
+                        <div class="status-item">
+                            <span>Mobile</span>
+                            <div class="status-dot" id="mobile-status"></div>
+                        </div>
+                        <div class="status-item">
+                            <span>Tools</span>
+                            <div class="status-dot" id="tools-status"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-section">
+                    <h3>⚡ Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm" onclick="startService('pkn')">▶ PKN</button>
+                        <button class="btn btn-sm btn-danger" onclick="stopService('pkn')">⏹ Stop</button>
+                        <button class="btn btn-sm btn-success" onclick="runCheck('imports')">✓ Check</button>
+                        <button class="btn btn-sm" onclick="runFix('imports')">🔧 Fix</button>
+                    </div>
+                </div>
+
+                <!-- Build Actions -->
+                <div class="sidebar-section">
+                    <h3>🏗️ Build</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm" onclick="buildApp('pkn')">Build PKN</button>
+                        <button class="btn btn-sm" onclick="buildApp('academy')">Build Academy</button>
+                        <button class="btn btn-sm btn-success" onclick="runCI()">Run CI</button>
+                        <button class="btn btn-sm" onclick="runTests()">Run Tests</button>
+                    </div>
+                </div>
+
+                <!-- Project Files -->
+                <div class="sidebar-section">
+                    <h3>📁 Quick Files</h3>
+                    <div class="file-tree">
+                        <div class="file-item" onclick="alert('Coming soon: File editor')">
+                            <span class="file-icon">📄</span>
+                            <span>pkn.html</span>
+                        </div>
+                        <div class="file-item" onclick="alert('Coming soon: File editor')">
+                            <span class="file-icon">📜</span>
+                            <span>app.js</span>
+                        </div>
+                        <div class="file-item" onclick="alert('Coming soon: File editor')">
+                            <span class="file-icon">🎨</span>
+                            <span>main.css</span>
+                        </div>
+                        <div class="file-item" onclick="alert('Coming soon: File editor')">
+                            <span class="file-icon">⚙️</span>
+                            <span>justfile</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel -->
+            <div class="center-panel">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('overview')">📊 Overview</button>
+                    <button class="tab" onclick="switchTab('build')">🏗️ Build</button>
+                    <button class="tab" onclick="switchTab('debug')">🐛 Debug</button>
+                    <button class="tab" onclick="switchTab('plan')">📋 Plan</button>
+                </div>
+
+                <!-- Tab: Overview -->
+                <div class="tab-content active" id="overview-tab">
+                    <div class="card">
+                        <h3>🎯 Workspace Health</h3>
+                        <div id="health-summary">Loading...</div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📊 Recent Activity</h3>
+                        <div id="activity-log">
+                            <div class="log-entry info">Dashboard started</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Build -->
+                <div class="tab-content" id="build-tab">
+                    <div class="card">
+                        <h3>🏗️ Build Controls</h3>
+                        <div class="action-buttons">
+                            <button class="btn" onclick="buildAll()">Build All Apps</button>
+                            <button class="btn" onclick="buildApp('pkn')">Build PKN</button>
+                            <button class="btn" onclick="buildApp('academy')">Build Code Academy</button>
+                            <button class="btn btn-danger" onclick="cleanAll()">Clean Build</button>
+                        </div>
+
+                        <div class="build-progress" id="build-progress" style="display: none;">
+                            <h4>Build Progress</h4>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <p id="build-status" style="margin-top: 10px; color: var(--accent-light);"></p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📦 Dependencies</h3>
+                        <button class="btn" onclick="installDeps()">Install All Dependencies</button>
+                        <button class="btn" onclick="updateDeps()">Update Dependencies</button>
+                    </div>
+                </div>
+
+                <!-- Tab: Debug -->
+                <div class="tab-content" id="debug-tab">
+                    <div class="card">
+                        <h3>🔍 Code Quality Checks</h3>
+                        <div class="action-buttons">
+                            <button class="btn" onclick="runCheck('imports')">Check Imports</button>
+                            <button class="btn" onclick="runCheck('file-sizes')">Check File Sizes</button>
+                            <button class="btn" onclick="runCheck('lint')">Lint Code</button>
+                            <button class="btn" onclick="runCheck('format')">Format Check</button>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-success" onclick="runFix('imports')">🔧 Auto-Fix Imports</button>
+                            <button class="btn btn-success" onclick="runFix('format')">🔧 Auto-Format Code</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🧪 Testing</h3>
+                        <div class="action-buttons">
+                            <button class="btn" onclick="runTests()">Run All Tests</button>
+                            <button class="btn" onclick="runTests('pkn')">Test PKN</button>
+                            <button class="btn" onclick="runTests('academy')">Test Academy</button>
+                            <button class="btn btn-success" onclick="runCI()">Full CI Pipeline</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Plan -->
+                <div class="tab-content" id="plan-tab">
+                    <div class="card">
+                        <h3>📋 Session Checklist</h3>
+                        <div style="font-size: 14px; line-height: 1.8;">
+                            <p>✓ Run health check</p>
+                            <p>✓ Check imports</p>
+                            <p>✓ Run tests</p>
+                            <p>✓ Build apps</p>
+                            <p>✓ Deploy if needed</p>
+                        </div>
+                        <button class="btn" style="margin-top: 15px;" onclick="runChecklist()">Run Full Checklist</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>🎯 Quick Links</h3>
+                        <div class="action-buttons">
+                            <button class="btn" onclick="openBrowser('http://localhost:8010')">PKN UI</button>
+                            <button class="btn" onclick="openBrowser('http://localhost:8011')">Code Academy</button>
+                            <button class="btn" onclick="openDocs()">Documentation</button>
+                            <button class="btn" onclick="openBrowser('http://localhost:8010')">Chrome DevTools</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Terminal -->
+        <div class="bottom-panel">
+            <div class="bottom-panel-header">
+                <h4>📟 Terminal Output</h4>
+                <button class="btn btn-sm" onclick="clearTerminal()">Clear</button>
+            </div>
+            <div class="terminal" id="terminal">
+                <div style="color: var(--accent);">Divine Workspace Dashboard v1.0</div>
+                <div style="color: #00ff00;">Ready for commands...</div>
+                <div style="color: #666;">Type commands or use the UI above</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Button (Floating Gear Icon) -->
+    <button class="settings-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>⚙️ Dashboard Settings</h2>
+                <button class="close-btn" onclick="toggleSettings()">×</button>
+            </div>
+            <div class="settings-body">
+                <!-- Appearance -->
+                <div class="settings-section">
+                    <h3>🎨 Appearance</h3>
+                    <div class="setting-item">
+                        <label>Theme</label>
+                        <select id="settings-theme" onchange="applyThemeFromSettings()">
+                            <option value="default">Blue (Default)</option>
+                            <option value="minimal">Minimal Gray</option>
+                            <option value="purple">Cyberpunk Purple</option>
+                            <option value="matrix">Matrix Green</option>
+                            <option value="ocean">Ocean Blue</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto-refresh Health</label>
+                        <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Show Animations</label>
+                        <input type="checkbox" id="show-animations" checked onchange="toggleAnimations()">
+                    </div>
+                </div>
+
+                <!-- Default Project -->
+                <div class="settings-section">
+                    <h3>📦 Default Project</h3>
+                    <div class="setting-item">
+                        <label>Start with</label>
+                        <select id="default-project" onchange="saveDefaultProject()">
+                            <option value="pkn">PKN (Desktop AI)</option>
+                            <option value="code-academy">Code Academy</option>
+                            <option value="pkn-mobile">PKN Mobile</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Build Settings -->
+                <div class="settings-section">
+                    <h3>🏗️ Build Configuration</h3>
+                    <div class="setting-item">
+                        <label>Run tests before build</label>
+                        <input type="checkbox" id="test-before-build" onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Clear terminal on build</label>
+                        <input type="checkbox" id="clear-on-build" checked onchange="saveSettings()">
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto-fix imports before CI</label>
+                        <input type="checkbox" id="auto-fix-ci" checked onchange="saveSettings()">
+                    </div>
+                </div>
+
+                <!-- Terminal Settings -->
+                <div class="settings-section">
+                    <h3>💻 Terminal</h3>
+                    <div class="setting-item">
+                        <label>Font Size</label>
+                        <select id="terminal-font-size" onchange="updateTerminalFont()">
+                            <option value="11px">Small (11px)</option>
+                            <option value="13px" selected>Medium (13px)</option>
+                            <option value="15px">Large (15px)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Max Lines</label>
+                        <select id="terminal-max-lines" onchange="saveSettings()">
+                            <option value="500">500 lines</option>
+                            <option value="1000" selected>1000 lines</option>
+                            <option value="2000">2000 lines</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="settings-section">
+                    <h3>⚡ Actions</h3>
+                    <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                    <button class="btn" onclick="exportSettings()" style="margin-left: 10px;">Export Settings</button>
+                    <button class="btn" onclick="resetSettings()" style="margin-left: 10px;">Reset to Defaults</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh every 10 seconds
+        setInterval(checkHealth, 10000);
+        checkHealth();
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+
+                // Update status dots
+                updateStatusDot('pkn-status', data.pkn);
+                updateStatusDot('academy-status', data.code_academy);
+                updateStatusDot('mobile-status', data.mobile_pkn);
+                updateStatusDot('tools-status', data.tools.node && data.tools.pnpm && data.tools.python && data.tools.just);
+
+                // Update health summary
+                const summary = document.getElementById('health-summary');
+                const issues = [];
+                if (!data.pkn) issues.push('PKN stopped');
+                if (!data.code_academy) issues.push('Code Academy stopped');
+                if (!data.mobile_pkn) issues.push('Mobile PKN stopped');
+
+                if (issues.length === 0) {
+                    summary.innerHTML = '<div style="color: var(--success);">✓ All systems operational</div>';
+                } else {
+                    summary.innerHTML = `<div style="color: var(--warning);">⚠ Issues: ${issues.join(', ')}</div>`;
+                }
+            } catch (err) {
+                logTerminal('ERROR: Health check failed - ' + err.message, 'error');
+            }
+        }
+
+        function updateStatusDot(id, running) {
+            const dot = document.getElementById(id);
+            dot.className = 'status-dot ' + (running ? 'green' : 'red');
+        }
+
+        function switchTab(tab) {
+            // Remove active from all tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            // Add active to selected
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        async function runCheck(type) {
+            logTerminal(`Running ${type} check...`, 'info');
+            showBuildProgress(true, `Checking ${type}...`);
+
+            try {
+                const res = await fetch(`/api/check-${type}`);
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.errors > 0) {
+                    logTerminal(`Found ${data.errors} errors, ${data.warnings} warnings`, 'warning');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function runFix(type) {
+            if (!confirm(`Auto-fix ${type} issues?`)) return;
+
+            logTerminal(`Fixing ${type}...`, 'info');
+            showBuildProgress(true, `Fixing ${type}...`);
+
+            try {
+                const res = await fetch(`/api/fix-${type}`, { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, 'success');
+                showBuildProgress(false);
+
+                if (data.fixes > 0) {
+                    logTerminal(`Applied ${data.fixes} fixes!`, 'success');
+                    setTimeout(() => runCheck(type), 2000);
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function runCI() {
+            if (!confirm('Run full CI pipeline? This may take several minutes.')) return;
+
+            logTerminal('Running full CI pipeline...', 'info');
+            showBuildProgress(true, 'Running CI checks...');
+
+            try {
+                const res = await fetch('/api/ci', { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.success) {
+                    logTerminal('✓ CI PASSED', 'success');
+                } else {
+                    logTerminal('✗ CI FAILED', 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function startService(service) {
+            logTerminal(`Starting ${service}...`, 'info');
+            try {
+                const res = await fetch(`/api/start/${service}`, { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.message, 'success');
+                setTimeout(checkHealth, 3000);
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function stopService(service) {
+            if (!confirm(`Stop ${service}?`)) return;
+
+            logTerminal(`Stopping ${service}...`, 'info');
+            try {
+                const res = await fetch(`/api/stop/${service}`, { method: 'POST' });
+                const data = await res.json();
+                logTerminal(data.message, 'success');
+                setTimeout(checkHealth, 1000);
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        async function buildApp(app) {
+            logTerminal(`Building ${app}...`, 'info');
+            showBuildProgress(true, `Building ${app}...`);
+
+            try {
+                const res = await fetch(`/api/build/${app}`, { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.success) {
+                    logTerminal(`✓ ${app} build complete!`, 'success');
+                } else {
+                    logTerminal(`✗ ${app} build failed`, 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function buildAll() {
+            logTerminal('Building all apps...', 'info');
+            showBuildProgress(true, 'Building workspace...');
+
+            // Build each app sequentially
+            const apps = ['pkn', 'code-academy', 'pkn-mobile'];
+            let allSuccess = true;
+
+            for (const app of apps) {
+                try {
+                    logTerminal(`Building ${app}...`, 'info');
+                    const res = await fetch(`/api/build/${app}`, { method: 'POST' });
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        allSuccess = false;
+                        logTerminal(`✗ ${app} build failed`, 'error');
+                    } else {
+                        logTerminal(`✓ ${app} build complete`, 'success');
+                    }
+                } catch (err) {
+                    allSuccess = false;
+                    logTerminal(`✗ ${app} build error: ${err.message}`, 'error');
+                }
+            }
+
+            showBuildProgress(false);
+            if (allSuccess) {
+                logTerminal('✓ All builds complete!', 'success');
+            } else {
+                logTerminal('✗ Some builds failed', 'error');
+            }
+        }
+
+        async function runTests(app) {
+            const target = app || currentProject;
+            logTerminal(`Running tests for ${target}...`, 'info');
+            showBuildProgress(true, `Testing ${target}...`);
+
+            try {
+                const res = await fetch(`/api/test/${target}`, { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.success) {
+                    logTerminal(`✓ Tests passed for ${target}!`, 'success');
+                } else {
+                    logTerminal(`✗ Tests failed for ${target}`, 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        function runChecklist() {
+            logTerminal('Running session checklist...', 'info');
+            const checks = ['health', 'imports', 'tests'];
+            let i = 0;
+
+            const interval = setInterval(() => {
+                if (i < checks.length) {
+                    logTerminal(`✓ ${checks[i]} check complete`, 'success');
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    logTerminal('✓ Checklist complete!', 'success');
+                }
+            }, 1000);
+        }
+
+        function showBuildProgress(show, message = '') {
+            const progress = document.getElementById('build-progress');
+            const status = document.getElementById('build-status');
+            const fill = document.getElementById('progress-fill');
+
+            if (show) {
+                progress.style.display = 'block';
+                status.textContent = message;
+                fill.style.width = '0%';
+            } else {
+                progress.style.display = 'none';
+                fill.style.width = '100%';
+            }
+        }
+
+        function logTerminal(message, type = 'info') {
+            const terminal = document.getElementById('terminal');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `<div class="log-entry ${type}">[${timestamp}] ${message}</div>`;
+            terminal.innerHTML += entry;
+            terminal.scrollTop = terminal.scrollHeight;
+
+            // Add to activity log
+            const activityLog = document.getElementById('activity-log');
+            const activityEntry = `<div class="log-entry ${type}">${message}</div>`;
+            activityLog.innerHTML = activityEntry + activityLog.innerHTML;
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '<div style="color: var(--accent);">Terminal cleared</div>';
+        }
+
+        function refreshAll() {
+            checkHealth();
+            logTerminal('Status refreshed', 'success');
+        }
+
+        function openBrowser(url) {
+            window.open(url, '_blank');
+        }
+
+        function openDocs() {
+            alert('Documentation: See WORKFLOW.md and CLAUDE.md files');
+        }
+
+        async function installDeps() {
+            logTerminal('Installing dependencies...', 'info');
+            showBuildProgress(true, 'Installing packages...');
+
+            try {
+                const res = await fetch('/api/deps/install', { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.success) {
+                    logTerminal('✓ Dependencies installed!', 'success');
+                } else {
+                    logTerminal('✗ Dependency installation failed', 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function updateDeps() {
+            logTerminal('Updating dependencies...', 'info');
+            showBuildProgress(true, 'Updating packages...');
+
+            try {
+                const res = await fetch('/api/deps/update', { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+                showBuildProgress(false);
+
+                if (data.success) {
+                    logTerminal('✓ Dependencies updated!', 'success');
+                } else {
+                    logTerminal('✗ Dependency update failed', 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+                showBuildProgress(false);
+            }
+        }
+
+        async function cleanAll() {
+            if (!confirm('Clean all build artifacts?')) return;
+
+            logTerminal('Cleaning build...', 'info');
+
+            try {
+                const res = await fetch('/api/clean', { method: 'POST' });
+                const data = await res.json();
+
+                logTerminal(data.output, data.success ? 'success' : 'error');
+
+                if (data.success) {
+                    logTerminal('✓ Build cleaned!', 'success');
+                } else {
+                    logTerminal('✗ Clean failed', 'error');
+                }
+            } catch (err) {
+                logTerminal('ERROR: ' + err.message, 'error');
+            }
+        }
+
+        // Global variable to track selected project
+        let currentProject = 'pkn';
+
+        // Project configuration
+        const projectConfig = {
+            'pkn': {
+                name: 'PKN (Desktop AI)',
+                port: 8010,
+                url: 'http://localhost:8010',
+                service: 'pkn'
+            },
+            'code-academy': {
+                name: 'Code Academy',
+                port: 8011,
+                url: 'http://localhost:8011',
+                service: 'code-academy'
+            },
+            'pkn-mobile': {
+                name: 'PKN Mobile',
+                port: 8012,
+                url: 'http://localhost:8012',
+                service: 'pkn-mobile'
+            }
+        };
+
+        function switchProject() {
+            const select = document.getElementById('project-select');
+            currentProject = select.value;
+            const config = projectConfig[currentProject];
+
+            // Update project indicator
+            const indicator = document.getElementById('project-indicator');
+            indicator.textContent = `Building: ${config.name}`;
+            indicator.style.animation = 'pulse 0.5s';
+            setTimeout(() => indicator.style.animation = '', 500);
+
+            // Update "Open App" button
+            const openBtn = document.getElementById('open-app-btn');
+            openBtn.textContent = `🚀 Open ${config.name}`;
+            openBtn.onclick = () => openBrowser(config.url);
+
+            // Update sidebar quick actions
+            updateSidebarForProject(config);
+
+            // Log the switch
+            logTerminal(`Switched to project: ${config.name}`, 'info');
+        }
+
+        function updateSidebarForProject(config) {
+            // Update quick action buttons in sidebar
+            const sidebar = document.querySelector('.sidebar');
+            const quickActions = sidebar.querySelector('.sidebar-section:nth-child(2) .action-buttons');
+
+            quickActions.innerHTML = `
+                <button class="btn btn-sm" onclick="startService('${config.service}')">▶ Start</button>
+                <button class="btn btn-sm btn-danger" onclick="stopService('${config.service}')">⏹ Stop</button>
+                <button class="btn btn-sm btn-success" onclick="runCheck('imports')">✓ Check</button>
+                <button class="btn btn-sm" onclick="runFix('imports')">🔧 Fix</button>
+            `;
+
+            // Update build actions
+            const buildActions = sidebar.querySelector('.sidebar-section:nth-child(3) .action-buttons');
+            buildActions.innerHTML = `
+                <button class="btn btn-sm" onclick="buildApp('${config.service}')">Build ${config.name}</button>
+                <button class="btn btn-sm" onclick="runTests('${config.service}')">Run Tests</button>
+                <button class="btn btn-sm btn-success" onclick="runCI()">Run CI</button>
+                <button class="btn btn-sm" onclick="cleanAll()">Clean Build</button>
+            `;
+        }
+
+        // Theme switching
+        function switchTheme() {
+            const select = document.getElementById('theme-select');
+            const theme = select.value;
+
+            // Apply theme to body element
+            if (theme === 'default') {
+                document.body.removeAttribute('data-theme');
+            } else {
+                document.body.setAttribute('data-theme', theme);
+            }
+
+            // Save to localStorage
+            localStorage.setItem('dashboard-theme', theme);
+
+            // Log the change
+            logTerminal(`Theme changed to: ${select.options[select.selectedIndex].text}`, 'info');
+        }
+
+        // Load saved theme on page load
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'default';
+            const select = document.getElementById('theme-select');
+            select.value = savedTheme;
+
+            if (savedTheme !== 'default') {
+                document.body.setAttribute('data-theme', savedTheme);
+            }
+        }
+
+        // Settings Modal Functions
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('active');
+
+            // Load current settings when opening
+            if (modal.classList.contains('active')) {
+                loadSettingsToModal();
+            }
+        }
+
+        function loadSettingsToModal() {
+            // Load theme
+            const theme = localStorage.getItem('dashboard-theme') || 'default';
+            document.getElementById('settings-theme').value = theme;
+
+            // Load other settings
+            const autoRefresh = localStorage.getItem('auto-refresh') !== 'false';
+            document.getElementById('auto-refresh').checked = autoRefresh;
+
+            const showAnimations = localStorage.getItem('show-animations') !== 'false';
+            document.getElementById('show-animations').checked = showAnimations;
+
+            const defaultProject = localStorage.getItem('default-project') || 'pkn';
+            document.getElementById('default-project').value = defaultProject;
+
+            const testBeforeBuild = localStorage.getItem('test-before-build') === 'true';
+            document.getElementById('test-before-build').checked = testBeforeBuild;
+
+            const clearOnBuild = localStorage.getItem('clear-on-build') !== 'false';
+            document.getElementById('clear-on-build').checked = clearOnBuild;
+
+            const autoFixCI = localStorage.getItem('auto-fix-ci') !== 'false';
+            document.getElementById('auto-fix-ci').checked = autoFixCI;
+
+            const terminalFont = localStorage.getItem('terminal-font-size') || '13px';
+            document.getElementById('terminal-font-size').value = terminalFont;
+
+            const maxLines = localStorage.getItem('terminal-max-lines') || '1000';
+            document.getElementById('terminal-max-lines').value = maxLines;
+        }
+
+        function applyThemeFromSettings() {
+            const theme = document.getElementById('settings-theme').value;
+            document.getElementById('theme-select').value = theme;
+            switchTheme();
+        }
+
+        function toggleAutoRefresh() {
+            const enabled = document.getElementById('auto-refresh').checked;
+            localStorage.setItem('auto-refresh', enabled);
+            logTerminal(`Auto-refresh ${enabled ? 'enabled' : 'disabled'}`, 'info');
+        }
+
+        function toggleAnimations() {
+            const enabled = document.getElementById('show-animations').checked;
+            localStorage.setItem('show-animations', enabled);
+            document.body.style.setProperty('--animation-speed', enabled ? '1' : '0');
+        }
+
+        function saveDefaultProject() {
+            const project = document.getElementById('default-project').value;
+            localStorage.setItem('default-project', project);
+            logTerminal(`Default project set to: ${project}`, 'info');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('test-before-build', document.getElementById('test-before-build').checked);
+            localStorage.setItem('clear-on-build', document.getElementById('clear-on-build').checked);
+            localStorage.setItem('auto-fix-ci', document.getElementById('auto-fix-ci').checked);
+            localStorage.setItem('terminal-max-lines', document.getElementById('terminal-max-lines').value);
+            logTerminal('Settings saved', 'success');
+        }
+
+        function updateTerminalFont() {
+            const fontSize = document.getElementById('terminal-font-size').value;
+            document.getElementById('terminal').style.fontSize = fontSize;
+            localStorage.setItem('terminal-font-size', fontSize);
+        }
+
+        function clearAllData() {
+            if (!confirm('Clear all saved data including theme, project, and settings?')) return;
+            localStorage.clear();
+            logTerminal('All data cleared. Reloading...', 'warning');
+            setTimeout(() => location.reload(), 1500);
+        }
+
+        function exportSettings() {
+            const settings = {
+                theme: localStorage.getItem('dashboard-theme'),
+                project: localStorage.getItem('default-project'),
+                autoRefresh: localStorage.getItem('auto-refresh'),
+                animations: localStorage.getItem('show-animations'),
+                testBeforeBuild: localStorage.getItem('test-before-build'),
+                clearOnBuild: localStorage.getItem('clear-on-build'),
+                autoFixCI: localStorage.getItem('auto-fix-ci'),
+                terminalFont: localStorage.getItem('terminal-font-size'),
+                maxLines: localStorage.getItem('terminal-max-lines')
+            };
+            const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard-settings.json';
+            a.click();
+            logTerminal('Settings exported', 'success');
+        }
+
+        function resetSettings() {
+            if (!confirm('Reset all settings to defaults?')) return;
+            localStorage.clear();
+            logTerminal('Settings reset. Reloading...', 'info');
+            setTimeout(() => location.reload(), 1500);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('settings-modal');
+            if (e.target === modal) {
+                toggleSettings();
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSavedTheme(); // Load saved theme first
+
+            // Load default project
+            const defaultProject = localStorage.getItem('default-project') || 'pkn';
+            document.getElementById('project-select').value = defaultProject;
+            currentProject = defaultProject;
+
+            switchProject(); // Set up initial project
+
+            // Apply terminal font setting
+            const terminalFont = localStorage.getItem('terminal-font-size') || '13px';
+            document.getElementById('terminal').style.fontSize = terminalFont;
+        });
+    </script>
+</body>
+</html>

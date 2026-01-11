@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Workspace IDE - Visual Builder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-darker: #181818;
+            --bg-lighter: #252526;
+            --border: #333;
+            --text: #cccccc;
+            --text-dim: #858585;
+            --accent: #007acc;
+            --accent-hover: #1c97ea;
+            --success: #5cb85c;
+            --warning: #f0ad4e;
+            --danger: #d9534f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main IDE Container */
+        .ide-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Title Bar */
+        .title-bar {
+            height: 35px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            justify-content: space-between;
+        }
+
+        .title-bar h1 {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .title-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .title-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .title-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Main Workspace */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Activity Bar (Left-most) */
+        .activity-bar {
+            width: 50px;
+            background: var(--bg-darker);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .activity-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 24px;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .activity-icon:hover {
+            color: var(--text);
+        }
+
+        .activity-icon.active {
+            color: var(--text);
+            border-left-color: var(--accent);
+        }
+
+        .activity-icon .tooltip {
+            position: absolute;
+            left: 55px;
+            background: var(--bg-lighter);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .activity-icon:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Panel System */
+        .panel-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .panel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 200px;
+            min-height: 100px;
+        }
+
+        .panel-header {
+            height: 35px;
+            background: var(--bg-lighter);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .panel-btn {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 14px;
+            border-radius: 3px;
+        }
+
+        .panel-btn:hover {
+            background: var(--bg-darker);
+            color: var(--text);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .resize-handle {
+            position: absolute;
+            background: transparent;
+            z-index: 10;
+        }
+
+        .resize-handle.horizontal {
+            width: 4px;
+            height: 100%;
+            right: -2px;
+            top: 0;
+            cursor: ew-resize;
+        }
+
+        .resize-handle.vertical {
+            width: 100%;
+            height: 4px;
+            bottom: -2px;
+            left: 0;
+            cursor: ns-resize;
+        }
+
+        .resize-handle:hover {
+            background: var(--accent);
+        }
+
+        /* Visual Page Builder Canvas */
+        .builder-canvas {
+            flex: 1;
+            background: #fff;
+            position: relative;
+            overflow: auto;
+        }
+
+        .canvas-workspace {
+            min-height: 100%;
+            position: relative;
+            padding: 20px;
+        }
+
+        .canvas-element {
+            position: relative;
+            border: 2px solid transparent;
+            cursor: move;
+            transition: border-color 0.2s;
+        }
+
+        .canvas-element:hover {
+            border-color: var(--accent);
+        }
+
+        .canvas-element.selected {
+            border-color: var(--accent);
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .element-controls {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: var(--accent);
+            padding: 3px;
+            border-radius: 3px;
+            display: none;
+            gap: 5px;
+        }
+
+        .canvas-element.selected .element-controls,
+        .canvas-element:hover .element-controls {
+            display: flex;
+        }
+
+        .element-btn {
+            background: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Element Palette */
+        .element-palette {
+            width: 250px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .palette-category {
+            margin-bottom: 20px;
+        }
+
+        .palette-category h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+
+        .palette-item {
+            background: var(--bg-lighter);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            border: 2px solid transparent;
+        }
+
+        .palette-item:hover {
+            border-color: var(--accent);
+        }
+
+        .palette-item:active {
+            cursor: grabbing;
+        }
+
+        .palette-icon {
+            font-size: 20px;
+        }
+
+        /* Properties Panel */
+        .properties-panel {
+            width: 300px;
+            background: var(--bg-dark);
+            border-left: 1px solid var(--border);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .property-group {
+            margin-bottom: 20px;
+        }
+
+        .property-group h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+
+        .property-row {
+            margin-bottom: 10px;
+        }
+
+        .property-row label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 5px;
+        }
+
+        .property-row input,
+        .property-row select,
+        .property-row textarea {
+            width: 100%;
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .property-row input[type="color"] {
+            height: 35px;
+            padding: 2px;
+        }
+
+        .property-row input[type="range"] {
+            -webkit-appearance: none;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .property-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .property-row button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .property-row button:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Code View Panel */
+        .code-view {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .code-view.active {
+            display: flex;
+        }
+
+        .code-tabs {
+            height: 35px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+        }
+
+        .code-tab {
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-right: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .code-tab.active {
+            background: var(--bg-dark);
+            color: var(--text);
+        }
+
+        .code-editor {
+            flex: 1;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 13px;
+        }
+
+        /* Dashboard Panel */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .dashboard-card {
+            background: var(--bg-lighter);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+        }
+
+        .dashboard-card h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+
+        .dashboard-card button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online {
+            background: var(--success);
+        }
+
+        .status-indicator.offline {
+            background: var(--danger);
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        /* Drop Zone Indicators */
+        .drop-zone {
+            border: 2px dashed var(--accent);
+            background: rgba(0, 122, 204, 0.1);
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="ide-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <h1>🎨 Divine Workspace IDE - Visual Web Builder</h1>
+            <div class="title-controls">
+                <button class="title-btn" onclick="toggleView('design')">Design</button>
+                <button class="title-btn" onclick="toggleView('code')">Code</button>
+                <button class="title-btn" onclick="toggleView('split')">Split</button>
+                <button class="title-btn" onclick="saveProject()">💾 Save</button>
+                <button class="title-btn" onclick="exportProject()">📤 Export</button>
+                <button class="title-btn" onclick="previewProject()">👁️ Preview</button>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace">
+            <!-- Activity Bar -->
+            <div class="activity-bar">
+                <div class="activity-icon active" onclick="showPanel('builder')" title="Visual Builder">
+                    🎨
+                    <span class="tooltip">Visual Builder</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('dashboard')" title="Dashboard">
+                    📊
+                    <span class="tooltip">Dashboard</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('files')" title="Files">
+                    📁
+                    <span class="tooltip">Files</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('git')" title="Git">
+                    🔀
+                    <span class="tooltip">Git</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('tools')" title="Tools">
+                    🛠️
+                    <span class="tooltip">Tools</span>
+                </div>
+                <div style="flex: 1;"></div>
+                <div class="activity-icon" onclick="showSettings()" title="Settings">
+                    ⚙️
+                    <span class="tooltip">Settings</span>
+                </div>
+            </div>
+
+            <!-- Panel Container -->
+            <div class="panel-container" id="panel-container">
+                <!-- Visual Builder Panel (Default) -->
+                <div class="panel" id="builder-panel" style="display: flex; flex: 1;">
+                    <!-- Element Palette -->
+                    <div class="element-palette">
+                        <div class="palette-category">
+                            <h3>Layout</h3>
+                            <div class="palette-item" draggable="true" data-element="container">
+                                <span class="palette-icon">📦</span>
+                                <span>Container</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="section">
+                                <span class="palette-icon">📄</span>
+                                <span>Section</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="flexbox">
+                                <span class="palette-icon">⬛</span>
+                                <span>Flex Container</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="grid">
+                                <span class="palette-icon">▦</span>
+                                <span>Grid Container</span>
+                            </div>
+                        </div>
+
+                        <div class="palette-category">
+                            <h3>Content</h3>
+                            <div class="palette-item" draggable="true" data-element="heading">
+                                <span class="palette-icon">H</span>
+                                <span>Heading</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="text">
+                                <span class="palette-icon">T</span>
+                                <span>Text</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="button">
+                                <span class="palette-icon">🔘</span>
+                                <span>Button</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="link">
+                                <span class="palette-icon">🔗</span>
+                                <span>Link</span>
+                            </div>
+                        </div>
+
+                        <div class="palette-category">
+                            <h3>Media</h3>
+                            <div class="palette-item" draggable="true" data-element="image">
+                                <span class="palette-icon">🖼️</span>
+                                <span>Image</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="video">
+                                <span class="palette-icon">🎥</span>
+                                <span>Video</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="icon">
+                                <span class="palette-icon">⭐</span>
+                                <span>Icon</span>
+                            </div>
+                        </div>
+
+                        <div class="palette-category">
+                            <h3>Forms</h3>
+                            <div class="palette-item" draggable="true" data-element="input">
+                                <span class="palette-icon">📝</span>
+                                <span>Input</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="textarea">
+                                <span class="palette-icon">📋</span>
+                                <span>Textarea</span>
+                            </div>
+                            <div class="palette-item" draggable="true" data-element="select">
+                                <span class="palette-icon">▼</span>
+                                <span>Select</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Builder Canvas -->
+                    <div class="builder-canvas">
+                        <div class="canvas-workspace" id="canvas">
+                            <div class="drop-zone">
+                                Drop elements here to start building
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Properties Panel -->
+                    <div class="properties-panel" id="properties-panel">
+                        <div id="properties-content">
+                            <p style="color: var(--text-dim); text-align: center; margin-top: 50px;">
+                                Select an element to edit its properties
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code View Panel -->
+                <div class="code-view" id="code-panel">
+                    <div class="code-tabs">
+                        <div class="code-tab active" onclick="switchCodeTab('html')">HTML</div>
+                        <div class="code-tab" onclick="switchCodeTab('css')">CSS</div>
+                        <div class="code-tab" onclick="switchCodeTab('js')">JavaScript</div>
+                    </div>
+                    <div class="code-editor">
+                        <textarea id="code-editor-html"></textarea>
+                    </div>
+                </div>
+
+                <!-- Dashboard Panel -->
+                <div class="panel hidden" id="dashboard-panel" style="flex: 1;">
+                    <div class="panel-header">
+                        <span class="panel-title">Dashboard</span>
+                        <div class="panel-controls">
+                            <span class="panel-btn" onclick="closePanel('dashboard')">×</span>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="dashboard-content">
+                            <div class="dashboard-card">
+                                <h4>Services</h4>
+                                <div style="margin: 10px 0;">
+                                    <span class="status-indicator online"></span>
+                                    <span>PKN Server</span>
+                                </div>
+                                <div style="margin: 10px 0;">
+                                    <span class="status-indicator online"></span>
+                                    <span>Code Academy</span>
+                                </div>
+                                <button onclick="checkHealth()">Check Health</button>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <h4>Build</h4>
+                                <button onclick="runBuild()">🔨 Build Project</button>
+                                <button onclick="runTests()">🧪 Run Tests</button>
+                                <button onclick="runCI()">🚦 Run CI</button>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <h4>Tools</h4>
+                                <button onclick="runLint()">🔍 Lint Code</button>
+                                <button onclick="runFormat()">✨ Format Code</button>
+                                <button onclick="checkImports()">✓ Check Imports</button>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <h4>Deploy</h4>
+                                <button onclick="deployApp()">🚀 Deploy</button>
+                                <button onclick="openPreview()">👁️ Preview</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let selectedElement = null;
+        let currentView = 'design';
+        let htmlEditor, cssEditor, jsEditor;
+        let projectData = {
+            elements: [],
+            styles: {},
+            scripts: ''
+        };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initCodeEditors();
+            initDragAndDrop();
+            initCanvas();
+        });
+
+        // Initialize CodeMirror editors
+        function initCodeEditors() {
+            htmlEditor = CodeMirror.fromTextArea(document.getElementById('code-editor-html'), {
+                mode: 'htmlmixed',
+                theme: 'monokai',
+                lineNumbers: true,
+                autoCloseTags: true
+            });
+
+            // Create CSS and JS editors (hidden initially)
+            // Will be shown when switching tabs
+        }
+
+        // Initialize drag and drop
+        function initDragAndDrop() {
+            const paletteItems = document.querySelectorAll('.palette-item');
+            const canvas = document.getElementById('canvas');
+
+            paletteItems.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('element-type', item.dataset.element);
+                    item.classList.add('dragging');
+                });
+
+                item.addEventListener('dragend', (e) => {
+                    item.classList.remove('dragging');
+                });
+            });
+
+            canvas.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            canvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const elementType = e.dataTransfer.getData('element-type');
+                createElement(elementType, e.clientX, e.clientY);
+            });
+        }
+
+        // Initialize canvas
+        function initCanvas() {
+            const canvas = document.getElementById('canvas');
+            canvas.addEventListener('click', (e) => {
+                if (e.target.classList.contains('canvas-element')) {
+                    selectElement(e.target);
+                }
+            });
+        }
+
+        // Create element on canvas
+        function createElement(type, x, y) {
+            const canvas = document.getElementById('canvas');
+            const dropZone = canvas.querySelector('.drop-zone');
+            if (dropZone) dropZone.remove();
+
+            const element = document.createElement('div');
+            element.className = 'canvas-element';
+            element.dataset.type = type;
+            element.contentEditable = true;
+
+            // Set default content and styles based on type
+            switch(type) {
+                case 'heading':
+                    element.innerHTML = '<h1>Heading Text</h1>';
+                    element.style.fontSize = '32px';
+                    element.style.fontWeight = 'bold';
+                    break;
+                case 'text':
+                    element.innerHTML = '<p>Your text here. Click to edit.</p>';
+                    element.style.fontSize = '16px';
+                    break;
+                case 'button':
+                    element.innerHTML = '<button style="padding: 10px 20px; background: #007acc; color: white; border: none; border-radius: 5px; cursor: pointer;">Button</button>';
+                    break;
+                case 'image':
+                    element.innerHTML = '<img src="https://via.placeholder.com/300x200" style="max-width: 100%; height: auto;">';
+                    break;
+                case 'container':
+                    element.innerHTML = '<div style="padding: 20px; border: 2px dashed #ccc;">Container - Drop elements here</div>';
+                    element.style.minHeight = '100px';
+                    break;
+                case 'section':
+                    element.innerHTML = '<section style="padding: 40px; background: #f5f5f5;"><h2>Section Title</h2><p>Section content goes here.</p></section>';
+                    break;
+                case 'flexbox':
+                    element.innerHTML = '<div style="display: flex; gap: 10px; padding: 20px; border: 2px dashed #ccc;"><div style="flex: 1; padding: 10px; background: #eee;">Item 1</div><div style="flex: 1; padding: 10px; background: #eee;">Item 2</div></div>';
+                    break;
+                case 'grid':
+                    element.innerHTML = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; border: 2px dashed #ccc;"><div style="padding: 10px; background: #eee;">1</div><div style="padding: 10px; background: #eee;">2</div><div style="padding: 10px; background: #eee;">3</div></div>';
+                    break;
+                case 'link':
+                    element.innerHTML = '<a href="#" style="color: #007acc; text-decoration: underline;">Link Text</a>';
+                    break;
+                case 'input':
+                    element.innerHTML = '<input type="text" placeholder="Enter text..." style="padding: 8px; border: 1px solid #ccc; border-radius: 3px; width: 100%;">';
+                    element.contentEditable = false;
+                    break;
+                case 'textarea':
+                    element.innerHTML = '<textarea placeholder="Enter text..." rows="4" style="padding: 8px; border: 1px solid #ccc; border-radius: 3px; width: 100%;"></textarea>';
+                    element.contentEditable = false;
+                    break;
+                case 'select':
+                    element.innerHTML = '<select style="padding: 8px; border: 1px solid #ccc; border-radius: 3px;"><option>Option 1</option><option>Option 2</option><option>Option 3</option></select>';
+                    element.contentEditable = false;
+                    break;
+                case 'video':
+                    element.innerHTML = '<video controls style="max-width: 100%;"><source src="" type="video/mp4">Your browser does not support video.</video>';
+                    element.contentEditable = false;
+                    break;
+                case 'icon':
+                    element.innerHTML = '<span style="font-size: 48px;">⭐</span>';
+                    break;
+            }
+
+            // Add controls
+            element.innerHTML += `
+                <div class="element-controls">
+                    <button class="element-btn" onclick="event.stopPropagation(); moveElementUp(this.parentElement.parentElement)">↑</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); moveElementDown(this.parentElement.parentElement)">↓</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); duplicateElement(this.parentElement.parentElement)">⧉</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); deleteElement(this.parentElement.parentElement)">×</button>
+                </div>
+            `;
+
+            // Set default styles
+            element.style.padding = '10px';
+            element.style.margin = '10px 0';
+
+            canvas.appendChild(element);
+            selectElement(element);
+
+            // Save to project data
+            projectData.elements.push({
+                id: Date.now(),
+                type: type,
+                html: element.innerHTML,
+                styles: element.style.cssText
+            });
+
+            updateCodeView();
+        }
+
+        // Select element
+        function selectElement(element) {
+            // Remove previous selection
+            document.querySelectorAll('.canvas-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            element.classList.add('selected');
+            selectedElement = element;
+            showProperties(element);
+        }
+
+        // Show properties panel
+        function showProperties(element) {
+            const propertiesContent = document.getElementById('properties-content');
+            const computedStyle = window.getComputedStyle(element);
+
+            propertiesContent.innerHTML = `
+                <div class="property-group">
+                    <h3>Content</h3>
+                    <div class="property-row">
+                        <label>Text Content</label>
+                        <textarea id="prop-content" rows="3" onchange="updateElementContent()">${element.textContent}</textarea>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Typography</h3>
+                    <div class="property-row">
+                        <label>Font Size</label>
+                        <input type="range" min="8" max="72" value="${parseInt(computedStyle.fontSize)}" oninput="updateStyle('fontSize', this.value + 'px'); document.getElementById('font-size-value').textContent = this.value + 'px'">
+                        <span id="font-size-value">${computedStyle.fontSize}</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Font Weight</label>
+                        <select onchange="updateStyle('fontWeight', this.value)">
+                            <option value="normal" ${computedStyle.fontWeight === 'normal' ? 'selected' : ''}>Normal</option>
+                            <option value="bold" ${computedStyle.fontWeight === 'bold' || computedStyle.fontWeight === '700' ? 'selected' : ''}>Bold</option>
+                            <option value="lighter">Lighter</option>
+                        </select>
+                    </div>
+                    <div class="property-row">
+                        <label>Text Color</label>
+                        <input type="color" value="${rgbToHex(computedStyle.color)}" onchange="updateStyle('color', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Text Align</label>
+                        <select onchange="updateStyle('textAlign', this.value)">
+                            <option value="left" ${computedStyle.textAlign === 'left' ? 'selected' : ''}>Left</option>
+                            <option value="center" ${computedStyle.textAlign === 'center' ? 'selected' : ''}>Center</option>
+                            <option value="right" ${computedStyle.textAlign === 'right' ? 'selected' : ''}>Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Colors</h3>
+                    <div class="property-row">
+                        <label>Background Color</label>
+                        <input type="color" value="${rgbToHex(computedStyle.backgroundColor)}" onchange="updateStyle('backgroundColor', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Border Color</label>
+                        <input type="color" value="#cccccc" onchange="updateStyle('borderColor', this.value)">
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Spacing</h3>
+                    <div class="property-row">
+                        <label>Padding</label>
+                        <input type="range" min="0" max="100" value="${parseInt(computedStyle.padding)}" oninput="updateStyle('padding', this.value + 'px'); document.getElementById('padding-value').textContent = this.value + 'px'">
+                        <span id="padding-value">${computedStyle.padding}</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Margin</label>
+                        <input type="range" min="0" max="100" value="${parseInt(computedStyle.margin)}" oninput="updateStyle('margin', this.value + 'px'); document.getElementById('margin-value').textContent = this.value + 'px'">
+                        <span id="margin-value">${computedStyle.margin}</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Dimensions</h3>
+                    <div class="property-row">
+                        <label>Width</label>
+                        <input type="text" value="${computedStyle.width}" onchange="updateStyle('width', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Height</label>
+                        <input type="text" value="${computedStyle.height}" onchange="updateStyle('height', this.value)">
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Border</h3>
+                    <div class="property-row">
+                        <label>Border Width</label>
+                        <input type="range" min="0" max="20" value="${parseInt(computedStyle.borderWidth) || 0}" oninput="updateStyle('borderWidth', this.value + 'px'); updateStyle('borderStyle', 'solid'); document.getElementById('border-value').textContent = this.value + 'px'">
+                        <span id="border-value">${computedStyle.borderWidth}</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Border Radius</label>
+                        <input type="range" min="0" max="50" value="${parseInt(computedStyle.borderRadius)}" oninput="updateStyle('borderRadius', this.value + 'px'); document.getElementById('radius-value').textContent = this.value + 'px'">
+                        <span id="radius-value">${computedStyle.borderRadius}</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Actions</h3>
+                    <div class="property-row">
+                        <button onclick="duplicateElement(selectedElement)">⧉ Duplicate</button>
+                    </div>
+                    <div class="property-row">
+                        <button onclick="deleteElement(selectedElement)" style="background: var(--danger);">× Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update element style
+        function updateStyle(property, value) {
+            if (selectedElement) {
+                selectedElement.style[property] = value;
+                updateCodeView();
+            }
+        }
+
+        // Update element content
+        function updateElementContent() {
+            if (selectedElement) {
+                const newContent = document.getElementById('prop-content').value;
+                // Preserve the controls
+                const controls = selectedElement.querySelector('.element-controls');
+                selectedElement.textContent = newContent;
+                if (controls) selectedElement.appendChild(controls);
+                updateCodeView();
+            }
+        }
+
+        // Element controls
+        function moveElementUp(element) {
+            const prev = element.previousElementSibling;
+            if (prev) {
+                element.parentNode.insertBefore(element, prev);
+                updateCodeView();
+            }
+        }
+
+        function moveElementDown(element) {
+            const next = element.nextElementSibling;
+            if (next) {
+                element.parentNode.insertBefore(next, element);
+                updateCodeView();
+            }
+        }
+
+        function duplicateElement(element) {
+            const clone = element.cloneNode(true);
+            element.parentNode.insertBefore(clone, element.nextSibling);
+            selectElement(clone);
+            updateCodeView();
+        }
+
+        function deleteElement(element) {
+            if (confirm('Delete this element?')) {
+                element.remove();
+                selectedElement = null;
+                document.getElementById('properties-content').innerHTML = '<p style="color: var(--text-dim); text-align: center; margin-top: 50px;">Select an element to edit its properties</p>';
+                updateCodeView();
+            }
+        }
+
+        // Update code view with generated HTML/CSS
+        function updateCodeView() {
+            const canvas = document.getElementById('canvas');
+            const elements = canvas.querySelectorAll('.canvas-element');
+
+            let html = '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>My Page</title>\n</head>\n<body>\n';
+
+            elements.forEach(element => {
+                const clone = element.cloneNode(true);
+                // Remove controls
+                const controls = clone.querySelector('.element-controls');
+                if (controls) controls.remove();
+                html += '  ' + clone.outerHTML + '\n';
+            });
+
+            html += '</body>\n</html>';
+
+            if (htmlEditor) {
+                htmlEditor.setValue(html);
+            }
+        }
+
+        // Utility: RGB to Hex
+        function rgbToHex(rgb) {
+            if (!rgb || rgb === 'rgba(0, 0, 0, 0)') return '#ffffff';
+            const result = rgb.match(/\d+/g);
+            if (!result) return '#ffffff';
+            return '#' + ((1 << 24) + (+result[0] << 16) + (+result[1] << 8) + +result[2]).toString(16).slice(1);
+        }
+
+        // View toggles
+        function toggleView(view) {
+            currentView = view;
+            const builderPanel = document.getElementById('builder-panel');
+            const codePanel = document.getElementById('code-panel');
+
+            if (view === 'design') {
+                builderPanel.style.display = 'flex';
+                codePanel.classList.remove('active');
+            } else if (view === 'code') {
+                builderPanel.style.display = 'none';
+                codePanel.classList.add('active');
+                updateCodeView();
+            } else if (view === 'split') {
+                builderPanel.style.display = 'flex';
+                builderPanel.style.flex = '1';
+                codePanel.classList.add('active');
+                codePanel.style.flex = '1';
+            }
+        }
+
+        function switchCodeTab(lang) {
+            // TODO: Switch between HTML, CSS, JS editors
+            console.log('Switch to', lang);
+        }
+
+        // Panel management
+        function showPanel(panelName) {
+            const panels = document.querySelectorAll('.panel');
+            const icons = document.querySelectorAll('.activity-icon');
+
+            // Hide all panels
+            panels.forEach(p => p.classList.add('hidden'));
+            icons.forEach(i => i.classList.remove('active'));
+
+            // Show selected panel
+            const panel = document.getElementById(panelName + '-panel');
+            if (panel) {
+                panel.classList.remove('hidden');
+                event.target.classList.add('active');
+            }
+        }
+
+        function closePanel(panelName) {
+            const panel = document.getElementById(panelName + '-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+            }
+        }
+
+        // Project actions
+        function saveProject() {
+            updateCodeView();
+            const projectJson = JSON.stringify({
+                html: htmlEditor.getValue(),
+                elements: Array.from(document.querySelectorAll('.canvas-element')).map(el => ({
+                    type: el.dataset.type,
+                    html: el.innerHTML,
+                    styles: el.style.cssText
+                }))
+            }, null, 2);
+
+            localStorage.setItem('divine-project', projectJson);
+            alert('Project saved to browser storage!');
+        }
+
+        function exportProject() {
+            updateCodeView();
+            const html = htmlEditor.getValue();
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my-page.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function previewProject() {
+            updateCodeView();
+            const html = htmlEditor.getValue();
+            const preview = window.open('', '_blank');
+            preview.document.write(html);
+            preview.document.close();
+        }
+
+        // Dashboard functions
+        function checkHealth() {
+            alert('Checking system health...');
+            // TODO: Implement actual health check
+        }
+
+        function runBuild() {
+            alert('Building project...');
+            // TODO: Implement build
+        }
+
+        function runTests() {
+            alert('Running tests...');
+            // TODO: Implement tests
+        }
+
+        function runCI() {
+            alert('Running CI pipeline...');
+            // TODO: Implement CI
+        }
+
+        function runLint() {
+            alert('Linting code...');
+            // TODO: Implement lint
+        }
+
+        function runFormat() {
+            alert('Formatting code...');
+            // TODO: Implement format
+        }
+
+        function checkImports() {
+            alert('Checking imports...');
+            // TODO: Implement import check
+        }
+
+        function deployApp() {
+            alert('Deploying application...');
+            // TODO: Implement deploy
+        }
+
+        function openPreview() {
+            previewProject();
+        }
+
+        function showSettings() {
+            alert('Settings panel - Coming soon!');
+            // TODO: Implement settings
+        }
+    </script>
+</body>
+</html>

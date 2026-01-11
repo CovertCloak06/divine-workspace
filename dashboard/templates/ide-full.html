@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Workspace IDE - Advanced Visual Builder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-darker: #181818;
+            --bg-lighter: #252526;
+            --border: #333;
+            --text: #cccccc;
+            --text-dim: #858585;
+            --accent: #007acc;
+            --accent-hover: #1c97ea;
+            --success: #5cb85c;
+            --warning: #f0ad4e;
+            --danger: #d9534f;
+            --purple: #b366ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .ide-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Title Bar */
+        .title-bar {
+            height: 40px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            justify-content: space-between;
+            z-index: 1000;
+        }
+
+        .title-bar h1 {
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .title-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .title-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .title-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .title-btn.active {
+            background: var(--purple);
+        }
+
+        /* Workspace */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Activity Bar */
+        .activity-bar {
+            width: 50px;
+            background: var(--bg-darker);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            z-index: 100;
+        }
+
+        .activity-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 24px;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .activity-icon:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .activity-icon.active {
+            color: var(--text);
+            border-left-color: var(--accent);
+            background: rgba(0,122,204,0.1);
+        }
+
+        .tooltip {
+            position: absolute;
+            left: 55px;
+            background: var(--bg-lighter);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .activity-icon:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Panel Container with Docking */
+        .panel-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .panel {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 200px;
+            min-height: 100px;
+        }
+
+        .panel-header {
+            height: 35px;
+            background: var(--bg-lighter);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .panel-header:active {
+            cursor: grabbing;
+        }
+
+        .panel-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .panel-btn {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 16px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .panel-btn:hover {
+            background: var(--bg-darker);
+            color: var(--text);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+        }
+
+        /* Dock Zones */
+        .dock-zone {
+            position: absolute;
+            background: rgba(0, 122, 204, 0.3);
+            border: 2px solid var(--accent);
+            display: none;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .dock-zone.active {
+            display: block;
+        }
+
+        .dock-zone.top { top: 0; left: 0; right: 0; height: 40%; }
+        .dock-zone.bottom { bottom: 0; left: 0; right: 0; height: 40%; }
+        .dock-zone.left { top: 0; bottom: 0; left: 0; width: 30%; }
+        .dock-zone.right { top: 0; bottom: 0; right: 0; width: 30%; }
+        .dock-zone.center { top: 10%; bottom: 10%; left: 10%; right: 10%; }
+
+        /* Element Palette */
+        .element-palette {
+            width: 280px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .palette-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .palette-search {
+            width: 100%;
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .palette-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .palette-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+
+        .palette-tab:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .palette-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .palette-content {
+            padding: 10px;
+        }
+
+        .palette-category {
+            margin-bottom: 20px;
+        }
+
+        .palette-category h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            padding: 0 5px;
+        }
+
+        .palette-item {
+            background: var(--bg-lighter);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .palette-item:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .palette-item:active {
+            cursor: grabbing;
+        }
+
+        .palette-icon {
+            font-size: 22px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .palette-item-info {
+            flex: 1;
+        }
+
+        .palette-item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .palette-item-desc {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* Builder Canvas */
+        .builder-canvas {
+            flex: 1;
+            background: #ffffff;
+            position: relative;
+            overflow: auto;
+        }
+
+        .canvas-toolbar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .canvas-toolbar-btn {
+            background: var(--bg-lighter);
+            border: none;
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .canvas-toolbar-btn:hover {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .canvas-toolbar-btn.active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .canvas-workspace {
+            min-height: 100%;
+            position: relative;
+            padding: 40px 20px 20px 20px;
+            transition: all 0.3s;
+        }
+
+        /* Responsive breakpoint styles */
+        .canvas-workspace.mobile {
+            max-width: 375px;
+            margin: 0 auto;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+        }
+
+        .canvas-workspace.tablet {
+            max-width: 768px;
+            margin: 0 auto;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+        }
+
+        .canvas-workspace.desktop {
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        .canvas-element {
+            position: relative;
+            border: 2px solid transparent;
+            cursor: move;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .canvas-element:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0,122,204,0.1);
+        }
+
+        .canvas-element.selected {
+            border-color: var(--accent);
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(0,122,204,0.2);
+        }
+
+        .element-controls {
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: var(--accent);
+            padding: 4px;
+            border-radius: 4px;
+            display: none;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .canvas-element.selected .element-controls,
+        .canvas-element:hover .element-controls {
+            display: flex;
+        }
+
+        .element-btn {
+            background: white;
+            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .element-btn:hover {
+            background: var(--bg-lighter);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Properties Panel */
+        .properties-panel {
+            width: 320px;
+            background: var(--bg-dark);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .properties-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .properties-content {
+            padding: 15px;
+        }
+
+        .property-group {
+            margin-bottom: 25px;
+        }
+
+        .property-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .property-group h3::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .property-row {
+            margin-bottom: 12px;
+        }
+
+        .property-row label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .property-row input,
+        .property-row select,
+        .property-row textarea {
+            width: 100%;
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .property-row input:focus,
+        .property-row select:focus,
+        .property-row textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .property-row input[type="color"] {
+            height: 40px;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .property-row input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin: 8px 0;
+        }
+
+        .property-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .property-row input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .property-row button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .property-row button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,122,204,0.3);
+        }
+
+        .property-row button.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .property-row button.danger:hover {
+            background: #c9302c;
+        }
+
+        .property-value-display {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Animation Controls */
+        .animation-preset {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .animation-preset button {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        /* Component Library */
+        .component-library {
+            padding: 15px;
+        }
+
+        .component-item {
+            background: var(--bg-lighter);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .component-item:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .component-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .component-preview {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* Template Gallery */
+        .template-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .template-card {
+            background: var(--bg-lighter);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .template-preview {
+            height: 120px;
+            background: var(--bg-darker);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .template-info {
+            padding: 12px;
+        }
+
+        .template-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .template-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* Code View */
+        .code-view {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+
+        .code-view.active {
+            display: flex;
+        }
+
+        .code-tabs {
+            height: 40px;
+            background: var(--bg-darker);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+        }
+
+        .code-tab {
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-right: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+
+        .code-tab:hover {
+            background: var(--bg-lighter);
+            color: var(--text);
+        }
+
+        .code-tab.active {
+            background: var(--bg-dark);
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .code-editor {
+            flex: 1;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 13px;
+        }
+
+        /* Dashboard */
+        .dashboard-content {
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .dashboard-card {
+            background: var(--bg-lighter);
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .dashboard-card h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+        }
+
+        .dashboard-card button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+
+        .dashboard-card button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status-indicator.offline {
+            background: var(--danger);
+        }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--text-dim);
+            background: rgba(255,255,255,0.02);
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            font-size: 14px;
+            margin: 20px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--accent);
+            background: rgba(0,122,204,0.05);
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="ide-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <h1>🎨 Divine Workspace IDE - Advanced Visual Builder</h1>
+            <div class="title-controls">
+                <button class="title-btn active" onclick="toggleView('design')" id="btn-design">Design</button>
+                <button class="title-btn" onclick="toggleView('code')" id="btn-code">Code</button>
+                <button class="title-btn" onclick="toggleView('split')" id="btn-split">Split</button>
+                <button class="title-btn" onclick="saveProject()">💾 Save</button>
+                <button class="title-btn" onclick="exportProject()">📤 Export</button>
+                <button class="title-btn" onclick="previewProject()">👁️ Preview</button>
+                <button class="title-btn" onclick="newProject()">📄 New</button>
+            </div>
+        </div>
+
+        <!-- Workspace -->
+        <div class="workspace">
+            <!-- Activity Bar -->
+            <div class="activity-bar">
+                <div class="activity-icon active" onclick="showPanel('builder')" id="icon-builder">
+                    🎨
+                    <span class="tooltip">Visual Builder</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('components')" id="icon-components">
+                    📦
+                    <span class="tooltip">Components</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('templates')" id="icon-templates">
+                    📋
+                    <span class="tooltip">Templates</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('dashboard')" id="icon-dashboard">
+                    📊
+                    <span class="tooltip">Dashboard</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('files')" id="icon-files">
+                    📁
+                    <span class="tooltip">Files</span>
+                </div>
+                <div class="activity-icon" onclick="showPanel('tools')" id="icon-tools">
+                    🛠️
+                    <span class="tooltip">Tools</span>
+                </div>
+                <div style="flex: 1;"></div>
+                <div class="activity-icon" onclick="showSettings()">
+                    ⚙️
+                    <span class="tooltip">Settings</span>
+                </div>
+            </div>
+
+            <!-- Panel Container -->
+            <div class="panel-container" id="panel-container">
+                <!-- Dock Zones (for dragging panels) -->
+                <div class="dock-zone top" id="dock-top"></div>
+                <div class="dock-zone bottom" id="dock-bottom"></div>
+                <div class="dock-zone left" id="dock-left"></div>
+                <div class="dock-zone right" id="dock-right"></div>
+                <div class="dock-zone center" id="dock-center"></div>
+
+                <!-- Visual Builder Panel -->
+                <div class="panel" id="builder-panel" style="display: flex; flex: 1;">
+                    <!-- Element Palette -->
+                    <div class="element-palette">
+                        <div class="palette-header">
+                            <input type="text" class="palette-search" placeholder="Search elements..." id="element-search" oninput="searchElements()">
+                        </div>
+
+                        <div class="palette-tabs">
+                            <div class="palette-tab active" onclick="switchPaletteTab('elements')">Elements</div>
+                            <div class="palette-tab" onclick="switchPaletteTab('blocks')">Blocks</div>
+                        </div>
+
+                        <div class="palette-content" id="palette-elements">
+                            <div class="palette-category">
+                                <h3>Layout</h3>
+                                <div class="palette-item" draggable="true" data-element="container">
+                                    <span class="palette-icon">📦</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Container</div>
+                                        <div class="palette-item-desc">Basic container</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="section">
+                                    <span class="palette-icon">📄</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Section</div>
+                                        <div class="palette-item-desc">Page section</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="flexbox">
+                                    <span class="palette-icon">⬛</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Flex Container</div>
+                                        <div class="palette-item-desc">Flexible layout</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="grid">
+                                    <span class="palette-icon">▦</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Grid Container</div>
+                                        <div class="palette-item-desc">Grid layout</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="palette-category">
+                                <h3>Content</h3>
+                                <div class="palette-item" draggable="true" data-element="heading">
+                                    <span class="palette-icon">H</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Heading</div>
+                                        <div class="palette-item-desc">H1-H6 headings</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="text">
+                                    <span class="palette-icon">T</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Paragraph</div>
+                                        <div class="palette-item-desc">Text paragraph</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="button">
+                                    <span class="palette-icon">🔘</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Button</div>
+                                        <div class="palette-item-desc">Call-to-action</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="link">
+                                    <span class="palette-icon">🔗</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Link</div>
+                                        <div class="palette-item-desc">Hyperlink</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="palette-category">
+                                <h3>Components</h3>
+                                <div class="palette-item" draggable="true" data-element="navbar">
+                                    <span class="palette-icon">☰</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Navbar</div>
+                                        <div class="palette-item-desc">Navigation bar</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="hero">
+                                    <span class="palette-icon">🎯</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Hero Section</div>
+                                        <div class="palette-item-desc">Hero banner</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="card">
+                                    <span class="palette-icon">🎴</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Card</div>
+                                        <div class="palette-item-desc">Content card</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="footer">
+                                    <span class="palette-icon">⬛</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Footer</div>
+                                        <div class="palette-item-desc">Page footer</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="modal">
+                                    <span class="palette-icon">📱</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Modal</div>
+                                        <div class="palette-item-desc">Popup dialog</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="carousel">
+                                    <span class="palette-icon">🎠</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Carousel</div>
+                                        <div class="palette-item-desc">Image slider</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="palette-category">
+                                <h3>Media</h3>
+                                <div class="palette-item" draggable="true" data-element="image">
+                                    <span class="palette-icon">🖼️</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Image</div>
+                                        <div class="palette-item-desc">Image element</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="video">
+                                    <span class="palette-icon">🎥</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Video</div>
+                                        <div class="palette-item-desc">Video player</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="icon">
+                                    <span class="palette-icon">⭐</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Icon</div>
+                                        <div class="palette-item-desc">Icon element</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="palette-category">
+                                <h3>Forms</h3>
+                                <div class="palette-item" draggable="true" data-element="form">
+                                    <span class="palette-icon">📋</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Form</div>
+                                        <div class="palette-item-desc">Form container</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="input">
+                                    <span class="palette-icon">📝</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Input</div>
+                                        <div class="palette-item-desc">Text input</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="textarea">
+                                    <span class="palette-icon">📄</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Textarea</div>
+                                        <div class="palette-item-desc">Multiline text</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-element="select">
+                                    <span class="palette-icon">▼</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Select</div>
+                                        <div class="palette-item-desc">Dropdown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="palette-content hidden" id="palette-blocks">
+                            <div class="palette-category">
+                                <h3>Pre-built Blocks</h3>
+                                <div class="palette-item" draggable="true" data-block="pricing-table">
+                                    <span class="palette-icon">💰</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Pricing Table</div>
+                                        <div class="palette-item-desc">3-column pricing</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-block="feature-grid">
+                                    <span class="palette-icon">▦</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Feature Grid</div>
+                                        <div class="palette-item-desc">4-column features</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-block="testimonials">
+                                    <span class="palette-icon">💬</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Testimonials</div>
+                                        <div class="palette-item-desc">Customer reviews</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item" draggable="true" data-block="contact-form">
+                                    <span class="palette-icon">📧</span>
+                                    <div class="palette-item-info">
+                                        <div class="palette-item-name">Contact Form</div>
+                                        <div class="palette-item-desc">Get in touch</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Builder Canvas -->
+                    <div class="builder-canvas">
+                        <div class="canvas-toolbar">
+                            <button class="canvas-toolbar-btn active" onclick="setBreakpoint('desktop')" id="bp-desktop">
+                                🖥️ Desktop
+                            </button>
+                            <button class="canvas-toolbar-btn" onclick="setBreakpoint('tablet')" id="bp-tablet">
+                                📱 Tablet
+                            </button>
+                            <button class="canvas-toolbar-btn" onclick="setBreakpoint('mobile')" id="bp-mobile">
+                                📱 Mobile
+                            </button>
+                            <div style="width: 1px; height: 20px; background: var(--border);"></div>
+                            <button class="canvas-toolbar-btn" onclick="undoAction()">↶ Undo</button>
+                            <button class="canvas-toolbar-btn" onclick="redoAction()">↷ Redo</button>
+                            <button class="canvas-toolbar-btn" onclick="clearCanvas()">🗑️ Clear</button>
+                        </div>
+
+                        <div class="canvas-workspace desktop" id="canvas">
+                            <div class="drop-zone">
+                                🎨 Drag elements here to start building your page
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Properties Panel -->
+                    <div class="properties-panel">
+                        <div class="properties-header">
+                            Properties
+                        </div>
+                        <div class="properties-content" id="properties-content">
+                            <p style="color: var(--text-dim); text-align: center; margin-top: 50px; font-size: 12px;">
+                                Select an element to edit its properties
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Components Panel -->
+                <div class="panel hidden" id="components-panel" style="flex: 1;">
+                    <div class="panel-header">
+                        <span class="panel-title">Component Library</span>
+                        <div class="panel-controls">
+                            <span class="panel-btn" onclick="closePanel('components')">×</span>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="component-library">
+                            <button class="title-btn" onclick="saveCurrentAsComponent()" style="margin-bottom: 15px;">💾 Save Current Selection</button>
+                            <div id="saved-components">
+                                <p style="color: var(--text-dim); text-align: center; padding: 20px;">No saved components yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Panel -->
+                <div class="panel hidden" id="templates-panel" style="flex: 1;">
+                    <div class="panel-header">
+                        <span class="panel-title">Template Gallery</span>
+                        <div class="panel-controls">
+                            <span class="panel-btn" onclick="closePanel('templates')">×</span>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="template-gallery">
+                            <div class="template-card" onclick="loadTemplate('landing')">
+                                <div class="template-preview">🚀</div>
+                                <div class="template-info">
+                                    <div class="template-name">Landing Page</div>
+                                    <div class="template-desc">Hero + features + CTA</div>
+                                </div>
+                            </div>
+                            <div class="template-card" onclick="loadTemplate('portfolio')">
+                                <div class="template-preview">💼</div>
+                                <div class="template-info">
+                                    <div class="template-name">Portfolio</div>
+                                    <div class="template-desc">Showcase your work</div>
+                                </div>
+                            </div>
+                            <div class="template-card" onclick="loadTemplate('blog')">
+                                <div class="template-preview">📝</div>
+                                <div class="template-info">
+                                    <div class="template-name">Blog Layout</div>
+                                    <div class="template-desc">Article grid + sidebar</div>
+                                </div>
+                            </div>
+                            <div class="template-card" onclick="loadTemplate('ecommerce')">
+                                <div class="template-preview">🛒</div>
+                                <div class="template-info">
+                                    <div class="template-name">E-commerce</div>
+                                    <div class="template-desc">Product showcase</div>
+                                </div>
+                            </div>
+                            <div class="template-card" onclick="loadTemplate('dashboard')">
+                                <div class="template-preview">📊</div>
+                                <div class="template-info">
+                                    <div class="template-name">Dashboard</div>
+                                    <div class="template-desc">Admin panel layout</div>
+                                </div>
+                            </div>
+                            <div class="template-card" onclick="loadTemplate('saas')">
+                                <div class="template-preview">☁️</div>
+                                <div class="template-info">
+                                    <div class="template-name">SaaS Landing</div>
+                                    <div class="template-desc">Software showcase</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Panel -->
+                <div class="panel hidden" id="dashboard-panel" style="flex: 1;">
+                    <div class="panel-header">
+                        <span class="panel-title">Dashboard</span>
+                        <div class="panel-controls">
+                            <span class="panel-btn" onclick="closePanel('dashboard')">×</span>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="dashboard-content">
+                            <div class="dashboard-grid">
+                                <div class="dashboard-card">
+                                    <h4>Services</h4>
+                                    <div style="margin: 15px 0;">
+                                        <div style="margin: 10px 0;">
+                                            <span class="status-indicator online"></span>
+                                            <span>PKN Server</span>
+                                        </div>
+                                        <div style="margin: 10px 0;">
+                                            <span class="status-indicator online"></span>
+                                            <span>Code Academy</span>
+                                        </div>
+                                    </div>
+                                    <button onclick="checkHealth()">🏥 Check Health</button>
+                                </div>
+
+                                <div class="dashboard-card">
+                                    <h4>Build & Test</h4>
+                                    <button onclick="runBuild()">🔨 Build Project</button>
+                                    <button onclick="runTests()">🧪 Run Tests</button>
+                                    <button onclick="runCI()">🚦 Run CI</button>
+                                </div>
+
+                                <div class="dashboard-card">
+                                    <h4>Code Quality</h4>
+                                    <button onclick="runLint()">🔍 Lint Code</button>
+                                    <button onclick="runFormat()">✨ Format Code</button>
+                                    <button onclick="checkImports()">✓ Check Imports</button>
+                                </div>
+
+                                <div class="dashboard-card">
+                                    <h4>Deploy</h4>
+                                    <button onclick="deployApp()">🚀 Deploy</button>
+                                    <button onclick="openPreview()">👁️ Preview</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code View -->
+                <div class="code-view" id="code-panel">
+                    <div class="code-tabs">
+                        <div class="code-tab active" onclick="switchCodeTab('html')">HTML</div>
+                        <div class="code-tab" onclick="switchCodeTab('css')">CSS</div>
+                        <div class="code-tab" onclick="switchCodeTab('js')">JavaScript</div>
+                    </div>
+                    <div class="code-editor">
+                        <textarea id="code-editor-html"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let selectedElement = null;
+        let currentView = 'design';
+        let currentBreakpoint = 'desktop';
+        let htmlEditor, cssEditor, jsEditor;
+        let undoStack = [];
+        let redoStack = [];
+        let savedComponents = [];
+        let projectData = {
+            elements: [],
+            styles: {},
+            scripts: ''
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCodeEditors();
+            initDragAndDrop();
+            initCanvas();
+            loadSavedComponents();
+            logHistory('IDE initialized');
+        });
+
+        // Code Editors
+        function initCodeEditors() {
+            htmlEditor = CodeMirror.fromTextArea(document.getElementById('code-editor-html'), {
+                mode: 'htmlmixed',
+                theme: 'dracula',
+                lineNumbers: true,
+                autoCloseTags: true,
+                lineWrapping: true
+            });
+        }
+
+        // Drag and Drop System
+        function initDragAndDrop() {
+            const paletteItems = document.querySelectorAll('.palette-item');
+            const canvas = document.getElementById('canvas');
+
+            paletteItems.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    const type = item.dataset.element || item.dataset.block;
+                    e.dataTransfer.setData('element-type', type);
+                    e.dataTransfer.setData('is-block', item.dataset.block ? 'true' : 'false');
+                    item.classList.add('dragging');
+                });
+
+                item.addEventListener('dragend', (e) => {
+                    item.classList.remove('dragging');
+                });
+            });
+
+            canvas.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            canvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const elementType = e.dataTransfer.getData('element-type');
+                const isBlock = e.dataTransfer.getData('is-block') === 'true';
+
+                if (isBlock) {
+                    createBlock(elementType);
+                } else {
+                    createElement(elementType);
+                }
+            });
+        }
+
+        function initCanvas() {
+            const canvas = document.getElementById('canvas');
+            canvas.addEventListener('click', (e) => {
+                if (e.target.classList.contains('canvas-element')) {
+                    selectElement(e.target);
+                } else if (e.target === canvas || e.target.classList.contains('canvas-workspace')) {
+                    deselectElement();
+                }
+            });
+        }
+
+        // Element Creation
+        function createElement(type) {
+            const canvas = document.getElementById('canvas');
+            const dropZone = canvas.querySelector('.drop-zone');
+            if (dropZone) dropZone.remove();
+
+            const element = document.createElement('div');
+            element.className = 'canvas-element';
+            element.dataset.type = type;
+            element.dataset.id = 'elem-' + Date.now();
+
+            // Set content based on type
+            switch(type) {
+                case 'heading':
+                    element.innerHTML = '<h1 contenteditable="true">Heading Text</h1>';
+                    element.style.cssText = 'font-size: 32px; font-weight: bold; margin: 15px 0;';
+                    break;
+                case 'text':
+                    element.innerHTML = '<p contenteditable="true">Your text here. Click to edit.</p>';
+                    element.style.cssText = 'font-size: 16px; line-height: 1.6; margin: 10px 0;';
+                    break;
+                case 'button':
+                    element.innerHTML = '<button contenteditable="true" style="padding: 12px 24px; background: #007acc; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 600;">Click Me</button>';
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'navbar':
+                    element.innerHTML = `
+                        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: #333; color: white;">
+                            <div style="font-size: 24px; font-weight: bold;">Logo</div>
+                            <div style="display: flex; gap: 30px;">
+                                <a href="#" style="color: white; text-decoration: none;">Home</a>
+                                <a href="#" style="color: white; text-decoration: none;">About</a>
+                                <a href="#" style="color: white; text-decoration: none;">Services</a>
+                                <a href="#" style="color: white; text-decoration: none;">Contact</a>
+                            </div>
+                        </nav>
+                    `;
+                    element.style.cssText = 'margin: 0;';
+                    break;
+                case 'hero':
+                    element.innerHTML = `
+                        <section style="text-align: center; padding: 100px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <h1 contenteditable="true" style="font-size: 48px; margin-bottom: 20px;">Welcome to Our Website</h1>
+                            <p contenteditable="true" style="font-size: 20px; margin-bottom: 30px;">We build amazing digital experiences</p>
+                            <button style="padding: 15px 40px; background: white; color: #667eea; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; font-weight: 600;">Get Started</button>
+                        </section>
+                    `;
+                    element.style.cssText = 'margin: 0;';
+                    break;
+                case 'card':
+                    element.innerHTML = `
+                        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 30px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3 contenteditable="true" style="margin-bottom: 15px;">Card Title</h3>
+                            <p contenteditable="true" style="color: #666; line-height: 1.6;">This is a card component. You can add any content here.</p>
+                            <button style="margin-top: 20px; padding: 10px 20px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer;">Learn More</button>
+                        </div>
+                    `;
+                    element.style.cssText = 'margin: 20px 0;';
+                    break;
+                case 'footer':
+                    element.innerHTML = `
+                        <footer style="background: #222; color: white; padding: 40px 40px; text-align: center;">
+                            <p contenteditable="true">© 2024 Your Company. All rights reserved.</p>
+                            <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center;">
+                                <a href="#" style="color: white;">Privacy</a>
+                                <a href="#" style="color: white;">Terms</a>
+                                <a href="#" style="color: white;">Contact</a>
+                            </div>
+                        </footer>
+                    `;
+                    element.style.cssText = 'margin: 0;';
+                    break;
+                case 'modal':
+                    element.innerHTML = `
+                        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 500px; z-index: 1000;">
+                            <h2 contenteditable="true" style="margin-bottom: 20px;">Modal Title</h2>
+                            <p contenteditable="true" style="color: #666; margin-bottom: 30px;">This is a modal dialog. Click outside to close.</p>
+                            <button style="padding: 10px 20px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                        </div>
+                        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+                    `;
+                    element.style.cssText = 'position: relative;';
+                    break;
+                case 'carousel':
+                    element.innerHTML = `
+                        <div style="position: relative; overflow: hidden; border-radius: 8px;">
+                            <div style="display: flex; transition: transform 0.3s ease;">
+                                <img src="https://via.placeholder.com/800x400/667eea/ffffff?text=Slide+1" style="width: 100%; flex-shrink: 0;">
+                                <img src="https://via.placeholder.com/800x400/764ba2/ffffff?text=Slide+2" style="width: 100%; flex-shrink: 0;">
+                                <img src="https://via.placeholder.com/800x400/f093fb/ffffff?text=Slide+3" style="width: 100%; flex-shrink: 0;">
+                            </div>
+                            <button style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; cursor: pointer; border-radius: 4px;">‹</button>
+                            <button style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 15px 20px; cursor: pointer; border-radius: 4px;">›</button>
+                        </div>
+                    `;
+                    element.style.cssText = 'margin: 20px 0;';
+                    break;
+                case 'image':
+                    element.innerHTML = '<img src="https://via.placeholder.com/600x400" style="max-width: 100%; height: auto; border-radius: 8px;">';
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'container':
+                    element.innerHTML = '<div style="padding: 30px; border: 2px dashed #ccc; border-radius: 8px;" contenteditable="true">Container - Add your content here</div>';
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'section':
+                    element.innerHTML = '<section style="padding: 60px 40px; background: #f5f5f5; border-radius: 8px;"><h2 contenteditable="true">Section Title</h2><p contenteditable="true">Section content goes here.</p></section>';
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'flexbox':
+                    element.innerHTML = `
+                        <div style="display: flex; gap: 20px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px;">
+                            <div style="flex: 1; padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Flex Item 1</div>
+                            <div style="flex: 1; padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Flex Item 2</div>
+                            <div style="flex: 1; padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Flex Item 3</div>
+                        </div>
+                    `;
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'grid':
+                    element.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px;">
+                            <div style="padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Grid 1</div>
+                            <div style="padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Grid 2</div>
+                            <div style="padding: 20px; background: #f0f0f0; border-radius: 4px;" contenteditable="true">Grid 3</div>
+                        </div>
+                    `;
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'link':
+                    element.innerHTML = '<a href="#" contenteditable="true" style="color: #007acc; text-decoration: underline;">Link Text</a>';
+                    element.style.cssText = 'margin: 10px 0; display: inline-block;';
+                    break;
+                case 'form':
+                    element.innerHTML = `
+                        <form style="max-width: 500px; padding: 30px; background: #f9f9f9; border-radius: 8px;">
+                            <h3 contenteditable="true" style="margin-bottom: 20px;">Contact Form</h3>
+                            <input type="text" placeholder="Name" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="email" placeholder="Email" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                            <textarea placeholder="Message" rows="4" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                            <button type="submit" style="width: 100%; padding: 12px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Submit</button>
+                        </form>
+                    `;
+                    element.style.cssText = 'margin: 20px 0;';
+                    break;
+                case 'input':
+                    element.innerHTML = '<input type="text" placeholder="Enter text..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">';
+                    element.style.cssText = 'margin: 10px 0;';
+                    break;
+                case 'textarea':
+                    element.innerHTML = '<textarea placeholder="Enter text..." rows="4" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"></textarea>';
+                    element.style.cssText = 'margin: 10px 0;';
+                    break;
+                case 'select':
+                    element.innerHTML = '<select style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"><option>Option 1</option><option>Option 2</option><option>Option 3</option></select>';
+                    element.style.cssText = 'margin: 10px 0;';
+                    break;
+                case 'video':
+                    element.innerHTML = '<video controls style="max-width: 100%; border-radius: 8px;"><source src="" type="video/mp4">Your browser does not support video.</video>';
+                    element.style.cssText = 'margin: 15px 0;';
+                    break;
+                case 'icon':
+                    element.innerHTML = '<span style="font-size: 48px;">⭐</span>';
+                    element.style.cssText = 'margin: 10px; display: inline-block;';
+                    break;
+            }
+
+            // Add controls
+            element.innerHTML += `
+                <div class="element-controls">
+                    <button class="element-btn" onclick="event.stopPropagation(); moveElementUp(this.parentElement.parentElement)" title="Move Up">↑</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); moveElementDown(this.parentElement.parentElement)" title="Move Down">↓</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); duplicateElement(this.parentElement.parentElement)" title="Duplicate">⧉</button>
+                    <button class="element-btn" onclick="event.stopPropagation(); deleteElement(this.parentElement.parentElement)" title="Delete">×</button>
+                </div>
+            `;
+
+            canvas.appendChild(element);
+            selectElement(element);
+            logHistory('Added ' + type);
+            saveState();
+            updateCodeView();
+        }
+
+        // Create pre-built blocks
+        function createBlock(type) {
+            // Blocks are collections of elements
+            // For now, just create a hero section as example
+            createElement('hero');
+        }
+
+        // Element Selection
+        function selectElement(element) {
+            document.querySelectorAll('.canvas-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            element.classList.add('selected');
+            selectedElement = element;
+            showProperties(element);
+        }
+
+        function deselectElement() {
+            document.querySelectorAll('.canvas-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+            selectedElement = null;
+            document.getElementById('properties-content').innerHTML = '<p style="color: var(--text-dim); text-align: center; margin-top: 50px; font-size: 12px;">Select an element to edit its properties</p>';
+        }
+
+        // Properties Panel - Comprehensive version
+        function showProperties(element) {
+            const props = document.getElementById('properties-content');
+            const computedStyle = window.getComputedStyle(element);
+
+            props.innerHTML = `
+                <div class="property-group">
+                    <h3>Content</h3>
+                    <div class="property-row">
+                        <label>Element Type</label>
+                        <input type="text" value="${element.dataset.type}" readonly>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Typography</h3>
+                    <div class="property-row">
+                        <label>Font Size</label>
+                        <input type="range" min="8" max="120" value="${parseInt(computedStyle.fontSize)}" oninput="updateStyle('fontSize', this.value + 'px'); this.nextElementSibling.textContent = this.value + 'px'">
+                        <span class="property-value-display">${computedStyle.fontSize}</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Font Weight</label>
+                        <select onchange="updateStyle('fontWeight', this.value)">
+                            <option value="300">Light</option>
+                            <option value="400" ${computedStyle.fontWeight === '400' || computedStyle.fontWeight === 'normal' ? 'selected' : ''}>Normal</option>
+                            <option value="600">Semi-Bold</option>
+                            <option value="700" ${computedStyle.fontWeight === '700' || computedStyle.fontWeight === 'bold' ? 'selected' : ''}>Bold</option>
+                            <option value="900">Black</option>
+                        </select>
+                    </div>
+                    <div class="property-row">
+                        <label>Text Color</label>
+                        <input type="color" value="${rgbToHex(computedStyle.color)}" onchange="updateStyle('color', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Text Align</label>
+                        <select onchange="updateStyle('textAlign', this.value)">
+                            <option value="left" ${computedStyle.textAlign === 'left' ? 'selected' : ''}>Left</option>
+                            <option value="center" ${computedStyle.textAlign === 'center' ? 'selected' : ''}>Center</option>
+                            <option value="right" ${computedStyle.textAlign === 'right' ? 'selected' : ''}>Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="property-row">
+                        <label>Line Height</label>
+                        <input type="range" min="0.8" max="3" step="0.1" value="${parseFloat(computedStyle.lineHeight) / parseInt(computedStyle.fontSize) || 1.5}" oninput="updateStyle('lineHeight', this.value); this.nextElementSibling.textContent = this.value">
+                        <span class="property-value-display">${(parseFloat(computedStyle.lineHeight) / parseInt(computedStyle.fontSize) || 1.5).toFixed(1)}</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Colors & Background</h3>
+                    <div class="property-row">
+                        <label>Background Color</label>
+                        <input type="color" value="${rgbToHex(computedStyle.backgroundColor)}" onchange="updateStyle('backgroundColor', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Background Opacity</label>
+                        <input type="range" min="0" max="1" step="0.1" value="1" oninput="updateOpacity(this.value); this.nextElementSibling.textContent = Math.round(this.value * 100) + '%'">
+                        <span class="property-value-display">100%</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Spacing</h3>
+                    <div class="property-row">
+                        <label>Padding</label>
+                        <input type="range" min="0" max="100" value="${parseInt(computedStyle.padding)}" oninput="updateStyle('padding', this.value + 'px'); this.nextElementSibling.textContent = this.value + 'px'">
+                        <span class="property-value-display">${computedStyle.padding}</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Margin</label>
+                        <input type="range" min="0" max="100" value="${parseInt(computedStyle.margin)}" oninput="updateStyle('margin', this.value + 'px'); this.nextElementSibling.textContent = this.value + 'px'">
+                        <span class="property-value-display">${computedStyle.margin}</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Dimensions</h3>
+                    <div class="property-row">
+                        <label>Width</label>
+                        <input type="text" value="${computedStyle.width}" onchange="updateStyle('width', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Height</label>
+                        <input type="text" value="${computedStyle.height}" onchange="updateStyle('height', this.value)">
+                    </div>
+                    <div class="property-row">
+                        <label>Max Width</label>
+                        <input type="text" placeholder="none" onchange="updateStyle('maxWidth', this.value)">
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Border</h3>
+                    <div class="property-row">
+                        <label>Border Width</label>
+                        <input type="range" min="0" max="20" value="${parseInt(computedStyle.borderWidth) || 0}" oninput="updateStyle('borderWidth', this.value + 'px'); updateStyle('borderStyle', 'solid'); this.nextElementSibling.textContent = this.value + 'px'">
+                        <span class="property-value-display">${parseInt(computedStyle.borderWidth) || 0}px</span>
+                    </div>
+                    <div class="property-row">
+                        <label>Border Color</label>
+                        <input type="color" value="${rgbToHex(computedStyle.borderColor) || '#cccccc'}" onchange="updateStyle('borderColor', this.value); updateStyle('borderStyle', 'solid')">
+                    </div>
+                    <div class="property-row">
+                        <label>Border Radius</label>
+                        <input type="range" min="0" max="100" value="${parseInt(computedStyle.borderRadius)}" oninput="updateStyle('borderRadius', this.value + 'px'); this.nextElementSibling.textContent = this.value + 'px'">
+                        <span class="property-value-display">${computedStyle.borderRadius}</span>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Shadow & Effects</h3>
+                    <div class="property-row">
+                        <label>Box Shadow</label>
+                        <select onchange="updateStyle('boxShadow', this.value)">
+                            <option value="none">None</option>
+                            <option value="0 2px 4px rgba(0,0,0,0.1)">Small</option>
+                            <option value="0 4px 8px rgba(0,0,0,0.15)">Medium</option>
+                            <option value="0 8px 16px rgba(0,0,0,0.2)">Large</option>
+                            <option value="0 12px 24px rgba(0,0,0,0.25)">Extra Large</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Animation</h3>
+                    <div class="property-row">
+                        <label>Animation Preset</label>
+                        <div class="animation-preset">
+                            <button onclick="applyAnimation('fadeIn')">Fade In</button>
+                            <button onclick="applyAnimation('slideIn')">Slide In</button>
+                            <button onclick="applyAnimation('bounce')">Bounce</button>
+                            <button onclick="applyAnimation('none')">None</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="property-group">
+                    <h3>Actions</h3>
+                    <div class="property-row">
+                        <button onclick="duplicateElement(selectedElement)">⧉ Duplicate Element</button>
+                    </div>
+                    <div class="property-row">
+                        <button class="danger" onclick="deleteElement(selectedElement)">× Delete Element</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Style Updates
+        function updateStyle(property, value) {
+            if (selectedElement) {
+                selectedElement.style[property] = value;
+                updateCodeView();
+                saveState();
+            }
+        }
+
+        function updateOpacity(value) {
+            if (selectedElement) {
+                const bg = selectedElement.style.backgroundColor;
+                if (bg) {
+                    const rgb = bg.match(/\\d+/g);
+                    if (rgb) {
+                        selectedElement.style.backgroundColor = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${value})`;
+                    }
+                }
+                updateCodeView();
+                saveState();
+            }
+        }
+
+        function applyAnimation(animation) {
+            if (selectedElement) {
+                if (animation === 'none') {
+                    selectedElement.style.animation = '';
+                } else {
+                    selectedElement.style.animation = `${animation} 0.6s ease`;
+                }
+                updateCodeView();
+            }
+        }
+
+        // Element Controls
+        function moveElementUp(element) {
+            const prev = element.previousElementSibling;
+            if (prev && !prev.classList.contains('drop-zone')) {
+                element.parentNode.insertBefore(element, prev);
+                updateCodeView();
+                saveState();
+            }
+        }
+
+        function moveElementDown(element) {
+            const next = element.nextElementSibling;
+            if (next) {
+                element.parentNode.insertBefore(next, element);
+                updateCodeView();
+                saveState();
+            }
+        }
+
+        function duplicateElement(element) {
+            const clone = element.cloneNode(true);
+            element.parentNode.insertBefore(clone, element.nextSibling);
+            selectElement(clone);
+            updateCodeView();
+            saveState();
+        }
+
+        function deleteElement(element) {
+            if (confirm('Delete this element?')) {
+                element.remove();
+                deselectElement();
+                updateCodeView();
+                saveState();
+            }
+        }
+
+        // Code Generation
+        function updateCodeView() {
+            const canvas = document.getElementById('canvas');
+            const elements = canvas.querySelectorAll('.canvas-element');
+
+            let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+`;
+
+            elements.forEach(element => {
+                const clone = element.cloneNode(true);
+                const controls = clone.querySelector('.element-controls');
+                if (controls) controls.remove();
+
+                // Clean up
+                clone.classList.remove('canvas-element', 'selected');
+                clone.style.border = '';
+                clone.style.outline = '';
+
+                html += '  ' + clone.outerHTML + '\n';
+            });
+
+            html += '</body>\n</html>';
+
+            if (htmlEditor) {
+                htmlEditor.setValue(html);
+            }
+        }
+
+        // Utility
+        function rgbToHex(rgb) {
+            if (!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '#ffffff';
+            const result = rgb.match(/\\d+/g);
+            if (!result || result.length < 3) return '#ffffff';
+            const r = parseInt(result[0]);
+            const g = parseInt(result[1]);
+            const b = parseInt(result[2]);
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        // View Management
+        function toggleView(view) {
+            currentView = view;
+            const builderPanel = document.getElementById('builder-panel');
+            const codePanel = document.getElementById('code-panel');
+
+            // Update button states
+            document.querySelectorAll('.title-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (view === 'design') {
+                document.getElementById('btn-design').classList.add('active');
+                builderPanel.style.display = 'flex';
+                codePanel.classList.remove('active');
+            } else if (view === 'code') {
+                document.getElementById('btn-code').classList.add('active');
+                builderPanel.style.display = 'none';
+                codePanel.classList.add('active');
+                updateCodeView();
+            } else if (view === 'split') {
+                document.getElementById('btn-split').classList.add('active');
+                builderPanel.style.display = 'flex';
+                builderPanel.style.flex = '1';
+                codePanel.classList.add('active');
+                codePanel.style.flex = '1';
+                updateCodeView();
+            }
+        }
+
+        // Breakpoint Management
+        function setBreakpoint(breakpoint) {
+            currentBreakpoint = breakpoint;
+            const canvas = document.getElementById('canvas');
+            canvas.className = `canvas-workspace ${breakpoint}`;
+
+            // Update button states
+            document.querySelectorAll('.canvas-toolbar-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('bp-' + breakpoint).classList.add('active');
+        }
+
+        // Panel Management
+        function showPanel(panelName) {
+            // Hide all panels
+            document.querySelectorAll('.panel').forEach(p => {
+                if (p.id !== 'builder-panel' && p.id !== 'code-panel') {
+                    p.classList.add('hidden');
+                }
+            });
+
+            // Remove all active states
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+
+            // Show selected panel
+            const panel = document.getElementById(panelName + '-panel');
+            if (panel) {
+                if (panelName === 'builder') {
+                    document.getElementById('builder-panel').style.display = 'flex';
+                    document.getElementById('code-panel').classList.remove('active');
+                } else {
+                    document.getElementById('builder-panel').style.display = 'none';
+                    document.getElementById('code-panel').classList.remove('active');
+                    panel.classList.remove('hidden');
+                }
+                document.getElementById('icon-' + panelName).classList.add('active');
+            }
+        }
+
+        function closePanel(panelName) {
+            const panel = document.getElementById(panelName + '-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+                showPanel('builder');
+            }
+        }
+
+        // Palette Management
+        function switchPaletteTab(tab) {
+            document.querySelectorAll('.palette-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.palette-content').forEach(c => c.classList.add('hidden'));
+
+            event.target.classList.add('active');
+            document.getElementById('palette-' + tab).classList.remove('hidden');
+        }
+
+        function searchElements() {
+            const query = document.getElementById('element-search').value.toLowerCase();
+            const items = document.querySelectorAll('.palette-item');
+
+            items.forEach(item => {
+                const name = item.querySelector('.palette-item-name').textContent.toLowerCase();
+                const desc = item.querySelector('.palette-item-desc')?.textContent.toLowerCase() || '';
+
+                if (name.includes(query) || desc.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // History Management
+        function saveState() {
+            const canvas = document.getElementById('canvas');
+            undoStack.push(canvas.innerHTML);
+            redoStack = [];
+        }
+
+        function undoAction() {
+            if (undoStack.length > 0) {
+                const canvas = document.getElementById('canvas');
+                redoStack.push(canvas.innerHTML);
+                canvas.innerHTML = undoStack.pop();
+                updateCodeView();
+            }
+        }
+
+        function redoAction() {
+            if (redoStack.length > 0) {
+                const canvas = document.getElementById('canvas');
+                undoStack.push(canvas.innerHTML);
+                canvas.innerHTML = redoStack.pop();
+                updateCodeView();
+            }
+        }
+
+        function clearCanvas() {
+            if (confirm('Clear all elements from canvas?')) {
+                const canvas = document.getElementById('canvas');
+                canvas.innerHTML = '<div class="drop-zone">🎨 Drag elements here to start building your page</div>';
+                deselectElement();
+                saveState();
+                updateCodeView();
+            }
+        }
+
+        // Component Library
+        function saveCurrentAsComponent() {
+            if (!selectedElement) {
+                alert('Please select an element first');
+                return;
+            }
+
+            const name = prompt('Component name:');
+            if (!name) return;
+
+            const component = {
+                name: name,
+                html: selectedElement.outerHTML,
+                type: selectedElement.dataset.type
+            };
+
+            savedComponents.push(component);
+            localStorage.setItem('divine-components', JSON.stringify(savedComponents));
+            loadSavedComponents();
+        }
+
+        function loadSavedComponents() {
+            const saved = localStorage.getItem('divine-components');
+            if (saved) {
+                savedComponents = JSON.parse(saved);
+                displayComponents();
+            }
+        }
+
+        function displayComponents() {
+            const container = document.getElementById('saved-components');
+            if (savedComponents.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-dim); text-align: center; padding: 20px;">No saved components yet</p>';
+                return;
+            }
+
+            container.innerHTML = savedComponents.map((comp, idx) => `
+                <div class="component-item" onclick="loadComponent(${idx})">
+                    <div class="component-name">${comp.name}</div>
+                    <div class="component-preview">${comp.type}</div>
+                </div>
+            `).join('');
+        }
+
+        function loadComponent(idx) {
+            const comp = savedComponents[idx];
+            const canvas = document.getElementById('canvas');
+            const dropZone = canvas.querySelector('.drop-zone');
+            if (dropZone) dropZone.remove();
+
+            const div = document.createElement('div');
+            div.innerHTML = comp.html;
+            canvas.appendChild(div.firstChild);
+            updateCodeView();
+            saveState();
+        }
+
+        // Template Loading
+        function loadTemplate(templateName) {
+            if (!confirm('Load template? This will clear your current work.')) return;
+
+            const canvas = document.getElementById('canvas');
+            canvas.innerHTML = '';
+
+            // Load template based on name
+            switch(templateName) {
+                case 'landing':
+                    createElement('navbar');
+                    createElement('hero');
+                    createElement('card');
+                    createElement('footer');
+                    break;
+                case 'portfolio':
+                    createElement('navbar');
+                    createElement('hero');
+                    createElement('grid');
+                    createElement('footer');
+                    break;
+                // Add more templates...
+            }
+
+            showPanel('builder');
+            alert('Template loaded!');
+        }
+
+        // Project Management
+        function newProject() {
+            if (confirm('Start new project? This will clear your current work.')) {
+                clearCanvas();
+                alert('New project created!');
+            }
+        }
+
+        function saveProject() {
+            updateCodeView();
+            const projectData = {
+                html: htmlEditor.getValue(),
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('divine-project', JSON.stringify(projectData));
+            alert('✅ Project saved successfully!');
+        }
+
+        function exportProject() {
+            updateCodeView();
+            const html = htmlEditor.getValue();
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my-page-' + Date.now() + '.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            alert('✅ Project exported!');
+        }
+
+        function previewProject() {
+            updateCodeView();
+            const html = htmlEditor.getValue();
+            const preview = window.open('', '_blank');
+            preview.document.write(html);
+            preview.document.close();
+        }
+
+        // Dashboard Functions
+        function checkHealth() {
+            fetch('/api/health')
+                .then(r => r.json())
+                .then(data => alert('Health check complete!'))
+                .catch(e => alert('Health check failed'));
+        }
+
+        function runBuild() {
+            alert('🔨 Building project...');
+        }
+
+        function runTests() {
+            alert('🧪 Running tests...');
+        }
+
+        function runCI() {
+            alert('🚦 Running CI pipeline...');
+        }
+
+        function runLint() {
+            alert('🔍 Linting code...');
+        }
+
+        function runFormat() {
+            alert('✨ Formatting code...');
+        }
+
+        function checkImports() {
+            alert('✓ Checking imports...');
+        }
+
+        function deployApp() {
+            alert('🚀 Deploying application...');
+        }
+
+        function openPreview() {
+            previewProject();
+        }
+
+        function showSettings() {
+            alert('⚙️ Settings panel - Coming soon!');
+        }
+
+        function switchCodeTab(lang) {
+            console.log('Switched to', lang, 'tab');
+        }
+
+        function logHistory(message) {
+            console.log('[IDE]', message);
+        }
+    </script>
+</body>
+</html>

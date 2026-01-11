@@ -56,20 +56,22 @@ dev:
     @echo "🚀 Starting all dev servers..."
     @echo "PKN: http://localhost:8010"
     @echo "Code Academy: http://localhost:8011"
+    @echo "PKN Mobile: http://localhost:8012"
     @echo ""
     @just dev-app pkn &
     @just dev-app code-academy &
+    @just dev-app pkn-mobile &
     @wait
 
 # Start specific app dev server
 dev-app APP:
     @echo "🚀 Starting {{APP}} dev server..."
     @if [ "{{APP}}" = "pkn" ]; then \
-        cd apps/pkn && python3 server.py --debug; \
+        cd apps/pkn && python3 -m backend.server --debug --port 8010; \
     elif [ "{{APP}}" = "code-academy" ]; then \
-        cd apps/code-academy && python3 -m http.server 8011; \
+        cd apps/code-academy && npm run dev; \
     elif [ "{{APP}}" = "pkn-mobile" ]; then \
-        cd apps/pkn-mobile && python3 backend/server.py --debug; \
+        cd apps/pkn-mobile && python3 backend/server.py --debug --port 8012; \
     else \
         echo "❌ Unknown app: {{APP}}"; \
         exit 1; \
@@ -104,6 +106,28 @@ check-tools:
 check-file-sizes:
     @echo "📏 Checking file sizes..."
     @python3 scripts/check_file_size.py apps/**/*.{py,js,ts,css} 2>/dev/null || true
+
+# Check JavaScript imports and module loading
+check-imports:
+    @echo "🔍 Checking JavaScript imports and modules..."
+    @python3 scripts/check-imports.py
+
+# Auto-fix broken JavaScript imports
+fix-imports:
+    @echo "🔧 Auto-fixing broken imports..."
+    @python3 scripts/fix-imports.py
+    @echo "\n💡 Run 'just check-imports' to verify fixes"
+
+# Start web dashboard for planning/building/debugging
+dashboard:
+    @echo "🎯 Starting Divine Workspace Dashboard..."
+    @echo "📊 Dashboard: http://localhost:9000"
+    @echo "Press Ctrl+C to stop"
+    @cd dashboard && python3 server.py
+
+# Open IDE in browser (starts dashboard if needed)
+ide:
+    @./scripts/launch-ide.sh
 
 # ==========================================
 # TESTING
@@ -152,6 +176,7 @@ format:
 # Run full CI checks (lint + format + test)
 ci:
     @echo "🚦 Running full CI pipeline..."
+    @just check-imports
     @just lint
     @just format
     @just test
