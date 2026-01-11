@@ -1,0 +1,17 @@
+{
+  "name": "@divine/scripts",
+  "version": "1.0.0",
+  "description": "Production Python scripts and utilities for Divine Node ecosystem",
+  "type": "module",
+  "scripts": {
+    "deploy": "python3 scripts/deploy.py",
+    "health": "python3 scripts/health_check.py",
+    "backup": "python3 scripts/backup.py",
+    "migrate": "python3 scripts/migrate_db.py",
+    "monitor": "python3 scripts/monitor.py",
+    "analyze": "python3 scripts/analyze_logs.py"
+  },
+  "keywords": ["production", "devops", "monitoring", "deployment"],
+  "author": "Divine Node",
+  "license": "MIT"
+}

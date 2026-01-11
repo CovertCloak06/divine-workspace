@@ -1,0 +1,6 @@
+{
+  "extends": ["@divine/shared-config/biome.json"],
+  "files": {
+    "includes": ["**/*.py"]
+  }
+}

@@ -110,6 +110,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/pkn-plugins
 
+  packages/divine-scripts: {}
+
   packages/pkn-plugins: {}
 
   packages/shared-config: {}
