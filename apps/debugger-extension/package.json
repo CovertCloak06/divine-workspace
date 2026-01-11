@@ -1,0 +1,17 @@
+{
+  "name": "@divine/debugger-extension",
+  "version": "1.0.0",
+  "description": "Divine Debugger - Visual UI Inspector & Style Editor for Chrome DevTools",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "echo 'Load chrome://extensions in Chrome and enable Developer mode, then click Load unpacked and select this directory'",
+    "build": "echo 'Chrome extension - no build step required'",
+    "analyze": "python3 run_all_checks.py /home/gh0st/dvn/divine-workspace/apps/pkn",
+    "test": "python3 verify_before_fix.py",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "keywords": ["chrome-extension", "devtools", "debugger", "inspector", "css-editor"],
+  "author": "Divine Node",
+  "license": "MIT"
+}

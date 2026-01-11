@@ -1,0 +1,13 @@
+{
+  "extends": ["@divine/shared-config/biome.json"],
+  "files": {
+    "includes": ["**/*.js", "**/*.html", "**/*.css", "**/*.py"]
+  },
+  "linter": {
+    "rules": {
+      "correctness": {
+        "noUndeclaredVariables": "off"
+      }
+    }
+  }
+}
