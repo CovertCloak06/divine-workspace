@@ -1,0 +1,15 @@
+{
+  "name": "@divine/shared-config",
+  "version": "1.0.0",
+  "description": "Shared configuration for all Divine Node projects",
+  "main": "index.js",
+  "files": [
+    "biome.json",
+    ".pre-commit-config.yaml",
+    "tsconfig.json"
+  ],
+  "keywords": ["config"],
+  "author": "Divine Node",
+  "license": "MIT",
+  "packageManager": "pnpm@10.28.0"
+}

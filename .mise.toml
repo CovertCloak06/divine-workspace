@@ -1,0 +1,19 @@
+[tools]
+node = "20"
+python = "3.10"
+# Add more tools as needed
+
+[env]
+_.file = ".env"
+
+[tasks.dev]
+description = "Start all development servers"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Build all apps"
+run = "pnpm build"
+
+[tasks.test]
+description = "Run all tests"
+run = "pnpm test"
