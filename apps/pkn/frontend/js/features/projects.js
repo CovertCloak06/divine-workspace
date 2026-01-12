@@ -6,17 +6,15 @@
 import { showToast, escapeHtml } from '../utils/utils.js';
 import { loadProjectsFromStorage, saveProjectsToStorage } from '../utils/storage.js';
 
-// Global state
-let currentProjectId = null;
-let currentChatId = null;
+// Note: window.currentChatId and window.currentProjectId are managed by chat.js via window.*
+// Do NOT declare local versions here - use window.window.currentChatId and window.window.currentProjectId
 
 /**
  * Set current project ID
  * @param {string} projectId - The project ID to set
  */
 export function setCurrentProjectId(projectId) {
-    currentProjectId = projectId;
-    window.currentProjectId = projectId;
+    window.window.currentProjectId = projectId;  // Single source of truth via window.*
 }
 
 /**
@@ -24,7 +22,7 @@ export function setCurrentProjectId(projectId) {
  * @returns {string} Current project ID
  */
 export function getCurrentProjectId() {
-    return currentProjectId;
+    return window.window.currentProjectId;
 }
 
 /**
@@ -39,7 +37,7 @@ export function renderProjects() {
 
     projects.forEach(project => {
         const item = document.createElement('div');
-        item.className = 'project-item' + (project.id === currentProjectId ? ' active' : '');
+        item.className = 'project-item' + (project.id === window.currentProjectId ? ' active' : '');
         item.dataset.projectId = project.id;
 
         const nameDiv = document.createElement('div');
@@ -74,21 +72,21 @@ export function switchProject(projectId) {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
 
-    currentProjectId = projectId;
     window.currentProjectId = projectId;
+    window.window.currentProjectId = projectId;
 
     if (project.chats && project.chats.length > 0) {
-        currentChatId = project.chats[0].id;
-        window.currentChatId = currentChatId;
+        window.currentChatId = project.chats[0].id;
+        window.window.currentChatId = window.currentChatId;
     } else {
-        currentChatId = null;
         window.currentChatId = null;
+        window.window.currentChatId = null;
     }
 
     const messagesContainer = document.getElementById('messagesContainer');
     if (messagesContainer) messagesContainer.innerHTML = '';
 
-    if (currentChatId) {
+    if (window.currentChatId) {
         window.reloadCurrentChat && window.reloadCurrentChat();
     } else if (project.systemPrompt) {
         window.addMessage && window.addMessage('System Prompt: ' + project.systemPrompt, 'system', false);
@@ -148,11 +146,11 @@ export function openProjectMenu(projectId, anchorButton) {
             let projects = loadProjectsFromStorage();
             projects = projects.filter(p => p.id !== projectId);
             saveProjectsToStorage(projects);
-            if (currentProjectId === projectId) {
-                currentProjectId = null;
+            if (window.currentProjectId === projectId) {
                 window.currentProjectId = null;
-                currentChatId = null;
+                window.window.currentProjectId = null;
                 window.currentChatId = null;
+                window.window.currentChatId = null;
                 const messagesContainer = document.getElementById('messagesContainer');
                 if (messagesContainer) messagesContainer.innerHTML = '';
             }
@@ -272,10 +270,10 @@ export async function saveNewProject() {
     });
 
     saveProjectsToStorage(projects);
-    currentProjectId = projectId;
     window.currentProjectId = projectId;
-    currentChatId = chatId;
+    window.window.currentProjectId = projectId;
     window.currentChatId = chatId;
+    window.window.currentChatId = chatId;
 
     renderProjects();
     closeProjectModal();
@@ -414,4 +412,4 @@ export function loadProjectFromData(projectData) {
 }
 
 // Export for backward compatibility
-export { currentProjectId, currentChatId };
+// Note: currentProjectId and currentChatId accessed via window.* - no local exports needed

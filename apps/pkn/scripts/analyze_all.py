@@ -60,7 +60,7 @@ def main():
     # Get paths
     script_dir = Path(__file__).parent
     pkn_root = script_dir.parent
-    debugger_ext = pkn_root.parent / "debugger-extension"
+    debugger_ext = pkn_root / "debugger-extension"  # Now inside pkn app
 
     print(f"PKN Root: {pkn_root}")
     print(f"Debugger Extension: {debugger_ext}")

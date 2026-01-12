@@ -173,12 +173,18 @@ format:
     @pnpm biome format --write apps/ packages/ 2>/dev/null || true
     @find apps -name "*.py" -exec ruff format {} + 2>/dev/null || true
 
-# Run full CI checks (lint + format + test)
+# Run PKN code quality analyzers (duplicates, scope, selectors)
+code-quality:
+    @echo "🔬 Running code quality analyzers..."
+    @python3 apps/pkn/debugger-extension/run_all_checks.py apps/pkn
+
+# Run full CI checks (lint + format + test + code-quality)
 ci:
     @echo "🚦 Running full CI pipeline..."
     @just check-imports
     @just lint
     @just format
+    @just code-quality
     @just test
     @just check-file-sizes
     @echo "✅ CI checks complete"

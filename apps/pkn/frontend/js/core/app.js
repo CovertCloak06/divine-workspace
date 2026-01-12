@@ -875,8 +875,8 @@ function getAllModels() {
 
 let isWaiting = false;
 let abortController = null;
-let currentChatId = null;
-let currentProjectId = null;
+// Note: window.currentChatId and window.currentProjectId are managed by chat.js and exposed via window.*
+// Do NOT declare local versions - use window.window.currentChatId and window.window.currentProjectId
 let thinkingInterval = null;
 let editingMessageId = null;
 const STORAGE_KEY = 'parakleon_chats_v1';
@@ -1330,10 +1330,10 @@ function toggleSettings() {
         const fullHistoryToggle = document.getElementById('fullHistoryToggle');
         if (fullHistoryToggle) {
             let chat = null;
-            if (currentProjectId) {
+            if (window.currentProjectId) {
                 const projects = loadProjectsFromStorage();
-                const project = projects.find(p => p.id === currentProjectId);
-                chat = project && project.chats ? project.chats.find(c => c.id === currentChatId) : null;
+                const project = projects.find(p => p.id === window.currentProjectId);
+                chat = project && project.chats ? project.chats.find(c => c.id === window.currentChatId) : null;
             } else {
                 const chats = loadChatsFromStorage();
                 chat = getCurrentChat(chats);
@@ -1952,10 +1952,10 @@ function exportChatAs(format) {
 }
 
 function toggleFullHistory() {
-    if (currentProjectId) {
+    if (window.currentProjectId) {
         const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === currentProjectId);
-        const chat = project && project.chats ? project.chats.find(c => c.id === currentChatId) : null;
+        const project = projects.find(p => p.id === window.currentProjectId);
+        const chat = project && project.chats ? project.chats.find(c => c.id === window.currentChatId) : null;
         if (chat) {
             chat.useFullHistory = !!fullHistoryToggle.checked;
             chat.updatedAt = Date.now();
@@ -1977,8 +1977,8 @@ function toggleFullHistory() {
 function confirmDeleteAllChats() {
     if (confirm('Are you sure you want to delete all chats? This cannot be undone.')) {
         localStorage.removeItem('parakleon_chats_v1');
-        localStorage.removeItem('currentChatId');
-        currentChatId = null;
+        localStorage.removeItem('window.currentChatId');
+        window.currentChatId = null;
         messagesContainer.innerHTML = '';
         toggleSettings();
         renderHistory(); // Re-render to show the "+ New chat" button
@@ -1993,9 +1993,9 @@ function confirmDeleteAllChats() {
 function confirmDeleteAllProjects() {
     if (confirm('Are you sure you want to delete all projects? This will delete all project chats and cannot be undone.')) {
         localStorage.removeItem('parakleon_projects_v1');
-        if (currentProjectId) {
-            currentProjectId = null;
-            currentChatId = null;
+        if (window.currentProjectId) {
+            window.currentProjectId = null;
+            window.currentChatId = null;
             messagesContainer.innerHTML = '';
         }
         toggleSettings();
@@ -2209,7 +2209,7 @@ function renderHistory() {
 
     chats.forEach(chat => {
         const item = document.createElement('div');
-        item.className = 'history-item' + (chat.id === currentChatId ? ' active' : '');
+        item.className = 'history-item' + (chat.id === window.currentChatId ? ' active' : '');
         item.dataset.chatId = chat.id;
 
         const title = document.createElement('span');
@@ -2274,16 +2274,12 @@ function renderHistory() {
     }
 }
 
-    let openMenuElement = null;
-
-// Close any open context menu (chat history or project menu) | Called by global click handler and menu item clicks | ref:app.js:2323-2333, openHistoryMenu(), openProjectMenu()
+// Close any open context menu (chat history or project menu) | Called by global click handler and menu item clicks | ref:main.js:75, projects.js:172
 function closeHistoryMenu() {
-    const menuToClose = openMenuElement || window.openMenuElement;  // Get menu from either local or global reference | ref:js/projects.js:172
-    if (menuToClose && menuToClose.parentNode) {  // Check menu exists and is in DOM
-        menuToClose.parentNode.removeChild(menuToClose);  // Remove menu element from DOM
+    if (window.openMenuElement && window.openMenuElement.parentNode) {  // Check menu exists and is in DOM
+        window.openMenuElement.parentNode.removeChild(window.openMenuElement);  // Remove menu element from DOM
     }
-    openMenuElement = null;  // Clear local reference | ref:app.js:2301
-    window.openMenuElement = null;  // Clear global reference used by projects.js | ref:js/projects.js:172
+    window.openMenuElement = null;  // Clear global reference | Initialized in main.js:75, used by projects.js:172
 }
 
 function openHistoryMenu(chatId, anchorButton, isStarred, isArchived) {
@@ -2346,12 +2342,12 @@ function openHistoryMenu(chatId, anchorButton, isStarred, isArchived) {
     menu.style.left = left + 'px';
 
     document.body.appendChild(menu);  // Add menu to DOM
-    openMenuElement = menu;  // Store reference for click-outside detection | Used by global click handler below | ref:app.js:2337-2350
+    window.openMenuElement = menu;  // Store reference for click-outside detection | Used by global click handler | ref:main.js:75
 }
 
 // Global click handler for closing menus when clicking outside | Handles all context menus (chat history, projects) | ref:openHistoryMenu(), openProjectMenu(), closeHistoryMenu()
 document.addEventListener('click', (e) => {
-    const activeMenu = openMenuElement || window.openMenuElement;  // Check both local and global menu references | projects.js uses window.openMenuElement | ref:js/projects.js:172
+    const activeMenu = window.openMenuElement;  // Global menu reference | Initialized in main.js:75, set by openHistoryMenu/projects.js
     if (activeMenu) {  // Check if any menu is currently open
         const clickedInsideMenu = activeMenu.contains(e.target);  // Check if click was inside the menu element
         const clickedMenuButton = e.target.classList.contains('history-menu-btn') ||  // Check if click was on 3-dot menu button | ref:pkn.html:.history-menu-btn
@@ -2416,37 +2412,37 @@ function toggleArchiveChat(id) {
 }
 
 function getCurrentChat(chats) {
-    return chats.find(c => c.id === currentChatId);
+    return chats.find(c => c.id === window.currentChatId);
 }
 
 function ensureCurrentChat() {
-    if (currentProjectId) {
+    if (window.currentProjectId) {
         // Project mode: use project chats
         const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === currentProjectId);
+        const project = projects.find(p => p.id === window.currentProjectId);
         
         if (project) {
             if (!project.chats) project.chats = [];
             
             // If we have a current chat ID and it exists in project, we're good
-            if (currentChatId && project.chats.find(c => c.id === currentChatId)) {
+            if (window.currentChatId && project.chats.find(c => c.id === window.currentChatId)) {
                 return;
             }
             
             // Don't auto-create chat - let user explicitly create one
-            currentChatId = null;
+            window.currentChatId = null;
         }
     } else {
         // Global mode: use global chats
         let chats = loadChatsFromStorage();
         
         // If we have a current chat ID and it exists, we're good
-        if (currentChatId && getCurrentChat(chats)) {
+        if (window.currentChatId && getCurrentChat(chats)) {
             return;
         }
         
         // Don't auto-create chat - let user explicitly create one
-        currentChatId = null;
+        window.currentChatId = null;
     }
 }
 
@@ -2454,12 +2450,12 @@ function appendMessageToCurrentChat(sender, text, attachments = [], messageId = 
     ensureCurrentChat();
     
     let chat = null;
-    if (currentProjectId) {
+    if (window.currentProjectId) {
         // Get chat from project
         const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === currentProjectId);
+        const project = projects.find(p => p.id === window.currentProjectId);
         if (project && project.chats) {
-            chat = project.chats.find(c => c.id === currentChatId);
+            chat = project.chats.find(c => c.id === window.currentChatId);
         }
         
         if (chat) {
@@ -2533,8 +2529,8 @@ function loadChat(id) {
     let chats = loadChatsFromStorage();
     let chat = chats.find(c => c.id === id);
     if (chat) {
-        currentProjectId = null;
-        currentChatId = id;
+        window.currentProjectId = null;
+        window.currentChatId = id;
         messagesContainer.innerHTML = '';
         chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments, m.id, m.model, m.timestamp));
         fullHistoryToggle.checked = chat.useFullHistory !== false;
@@ -2550,8 +2546,8 @@ function loadChat(id) {
     for (const project of projects) {
         const projChat = (project.chats || []).find(c => c.id === id);
         if (projChat) {
-            currentProjectId = project.id;
-            currentChatId = id;
+            window.currentProjectId = project.id;
+            window.currentChatId = id;
             messagesContainer.innerHTML = '';
             projChat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments || [], m.id, m.model, m.timestamp));
             fullHistoryToggle.checked = projChat.useFullHistory !== false;
@@ -2567,16 +2563,16 @@ function loadChat(id) {
 }
 
 function reloadCurrentChat() {
-    if (!currentChatId) return;
+    if (!window.currentChatId) return;
 
     messagesContainer.innerHTML = '';
 
-    if (currentProjectId) {
+    if (window.currentProjectId) {
         // Reload project chat
         const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === currentProjectId);
+        const project = projects.find(p => p.id === window.currentProjectId);
         if (project && project.chats) {
-            const chat = project.chats.find(c => c.id === currentChatId);
+            const chat = project.chats.find(c => c.id === window.currentChatId);
             if (chat && chat.messages) {
                 chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments || [], m.id, m.model, m.timestamp));
             }
@@ -2584,7 +2580,7 @@ function reloadCurrentChat() {
     } else {
         // Reload global chat
         const chats = loadChatsFromStorage();
-        const chat = chats.find(c => c.id === currentChatId);
+        const chat = chats.find(c => c.id === window.currentChatId);
         if (chat && chat.messages) {
             chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments, m.id, m.model, m.timestamp));
         }
@@ -2600,8 +2596,8 @@ function deleteChat(id) {
     if (chats.find(c => c.id === id)) {
         chats = chats.filter(c => c.id !== id);
         saveChatsToStorage(chats);
-        if (currentChatId === id) {
-            currentChatId = null;
+        if (window.currentChatId === id) {
+            window.currentChatId = null;
             messagesContainer.innerHTML = '';
         }
         renderHistory();
@@ -2614,8 +2610,8 @@ function deleteChat(id) {
         if (project.chats && project.chats.find(c => c.id === id)) {
             project.chats = project.chats.filter(c => c.id !== id);
             saveProjectsToStorage(projects);
-            if (currentChatId === id) {
-                currentChatId = null;
+            if (window.currentChatId === id) {
+                window.currentChatId = null;
                 messagesContainer.innerHTML = '';
             }
             renderProjects();
@@ -2678,9 +2674,9 @@ function newChat() {
     const id = 'chat_' + Date.now();
 
     // If in project mode, create a project-local chat
-    if (currentProjectId) {
+    if (window.currentProjectId) {
         const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === currentProjectId);
+        const project = projects.find(p => p.id === window.currentProjectId);
         if (project) {
             project.chats = project.chats || [];
             project.chats.unshift({
@@ -2693,7 +2689,7 @@ function newChat() {
                 updatedAt: Date.now()
             });
             saveProjectsToStorage(projects);
-            currentChatId = id;
+            window.currentChatId = id;
             messagesContainer.innerHTML = '';
             renderProjects();
             renderHistory();
@@ -2715,8 +2711,8 @@ function newChat() {
         updatedAt: Date.now()
     });
     saveChatsToStorage(chats);
-    currentChatId = id;
-    currentProjectId = null;
+    window.currentChatId = id;
+    window.currentProjectId = null;
     messagesContainer.innerHTML = '';
     renderProjects();
     renderHistory();
@@ -2976,9 +2972,9 @@ function saveShowTimestamps(checked) {
     settings.showTimestamps = checked;
     saveSettings(settings);
     // Re-render messages to apply timestamp visibility
-    if (currentChatId) {
+    if (window.currentChatId) {
         const chats = loadChatsFromStorage();
-        const chat = chats.find(c => c.id === currentChatId);
+        const chat = chats.find(c => c.id === window.currentChatId);
         if (chat) {
             messagesContainer.innerHTML = '';
             chat.messages.forEach(m => {
@@ -3293,8 +3289,8 @@ function moveChatToProject(chatId, projectId) {
     saveProjectsToStorage(projects);
     
     // Update UI
-    if (currentChatId === chatId) {
-        currentChatId = null;
+    if (window.currentChatId === chatId) {
+        window.currentChatId = null;
         messagesContainer.innerHTML = '';
     }
     renderHistory();
@@ -3408,8 +3404,8 @@ async function saveNewProject() {
     });
     
     saveProjectsToStorage(projects);
-    currentProjectId = projectId;
-    currentChatId = chatId;
+    window.currentProjectId = projectId;
+    window.currentChatId = chatId;
     renderProjects();
     closeProjectModal();
     
@@ -3434,7 +3430,7 @@ function renderProjects() {
     
     projects.forEach(project => {
         const item = document.createElement('div');
-        item.className = 'project-item' + (project.id === currentProjectId ? ' active' : '');
+        item.className = 'project-item' + (project.id === window.currentProjectId ? ' active' : '');
         item.dataset.projectId = project.id;
         
         const nameDiv = document.createElement('div');
@@ -3465,14 +3461,14 @@ function switchProject(projectId) {
     const projects = loadProjectsFromStorage();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
-    currentProjectId = projectId;
+    window.currentProjectId = projectId;
     if (project.chats && project.chats.length > 0) {
-        currentChatId = project.chats[0].id;
+        window.currentChatId = project.chats[0].id;
     } else {
-        currentChatId = null;
+        window.currentChatId = null;
     }
     messagesContainer.innerHTML = '';
-    if (currentChatId) {
+    if (window.currentChatId) {
         reloadCurrentChat();
     } else if (project.systemPrompt) {
         addMessage('System Prompt: ' + project.systemPrompt, 'system', false);
@@ -3525,9 +3521,9 @@ function openProjectMenu(projectId, anchorButton) {
             let projects = loadProjectsFromStorage();
             projects = projects.filter(p => p.id !== projectId);
             saveProjectsToStorage(projects);
-            if (currentProjectId === projectId) {
-                currentProjectId = null;
-                currentChatId = null;
+            if (window.currentProjectId === projectId) {
+                window.currentProjectId = null;
+                window.currentChatId = null;
                 messagesContainer.innerHTML = '';
             }
             renderProjects();
@@ -3563,8 +3559,8 @@ function saveGeneratedImages(imageAttachments, prompt) {
             url: img.url,
             name: img.name,
             prompt: prompt,
-            projectId: currentProjectId || null,
-            chatId: currentChatId || null,
+            projectId: window.currentProjectId || null,
+            chatId: window.currentChatId || null,
             createdAt: Date.now()
         });
     });
@@ -3810,8 +3806,8 @@ function saveGeneratedImages(imageAttachments, prompt) {
             url: img.url,
             name: img.name,
             prompt: prompt,
-            projectId: currentProjectId || null,
-            chatId: currentChatId || null,
+            projectId: window.currentProjectId || null,
+            chatId: window.currentChatId || null,
             createdAt: Date.now()
         });
     });
