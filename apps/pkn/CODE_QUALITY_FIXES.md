@@ -1,47 +1,52 @@
 # PKN Code Quality Fix List
 
 Generated: 2026-01-11
+Last Updated: 2026-01-11
 Tools: `debugger-extension/run_all_checks.py`
+
+## Current Metrics
+
+| Category | Before | After | Reduction |
+|----------|--------|-------|-----------|
+| Duplicate Functions | 393 | 115 | 71% ✓ |
+| Scope Mismatches | 86 | 16 | 81% ✓ |
+| Missing Selectors | 97 | 88 | 9% (mostly dynamic) |
 
 ## Priority Legend
 - 🔴 **P0 - Critical**: Likely causing bugs NOW, fix immediately
 - 🟠 **P1 - High**: Will cause bugs, fix this sprint
 - 🟡 **P2 - Medium**: Technical debt, fix when touching file
 - 🟢 **P3 - Low**: Nice to have, backlog
+- ✅ **DONE**: Fixed
 
 ---
 
-## Scope Mismatches (18 total)
+## Scope Mismatches (16 remaining, down from 86)
 
-### 🔴 P0 - Critical (Fix First)
+### ✅ P0 - Critical (COMPLETED 2026-01-11)
+
+| Variable | Status | Fix Applied |
+|----------|--------|-------------|
+| `openMenuElement` | ✅ DONE | Standardized to `window.openMenuElement` in app.js |
+| `currentChatId` | ✅ DONE | Removed local declaration from app.js/projects.js, use window.* |
+| `currentProjectId` | ✅ DONE | Removed local declaration from app.js/projects.js, use window.* |
+| `ACTIVE_MODEL` | ✅ DONE | Changed to `window.ACTIVE_MODEL` in app.js |
+| `ACTIVE_PROVIDER` | ✅ DONE | Changed to `window.ACTIVE_PROVIDER` in app.js |
+| `ACTIVE_API_KEY` | ✅ DONE | Changed to `window.ACTIVE_API_KEY` in app.js |
+| `ACTIVE_BASE_URL` | ✅ DONE | Changed to `window.ACTIVE_BASE_URL` in app.js |
+| `ACTIVE_TEMPERATURE` | ✅ DONE | Changed to `window.ACTIVE_TEMPERATURE` in app.js |
+| `ACTIVE_MAX_TOKENS` | ✅ DONE | Changed to `window.ACTIVE_MAX_TOKENS` in app.js |
+| `ACTIVE_TOP_P` | ✅ DONE | Changed to `window.ACTIVE_TOP_P` in app.js |
+| `ACTIVE_FREQUENCY_PENALTY` | ✅ DONE | Changed to `window.ACTIVE_FREQUENCY_PENALTY` in app.js |
+| `ACTIVE_PRESENCE_PENALTY` | ✅ DONE | Changed to `window.ACTIVE_PRESENCE_PENALTY` in app.js |
+
+### 🟠 P1 - High (Remaining)
 
 | Variable | Issue | Files | Fix Strategy |
 |----------|-------|-------|--------------|
-| `openMenuElement` | Local in app.js, window.* in 4 files | app.js, main.js, utils.js, projects.js | Standardize to `window.openMenuElement` everywhere |
-| `currentChatId` | Declared local, used as window.* | chat.js, app.js, projects.js, settings.js, images.js | Export from chat.js, import elsewhere |
-| `currentProjectId` | Declared local, used as window.* | chat.js, app.js, projects.js, settings.js, images.js | Export from chat.js, import elsewhere |
 | `multiAgentUI` | Local declaration, window.* usage in same file | multi_agent_ui.js, app.js | Standardize to `window.multiAgentUI` |
-
-### 🟠 P1 - High
-
-| Variable | Issue | Files | Fix Strategy |
-|----------|-------|-------|--------------|
 | `agentQualityMonitor` | Mixed scope | agent_quality.js, multi_agent_ui.js | Export/import pattern |
-| `ACTIVE_MODEL` | Declared local, window.* in models.js | chat.js, app.js, models.js | Centralize in models.js |
-| `ACTIVE_PROVIDER` | Declared local, window.* in models.js | chat.js, app.js, models.js | Centralize in models.js |
 | `capacitorBackend` | Mixed in same file | capacitor-backend.js | Pick one, be consistent |
-
-### 🟡 P2 - Medium
-
-| Variable | Issue | Files | Fix Strategy |
-|----------|-------|-------|--------------|
-| `ACTIVE_API_KEY` | Cross-file mismatch | app.js, models.js | Centralize config |
-| `ACTIVE_BASE_URL` | Cross-file mismatch | app.js, models.js | Centralize config |
-| `ACTIVE_TEMPERATURE` | Cross-file mismatch | app.js, settings.js | Centralize config |
-| `ACTIVE_MAX_TOKENS` | Cross-file mismatch | app.js, settings.js | Centralize config |
-| `ACTIVE_TOP_P` | Cross-file mismatch | app.js, settings.js | Centralize config |
-| `ACTIVE_FREQUENCY_PENALTY` | Cross-file mismatch | app.js, settings.js | Centralize config |
-| `ACTIVE_PRESENCE_PENALTY` | Cross-file mismatch | app.js, settings.js | Centralize config |
 
 ### 🟢 P3 - Low (Intentional patterns)
 
@@ -53,7 +58,11 @@ Tools: `debugger-extension/run_all_checks.py`
 
 ---
 
-## Duplicate Functions (393 total)
+## Duplicate Functions (115 remaining, down from 393)
+
+### ✅ Major Cleanup Completed (2026-01-11)
+
+**Removed duplicate plugins directory**: `apps/pkn/plugins/` was an exact duplicate of `frontend/js/plugins/`. Deleted 10 plugins, 21 files, 6,318 lines.
 
 ### Exclude from analysis (not bugs):
 - `archive/` - Old code backups
@@ -61,54 +70,69 @@ Tools: `debugger-extension/run_all_checks.py`
 - `www/` - Capacitor build output
 - `llama.cpp/` - Submodule
 - `.venv/` - Python virtual env
+- `apps/pkn/plugins/` - ✅ REMOVED (was duplicate)
 
-### 🔴 P0 - Critical Duplicates
+### 🟡 P2 - Remaining Duplicates (Legacy app.js overlap)
 
-| Function | Locations | Fix |
-|----------|-----------|-----|
-| `sendMessage()` | chat.js, app.js, android copies | Keep chat.js, remove from app.js |
-| `addMessage()` | chat.js, app.js, android copies | Keep chat.js, remove from app.js |
-| `showToast()` | utils.js, app.js, multiple plugins | Keep utils.js, import elsewhere |
+Most remaining duplicates are due to `app.js` (legacy monolithic file) duplicating functions that also exist in modular `js/*.js` files. These are low priority because `app.js` is being phased out.
 
-### 🟠 P1 - Backend Duplicates
+| Function | Locations | Status |
+|----------|-----------|--------|
+| `sendMessage()` | chat.js, app.js | Legacy overlap, app.js being deprecated |
+| `addMessage()` | chat.js, app.js | Legacy overlap, app.js being deprecated |
+| `showToast()` | utils.js, app.js | Legacy overlap, import from utils.js |
 
-| Function | Locations | Fix |
-|----------|-----------|-----|
-| `_load_json()` | memory_tools.py, local_parakleon_agent.py | Create shared utility |
-| `_save_json()` | memory_tools.py, local_parakleon_agent.py | Create shared utility |
-| `_execute_step()` | chain_tools.py, planning_tools.py | Create shared base class |
+### 🟢 P3 - Backend Duplicates (Low Priority)
 
----
-
-## Missing Selectors (97 total)
-
-### 🟠 P1 - Settings Panel IDs
-
-These are referenced but may not exist:
-- `#agentNickname`
-- `#apiEndpoint`
-- `#anthropicKey`
-- `#settingsModal`
-
-**Action**: Verify these exist in pkn.html or remove dead code.
-
-### 🟡 P2 - Plugin Selectors
-
-May be dynamically created:
-- `.context-suggestion-toast`
-- `.osint-tab`
-- `.voice-status`
-
-**Action**: Document that these are created dynamically.
+| Function | Locations | Fix Strategy |
+|----------|-----------|--------------|
+| `_load_json()` | memory_tools.py, local_parakleon_agent.py | Create shared utility when refactoring |
+| `_save_json()` | memory_tools.py, local_parakleon_agent.py | Create shared utility when refactoring |
 
 ---
 
-## Fix Order
+## Missing Selectors (88 remaining)
 
-1. **Today**: P0 scope mismatches (4 variables)
-2. **This week**: P1 scope mismatches + P0 duplicates
-3. **Next week**: P2 items + missing selectors audit
-4. **Backlog**: P3 items (document as intentional)
+### ✅ Analysis Complete (2026-01-11)
+
+**Finding**: Most "missing" selectors are **dynamically created** at runtime by JavaScript. They are NOT bugs.
+
+### Dynamic Element Creation Sources:
+
+| Selector Pattern | Created By | Status |
+|------------------|------------|--------|
+| `#agent-card-*` | multi_agent_ui.js | ✅ Dynamic - not a bug |
+| `.thinking-dots` | chat.js | ✅ Dynamic - not a bug |
+| `.message-*` | chat.js | ✅ Dynamic - not a bug |
+| `.osint-*` | plugins/osint_tools.js | ✅ Dynamic - not a bug |
+| `.tracking-*` | plugins/tracking_pixels.js | ✅ Dynamic - not a bug |
+| `.context-suggestion-*` | plugins/context_suggestions.js | ✅ Dynamic - not a bug |
+| `.voice-*` | plugins/voice_input.js | ✅ Dynamic - not a bug |
+
+### 🟡 P2 - Verify These Exist
+
+Small number of selectors that should be in HTML/CSS but might be missing:
+
+| Selector | File | Action |
+|----------|------|--------|
+| `#agentNickname` | settings.js | Verify in pkn.html |
+| `#settingsModal` | settings.js | Verify in pkn.html |
+
+---
+
+## Progress Summary
+
+### ✅ Completed (2026-01-11)
+1. P0 scope mismatches - 12 variables fixed
+2. Duplicate plugins directory removed
+3. ACTIVE_* config variables standardized to window.*
+4. window.window.* double-prefix bug fixed
+5. Missing selectors analyzed - mostly dynamic elements
+
+### 🔜 Remaining Work
+1. P1 scope mismatches (3 variables)
+2. Legacy app.js cleanup (gradual deprecation)
+3. Backend utility consolidation (when refactoring)
 
 ---
 
