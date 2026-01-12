@@ -911,16 +911,18 @@ const DEFAULT_SETTINGS = {
 };
 
 
-let ACTIVE_BASE_URL = 'https://api.openai.com/v1/chat/completions';
+// Active model configuration - exposed via window.* for cross-module access
+// These are the source of truth, accessed by models.js and settings.js
+window.window.ACTIVE_BASE_URL = window.window.ACTIVE_BASE_URL || 'https://api.openai.com/v1/chat/completions';
 // Set Qwen2.5 as default if available, else fallback to OpenAI
-let ACTIVE_MODEL = window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL ? `llamacpp:${window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL}` : window.PARAKLEON_CONFIG.OPENAI_MODEL;
-let ACTIVE_API_KEY = window.PARAKLEON_CONFIG.OPENAI_API_KEY;
-let ACTIVE_PROVIDER = 'openai'; // openai, groq, together, huggingface, ollama, webllm
-let ACTIVE_TEMPERATURE = 0.7;
-let ACTIVE_MAX_TOKENS = 2048;
-let ACTIVE_TOP_P = 0.9;
-let ACTIVE_FREQUENCY_PENALTY = 0.0;
-let ACTIVE_PRESENCE_PENALTY = 0.0;
+window.window.ACTIVE_MODEL = window.window.ACTIVE_MODEL || (window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL ? `llamacpp:${window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL}` : window.PARAKLEON_CONFIG.OPENAI_MODEL);
+window.window.ACTIVE_API_KEY = window.window.ACTIVE_API_KEY || window.PARAKLEON_CONFIG.OPENAI_API_KEY;
+window.window.ACTIVE_PROVIDER = window.window.ACTIVE_PROVIDER || 'openai'; // openai, groq, together, huggingface, ollama, webllm
+window.window.ACTIVE_TEMPERATURE = window.window.ACTIVE_TEMPERATURE ?? 0.7;
+window.window.ACTIVE_MAX_TOKENS = window.window.ACTIVE_MAX_TOKENS ?? 2048;
+window.window.ACTIVE_TOP_P = window.window.ACTIVE_TOP_P ?? 0.9;
+window.window.ACTIVE_FREQUENCY_PENALTY = window.window.ACTIVE_FREQUENCY_PENALTY ?? 0.0;
+window.window.ACTIVE_PRESENCE_PENALTY = window.window.ACTIVE_PRESENCE_PENALTY ?? 0.0;
 
 // ========== AI Models Manager ==========
 
@@ -1273,44 +1275,44 @@ function initModelSelector() {
 let webLLMEngine = null;
 let webLLMInitializing = false;
 
-console.log('Initial ACTIVE_MODEL:', ACTIVE_MODEL);
+console.log('Initial window.ACTIVE_MODEL:', window.ACTIVE_MODEL);
 
 function onModelChange() {
     const { value } = modelSelect;
     if (value === 'openai') {
-        ACTIVE_PROVIDER = 'openai';
-        ACTIVE_BASE_URL = 'https://api.openai.com/v1/chat/completions';
-        ACTIVE_MODEL = window.PARAKLEON_CONFIG.OPENAI_MODEL;
-        ACTIVE_API_KEY = getApiKeyForProvider('openai');
+        window.ACTIVE_PROVIDER = 'openai';
+        window.ACTIVE_BASE_URL = 'https://api.openai.com/v1/chat/completions';
+        window.ACTIVE_MODEL = window.PARAKLEON_CONFIG.OPENAI_MODEL;
+        window.ACTIVE_API_KEY = getApiKeyForProvider('openai');
     } else if (value.startsWith('groq:')) {
-        ACTIVE_PROVIDER = 'groq';
+        window.ACTIVE_PROVIDER = 'groq';
         const modelName = value.replace('groq:', '');
-        ACTIVE_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
-        ACTIVE_MODEL = modelName;
-        ACTIVE_API_KEY = getApiKeyForProvider('groq');
+        window.ACTIVE_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
+        window.ACTIVE_MODEL = modelName;
+        window.ACTIVE_API_KEY = getApiKeyForProvider('groq');
     } else if (value.startsWith('together:')) {
-        ACTIVE_PROVIDER = 'together';
+        window.ACTIVE_PROVIDER = 'together';
         const modelName = value.replace('together:', '');
-        ACTIVE_BASE_URL = 'https://api.together.xyz/v1/chat/completions';
-        ACTIVE_MODEL = modelName;
-        ACTIVE_API_KEY = getApiKeyForProvider('together');
+        window.ACTIVE_BASE_URL = 'https://api.together.xyz/v1/chat/completions';
+        window.ACTIVE_MODEL = modelName;
+        window.ACTIVE_API_KEY = getApiKeyForProvider('together');
     } else if (value.startsWith('huggingface:')) {
-        ACTIVE_PROVIDER = 'huggingface';
+        window.ACTIVE_PROVIDER = 'huggingface';
         const modelName = value.replace('huggingface:', '');
-        ACTIVE_BASE_URL = 'https://api-inference.huggingface.co/models/' + modelName + '/v1/chat/completions';
-        ACTIVE_MODEL = modelName;
-        ACTIVE_API_KEY = getApiKeyForProvider('huggingface');
+        window.ACTIVE_BASE_URL = 'https://api-inference.huggingface.co/models/' + modelName + '/v1/chat/completions';
+        window.ACTIVE_MODEL = modelName;
+        window.ACTIVE_API_KEY = getApiKeyForProvider('huggingface');
     } else if (value.startsWith('ollama:')) {
-        ACTIVE_PROVIDER = 'ollama';
+        window.ACTIVE_PROVIDER = 'ollama';
         const modelName = value.replace('ollama:', '');
-        ACTIVE_BASE_URL = window.PARAKLEON_CONFIG.OLLAMA_BASE_URL + '/chat/completions';
-        ACTIVE_MODEL = modelName;
-        ACTIVE_API_KEY = 'ollama';
+        window.ACTIVE_BASE_URL = window.PARAKLEON_CONFIG.OLLAMA_BASE_URL + '/chat/completions';
+        window.ACTIVE_MODEL = modelName;
+        window.ACTIVE_API_KEY = 'ollama';
     } else if (value.startsWith('llamacpp:')) {
-        ACTIVE_PROVIDER = 'llamacpp';
-        ACTIVE_BASE_URL = window.PARAKLEON_CONFIG.LLAMACPP_BASE_URL + '/chat/completions';
-        ACTIVE_MODEL = 'local';
-        ACTIVE_API_KEY = 'llamacpp';
+        window.ACTIVE_PROVIDER = 'llamacpp';
+        window.ACTIVE_BASE_URL = window.PARAKLEON_CONFIG.LLAMACPP_BASE_URL + '/chat/completions';
+        window.ACTIVE_MODEL = 'local';
+        window.ACTIVE_API_KEY = 'llamacpp';
     }
 }
 
@@ -2914,18 +2916,18 @@ function updateSettingsUI() {
     try { applyAppearanceSettings(); } catch (e) { /* ignore if not yet defined */ }
 
     // Update active settings
-    ACTIVE_TEMPERATURE = settings.temperature;
-    ACTIVE_MAX_TOKENS = settings.maxTokens;
-    ACTIVE_TOP_P = settings.topP || 0.9;
-    ACTIVE_FREQUENCY_PENALTY = settings.frequencyPenalty || 0.0;
-    ACTIVE_PRESENCE_PENALTY = settings.presencePenalty || 0.0;
+    window.ACTIVE_TEMPERATURE = settings.temperature;
+    window.ACTIVE_MAX_TOKENS = settings.maxTokens;
+    window.ACTIVE_TOP_P = settings.topP || 0.9;
+    window.ACTIVE_FREQUENCY_PENALTY = settings.frequencyPenalty || 0.0;
+    window.ACTIVE_PRESENCE_PENALTY = settings.presencePenalty || 0.0;
 }
 
 function saveTemperature(value) {
     const settings = loadSettings();
     settings.temperature = parseFloat(value);
     saveSettings(settings);
-    ACTIVE_TEMPERATURE = settings.temperature;
+    window.ACTIVE_TEMPERATURE = settings.temperature;
     document.getElementById('temperatureValue').textContent = value;
 }
 
@@ -2933,7 +2935,7 @@ function saveMaxTokens(value) {
     const settings = loadSettings();
     settings.maxTokens = parseInt(value);
     saveSettings(settings);
-    ACTIVE_MAX_TOKENS = settings.maxTokens;
+    window.ACTIVE_MAX_TOKENS = settings.maxTokens;
     document.getElementById('maxTokensValue').textContent = value;
 }
 
@@ -2941,7 +2943,7 @@ function saveTopP(value) {
     const settings = loadSettings();
     settings.topP = parseFloat(value);
     saveSettings(settings);
-    ACTIVE_TOP_P = settings.topP;
+    window.ACTIVE_TOP_P = settings.topP;
     document.getElementById('topPValue').textContent = value;
 }
 
@@ -2949,7 +2951,7 @@ function saveFrequencyPenalty(value) {
     const settings = loadSettings();
     settings.frequencyPenalty = parseFloat(value);
     saveSettings(settings);
-    ACTIVE_FREQUENCY_PENALTY = settings.frequencyPenalty;
+    window.ACTIVE_FREQUENCY_PENALTY = settings.frequencyPenalty;
     document.getElementById('frequencyPenaltyValue').textContent = value;
 }
 
@@ -2957,7 +2959,7 @@ function savePresencePenalty(value) {
     const settings = loadSettings();
     settings.presencePenalty = parseFloat(value);
     saveSettings(settings);
-    ACTIVE_PRESENCE_PENALTY = settings.presencePenalty;
+    window.ACTIVE_PRESENCE_PENALTY = settings.presencePenalty;
     document.getElementById('presencePenaltyValue').textContent = value;
 }
 
