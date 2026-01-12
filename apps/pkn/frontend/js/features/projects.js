@@ -7,14 +7,14 @@ import { showToast, escapeHtml } from '../utils/utils.js';
 import { loadProjectsFromStorage, saveProjectsToStorage } from '../utils/storage.js';
 
 // Note: window.currentChatId and window.currentProjectId are managed by chat.js via window.*
-// Do NOT declare local versions here - use window.window.currentChatId and window.window.currentProjectId
+// Do NOT declare local versions here - use window.currentChatId and window.currentProjectId
 
 /**
  * Set current project ID
  * @param {string} projectId - The project ID to set
  */
 export function setCurrentProjectId(projectId) {
-    window.window.currentProjectId = projectId;  // Single source of truth via window.*
+    window.currentProjectId = projectId;  // Single source of truth via window.*
 }
 
 /**
@@ -22,7 +22,7 @@ export function setCurrentProjectId(projectId) {
  * @returns {string} Current project ID
  */
 export function getCurrentProjectId() {
-    return window.window.currentProjectId;
+    return window.currentProjectId;
 }
 
 /**
@@ -73,14 +73,14 @@ export function switchProject(projectId) {
     if (!project) return;
 
     window.currentProjectId = projectId;
-    window.window.currentProjectId = projectId;
+    window.currentProjectId = projectId;
 
     if (project.chats && project.chats.length > 0) {
         window.currentChatId = project.chats[0].id;
-        window.window.currentChatId = window.currentChatId;
+        window.currentChatId = window.currentChatId;
     } else {
         window.currentChatId = null;
-        window.window.currentChatId = null;
+        window.currentChatId = null;
     }
 
     const messagesContainer = document.getElementById('messagesContainer');
@@ -148,9 +148,9 @@ export function openProjectMenu(projectId, anchorButton) {
             saveProjectsToStorage(projects);
             if (window.currentProjectId === projectId) {
                 window.currentProjectId = null;
-                window.window.currentProjectId = null;
+                window.currentProjectId = null;
                 window.currentChatId = null;
-                window.window.currentChatId = null;
+                window.currentChatId = null;
                 const messagesContainer = document.getElementById('messagesContainer');
                 if (messagesContainer) messagesContainer.innerHTML = '';
             }
@@ -271,9 +271,9 @@ export async function saveNewProject() {
 
     saveProjectsToStorage(projects);
     window.currentProjectId = projectId;
-    window.window.currentProjectId = projectId;
+    window.currentProjectId = projectId;
     window.currentChatId = chatId;
-    window.window.currentChatId = chatId;
+    window.currentChatId = chatId;
 
     renderProjects();
     closeProjectModal();

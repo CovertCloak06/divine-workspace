@@ -876,7 +876,7 @@ function getAllModels() {
 let isWaiting = false;
 let abortController = null;
 // Note: window.currentChatId and window.currentProjectId are managed by chat.js and exposed via window.*
-// Do NOT declare local versions - use window.window.currentChatId and window.window.currentProjectId
+// Do NOT declare local versions - use window.currentChatId and window.currentProjectId
 let thinkingInterval = null;
 let editingMessageId = null;
 const STORAGE_KEY = 'parakleon_chats_v1';
@@ -913,16 +913,16 @@ const DEFAULT_SETTINGS = {
 
 // Active model configuration - exposed via window.* for cross-module access
 // These are the source of truth, accessed by models.js and settings.js
-window.window.ACTIVE_BASE_URL = window.window.ACTIVE_BASE_URL || 'https://api.openai.com/v1/chat/completions';
+window.ACTIVE_BASE_URL = window.ACTIVE_BASE_URL || 'https://api.openai.com/v1/chat/completions';
 // Set Qwen2.5 as default if available, else fallback to OpenAI
-window.window.ACTIVE_MODEL = window.window.ACTIVE_MODEL || (window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL ? `llamacpp:${window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL}` : window.PARAKLEON_CONFIG.OPENAI_MODEL);
-window.window.ACTIVE_API_KEY = window.window.ACTIVE_API_KEY || window.PARAKLEON_CONFIG.OPENAI_API_KEY;
-window.window.ACTIVE_PROVIDER = window.window.ACTIVE_PROVIDER || 'openai'; // openai, groq, together, huggingface, ollama, webllm
-window.window.ACTIVE_TEMPERATURE = window.window.ACTIVE_TEMPERATURE ?? 0.7;
-window.window.ACTIVE_MAX_TOKENS = window.window.ACTIVE_MAX_TOKENS ?? 2048;
-window.window.ACTIVE_TOP_P = window.window.ACTIVE_TOP_P ?? 0.9;
-window.window.ACTIVE_FREQUENCY_PENALTY = window.window.ACTIVE_FREQUENCY_PENALTY ?? 0.0;
-window.window.ACTIVE_PRESENCE_PENALTY = window.window.ACTIVE_PRESENCE_PENALTY ?? 0.0;
+window.ACTIVE_MODEL = window.ACTIVE_MODEL || (window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL ? `llamacpp:${window.PARAKLEON_CONFIG.DEFAULT_QWEN_MODEL}` : window.PARAKLEON_CONFIG.OPENAI_MODEL);
+window.ACTIVE_API_KEY = window.ACTIVE_API_KEY || window.PARAKLEON_CONFIG.OPENAI_API_KEY;
+window.ACTIVE_PROVIDER = window.ACTIVE_PROVIDER || 'openai'; // openai, groq, together, huggingface, ollama, webllm
+window.ACTIVE_TEMPERATURE = window.ACTIVE_TEMPERATURE ?? 0.7;
+window.ACTIVE_MAX_TOKENS = window.ACTIVE_MAX_TOKENS ?? 2048;
+window.ACTIVE_TOP_P = window.ACTIVE_TOP_P ?? 0.9;
+window.ACTIVE_FREQUENCY_PENALTY = window.ACTIVE_FREQUENCY_PENALTY ?? 0.0;
+window.ACTIVE_PRESENCE_PENALTY = window.ACTIVE_PRESENCE_PENALTY ?? 0.0;
 
 // ========== AI Models Manager ==========
 
