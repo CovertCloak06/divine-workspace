@@ -1741,8 +1741,33 @@ select optgroup {
     transition: left 0.25s ease-in-out;
 }
 
+/* Hide mobile menu toggle on desktop | ref:menu-toggle button in pkn.html */
+.menu-toggle {
+    display: none; /* Hidden on desktop, shown only on mobile below */
+}
+
 /* Mobile: overlay when sidebar is open */
 @media (max-width: 768px) {
+    .menu-toggle {
+        display: block; /* Show hamburger menu on mobile */
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 2001;
+        background: rgba(0, 255, 255, 0.1);
+        border: 1px solid var(--theme-primary);
+        color: var(--theme-primary);
+        font-size: 24px;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .menu-toggle:hover {
+        background: rgba(0, 255, 255, 0.2);
+    }
+
     .sidebar {
         position: fixed;
         left: 0;
