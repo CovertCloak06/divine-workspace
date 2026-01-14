@@ -94,8 +94,14 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Don't cache non-successful responses
-        if (!response || response.status !== 200 || response.type === 'error') {
+        // Don't cache non-successful or opaque responses
+        if (
+          !response ||
+          response.status !== 200 ||
+          response.type === 'error' ||
+          response.type === 'opaque' ||
+          response.type === 'opaqueredirect'
+        ) {
           return response;
         }
 
