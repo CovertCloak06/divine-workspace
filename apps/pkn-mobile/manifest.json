@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/img/icchat.png",
+      "src": "/img/dvn-avatar.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/img/icchat.png",
+      "src": "/img/dvn-avatar.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -29,7 +29,7 @@
       "short_name": "Chat",
       "description": "Start a new conversation with AI agents",
       "url": "/pkn.html",
-      "icons": [{ "src": "/img/icchat.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/img/dvn-avatar.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
