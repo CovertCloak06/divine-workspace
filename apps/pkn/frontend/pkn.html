@@ -49,6 +49,7 @@
     <link rel="apple-touch-icon" href="img/icchat.png">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/file-explorer.css">
     <link rel="stylesheet" href="css/osint.css">
     <!-- Syntax Highlighting -->
@@ -56,6 +57,80 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <!-- Monaco Editor -->
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+
+    <!-- Sentry Error Tracking -->
+    <script
+      src="https://browser.sentry-cdn.com/8.46.0/bundle.min.js"
+      integrity="sha384-q3xuhSKKxzZEUfWPHY4KQPnLYBXC7EvCLZXhQJB5H3Q8nLdQJjQH8oqJXR8xZ8xZ"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      // TODO: Replace https://ac86b958163985bad2c602fc9040c1be@o4509789486710784.ingest.us.sentry.io/4510695306100736 with your actual Sentry DSN
+      // Get it from: https://sentry.io/settings/[your-org]/projects/pkn-frontend/keys/
+      Sentry.init({
+        dsn: "https://ac86b958163985bad2c602fc9040c1be@o4509789486710784.ingest.us.sentry.io/4510695306100736",  // ← REPLACE THIS with your DSN
+        release: "pkn@2.0.0",
+        environment: "production",
+
+        // Performance monitoring
+        integrations: [
+          Sentry.browserTracingIntegration(),
+          Sentry.replayIntegration({
+            maskAllText: false,
+            blockAllMedia: false,
+          }),
+        ],
+
+        // Sample rates
+        tracesSampleRate: 0.1,  // 10% of transactions
+        replaysSessionSampleRate: 0.1,  // 10% of sessions
+        replaysOnErrorSampleRate: 1.0,  // 100% of errors get session replay
+
+        // Filter development errors
+        beforeSend(event, hint) {
+          // Don't send errors from localhost (development)
+          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🐛 Sentry (dev mode):', event);
+            return null;  // Don't send to Sentry
+          }
+          return event;
+        },
+
+        // Ignore harmless errors
+        ignoreErrors: [
+          'ResizeObserver loop',
+          'chrome-extension',
+          'NetworkError',
+          'Load failed',  // Common mobile browser error
+        ],
+      });
+
+      // Integrate with PKNLogger (if it exists)
+      window.addEventListener('DOMContentLoaded', () => {
+        if (window.pknLogger) {
+          const original = window.pknLogger.addLog;
+          window.pknLogger.addLog = function(log) {
+            original.call(this, log);
+
+            // Send errors to Sentry
+            if (log.level === 'error') {
+              const err = new Error(log.message);
+              err.stack = log.stack;
+              Sentry.captureException(err, {
+                extra: log,
+                tags: {
+                  component: log.component || 'unknown',
+                  logger: 'PKNLogger'
+                }
+              });
+            }
+          };
+          console.info('✅ Sentry error tracking active (integrated with PKNLogger)');
+        } else {
+          console.info('✅ Sentry error tracking active');
+        }
+      });
+    </script>
 </head>
             <div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
                 <div class="settings-panel" style="max-width: 900px; max-height: 90vh;">
@@ -215,6 +290,11 @@
     </div>
 
     <div class="main">
+        <!-- Mobile menu toggle button -->
+        <button class="menu-toggle" onclick="toggleMobileSidebar()" aria-label="Toggle Menu">
+            ☰
+        </button>
+
         <!-- Main chat header (logo, title, model selector) -->
         <div class="header">
             <div class="header-logo">
@@ -418,6 +498,13 @@
                     <div class="settings-row">
                         <input type="checkbox" id="showTimestampsToggle" onchange="saveShowTimestamps(this.checked)" />
                         <label for="showTimestampsToggle">Show message timestamps</label>
+                    </div>
+                    <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <label for="placeholderTextInput" style="color: var(--theme-primary); font-size: 12px;">✏️ Custom Input Placeholder</label>
+                        <input type="text" id="placeholderTextInput" placeholder="Ask me anything..."
+                               oninput="savePlaceholderText(this.value)"
+                               style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--theme-primary-fade); color: var(--text-primary); border-radius: 4px; font-size: 13px;" />
+                        <span class="help-icon" title="Customize the placeholder text in the chat input box" style="cursor: help; font-size: 11px; color: #666;">ⓘ Customize your chat input placeholder</span>
                     </div>
                 </div>
             </div>
@@ -1167,6 +1254,38 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
+// MOBILE SIDEBAR TOGGLE
+// ============================================
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const isVisible = sidebar.classList.contains('visible');
+
+    if (isVisible) {
+        // Close sidebar
+        sidebar.classList.remove('visible');
+        document.body.classList.remove('sidebar-open');
+    } else {
+        // Open sidebar
+        sidebar.classList.add('visible');
+        document.body.classList.add('sidebar-open');
+    }
+}
+
+// Close sidebar when tapping outside (on overlay)
+document.addEventListener('click', function(e) {
+    const sidebar = document.querySelector('.sidebar');
+    const menuBtn = document.querySelector('.menu-toggle');
+
+    // Only on mobile (check if overlay exists via CSS)
+    if (window.innerWidth <= 768 && sidebar.classList.contains('visible')) {
+        // If click is outside sidebar and not on menu button, close sidebar
+        if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+            toggleMobileSidebar();
+        }
+    }
+});
+
+// ============================================
 // CODE EDITOR (Monaco Editor Integration)
 // ============================================
 let monacoEditor = null;
@@ -1422,6 +1541,34 @@ window.addEventListener('appinstalled', () => {
 function showUpdateNotification() {
     if (confirm('A new version of Divine Node is available. Reload to update?')) {
         window.location.reload();
+    }
+}
+
+// ========== Placeholder Customization ==========
+// Load saved placeholder text on page load | ref:placeholderTextInput in settings panel
+document.addEventListener('DOMContentLoaded', function() {
+    const savedPlaceholder = localStorage.getItem('chat_placeholder_text');
+    if (savedPlaceholder) {
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.placeholder = savedPlaceholder;
+        }
+        const placeholderInput = document.getElementById('placeholderTextInput');
+        if (placeholderInput) {
+            placeholderInput.value = savedPlaceholder;
+        }
+    }
+});
+
+// Save placeholder text function | Called from placeholderTextInput oninput event
+function savePlaceholderText(text) {
+    if (text && text.trim()) {
+        localStorage.setItem('chat_placeholder_text', text.trim());
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.placeholder = text.trim(); // Update placeholder immediately
+        }
+        console.log('Placeholder text saved:', text.trim());
     }
 }
 </script>
