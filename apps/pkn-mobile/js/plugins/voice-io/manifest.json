@@ -1,0 +1,29 @@
+{
+  "id": "voice-io",
+  "name": "Voice Input/Output",
+  "version": "1.0.0",
+  "description": "Speak your messages and hear AI responses read aloud",
+  "author": "PKN Team",
+  "autoEnable": false,
+  "dependencies": [],
+  "settings": {
+    "autoSpeak": {
+      "type": "boolean",
+      "label": "Auto-speak AI responses",
+      "default": false,
+      "description": "Automatically read AI responses aloud"
+    },
+    "voiceSpeed": {
+      "type": "number",
+      "label": "Speech speed",
+      "default": 1.0,
+      "description": "Speaking rate (0.5 = slow, 2.0 = fast)"
+    },
+    "voicePitch": {
+      "type": "number",
+      "label": "Voice pitch",
+      "default": 1.0,
+      "description": "Voice pitch (0.5 = low, 2.0 = high)"
+    }
+  }
+}

@@ -1,0 +1,257 @@
+/* Mobile CSS - No Hoverstrip, Full Width, Solid Input Container */
+@media (max-width: 768px) {
+    /* ===== HIDE SCROLLBARS ===== */
+    *::-webkit-scrollbar {
+        display: none !important;
+    }
+    * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    /* ===== HIDE HOVERSTRIP COMPLETELY ===== */
+    .hover-strip,
+    #hoverStrip {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        pointer-events: none !important;
+    }
+
+    .hover-strip *,
+    #hoverStrip * {
+        display: none !important;
+    }
+
+    /* ===== HIDE ANY STRAY ICONS ===== */
+    .sidebar-header-icon {
+        display: none !important;
+    }
+
+    .sidebar.hidden * {
+        display: none !important;
+    }
+
+    /* ===== SIDEBAR - REMOVE BORDER ===== */
+    .sidebar {
+        border-right: none !important;
+        border: none !important;
+    }
+
+    /* ===== HIDE HELP ICONS AND EMOJI HEADERS ===== */
+    .help-icon {
+        display: none !important;
+    }
+
+    /* Hide settings group headers that contain emojis */
+    .settings-group h3 {
+        display: none !important;
+    }
+
+    /* Hide modal headers that contain emojis */
+    .modal-header h3 {
+        display: none !important;
+    }
+
+    /* ===== ENSURE MODALS START HIDDEN ===== */
+    .settings-modal,
+    .files-manager-modal,
+    .ai-models-modal,
+    .image-generator-modal,
+    .modal-overlay {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+
+    .settings-modal.show,
+    .files-manager-modal.show,
+    .ai-models-modal.show,
+    .image-generator-modal.show,
+    .modal-overlay.show {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* ===== AGENT DROPDOWN ===== */
+    .header-agent-selector {
+        display: none !important;
+    }
+
+    .mobile-agent-dropdown {
+        display: block !important;
+        padding: 6px 10px !important;
+        background: rgba(0,255,255,0.1) !important;
+        border: 1px solid var(--theme-primary) !important;
+        border-radius: 6px !important;
+        color: var(--theme-primary) !important;
+        font-size: 13px !important;
+        min-width: 100px !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+        background-image: linear-gradient(45deg, transparent 50%, var(--theme-primary) 50%),
+                          linear-gradient(135deg, var(--theme-primary) 50%, transparent 50%) !important;
+        background-position: calc(100% - 18px) calc(1em + 2px),
+                             calc(100% - 13px) calc(1em + 2px) !important;
+        background-size: 5px 5px, 5px 5px !important;
+        background-repeat: no-repeat !important;
+        padding-right: 28px !important;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 10px !important;
+    }
+
+    .header-logo {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .logo-text {
+        font-size: 18px !important;
+        line-height: 1.1 !important;
+    }
+
+    /* ===== MAIN CONTENT - SPAN TO LEFT EDGE ===== */
+    .main {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+    }
+
+    /* Make pseudo-element background span full width */
+    .main::before {
+        left: 0 !important;
+    }
+
+    .container {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    /* ===== MESSAGES CONTAINER - FULL WIDTH ===== */
+    #messagesContainer {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        padding-bottom: 70px !important;
+        margin-left: 0 !important;
+    }
+
+    .welcome-screen {
+        margin-left: 0 !important;
+        padding-left: 10px !important;
+        z-index: 1 !important;
+    }
+
+    /* ===== CHAT CONTENT - FULL WIDTH ===== */
+    .chat-content {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        padding-bottom: 70px !important;
+    }
+
+    /* ===== INPUT CONTAINER - SOLID BACKGROUND ===== */
+    .input-container {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 8px !important;
+        display: flex !important;
+        gap: 6px !important;
+        align-items: center !important;
+        background: #141515 !important;
+        border-top: 1px solid var(--theme-primary-fade) !important;
+        z-index: 1000 !important;
+    }
+
+    .input-row {
+        flex: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .input-wrapper {
+        flex: 1 !important;
+    }
+
+    /* ===== FIX TEXTAREA BACKGROUND ===== */
+    #messageInput {
+        width: 100% !important;
+        font-size: 14px !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: 1px solid var(--theme-primary-fade) !important;
+    }
+
+    /* ===== BUTTONS - SMALL AND HORIZONTAL ===== */
+    .paperclip-btn,
+    .image-gen-btn {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 5px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .paperclip-btn svg,
+    .image-gen-btn svg {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    .send-btn {
+        position: static !important;
+        flex-shrink: 0 !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0 !important;
+        padding: 0 !important;
+        min-width: 28px !important;
+    }
+
+    .send-btn::before {
+        content: "➤" !important;
+        font-size: 14px !important;
+        color: #fff !important;
+        display: inline-block !important;
+    }
+
+    .send-btn::after,
+    .send-btn * {
+        display: none !important;
+    }
+
+    /* ===== SIDEBAR FOOTER ===== */
+    .sidebar-footer {
+        display: flex !important;
+    }
+
+    /* ===== HIDE OTHER FOOTERS ===== */
+    footer:not(.sidebar-footer),
+    .projects-footer {
+        display: none !important;
+    }
+
+    /* ===== TOOLBAR BUTTONS ===== */
+    .chat-toolbar {
+        gap: 6px !important;
+        padding: 8px !important;
+        margin-left: 0 !important;
+    }
+
+    .toolbar-btn {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 6px !important;
+        font-size: 14px !important;
+    }
+}

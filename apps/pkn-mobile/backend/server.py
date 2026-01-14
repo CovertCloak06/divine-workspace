@@ -1,61 +1,75 @@
 #!/usr/bin/env python3
 """
-PKN Mobile Server
-Simplified Flask server for mobile deployment (Termux)
-Uses OpenAI API instead of local LLM
+PKN Flask Server - Main Entry Point
+Modularized backend with route blueprints
 """
 
-import sys
-from pathlib import Path
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Add backend to path for imports
-app_root = Path(__file__).parent.parent
-sys.path.insert(0, str(app_root))
+from .routes import register_all_routes
 
-# Load environment variables from .env file
-load_dotenv(app_root / ".env")
-
-from backend.routes import register_routes
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Enable CORS for local development
 
-# Register API routes
-register_routes(app)
-
-# Static file serving from frontend/
-ROOT = Path(__file__).parent.parent / "frontend"
+# Static file serving (serves pkn.html, css, js, img from frontend/)
+ROOT = Path(__file__).parent.parent  # Points to apps/pkn/frontend/
 
 
 @app.route("/")
 @app.route("/pkn.html")
 def index():
-    """Serve main HTML file."""
-    return send_from_directory(ROOT, "pkn.html")
+    """Serve main HTML file"""
+    response = send_from_directory(ROOT, "pkn.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route("/<path:filename>")
-def serve_static(filename):
-    """Serve static files (CSS, JS, images)."""
-    return send_from_directory(ROOT, filename)
+def static_files(filename):
+    """Serve static files (css, js, img, etc.)"""
+    path = ROOT / filename
+    if path.exists() and path.is_file():
+        response = send_from_directory(ROOT, filename)
+        response.headers["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, max-age=0"
+        )
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
+        # Set proper MIME types for JavaScript modules
+        if filename.endswith('.js'):
+            response.headers["Content-Type"] = "text/javascript; charset=utf-8"
+        elif filename.endswith('.mjs'):
+            response.headers["Content-Type"] = "text/javascript; charset=utf-8"
+        elif filename.endswith('.css'):
+            response.headers["Content-Type"] = "text/css; charset=utf-8"
+        elif filename.endswith('.json'):
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
+
+        return response
+    return {"error": "Not found"}, 404
+
+
+# Register all API routes
+register_all_routes(app)
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="PKN Mobile Server")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8010, help="Port to listen on")
+    parser.add_argument("--port", type=int, default=8010, help="Port to bind to")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-
     args = parser.parse_args()
 
-    print(f"🚀 Starting PKN Mobile Server on {args.host}:{args.port}")
-    print(f"📱 Optimized for mobile deployment (Termux)")
-    print(f"☁️  Using OpenAI API (no local LLM required)")
-
+    print(f"🚀 Starting PKN server on {args.host}:{args.port}")
     app.run(host=args.host, port=args.port, debug=args.debug)

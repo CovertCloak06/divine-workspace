@@ -1,28 +1,29 @@
 """
-Mobile PKN Configuration
-Settings optimized for mobile deployment (Termux)
+PKN Configuration Settings
+Global configuration values and helper functions
 """
 
 import os
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
-# OpenAI API Configuration
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+# LLM Backend URLs
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434")
+LOCAL_LLM_BASE = os.environ.get("LOCAL_LLM_BASE", "http://127.0.0.1:8000/v1")
 
-# Server Configuration
-SERVER_HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
-SERVER_PORT = int(os.environ.get("SERVER_PORT", "8010"))
 
-# Features (disabled for mobile)
-ENABLE_IMAGE_GEN = False
-ENABLE_LOCAL_LLM = False
-ENABLE_MULTI_AGENT = False
+def join_url(base: str, *parts: str) -> str:
+    """Join a base URL with path parts, avoiding double slashes."""
+    if not base:
+        return "/".join(p.strip("/") for p in parts)
+    base = base.rstrip("/")
+    paths = [p.strip("/") for p in parts if p]
+    if not paths:
+        return base
+    return base + "/" + "/".join(paths)
 
-# Memory Configuration (SHARED with desktop PKN)
-MEMORY_DIR = os.path.join(os.path.dirname(__file__), "../../data/memory")
 
-# Frontend Configuration
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "../../frontend")
+# Alias for backward compatibility
+_join_url = join_url

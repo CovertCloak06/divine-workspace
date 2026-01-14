@@ -1,0 +1,33 @@
+{
+  "id": "diff-viewer",
+  "name": "Code Diff Viewer",
+  "version": "1.0.0",
+  "description": "Side-by-side code comparison with syntax highlighting",
+  "author": "PKN Team",
+  "autoEnable": false,
+  "dependencies": [],
+  "settings": {
+    "viewMode": {
+      "type": "select",
+      "label": "Default view mode",
+      "default": "split",
+      "options": [
+        {"value": "split", "label": "Side-by-side"},
+        {"value": "unified", "label": "Unified"}
+      ],
+      "description": "How to display diffs by default"
+    },
+    "showLineNumbers": {
+      "type": "boolean",
+      "label": "Show line numbers",
+      "default": true,
+      "description": "Display line numbers in diff view"
+    },
+    "contextLines": {
+      "type": "number",
+      "label": "Context lines",
+      "default": 3,
+      "description": "Lines of context around changes"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# Sensitive files
+.env
+*.log
+server.log
+
+# Runtime data
+memory/
+.chroma_db/
+uploads/
+__pycache__/
+*.pyc
+*.pyo
+
+# Backup files (cleanup these instead)
+*.backup*
+*.bak*
+*.removed_*
+*.deleted_*
+*.fix_*
+
+# OS files
+.DS_Store
+Thumbs.db

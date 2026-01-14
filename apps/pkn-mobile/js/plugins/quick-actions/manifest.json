@@ -1,0 +1,17 @@
+{
+  "id": "quick-actions",
+  "name": "Quick Actions & Macros",
+  "version": "1.0.0",
+  "description": "Pre-built workflows and custom macros for common tasks",
+  "author": "PKN Team",
+  "autoEnable": true,
+  "dependencies": [],
+  "settings": {
+    "showButton": {
+      "type": "boolean",
+      "label": "Show Quick Actions button",
+      "default": true,
+      "description": "Display button in input area"
+    }
+  }
+}
