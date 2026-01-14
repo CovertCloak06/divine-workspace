@@ -207,7 +207,8 @@ body {
 /* Sidebar layout and positioning */
 .sidebar {
     width: 220px;
-    height: 100vh;
+    height: 100vh; /* Fallback for older browsers | ref:sidebar-footer visibility issue */
+    height: 100dvh; /* Dynamic viewport height - accounts for browser chrome | Fixes footer cutoff in browser mode */
     background: #101111;
     border-right: 2px solid var(--theme-primary);
     display: flex;
@@ -340,8 +341,11 @@ body {
     border: 1px solid var(--theme-primary);
     border-radius: 4px;
     font-size: 11px;
-    z-index: 1500;
+    z-index: 9999; /* Increased from 1500 to ensure menu appears on top */
     min-width: 140px;
+    /* Fix: Adjust vertical position to account for incorrect JS calculation */
+    transform: translateY(-20px); /* Moves menu up closer to click location */
+    box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3); /* Added glow for visibility */
 }
 .history-menu-item {
     padding: 6px 8px;
@@ -1705,14 +1709,17 @@ select optgroup {
         font-size: 12px;
     }
 }
-/* FIX: Sidebar toggle state */
+/* FIX: Sidebar toggle state - Completely hide when closed */
 .sidebar {
     will-change: transform;
     transform: translateX(0);
+    transition: transform 0.3s ease, visibility 0.3s;
 }
 
 .sidebar.hidden {
-    transform: translateX(-220px) !important;
+    transform: translateX(-100%) !important;  /* Changed from -220px to -100% for complete hiding */
+    visibility: hidden !important;  /* Added to fully hide element */
+    pointer-events: none !important;  /* Prevent interaction when hidden */
 }
 
 /* Ensure toggle button is always visible */
