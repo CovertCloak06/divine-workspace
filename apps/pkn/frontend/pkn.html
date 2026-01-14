@@ -1156,7 +1156,7 @@
 
       for (const plugin of plugins) {
         try {
-          const manifestResponse = await fetch(`plugins/${plugin.path}/manifest.json`);  // Correct path from HTML root
+          const manifestResponse = await fetch(`js/plugins/${plugin.path}/manifest.json`);  // Fixed: plugins are in js/plugins/ directory
           const manifest = await manifestResponse.json();
           await pluginManager.register(manifest, plugin.class);
         } catch (err) {
