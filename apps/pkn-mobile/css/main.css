@@ -618,6 +618,11 @@ body {
     flex-shrink: 0;
 }
 
+/* Mobile agent dropdown - hidden on desktop, shown via mobile.css on mobile */
+.mobile-agent-dropdown {
+    display: none;
+}
+
 .agent-mode-toggle {
     display: flex;
     gap: 4px;

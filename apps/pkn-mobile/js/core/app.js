@@ -443,7 +443,7 @@ function sendMessage() {
     // CRITICAL: Change button to Stop with visual feedback
     if (sendBtn) {
         sendBtn.disabled = false; // Keep enabled so user can click to stop
-        sendBtn.textContent = 'STOP';
+        sendBtn.textContent = ''; // Clear text - CSS ::after handles "STOP" display
         sendBtn.setAttribute('data-state', 'stop');
         console.log('Button changed to STOP with data-state');
     }
@@ -622,19 +622,23 @@ function addMessage(text, sender = 'user', saveToChat = true, attachments = [], 
         // Hide welcome screen BEFORE adding message (so scroll calculation is correct)
         hideWelcomeScreen();
 
-        // Message action buttons (edit, delete, copy)
-        const actionsHtml = `
+        // Message action buttons - different for user vs AI messages
+        let actionsHtml = '';
+        if (sender === 'user') {
+            actionsHtml = `
             <div class="message-actions">
-                <button class="message-action-btn" onclick="copyMessageText(this)" title="Copy message">
-                    <span>📋</span>
-                </button>
-                <button class="message-action-btn" onclick="editMessage(this)" title="Edit message">
-                    <span>✏️</span>
-                </button>
-                <button class="message-action-btn" onclick="deleteMessage(this)" title="Delete message">
-                    <span>🗑️</span>
-                </button>
+                <button class="message-action-btn" onclick="copyMessageText(this)" title="Copy">📋</button>
+                <button class="message-action-btn" onclick="editMessage(this)" title="Edit">✏️</button>
+                <button class="message-action-btn" onclick="deleteMessage(this)" title="Delete">🗑️</button>
             </div>`;
+        } else if (sender === 'ai') {
+            actionsHtml = `
+            <div class="message-actions">
+                <button class="message-action-btn" onclick="copyMessageText(this)" title="Copy">📋</button>
+                <button class="message-action-btn" onclick="regenerateResponse(this)" title="Regenerate">🔄</button>
+                <button class="message-action-btn" onclick="deleteMessage(this)" title="Delete">🗑️</button>
+            </div>`;
+        }
 
         el.innerHTML = `
             <div class="message-row">
@@ -1742,6 +1746,8 @@ function regenerateResponse(btn) {
         }
     }
 }
+
+window.regenerateResponse = regenerateResponse;
 
 // Theme mode switching (dark/light)
 function setThemeMode(mode) {
@@ -4163,19 +4169,43 @@ function setupSidebarHover() {
             hoverStrip.addEventListener('mouseenter', () => { openSidebar(); });
         }
     } else {
-        // Touch: click to toggle and click outside to close
+        // Touch: swipe gestures for sidebar
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        const SWIPE_THRESHOLD = 50; // Minimum px to register as swipe
+        const EDGE_ZONE = 30; // px from left edge to start swipe-to-open
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = Math.abs(touchEndY - touchStartY);
+
+            // Only register horizontal swipes (not vertical scrolling)
+            if (Math.abs(deltaX) > SWIPE_THRESHOLD && deltaY < 100) {
+                if (deltaX > 0 && touchStartX < EDGE_ZONE) {
+                    // Swipe right from left edge → open sidebar
+                    openSidebar();
+                } else if (deltaX < 0 && !sidebar.classList.contains('hidden')) {
+                    // Swipe left anywhere → close sidebar (if open)
+                    closeSidebar();
+                }
+            }
+        }, { passive: true });
+
+        // Keep hoverStrip click as fallback toggle
         if (hoverStrip) {
             hoverStrip.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();
                 if (sidebar.classList.contains('hidden')) openSidebar(); else closeSidebar();
             });
         }
-
-        document.addEventListener('click', (e) => {
-            if (!sidebar.contains(e.target) && !(hoverStrip && hoverStrip.contains(e.target))) {
-                if (!sidebar.classList.contains('hidden')) closeSidebar();
-            }
-        });
     }
 
     if (hoverStrip) {

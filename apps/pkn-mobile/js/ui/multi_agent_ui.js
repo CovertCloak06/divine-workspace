@@ -210,7 +210,8 @@ class MultiAgentUI {
         if (sendBtn) {
             sendBtn.disabled = false; // Keep enabled so user can click to stop
             sendBtn.dataset.originalText = sendBtn.textContent;
-            sendBtn.textContent = '⏹ Stop';
+            sendBtn.textContent = ''; // Clear text - CSS ::after handles "STOP" display
+            sendBtn.setAttribute('data-state', 'stop');
             sendBtn.onclick = () => this.stopStreaming();
         }
 

@@ -109,6 +109,13 @@
         align-items: center !important;
         gap: 12px !important;
         padding: 10px !important;
+        /* Position at screen edge and allow pseudo-element overflow */
+        position: relative !important;
+        left: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
     }
 
     .header-logo {
@@ -123,13 +130,19 @@
 
     /* ===== MAIN CONTENT - SPAN TO LEFT EDGE ===== */
     .main {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100vw !important;
         margin-left: 0 !important;
         padding-left: 0 !important;
+        box-sizing: border-box !important;
     }
 
     /* Make pseudo-element background span full width */
     .main::before {
         left: 0 !important;
+        width: 100% !important;
     }
 
     .container {
@@ -158,19 +171,56 @@
         padding-bottom: 70px !important;
     }
 
-    /* ===== INPUT CONTAINER - SOLID BACKGROUND ===== */
+    /* ===== INPUT CONTAINER - SOLID OPAQUE BACKGROUND ===== */
     .input-container {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
+        width: 100vw !important;
         padding: 8px !important;
         display: flex !important;
         gap: 6px !important;
         align-items: center !important;
         background: #141515 !important;
-        border-top: 1px solid var(--theme-primary-fade) !important;
-        z-index: 1000 !important;
+        background-color: #141515 !important;
+        border-top: none !important;
+        z-index: 2000 !important;
+        opacity: 1 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        /* Allow pseudo-element to overflow */
+        overflow: visible !important;
+    }
+
+    /* ===== PSEUDO-ELEMENT LINES - Full screen width ===== */
+    /* Containers are now 100vw, so pseudo-elements can use simple left:0 width:100% */
+
+    /* Input container top line */
+    .input-container::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 2px !important;
+        background: var(--theme-primary) !important;
+        z-index: 2001 !important;
+    }
+
+    /* Header bottom line */
+    .header::after {
+        content: '' !important;
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-primary-glow) 50%, var(--theme-primary) 100%) !important;
+        box-shadow: 0 0 10px var(--theme-primary-glow) !important;
+        z-index: 1 !important;
     }
 
     .input-row {
@@ -178,56 +228,89 @@
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
+        background: transparent !important;
     }
 
     .input-wrapper {
         flex: 1 !important;
+        background: transparent !important;
     }
 
-    /* ===== FIX TEXTAREA BACKGROUND ===== */
+    /* ===== TEXTAREA - Solid dark background so text is readable ===== */
     #messageInput {
         width: 100% !important;
         font-size: 14px !important;
         padding: 10px !important;
-        background: transparent !important;
+        background: #1a1b1b !important;
+        background-color: #1a1b1b !important;
         border: 1px solid var(--theme-primary-fade) !important;
+        color: #fff !important;
     }
 
-    /* ===== BUTTONS - SMALL AND HORIZONTAL ===== */
+    /* ===== HIDE ATTACHMENT BUTTONS ON MOBILE ===== */
     .paperclip-btn,
     .image-gen-btn {
-        width: 28px !important;
-        height: 28px !important;
-        padding: 5px !important;
-        flex-shrink: 0 !important;
+        display: none !important;
     }
 
-    .paperclip-btn svg,
-    .image-gen-btn svg {
-        width: 12px !important;
-        height: 12px !important;
-    }
-
+    /* ===== SEND BUTTON - Outline style like toolbar buttons ===== */
     .send-btn {
         position: static !important;
         flex-shrink: 0 !important;
-        width: 28px !important;
-        height: 28px !important;
+        width: 44px !important;
+        height: 36px !important;
+        min-width: 44px !important;
         font-size: 0 !important;
         padding: 0 !important;
-        min-width: 28px !important;
+        border-radius: 6px !important;
+        background: transparent !important;
+        border: 1px solid var(--theme-primary) !important;
+        box-shadow: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
+    /* Hide the ::after from main.css in normal state only (stop state uses ::after) */
+    .send-btn:not([data-state="stop"])::after,
+    #sendBtn:not([data-state="stop"])::after {
+        content: "" !important;
+        display: none !important;
+    }
+
+    /* Arrow via ::before for send state - theme color */
     .send-btn::before {
         content: "➤" !important;
-        font-size: 14px !important;
-        color: #fff !important;
-        display: inline-block !important;
+        font-size: 16px !important;
+        color: var(--theme-primary) !important;
+        display: block !important;
     }
 
-    .send-btn::after,
+    /* Hide any child elements */
     .send-btn * {
         display: none !important;
+    }
+
+    /* Stop state - red outline with STOP text */
+    .send-btn[data-state="stop"],
+    #sendBtn[data-state="stop"] {
+        background: transparent !important;
+        border-color: #ff4444 !important;
+        width: 60px !important;
+        min-width: 60px !important;
+    }
+
+    /* Stop state: hide ::before, let main.css ::after show "STOP" */
+    .send-btn[data-state="stop"]::before,
+    #sendBtn[data-state="stop"]::before {
+        content: "" !important;
+        display: none !important;
+    }
+
+    /* Stop state ::after styling */
+    .send-btn[data-state="stop"]::after,
+    #sendBtn[data-state="stop"]::after {
+        color: #ff4444 !important;
     }
 
     /* ===== SIDEBAR FOOTER ===== */
@@ -253,5 +336,30 @@
         height: 32px !important;
         padding: 6px !important;
         font-size: 14px !important;
+    }
+
+    /* ===== MESSAGE ACTION BUTTONS - Smaller ===== */
+    .message-actions {
+        gap: 2px !important;
+        margin-top: 4px !important;
+        opacity: 1 !important;
+    }
+
+    .message-action-btn {
+        font-size: 10px !important;
+        padding: 2px 4px !important;
+        min-width: 20px !important;
+        min-height: 20px !important;
+        width: auto !important;
+        height: auto !important;
+        background: transparent !important;
+        border: none !important;
+        color: var(--theme-primary-glow) !important;
+    }
+
+    .message-action-btn:hover,
+    .message-action-btn:active {
+        background: var(--theme-primary-fade) !important;
+        transform: none !important;
     }
 }
