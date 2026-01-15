@@ -14,7 +14,7 @@ import uuid
 delegation_bp = Blueprint("delegation", __name__)
 
 
-@delegation_bp.route("/api/delegation/delegate", methods=["POST"])
+@delegation_bp.route("/delegate", methods=["POST"])
 def api_delegate_task():
     """
     Delegate a task from one agent to another.
@@ -75,7 +75,7 @@ def api_delegate_task():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@delegation_bp.route("/api/delegation/collaborate", methods=["POST"])
+@delegation_bp.route("/collaborate", methods=["POST"])
 def api_collaborate():
     """
     Have multiple agents collaborate on a task.

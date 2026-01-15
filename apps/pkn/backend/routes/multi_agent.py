@@ -63,9 +63,9 @@ def api_multi_agent_chat():
             # Add user message to history
             conversation_memory.add_message(session_id, "user", message)
 
-            # Route and execute task (pass backend preference to agent manager)
+            # Route and execute task
             current_app.logger.debug(f"Routing task: {message[:50]}...")
-            result = asyncio.run(agent_manager.execute_task(message, session_id, backend=backend))
+            result = asyncio.run(agent_manager.execute_task(message, session_id))
 
             # Add assistant response to history
             if result["status"] == "success":
@@ -183,9 +183,9 @@ def api_multi_agent_chat_stream():
                 asyncio.set_event_loop(loop)
 
                 try:
-                    # Get the async generator (pass backend preference)
+                    # Get the async generator
                     async_gen = agent_manager.execute_task_streaming(
-                        message, session_id, backend=backend
+                        message, session_id
                     )
 
                     # Consume it synchronously

@@ -14,7 +14,7 @@ import time
 sandbox_bp = Blueprint("sandbox", __name__)
 
 
-@sandbox_bp.route("/api/sandbox/execute", methods=["POST"])
+@sandbox_bp.route("/execute", methods=["POST"])
 def api_sandbox_execute():
     """
     Execute code in a safe sandbox environment.

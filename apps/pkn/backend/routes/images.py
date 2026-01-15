@@ -21,7 +21,7 @@ except ImportError:
 images_bp = Blueprint("images", __name__)
 
 
-@images_bp.route("/api/generate-image", methods=["POST"])
+@images_bp.route("/generate-image", methods=["POST"])
 def generate_image():
     """
     Generate images using LOCAL Stable Diffusion
@@ -62,7 +62,7 @@ def generate_image():
         return jsonify({"error": f"Local generation failed: {str(e)}"}), 500
 
 
-@images_bp.route("/api/generate-image-stream", methods=["POST"])
+@images_bp.route("/generate-image-stream", methods=["POST"])
 def generate_image_stream():
     """
     Generate images with Server-Sent Events for real-time progress updates

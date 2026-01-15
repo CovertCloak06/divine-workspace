@@ -1,0 +1,284 @@
+name: PKN Automated Tests
+
+# Run on push, pull request, and manual trigger
+on:
+  push:
+    branches: [ main, develop, "claude/**" ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+# Environment variables
+env:
+  PKN_TEST_URL: http://localhost:8010
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+
+jobs:
+  # Backend tests
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run Python unit tests
+        run: |
+          pytest tests/unit/ -v --cov=backend --cov-report=xml --cov-report=html
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  # Frontend E2E tests
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          playwright install chromium
+          playwright install-deps
+
+      - name: Start PKN server (background)
+        run: |
+          python server.py &
+          sleep 5
+          # Wait for server to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:8010/health; do sleep 1; done'
+
+      - name: Run E2E tests
+        run: |
+          pytest tests/e2e/ -v --headed=false --screenshot=on --video=on
+        env:
+          PKN_TEST_HEADLESS: 'true'
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-screenshots
+          path: tests/screenshots/comparison/
+          retention-days: 7
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-videos
+          path: tests/screenshots/videos/
+          retention-days: 7
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-report
+          path: |
+            pytest-report.html
+            test-results.json
+          retention-days: 14
+
+  # Visual regression tests
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for baseline comparison
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          playwright install chromium chromium-headless-shell
+
+      - name: Restore baseline screenshots
+        uses: actions/cache@v3
+        with:
+          path: tests/screenshots/baseline/
+          key: visual-baselines-${{ github.ref }}
+          restore-keys: |
+            visual-baselines-main
+            visual-baselines-
+
+      - name: Start PKN server
+        run: |
+          python server.py &
+          sleep 5
+          curl http://localhost:8010/health
+
+      - name: Run visual regression tests
+        run: |
+          pytest tests/visual/ -v --update-snapshots
+        continue-on-error: true
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: visual-diffs
+          path: tests/screenshots/comparison/
+          retention-days: 7
+
+      - name: Save baseline screenshots
+        if: success() && github.ref == 'refs/heads/main'
+        uses: actions/cache@v3
+        with:
+          path: tests/screenshots/baseline/
+          key: visual-baselines-${{ github.ref }}-${{ github.sha }}
+
+  # Performance tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          playwright install chromium
+
+      - name: Start PKN server
+        run: |
+          python server.py &
+          sleep 5
+
+      - name: Run performance tests
+        run: |
+          pytest tests/performance/ -v -m performance
+
+      - name: Generate performance report
+        if: always()
+        run: |
+          echo "# Performance Test Results" > performance-report.md
+          echo "" >> performance-report.md
+          cat pytest-report.html >> performance-report.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report
+          path: performance-report.md
+          retention-days: 30
+
+  # Lighthouse audit
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          npm install -g @lhci/cli lighthouse
+
+      - name: Start PKN server
+        run: |
+          python server.py &
+          sleep 5
+
+      - name: Run Lighthouse
+        run: |
+          lhci autorun --config=.lighthouserc.json || lighthouse http://localhost:8010 --output=html --output-path=./lighthouse-report.html
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-report
+          path: lighthouse-report.html
+          retention-days: 14
+
+  # Test summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, e2e-tests, visual-tests, performance-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Tests: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Visual Tests: ${{ needs.visual-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance Tests: ${{ needs.performance-tests.result }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any test failed
+        if: |
+          needs.backend-tests.result == 'failure' ||
+          needs.e2e-tests.result == 'failure' ||
+          needs.performance-tests.result == 'failure'
+        run: |
+          echo "One or more test suites failed"
+          exit 1
+
+# Notifications (optional)
+# - Add Slack/Discord webhook to notify on failures
+# - Send email on test failures

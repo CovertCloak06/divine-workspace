@@ -13,7 +13,7 @@ import json
 rag_bp = Blueprint("rag", __name__)
 
 
-@rag_bp.route("/api/rag/search", methods=["POST"])
+@rag_bp.route("/search", methods=["POST"])
 def api_rag_search():
     """
     Search codebase using RAG semantic search.

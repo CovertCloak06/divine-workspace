@@ -15,7 +15,7 @@ import time
 chat_bp = Blueprint("chat", __name__)
 
 
-@chat_bp.route("/api/chat", methods=["POST"])
+@chat_bp.route("/chat", methods=["POST"])
 def api_chat():
     try:
         data = request.get_json() or {}
@@ -134,7 +134,7 @@ def api_chat():
         return jsonify({"error": str(e)}), 500
 
 
-@chat_bp.route("/api/agent", methods=["POST"])
+@chat_bp.route("/agent", methods=["POST"])
 def api_agent():
     """
     Enhanced Parakleon agent endpoint with tool use and web access.
@@ -196,7 +196,7 @@ def api_agent():
         return jsonify({"error": str(e)}), 500
 
 
-@chat_bp.route("/api/autocomplete", methods=["POST"])
+@chat_bp.route("/autocomplete", methods=["POST"])
 def api_autocomplete():
     """
     Code autocomplete endpoint for intelligent code suggestions.

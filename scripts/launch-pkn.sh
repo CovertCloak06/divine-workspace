@@ -16,5 +16,5 @@ else
     echo "PKN server already running"
 fi
 
-# Open browser
-xdg-open http://localhost:8010
+# Open browser (Chromium)
+chromium-browser http://localhost:8010 > /dev/null 2>&1 &

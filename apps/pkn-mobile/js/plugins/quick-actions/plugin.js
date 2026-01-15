@@ -373,6 +373,15 @@ export class QuickActionsPlugin extends PluginBase {
                 display: flex;
                 flex-direction: column;
             }
+            @media (max-width: 768px) {
+                .quick-actions-menu {
+                    width: calc(100vw - 32px);
+                    left: 16px;
+                    right: 16px;
+                    bottom: 80px;
+                    max-height: 60vh;
+                }
+            }
             .quick-actions-menu.visible {
                 opacity: 1;
                 transform: translateY(0) scale(1);

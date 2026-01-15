@@ -4,6 +4,7 @@ Extracted from divinenode_server.py
 """
 
 from flask import Blueprint, request, jsonify
+from pathlib import Path
 import json
 import requests
 import time
@@ -13,8 +14,11 @@ from ..config.settings import OLLAMA_BASE, LOCAL_LLM_BASE, join_url
 # Create blueprint
 models_bp = Blueprint("models", __name__)
 
+# Project root directory (for finding llama.cpp/models)
+ROOT = Path(__file__).parent.parent.parent
 
-@models_bp.route("/api/models/ollama", methods=["GET"])
+
+@models_bp.route("/ollama", methods=["GET"])
 def list_ollama_models():
     # Returns available Ollama models (see app.js: refreshOllamaModels)
     try:
@@ -73,7 +77,7 @@ def list_ollama_models():
         return jsonify({"error": str(e)}), 500
 
 
-@models_bp.route("/api/models/llamacpp", methods=["GET"])
+@models_bp.route("/llamacpp", methods=["GET"])
 def list_llamacpp_models():
     """Return all GGUF models in llama.cpp/models/ directory"""
     try:

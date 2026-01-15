@@ -112,48 +112,48 @@ class AgentManager:
     def _init_agents(self):
         """Initialize available agent configurations"""
 
-        # Coder Agent - Qwen2.5-Coder (best for code)
+        # Coder Agent - Qwen2.5-Coder-14B via ollama (LOCAL, FAST)
         self.agents[AgentType.CODER] = {
             "name": "Qwen Coder",
-            "model": "llamacpp:local",
-            "endpoint": "http://127.0.0.1:8000/v1",
+            "model": "ollama:qwen2.5-coder:14b",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": ["code_writing", "debugging", "refactoring", "code_review"],
-            "speed": "slow",  # ~6s for simple tasks
+            "speed": "fast",  # ~15s for complex tasks
             "quality": "high",  # Best code quality
-            "tools_enabled": False,  # Simplified for now - basic chat works
+            "tools_enabled": True,  # ✅ ENABLED: code_tools, file_tools, sandbox, web_tools, memory
         }
 
-        # Reasoner Agent - Could use DeepSeek or same Qwen
+        # Reasoner Agent - Qwen3-14B via ollama (HIGH QUALITY)
         self.agents[AgentType.REASONER] = {
             "name": "Reasoning Agent",
-            "model": "llamacpp:local",
-            "endpoint": "http://127.0.0.1:8000/v1",
+            "model": "ollama:qwen3:14b",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": ["planning", "logic", "problem_solving", "analysis"],
-            "speed": "slow",
+            "speed": "fast",
             "quality": "high",
-            "tools_enabled": False,  # Simplified for now
+            "tools_enabled": True,  # ✅ ENABLED: planning_tools, memory_tools, delegation_tools
         }
 
-        # Researcher Agent - Enhanced agent with web tools
+        # Researcher Agent - Mistral via ollama (BALANCED)
         self.agents[AgentType.RESEARCHER] = {
             "name": "Research Agent",
-            "model": "llamacpp:local",
-            "endpoint": "http://127.0.0.1:8000/v1",
+            "model": "ollama:mistral:latest",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": ["web_search", "documentation", "fact_checking"],
-            "speed": "very_slow",  # Includes web lookups
+            "speed": "fast",  # Fast inference + web lookups
             "quality": "high",
-            "tools_enabled": False,  # Simplified for now
+            "tools_enabled": True,  # ✅ ENABLED: web_tools, osint_tools, rag_tools, memory_tools
         }
 
-        # Executor Agent - For system commands (uses enhanced agent)
+        # Executor Agent - DeepSeek-Coder via ollama (FAST COMMANDS)
         self.agents[AgentType.EXECUTOR] = {
             "name": "Executor Agent",
-            "model": "llamacpp:local",
-            "endpoint": "http://127.0.0.1:8000/v1",
+            "model": "ollama:deepseek-coder:6.7b",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": ["command_execution", "file_operations", "system_tasks"],
-            "speed": "medium",
+            "speed": "fast",
             "quality": "medium",
-            "tools_enabled": False,  # Simplified for now
+            "tools_enabled": True,  # ✅ ENABLED: system_tools, file_tools, sandbox_tools, evaluation_tools
         }
 
         # General Agent - For simple Q&A (Ollama if available, else Qwen)
@@ -164,7 +164,7 @@ class AgentManager:
             "capabilities": ["conversation", "simple_qa", "explanations"],
             "speed": "fast",  # ~2s for simple tasks
             "quality": "medium",
-            "tools_enabled": False,
+            "tools_enabled": True,  # ✅ ENABLED: memory_tools, web_tools, chain_tools
         }
 
         # Consultant Agent - Claude API for maximum intelligence
@@ -184,11 +184,11 @@ class AgentManager:
         }
 
         # Security Agent - UNCENSORED cybersecurity expert
-        # Uses Qwen2.5-Coder-14B-Instruct-abliterated (uncensored model)
+        # Uses Qwen3-abliterated (UNCENSORED, NO FILTERS)
         self.agents[AgentType.SECURITY] = {
             "name": "Security Expert (Uncensored)",
-            "model": "llamacpp:local",  # Uses your abliterated Qwen model
-            "endpoint": "http://127.0.0.1:8000/v1",
+            "model": "ollama:huihui_ai/qwen3-abliterated:4b-v2-q4_K_M",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": [
                 "penetration_testing",
                 "vulnerability_analysis",
@@ -204,18 +204,17 @@ class AgentManager:
                 "red_teaming",
                 "blue_teaming",
             ],
-            "speed": "slow",  # ~8-15s for security analysis
+            "speed": "fast",  # ~10-15s for security analysis
             "quality": "high",  # Expert-level security knowledge
             "tools_enabled": True,  # Full access to OSINT, web, system tools
-            "uncensored": True,  # NO content filtering
+            "uncensored": True,  # NO content filtering - ABLITERATED MODEL
         }
 
-        # Vision Agent - LLaVA for image/UI analysis (LOCAL)
-        # Uses LLaVA-v1.6-Vicuna-7B for vision capabilities
+        # Vision Agent - LLaVA via ollama (LOCAL VISION)
         self.agents[AgentType.VISION] = {
             "name": "Vision Analyst (Local)",
-            "model": "llamacpp:vision",  # LLaVA vision model
-            "endpoint": "http://127.0.0.1:8001/v1",  # Separate port for vision
+            "model": "ollama:llava:latest",
+            "endpoint": "http://127.0.0.1:11434",
             "capabilities": [
                 "image_analysis",
                 "screenshot_analysis",
@@ -227,7 +226,7 @@ class AgentManager:
                 "object_detection",
                 "scene_understanding",
             ],
-            "speed": "medium",  # ~5-8s for vision analysis
+            "speed": "fast",  # ~10-15s for vision analysis
             "quality": "high",  # Good vision understanding
             "tools_enabled": True,  # Can use file tools to load images
             "vision": True,  # Supports image input
@@ -457,6 +456,8 @@ class AgentManager:
                 AgentType.EXECUTOR,
                 AgentType.RESEARCHER,
                 AgentType.REASONER,
+                AgentType.GENERAL,
+                AgentType.SECURITY,
             ]:
                 # Use tool-enhanced execution
                 response, tools_used = await self._execute_with_tools(
@@ -974,6 +975,127 @@ class AgentManager:
             return f"Error: LLM API returned error {e.response.status_code}: {e.response.text}"
         except Exception as e:
             return f"Error calling LLM API: {str(e)}"
+
+    async def _execute_with_tools(
+        self,
+        instruction: str,
+        agent_type: AgentType,
+        endpoint: str,
+        model: str,
+    ) -> tuple:
+        """
+        Execute task with FULL tool support for local agents (ollama).
+
+        Implements multi-turn conversation:
+        1. Agent receives instruction + tool descriptions
+        2. Agent can request tool execution
+        3. Tool executes, result returned to agent
+        4. Agent provides final response with tool results
+
+        Returns:
+            tuple: (response: str, tools_used: list)
+        """
+        import requests
+        from .tool_executor import ToolExecutor
+        from ..tools import list_available_tools
+
+        # Initialize tool executor
+        executor = ToolExecutor(max_tool_turns=3)
+
+        # Get available tools for this agent
+        available_tool_names = list_available_tools()
+
+        # Build tool-aware system prompt
+        tool_context = executor.build_tool_context_prompt(available_tool_names)
+        system_prompt = f"""{tool_context}
+
+IMPORTANT: Always respond ONLY in English. Never use Chinese or any other language."""
+
+        tools_used = []
+        current_instruction = instruction
+        turns = 0
+        max_turns = 3
+
+        while turns < max_turns:
+            # Call LLM
+            response = await self._call_chat_api(
+                current_instruction,
+                endpoint,
+                model,
+                system_prompt
+            )
+
+            # Check if agent wants to use a tool
+            if executor.needs_tool_execution(response):
+                tool_call = executor.parse_tool_call(response)
+
+                if tool_call:
+                    # Execute the tool
+                    tool_result = executor.execute_tool_call(tool_call)
+                    tools_used.append(tool_call["tool"])
+
+                    # Format result for agent
+                    tool_feedback = executor.format_tool_result_for_agent(tool_result)
+
+                    # Continue conversation with tool result
+                    current_instruction = tool_feedback
+                    turns += 1
+                    continue
+
+            # No tool call, return final response
+            return response, tools_used
+
+        # Max turns reached, return last response
+        return response + "\n\n(Note: Reached maximum tool execution limit)", tools_used
+
+    async def _execute_claude_with_tools(
+        self,
+        instruction: str,
+        agent_type: AgentType,
+    ) -> tuple:
+        """
+        Execute task with Claude API and tool support.
+
+        Returns:
+            tuple: (response: str, tools_used: list)
+        """
+        # Get tools for this agent type
+        available_tools = self.get_tools_for_agent(agent_type)
+
+        # Build tool descriptions
+        tool_descriptions = []
+        for tool in available_tools:
+            tool_desc = f"- {tool.name}: {tool.description}"
+            tool_descriptions.append(tool_desc)
+
+        tools_text = "\n".join(tool_descriptions) if tool_descriptions else "No specific tools available."
+
+        # For now, use basic Claude API call with tool awareness
+        # Full Claude tool calling will be implemented in next iteration
+        system_prompt = f"""You are an expert consultant with access to these tools:
+
+{tools_text}
+
+Provide thoughtful, well-reasoned advice."""
+
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": instruction}]
+            )
+
+            response = message.content[0].text
+            tools_used = ["claude_with_tools"]
+
+            return response, tools_used
+
+        except Exception as e:
+            return f"Error calling Claude API: {str(e)}", []
 
     def get_agent_stats(self) -> Dict[str, Any]:
         """Get statistics about agent usage"""

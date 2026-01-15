@@ -588,3 +588,225 @@ button {
         height: 200px;
     }
 }
+
+/* ==========================================
+   Advanced Console Styles
+   ========================================== */
+
+.log-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid #222;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.log-entry:hover {
+    background: #1a1a1a;
+}
+
+.log-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.log-icon {
+    font-size: 14px;
+}
+
+.log-time {
+    color: #666;
+    font-size: 10px;
+}
+
+.log-level {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.log-entry.log-console.log-log .log-level {
+    background: #333;
+    color: #0FF;
+}
+
+.log-entry.log-console.log-info .log-level {
+    background: #004488;
+    color: #00AAFF;
+}
+
+.log-entry.log-console.log-warn .log-level {
+    background: #664400;
+    color: #FFA500;
+}
+
+.log-entry.log-console.log-error .log-level,
+.log-entry.log-error .log-level {
+    background: #660000;
+    color: #FF4444;
+}
+
+.log-message {
+    color: #E0E0E0;
+    margin: 4px 0;
+    word-break: break-word;
+}
+
+.error-message {
+    color: #FF6666;
+    font-weight: bold;
+}
+
+.log-stack {
+    margin-top: 6px;
+    padding: 6px;
+    background: #0d0d0d;
+    border-left: 2px solid #FF4444;
+    font-size: 11px;
+    color: #999;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+.stack-line {
+    display: block;
+    padding: 2px 0;
+}
+
+.stack-line:hover {
+    color: #0FF;
+    cursor: pointer;
+}
+
+.log-method {
+    padding: 2px 6px;
+    background: #222;
+    border-radius: 3px;
+    color: #0FF;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+.log-status {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.log-duration {
+    color: #FFA500;
+    font-size: 11px;
+}
+
+.log-file {
+    color: #888;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.log-action {
+    padding: 2px 6px;
+    background: #223322;
+    border-radius: 3px;
+    color: #0F0;
+    font-size: 10px;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Network log specific */
+.log-entry.log-network .log-message {
+    font-size: 11px;
+    color: #888;
+}
+
+.log-error {
+    color: #FF4444;
+    margin-top: 4px;
+    font-size: 11px;
+}
+
+/* Performance log specific */
+.log-metric {
+    padding: 2px 6px;
+    background: #223344;
+    border-radius: 3px;
+    color: #4AF;
+    font-size: 10px;
+}
+
+/* User action log specific */
+.log-entry.log-user-action {
+    opacity: 0.7;
+}
+
+.log-entry.log-user-action:hover {
+    opacity: 1;
+}
+
+/* Console controls */
+.console-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+}
+
+.console-output {
+    height: calc(100% - 48px);
+    overflow-y: auto;
+    background: #0d0d0d;
+}
+
+.console-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console-output::-webkit-scrollbar-track {
+    background: #0d0d0d;
+}
+
+.console-output::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+.console-output::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Log level filter colors */
+.log-entry.hidden {
+    display: none;
+}
+
+/* Pre-formatted code blocks in logs */
+.log-message pre {
+    background: #0d0d0d;
+    padding: 8px;
+    border-radius: 3px;
+    border-left: 2px solid #0FF;
+    overflow-x: auto;
+    margin: 4px 0;
+}
+
+/* Highlight search matches */
+.log-message mark {
+    background: #FF6;
+    color: #000;
+    padding: 1px 2px;
+    border-radius: 2px;
+}

@@ -11,7 +11,7 @@ import json
 code_bp = Blueprint("code", __name__)
 
 
-@code_bp.route("/api/code/analyze", methods=["POST"])
+@code_bp.route("/analyze", methods=["POST"])
 def api_code_analyze():
     """
     Analyze a code file and return symbols, imports, structure.
@@ -61,7 +61,7 @@ def api_code_analyze():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@code_bp.route("/api/code/scan-project", methods=["POST"])
+@code_bp.route("/scan-project", methods=["POST"])
 def api_code_scan_project():
     """
     Scan entire project and build symbol index.

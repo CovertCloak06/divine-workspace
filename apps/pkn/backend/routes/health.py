@@ -22,7 +22,7 @@ def health():
 # Add API-style health endpoint for clients expecting /api/health
 
 
-@health_bp.route("/api/health", methods=["GET"])
+@health_bp.route("/health", methods=["GET"])
 def api_health():
     return jsonify({"status": "ok", "service": "divinenode_api"}), 200
 
@@ -30,7 +30,7 @@ def api_health():
 # --- Network utility endpoints (backend-powered) ---
 
 
-@health_bp.route("/api/models/health", methods=["GET"])
+@health_bp.route("/models/health", methods=["GET"])
 def models_health():
     """Quick health check for configured LLM backends (Ollama and local OpenAI-compatible server)."""
     results = {}

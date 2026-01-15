@@ -312,6 +312,14 @@ export class AgentMemoryPlugin extends PluginBase {
                 transition: all 0.3s ease;
                 box-shadow: -4px 0 32px rgba(0, 255, 255, 0.2);
             }
+            @media (max-width: 768px) {
+                .agent-memory-panel {
+                    width: 100vw;
+                    left: 0;
+                    right: 0;
+                    border-left: none;
+                }
+            }
             .agent-memory-panel.visible {
                 opacity: 1;
                 transform: translateX(0);

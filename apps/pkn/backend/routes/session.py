@@ -11,7 +11,7 @@ import json
 session_bp = Blueprint("session", __name__)
 
 
-@session_bp.route("/api/session/<session_id>", methods=["GET"])
+@session_bp.route("/<session_id>", methods=["GET"])
 def api_get_session(session_id):
     """Get session information"""
     try:
@@ -31,7 +31,7 @@ def api_get_session(session_id):
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@session_bp.route("/api/session/<session_id>/history", methods=["GET"])
+@session_bp.route("/<session_id>/history", methods=["GET"])
 def api_get_session_history(session_id):
     """Get conversation history for a session"""
     try:

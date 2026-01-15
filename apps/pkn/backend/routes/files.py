@@ -9,13 +9,57 @@ import uuid
 from pathlib import Path
 import os
 import time
+import contextlib
 
 
 # Create blueprint
 files_bp = Blueprint("files", __name__)
 
+# File storage configuration
+UPLOAD_DIR = Path(__file__).parent.parent.parent / "uploads"
+META_FILE = UPLOAD_DIR / "files.json"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-@files_bp.route("/api/files/upload", methods=["POST"])
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+ALLOWED_EXTENSIONS = {
+    # Documents
+    "txt", "pdf", "doc", "docx", "odt", "rtf",
+    # Images
+    "jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",
+    # Code
+    "py", "js", "html", "css", "json", "xml", "yaml", "yml",
+    "c", "cpp", "h", "hpp", "java", "rs", "go", "sh", "md",
+    # Data
+    "csv", "tsv", "xlsx", "xls",
+    # Archives
+    "zip", "tar", "gz", "bz2", "7z",
+    # Other
+    "log", "ini", "cfg", "conf",
+}
+
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _load_meta():
+    """Load file metadata for uploads"""
+    try:
+        if META_FILE.exists():
+            return json.loads(META_FILE.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+def _save_meta(meta):
+    """Save file metadata for uploads"""
+    with contextlib.suppress(Exception):
+        META_FILE.write_text(json.dumps(meta, indent=2))
+
+
+@files_bp.route("/upload", methods=["POST"])
 def upload_file():
     try:
         if "file" not in request.files:
@@ -69,7 +113,7 @@ def upload_file():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/list", methods=["GET"])
+@files_bp.route("/list", methods=["GET"])
 def list_files():
     try:
         meta = _load_meta()
@@ -81,7 +125,7 @@ def list_files():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/<file_id>/summary", methods=["GET"])
+@files_bp.route("/<file_id>/summary", methods=["GET"])
 def file_summary(file_id):
     try:
         meta = _load_meta()
@@ -150,7 +194,7 @@ def file_summary(file_id):
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/<file_id>", methods=["DELETE"])
+@files_bp.route("/<file_id>", methods=["DELETE"])
 def delete_file(file_id):
     try:
         meta = _load_meta()
@@ -173,7 +217,7 @@ def delete_file(file_id):
 # ===== FILE EXPLORER ENDPOINTS =====
 
 
-@files_bp.route("/api/files/browse", methods=["POST"])
+@files_bp.route("/browse", methods=["POST"])
 def browse_directory():
     """Browse files in a directory"""
     try:
@@ -220,7 +264,7 @@ def browse_directory():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/download", methods=["POST"])
+@files_bp.route("/download", methods=["POST"])
 def download_file_from_path():
     """Download a file from filesystem"""
     try:
@@ -250,7 +294,7 @@ def download_file_from_path():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/view", methods=["POST"])
+@files_bp.route("/view", methods=["POST"])
 def view_file_content():
     """View text file content"""
     try:
@@ -306,7 +350,7 @@ def view_file_content():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/delete", methods=["POST"])
+@files_bp.route("/delete", methods=["POST"])
 def delete_filesystem_item():
     """Delete a file or directory"""
     try:
@@ -349,7 +393,7 @@ def delete_filesystem_item():
         return jsonify({"error": str(e)}), 500
 
 
-@files_bp.route("/api/files/mkdir", methods=["POST"])
+@files_bp.route("/mkdir", methods=["POST"])
 def create_directory():
     """Create a new directory"""
     try:

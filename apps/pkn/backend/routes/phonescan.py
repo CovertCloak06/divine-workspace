@@ -14,7 +14,7 @@ import time
 phonescan_bp = Blueprint("phonescan", __name__)
 
 
-@phonescan_bp.route("/api/phonescan", methods=["POST"])
+@phonescan_bp.route("/phonescan", methods=["POST"])
 def phonescan():
     try:
         data = request.get_json()

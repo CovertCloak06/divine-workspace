@@ -200,6 +200,7 @@
                 <button class="tab active" data-tab="console">🖥️ Console</button>
                 <button class="tab" data-tab="state">🧪 State</button>
                 <button class="tab" data-tab="analysis">🔍 Code Analysis</button>
+                <button class="tab" data-tab="security">🔒 Security</button>
             </div>
 
             <div class="tab-content">
@@ -285,6 +286,55 @@
                             <button id="startTutorial" class="btn-primary" style="flex: 1; min-width: 180px; padding: 8px 16px; background: linear-gradient(135deg, #00FFFF 0%, #00CCCC 100%); border: none; border-radius: 4px; color: #000; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);">
                                 🎓 Start Interactive Tutorial
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Tab -->
+                <div id="securityTab" class="tab-panel">
+                    <div class="security-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div>
+                            <h3 style="margin: 0; color: #00FFFF;">🔒 Security Scanner</h3>
+                            <p style="margin: 5px 0 0 0; color: #888; font-size: 12px;">Analyze page security: headers, cookies, forms, storage, scripts</p>
+                        </div>
+                        <button id="runSecurityScan" class="btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #00FFFF 0%, #00CCCC 100%); border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">
+                            🔍 Run Security Scan
+                        </button>
+                    </div>
+
+                    <div class="security-quick-checks" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 15px;">
+                        <button class="security-check-btn" data-check="headers" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            📋 Headers
+                        </button>
+                        <button class="security-check-btn" data-check="cookies" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            🍪 Cookies
+                        </button>
+                        <button class="security-check-btn" data-check="forms" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            📝 Forms
+                        </button>
+                        <button class="security-check-btn" data-check="storage" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            💾 Storage
+                        </button>
+                        <button class="security-check-btn" data-check="scripts" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            📜 Scripts
+                        </button>
+                        <button class="security-check-btn" data-check="links" style="padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #00FFFF; cursor: pointer; font-size: 11px;">
+                            🔗 Links
+                        </button>
+                    </div>
+
+                    <div id="securityOutput" style="background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 20px; min-height: 300px; max-height: 450px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 60px 20px; color: #666;">
+                            <div style="font-size: 64px; margin-bottom: 15px; opacity: 0.5;">🔒</div>
+                            <div style="font-size: 14px;">Click "Run Security Scan" to analyze this page</div>
+                            <div style="font-size: 11px; margin-top: 8px; color: #444;">Checks headers, cookies, forms, storage, scripts, and links</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(0,255,255,0.05); border: 1px solid rgba(0,255,255,0.2); border-radius: 6px;">
+                        <div style="font-size: 12px; color: #888;">
+                            <strong style="color: #00FFFF;">💡 What this checks:</strong>
+                            HTTPS usage, cookie security flags, CSRF protection, localStorage secrets, inline scripts, mixed content, target="_blank" vulnerabilities, and more.
                         </div>
                     </div>
                 </div>

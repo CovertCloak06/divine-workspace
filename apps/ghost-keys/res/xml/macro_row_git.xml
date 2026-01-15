@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <row height="0.75">
-  <key key0="macro_drawer"
+  <!-- TEMPORARILY DISABLED - Bug causing loop -->
+  <!-- <key key0="macro_drawer"
+       key1="save_macro"
+       key2="macro_next"
+       key3="macro_prev"/> -->
+  <key key0=" "
        key1="save_macro"
        key2="macro_next"
        key3="macro_prev"/>

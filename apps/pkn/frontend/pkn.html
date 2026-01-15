@@ -49,7 +49,7 @@
     <link rel="apple-touch-icon" href="img/icchat.png">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/mobile.css?v=20260114-0230">
     <link rel="stylesheet" href="css/file-explorer.css">
     <link rel="stylesheet" href="css/osint.css">
     <!-- Syntax Highlighting -->
@@ -1096,6 +1096,73 @@
 <!-- Multi-agent UI CSS -->
 <link rel="stylesheet" href="css/multi_agent.css">
 
+<!-- CRITICAL MOBILE FIX - Inline to override ALL other CSS -->
+<style>
+@media (max-width: 768px) {
+    /* Force containers to span full viewport width */
+    html, body {
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+    }
+
+    .container {
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .main {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Force pseudo-elements to span full width from left edge (0px) */
+    .main::before {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+    }
+
+    .header {
+        width: 100vw !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .header::after {
+        left: 0 !important;
+        width: 100% !important;
+    }
+
+    .input-container {
+        width: 100vw !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .input-container::before {
+        left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Ensure hover-strip is completely gone */
+    .hover-strip {
+        display: none !important;
+        width: 0 !important;
+        opacity: 0 !important;
+    }
+}
+</style>
+
 <!-- Main application (monolithic version) -->
 <script src="js/core/app.js"></script>
 
@@ -1572,5 +1639,103 @@ function savePlaceholderText(text) {
     }
 }
 </script>
+
+<!-- Eruda Mobile DevTools - ON-SCREEN DEV CONSOLE FOR MOBILE -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>
+    // Load Eruda on mobile devices (screens ≤768px)
+    if (window.innerWidth <= 768) {
+        eruda.init({
+            tool: ['console', 'elements', 'network', 'resources', 'info', 'snippets']
+        });
+        console.log('📱 Eruda DevTools loaded - Tap floating button to open');
+
+        // Auto-open Elements tab on load to inspect CSS
+        setTimeout(() => {
+            if (window.eruda) {
+                eruda.show();
+                eruda.show('elements');
+            }
+        }, 1000);
+    }
+</script>
+
+<!-- CSS Debug Panel - Shows live measurements -->
+<script>
+if (window.innerWidth <= 768) {
+    window.addEventListener('DOMContentLoaded', () => {
+        // Create debug panel
+        const debugPanel = document.createElement('div');
+        debugPanel.id = 'cssDebugPanel';
+        debugPanel.innerHTML = `
+            <div style="position: fixed; top: 50px; right: 10px; background: rgba(0,0,0,0.95);
+                        border: 2px solid #00ffff; padding: 10px; z-index: 99999;
+                        font-family: monospace; font-size: 10px; color: #00ffff;
+                        max-width: 200px; display: none;" id="debugContent">
+                <div style="font-weight: bold; margin-bottom: 5px;">📐 CSS Debug</div>
+                <div id="debugInfo"></div>
+                <button onclick="document.getElementById('debugContent').style.display='none'"
+                        style="margin-top: 5px; width: 100%; background: #ff4444; color: #fff;
+                               border: none; padding: 5px;">Close</button>
+            </div>
+            <button onclick="document.getElementById('debugContent').style.display='block'; updateDebugInfo();"
+                    style="position: fixed; top: 10px; right: 10px; z-index: 99999;
+                           background: rgba(0,255,255,0.3); border: 2px solid #00ffff;
+                           color: #00ffff; padding: 8px 12px; border-radius: 4px;
+                           font-family: monospace; font-size: 11px;">
+                🔍 DEBUG
+            </button>
+        `;
+        document.body.appendChild(debugPanel);
+
+        // Update measurements
+        window.updateDebugInfo = function() {
+            const main = document.querySelector('.main');
+            const header = document.querySelector('.header');
+            const input = document.querySelector('.input-container');
+
+            const info = [];
+
+            // Main element
+            if (main) {
+                const rect = main.getBoundingClientRect();
+                const styles = window.getComputedStyle(main);
+                const pseudo = window.getComputedStyle(main, '::before');
+                info.push(`<strong>.main</strong><br>`);
+                info.push(`left: ${rect.left}px<br>`);
+                info.push(`width: ${rect.width}px<br>`);
+                info.push(`::before left: ${pseudo.left}<br>`);
+                info.push(`<br>`);
+            }
+
+            // Header
+            if (header) {
+                const rect = header.getBoundingClientRect();
+                const pseudo = window.getComputedStyle(header, '::after');
+                info.push(`<strong>.header</strong><br>`);
+                info.push(`left: ${rect.left}px<br>`);
+                info.push(`width: ${rect.width}px<br>`);
+                info.push(`::after left: ${pseudo.left}<br>`);
+                info.push(`::after width: ${pseudo.width}<br>`);
+                info.push(`<br>`);
+            }
+
+            // Input container
+            if (input) {
+                const rect = input.getBoundingClientRect();
+                const pseudo = window.getComputedStyle(input, '::before');
+                info.push(`<strong>.input-container</strong><br>`);
+                info.push(`left: ${rect.left}px<br>`);
+                info.push(`width: ${rect.width}px<br>`);
+                info.push(`::before left: ${pseudo.left}<br>`);
+                info.push(`::before width: ${pseudo.width}<br>`);
+            }
+
+            document.getElementById('debugInfo').innerHTML = info.join('');
+        };
+    });
+}
+</script>
+
 </body>
 </html>

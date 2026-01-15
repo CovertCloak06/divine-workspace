@@ -6,9 +6,136 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Divine Node (PKN - Parakleon) is a self-hosted, multi-agent AI system that runs locally with complete privacy. It combines 6 specialized AI agents coordinated through a Flask backend, using llama.cpp for local LLM inference (Qwen2.5-Coder-14B), and a cyberpunk-themed web UI. The system is designed for both desktop Linux and Android (Termux).
+Divine Node (PKN - Parakleon) is a self-hosted, multi-agent AI system that runs locally with complete privacy. It combines 9 specialized AI agents coordinated through a Flask backend, using Ollama for local LLM inference (with models like Qwen2.5-Coder-14B, Qwen3-14B, Mistral, etc.), and a cyberpunk-themed web UI. The system is designed for both desktop Linux and Android (Termux). All agents have full tool access via 13 integrated tool modules.
 
 **This project follows the modular architecture standards defined in `/home/gh0st/dvn/ARCHITECTURE_STANDARDS.md`.**
+
+## Agent Configuration (Updated 2026-01-14)
+
+**IMPORTANT: All agents now use Ollama for local inference. Tools are enabled for all agents.**
+
+PKN uses 9 specialized AI agents:
+- **CODER** (qwen2.5-coder:14b) - Code writing, debugging [15-30s]
+- **REASONER** (qwen3:14b) - Planning, logic, analysis [20-40s]
+- **RESEARCHER** (mistral:latest) - Web research, documentation [25-60s]
+- **EXECUTOR** (deepseek-coder:6.7b) - System commands, file ops [20-40s]
+- **GENERAL** (llama3.1-8b-lexi) - Quick Q&A [8-15s]
+- **SECURITY** (qwen3-abliterated:4b) - Pentesting, uncensored [10-20s]
+- **VISION** (llava:latest) - Image/screenshot analysis [15-25s]
+- **CONSULTANT** (Claude API) - Premium reasoning, cloud [3-5s]
+- **VISION_CLOUD** (Groq Llama-3.2-90B) - Fast vision, cloud [1-3s]
+
+**All agents have access to 13 tool modules:**
+code_tools, file_tools, system_tools, web_tools, memory_tools, osint_tools, rag_tools, planning_tools, delegation_tools, chain_tools, sandbox_tools, evaluation_tools, and advanced features.
+
+**For complete agent configuration details, see:**
+- `docs/AGENT_CONFIGURATION.md` - Comprehensive agent reference
+- `backend/agents/manager.py` - Agent implementation
+
+**⚠️ DEVELOPMENT PHILOSOPHY - CLEANEST PATH ONLY:**
+
+When implementing new features:
+- ✅ **DO:** Build general frameworks that scale to all use cases
+- ✅ **DO:** Design for zero technical debt from day one
+- ✅ **DO:** Follow professional architecture patterns
+- ❌ **DON'T:** Build one-off solutions and "fix later"
+- ❌ **DON'T:** Create technical debt with shortcuts
+- ❌ **DON'T:** Ask "which approach?" - always choose the cleanest
+
+**Technical Debt = Shortcuts now that cost more time to fix later.**
+
+Example: Building tool execution tool-by-tool creates 13 different patterns that need refactoring. Building the framework first works for all 13 tools immediately with zero debt.
+
+## Backend Architecture (Modular - Updated 2026-01-11)
+
+**IMPORTANT: The backend was migrated from monolithic to modular on 2026-01-11.**
+
+### Current Structure
+
+```
+apps/pkn/
+├── server.py                         # Entry point (27 lines)
+├── backend/
+│   ├── server.py                     # Flask app initialization (75 lines)
+│   ├── routes/                       # 17 route blueprints
+│   │   ├── __init__.py              # Blueprint registration
+│   │   ├── multi_agent.py           # /api/multi-agent/* (chat, agents, classify)
+│   │   ├── osint.py                 # /api/osint/* (whois, dns, email, etc)
+│   │   ├── files.py                 # /api/files/* (upload, list, browse)
+│   │   ├── models.py                # /api/models/* (llamacpp, ollama)
+│   │   ├── phonescan.py             # /api/phonescan
+│   │   ├── health.py                # /health
+│   │   └── ... (11 more blueprints)
+│   ├── agents/                      # Multi-agent system
+│   │   ├── manager.py               # Agent orchestration
+│   │   ├── classifier.py            # Task classification
+│   │   ├── local_parakleon_agent.py # Local LLM agent
+│   │   └── external_llm.py          # Cloud API agent
+│   ├── tools/                       # Agent tools
+│   │   ├── osint_tools.py
+│   │   ├── file_tools.py
+│   │   ├── code_tools.py
+│   │   └── ... (11 more tool modules)
+│   └── config/
+│       └── settings.py              # Configuration
+├── frontend/                        # Static files
+│   ├── pkn.html
+│   ├── css/
+│   ├── js/
+│   └── img/
+└── archive/old-code/
+    └── divinenode_server.py         # Old monolithic server (backup)
+```
+
+### Route Blueprints
+
+All routes are registered with proper URL prefixes:
+
+| Blueprint | Prefix | Example Endpoint |
+|-----------|--------|------------------|
+| health_bp | / | /health |
+| phonescan_bp | /api | /api/phonescan |
+| multi_agent_bp | /api/multi-agent | /api/multi-agent/chat |
+| osint_bp | /api/osint | /api/osint/whois |
+| files_bp | /api/files | /api/files/list |
+| models_bp | /api/models | /api/models/llamacpp |
+| network_bp | /api/network | /api/network/ping |
+| ... | ... | ... |
+
+### Migration Notes
+
+- **Date**: 2026-01-11
+- **Old Server**: 2,486 lines → Archived to `archive/old-code/divinenode_server.py`
+- **New Server**: 17 modular blueprints, average ~150 lines each
+- **Compatibility**: 100% backwards compatible, no frontend changes needed
+- **Status**: Production ready, 9/11 endpoints tested and working
+- **See**: `MIGRATION_REPORT.md` for full details
+
+### Important Implementation Details
+
+**Route Definitions**: Routes no longer include the prefix in their path:
+```python
+# CORRECT (new modular system):
+osint_bp = Blueprint("osint", __name__)
+@osint_bp.route("/whois", methods=["POST"])  # Results in /api/osint/whois
+
+# INCORRECT (old way):
+@osint_bp.route("/api/osint/whois")  # Would result in /api/osint/api/osint/whois
+```
+
+**Required Imports**: Each route file must import its dependencies:
+```python
+# osint.py
+from ..tools.osint_tools import OSINTTools
+osint = OSINTTools()
+
+# files.py
+UPLOAD_DIR = Path(__file__).parent.parent.parent / "uploads"
+# ... helper functions: allowed_file(), _load_meta(), _save_meta()
+
+# models.py
+ROOT = Path(__file__).parent.parent.parent  # For finding llama.cpp/models
+```
 
 ## Code Documentation Standard
 
@@ -1267,4 +1394,112 @@ This forced ALL panels to be hidden with `!important`, preventing JavaScript fro
 2. **Test All Tracking Features**: Detector, Generator, Blocker, Manager tabs in browser
 3. **Swipe Gestures** (optional): User originally requested swipe-to-open sidebar (attempted but broke OSINT, reverted)
 4. **Documentation**: User wants tracking pixel usage documented in UI
+
+
+## Mobile Deployment (Updated 2026-01-12)
+
+### Current Mobile Setup
+
+**ONE PKN BUILD** serves both desktop and mobile via responsive CSS.
+
+**Location on Phone:** `~/pkn-phone/`
+**Server:** `divinenode_server.py` (same as desktop)
+**Port:** 8010
+**Access:** `http://localhost:8010`
+
+### Mobile-Specific Files
+
+**`css/mobile.css`** - Mobile responsive overrides (max-width: 768px)
+- Hides agent selector buttons (too cramped on mobile)
+- Hides model selector dropdown
+- Full-width main content area
+- Fixed sidebar (slides in from left)
+- Hamburger menu button (☰)
+- Arrow-only send button (➤)
+- Full-screen modals
+- Touch-optimized button sizes (44px minimum)
+
+**Mobile JavaScript Functions:**
+- `toggleMobileSidebar()` - Opens/closes sidebar
+- Tap-outside-to-close overlay functionality
+
+### Starting PKN on Phone
+
+**Option 1: Menu (Recommended)**
+```bash
+pkn-menu
+# Select: 2) Start + Open Browser
+```
+
+**Option 2: Quick Aliases**
+```bash
+pkn           # Start server
+pkn-ui        # Open browser
+pkn-status    # Check if running
+pkn-stop      # Stop server
+```
+
+**Option 3: Manual**
+```bash
+cd ~/pkn-phone
+python divinenode_server.py &
+```
+
+### Mobile UI Features
+
+✅ **Hamburger menu** (top-left) - Tap to open sidebar
+✅ **Swipe-free operation** - No swipe gestures (unreliable)
+✅ **Tap outside** sidebar to close
+✅ **Send button** - Arrow icon (➤), turns red "STOP" when processing
+✅ **Welcome screen** - Shows on first load
+✅ **No cramped buttons** - Agent selector hidden on mobile
+✅ **Full-screen modals** - Settings, files, OSINT tools
+
+### Troubleshooting Mobile
+
+**Server won't start:**
+```bash
+pkill -f divinenode_server.py
+cd ~/pkn-phone
+python divinenode_server.py
+# Check for errors in output
+```
+
+**UI looks broken:**
+1. Hard refresh in Chrome: Settings → Clear browsing data → Cached images
+2. Open with cache-busting: `http://localhost:8010/?v=123456`
+3. Check that `css/mobile.css` exists in `~/pkn-phone/css/`
+
+**Sidebar won't open:**
+- Tap hamburger button (☰) top-left
+- If missing, check console (Chrome DevTools)
+
+### Files Deployed to Phone
+
+```
+~/pkn-phone/
+├── divinenode_server.py       # Main server (OpenAI API backend)
+├── pkn.html                    # Main HTML (updated 2026-01-12)
+├── css/
+│   ├── main.css                # Desktop CSS
+│   ├── mobile.css              # Mobile overrides (NEW 2026-01-12)
+│   ├── file-explorer.css
+│   └── osint.css
+├── js/                         # JavaScript modules
+├── img/                        # Images
+└── scripts/
+    └── termux_menu.sh          # Startup menu
+
+```
+
+### Key Differences: Desktop vs Mobile
+
+| Feature | Desktop | Mobile |
+|---------|---------|--------|
+| **Sidebar** | Auto-open on hover | Hamburger menu |
+| **Agent Selector** | Visible in header | Hidden (auto-select) |
+| **Model Selector** | Visible dropdown | Hidden |
+| **Send Button** | "SEND" text | Arrow icon (➤) |
+| **Modals** | Centered overlay | Full-screen |
+| **Input** | Relative position | Fixed bottom |
 

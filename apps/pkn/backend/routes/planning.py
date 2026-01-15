@@ -14,7 +14,7 @@ import uuid
 planning_bp = Blueprint("planning", __name__)
 
 
-@planning_bp.route("/api/planning/create", methods=["POST"])
+@planning_bp.route("/create", methods=["POST"])
 def api_create_plan():
     """
     Create a structured execution plan for a complex task.
@@ -61,7 +61,7 @@ def api_create_plan():
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@planning_bp.route("/api/planning/execute/<plan_id>", methods=["POST"])
+@planning_bp.route("/execute/<plan_id>", methods=["POST"])
 def api_execute_plan(plan_id):
     """
     Execute a created plan step by step.

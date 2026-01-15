@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Position Check</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #000; color: #0ff; font-family: monospace; }
+        .test-header {
+            position: relative;
+            background: #1a1a1a;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100vw;
+            margin-left: -20px;
+        }
+        .test-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: cyan;
+        }
+        .results { background: #222; padding: 15px; margin: 10px 0; }
+        .red { color: #ff4444; }
+        .green { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h2>📐 Position Diagnostic</h2>
+
+    <div class="test-header">
+        <strong>Test Header (like .header)</strong>
+    </div>
+
+    <div class="results" id="results">Loading...</div>
+
+    <script>
+        const header = document.querySelector('.test-header');
+        const rect = header.getBoundingClientRect();
+
+        const results = [];
+        results.push(`<strong>Test Header Container:</strong><br>`);
+        results.push(`Left position: <span class="${rect.left === 0 ? 'green' : 'red'}">${rect.left}px</span><br>`);
+        results.push(`Width: ${rect.width}px<br>`);
+        results.push(`Screen width: ${window.innerWidth}px<br><br>`);
+
+        if (rect.left === 0) {
+            results.push(`<span class="green">✓ Container touches left edge!</span><br>`);
+            results.push(`<span class="green">✓ Pseudo-element should work</span><br>`);
+        } else {
+            results.push(`<span class="red">✗ Container is ${rect.left}px from left edge</span><br>`);
+            results.push(`<span class="red">✗ This gap prevents pseudo-element from reaching edge</span><br>`);
+        }
+
+        document.getElementById('results').innerHTML = results.join('');
+    </script>
+</body>
+</html>

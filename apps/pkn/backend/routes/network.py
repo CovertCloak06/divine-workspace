@@ -14,7 +14,7 @@ import time
 network_bp = Blueprint("network", __name__)
 
 
-@network_bp.route("/api/network/dns", methods=["POST"])
+@network_bp.route("/dns", methods=["POST"])
 def network_dns():
     try:
         data = request.get_json() or {}
@@ -38,7 +38,7 @@ def network_dns():
         return jsonify({"error": str(e)}), 500
 
 
-@network_bp.route("/api/network/ping", methods=["POST"])
+@network_bp.route("/ping", methods=["POST"])
 def network_ping():
     try:
         data = request.get_json() or {}
@@ -81,7 +81,7 @@ def network_ping():
         return jsonify({"error": str(e)}), 500
 
 
-@network_bp.route("/api/network/portscan", methods=["POST"])
+@network_bp.route("/portscan", methods=["POST"])
 def network_portscan():
     try:
         data = request.get_json() or {}

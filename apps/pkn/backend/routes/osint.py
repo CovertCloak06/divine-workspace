@@ -6,13 +6,17 @@ Extracted from divinenode_server.py
 from flask import Blueprint, request, jsonify
 import json
 import time
+from ..tools.osint_tools import OSINTTools
 
 
 # Create blueprint
 osint_bp = Blueprint("osint", __name__)
 
+# Initialize OSINT tools
+osint = OSINTTools()
 
-@osint_bp.route("/api/osint/whois", methods=["POST"])
+
+@osint_bp.route("/whois", methods=["POST"])
 def osint_whois():
     """Perform WHOIS lookup on domain"""
     try:
@@ -28,7 +32,7 @@ def osint_whois():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/dns", methods=["POST"])
+@osint_bp.route("/dns", methods=["POST"])
 def osint_dns():
     """Perform DNS lookups on domain"""
     try:
@@ -45,7 +49,7 @@ def osint_dns():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/ip-geo", methods=["POST"])
+@osint_bp.route("/ip-geo", methods=["POST"])
 def osint_ip_geo():
     """Get IP geolocation information"""
     try:
@@ -61,7 +65,7 @@ def osint_ip_geo():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/port-scan", methods=["POST"])
+@osint_bp.route("/port-scan", methods=["POST"])
 def osint_port_scan():
     """Perform basic port scan (AUTHORIZED USE ONLY)"""
     try:
@@ -78,7 +82,7 @@ def osint_port_scan():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/email-validate", methods=["POST"])
+@osint_bp.route("/email-validate", methods=["POST"])
 def osint_email_validate():
     """Validate email address format and MX records"""
     try:
@@ -94,7 +98,7 @@ def osint_email_validate():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/username-search", methods=["POST"])
+@osint_bp.route("/username-search", methods=["POST"])
 def osint_username_search():
     """Search for username across social platforms"""
     try:
@@ -110,7 +114,7 @@ def osint_username_search():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/web-tech", methods=["POST"])
+@osint_bp.route("/web-tech", methods=["POST"])
 def osint_web_tech():
     """Detect web technologies used by a website"""
     try:
@@ -126,7 +130,7 @@ def osint_web_tech():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/ssl-cert", methods=["POST"])
+@osint_bp.route("/ssl-cert", methods=["POST"])
 def osint_ssl_cert():
     """Get SSL certificate information"""
     try:
@@ -142,7 +146,7 @@ def osint_ssl_cert():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/wayback", methods=["POST"])
+@osint_bp.route("/wayback", methods=["POST"])
 def osint_wayback():
     """Check Wayback Machine for archived versions"""
     try:
@@ -158,7 +162,7 @@ def osint_wayback():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/subdomain-enum", methods=["POST"])
+@osint_bp.route("/subdomain-enum", methods=["POST"])
 def osint_subdomain_enum():
     """Enumerate subdomains for a domain"""
     try:
@@ -174,7 +178,7 @@ def osint_subdomain_enum():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/reverse-dns", methods=["POST"])
+@osint_bp.route("/reverse-dns", methods=["POST"])
 def osint_reverse_dns():
     """Perform reverse DNS lookup on IP address"""
     try:
@@ -190,7 +194,7 @@ def osint_reverse_dns():
         return jsonify({"error": str(e), "success": False}), 500
 
 
-@osint_bp.route("/api/osint/phone-lookup", methods=["POST"])
+@osint_bp.route("/phone-lookup", methods=["POST"])
 def osint_phone_lookup():
     """Get phone number carrier and timezone info"""
     try:

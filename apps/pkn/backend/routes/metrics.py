@@ -13,7 +13,7 @@ import json
 metrics_bp = Blueprint("metrics", __name__)
 
 
-@metrics_bp.route("/api/metrics/agent/<agent_type>", methods=["GET"])
+@metrics_bp.route("/agent/<agent_type>", methods=["GET"])
 def api_get_agent_metrics(agent_type):
     """
     Get performance metrics for a specific agent.
@@ -51,7 +51,7 @@ def api_get_agent_metrics(agent_type):
         return jsonify({"error": str(e), "status": "error"}), 500
 
 
-@metrics_bp.route("/api/metrics/report", methods=["GET"])
+@metrics_bp.route("/report", methods=["GET"])
 def api_get_metrics_report():
     """
     Get comprehensive performance report for all agents.

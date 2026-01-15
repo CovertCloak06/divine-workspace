@@ -35,19 +35,19 @@ G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; B='\033[0;34m'; NC='\033[0m'
 start_divinenode() {
     echo -e "${B}Starting DivineNode Flask (port $DN_PORT)...${NC}"
     cd "$PKN_DIR"
-    pkill -f divinenode_server.py 2>/dev/null
+    pkill -f server.py 2>/dev/null
     # Activate venv if exists
     if [ -d "$PKN_DIR/.venv" ]; then
-        nohup "$PKN_DIR/.venv/bin/python3" divinenode_server.py --host 0.0.0.0 --port $DN_PORT > "$PKN_DIR/divinenode.log" 2>&1 &
+        nohup "$PKN_DIR/.venv/bin/python3" server.py --host 0.0.0.0 --port $DN_PORT > "$PKN_DIR/divinenode.log" 2>&1 &
     else
-        nohup python3 divinenode_server.py --host 0.0.0.0 --port $DN_PORT > "$PKN_DIR/divinenode.log" 2>&1 &
+        nohup python3 server.py --host 0.0.0.0 --port $DN_PORT > "$PKN_DIR/divinenode.log" 2>&1 &
     fi
     sleep 2
-    pgrep -f divinenode_server.py > /dev/null && echo -e "${G}✓ DivineNode running${NC}" || echo -e "${R}✗ DivineNode failed${NC}"
+    pgrep -f "server.py" > /dev/null && echo -e "${G}✓ DivineNode running${NC}" || echo -e "${R}✗ DivineNode failed${NC}"
 }
 
 stop_divinenode() {
-    pkill -f divinenode_server.py 2>/dev/null && echo -e "${G}✓ DivineNode stopped${NC}" || echo -e "${Y}⚪ Not running${NC}"
+    pkill -f server.py 2>/dev/null && echo -e "${G}✓ DivineNode stopped${NC}" || echo -e "${Y}⚪ Not running${NC}"
 }
 
 # ===== FIXED: Optimized Qwen2.5 Parameters =====
@@ -274,7 +274,7 @@ status() {
     echo -e "${B}========================================${NC}"
     echo -e "${B}PKN Server Status${NC}"
     echo -e "${B}========================================${NC}"
-    pgrep -f divinenode_server.py > /dev/null && echo -e "${G}✓ DivineNode (8010)${NC}" || echo -e "${R}✗ DivineNode${NC}"
+    pgrep -f "server.py" > /dev/null && echo -e "${G}✓ DivineNode (8010)${NC}" || echo -e "${R}✗ DivineNode${NC}"
     pgrep -f "llama_cpp.server.*$LLAMA_PORT" > /dev/null && echo -e "${G}✓ llama.cpp Qwen (8000)${NC}" || echo -e "${R}✗ llama.cpp Qwen${NC}"
     pgrep -f "llama_cpp.server.*$VISION_PORT" > /dev/null && echo -e "${G}✓ Vision LLaVA (8001)${NC}" || echo -e "${R}✗ Vision LLaVA${NC}"
     pgrep -f parakleon_api.py > /dev/null && echo -e "${G}✓ Parakleon (9000)${NC}" || echo -e "${R}✗ Parakleon${NC}"

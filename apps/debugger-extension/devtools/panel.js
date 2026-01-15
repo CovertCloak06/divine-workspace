@@ -3,18 +3,32 @@
  * Adapts the debugger app to work with inspected page via chrome.devtools API
  */
 
+import AdvancedConsole from './advanced-console.js';
+import SecurityPanel from './security-panel.js';
+
 class ExtensionDebugger {
     constructor() {
         this.selectedElement = null;
         this.selectedPath = null;
+        this.advancedConsole = null;
+        this.securityPanel = null;
         this.init();
     }
 
     init() {
         console.log('Divine Debugger Extension initialized');
+
+        // Initialize advanced console
+        this.advancedConsole = new AdvancedConsole();
+
+        // Initialize security panel
+        this.securityPanel = new SecurityPanel((code, callback) => this.execute(code, callback));
+
         this.setupEventListeners();
         this.loadElements();
         this.setupConsoleIntercept();
+        this.addConsoleControls();
+        this.setupSecurityPanel();
     }
 
     // Execute code in the inspected page
@@ -183,6 +197,97 @@ class ExtensionDebugger {
         });
     }
 
+    // Add advanced console controls
+    addConsoleControls() {
+        // Add search box to console controls
+        const consoleControls = document.querySelector('.console-controls');
+        if (consoleControls) {
+            const searchBox = document.createElement('input');
+            searchBox.type = 'text';
+            searchBox.id = 'logSearch';
+            searchBox.placeholder = 'Search logs...';
+            searchBox.style.cssText = 'margin-left: 10px; padding: 4px 8px; background: #222; border: 1px solid #444; color: #0FF; border-radius: 3px;';
+            consoleControls.appendChild(searchBox);
+
+            const exportBtn = document.createElement('button');
+            exportBtn.id = 'exportLogs';
+            exportBtn.className = 'btn-sm';
+            exportBtn.textContent = '📥 Export';
+            consoleControls.appendChild(exportBtn);
+
+            const pauseBtn = document.createElement('button');
+            pauseBtn.id = 'pauseLogs';
+            pauseBtn.className = 'btn-sm';
+            pauseBtn.textContent = '⏸️ Pause';
+            consoleControls.appendChild(pauseBtn);
+
+            const statsBtn = document.createElement('button');
+            statsBtn.id = 'showStats';
+            statsBtn.className = 'btn-sm';
+            statsBtn.textContent = '📊 Stats';
+            statsBtn.addEventListener('click', () => {
+                this.showConsoleStats();
+            });
+            consoleControls.appendChild(statsBtn);
+        }
+    }
+
+    // Show console statistics
+    showConsoleStats() {
+        if (!this.advancedConsole) return;
+
+        const stats = this.advancedConsole.getStats();
+        const slowest = this.advancedConsole.getSlowestRequests(5);
+
+        const statsHtml = `
+            <div style="padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; margin: 10px 0;">
+                <h3 style="color: #0FF; margin: 0 0 10px 0;">📊 Console Statistics</h3>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: #222; padding: 10px; border-radius: 4px;">
+                        <div style="color: #888; font-size: 11px;">Total Logs</div>
+                        <div style="color: #0FF; font-size: 24px; font-weight: bold;">${stats.total}</div>
+                    </div>
+                    <div style="background: #222; padding: 10px; border-radius: 4px;">
+                        <div style="color: #888; font-size: 11px;">Errors</div>
+                        <div style="color: #F44; font-size: 24px; font-weight: bold;">${stats.errors}</div>
+                    </div>
+                    <div style="background: #222; padding: 10px; border-radius: 4px;">
+                        <div style="color: #888; font-size: 11px;">Warnings</div>
+                        <div style="color: #FA0; font-size: 24px; font-weight: bold;">${stats.warnings}</div>
+                    </div>
+                </div>
+
+                <div style="background: #222; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                    <div style="color: #888; font-size: 11px; margin-bottom: 5px;">Network Requests</div>
+                    <div style="color: #0FF; font-size: 18px;">${stats.network} requests</div>
+                    <div style="color: #888; font-size: 12px;">Avg: ${stats.avgNetworkTime.toFixed(2)}ms</div>
+                </div>
+
+                <div style="background: #222; padding: 10px; border-radius: 4px;">
+                    <div style="color: #888; font-size: 11px; margin-bottom: 5px;">⚠️ Slowest Requests</div>
+                    ${slowest.map(req => `
+                        <div style="margin: 5px 0; padding: 5px; background: #1a1a1a; border-radius: 3px;">
+                            <div style="color: #0FF; font-size: 11px; font-family: monospace;">${req.method} ${req.url}</div>
+                            <div style="color: #FA0; font-size: 12px;">${req.duration.toFixed(2)}ms</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 8px 16px; background: #444; border: none; color: #0FF; border-radius: 4px; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        `;
+
+        const consoleOutput = document.getElementById('consoleOutput');
+        if (consoleOutput) {
+            const statsEl = document.createElement('div');
+            statsEl.innerHTML = statsHtml;
+            consoleOutput.insertBefore(statsEl.firstElementChild, consoleOutput.firstChild);
+        }
+    }
+
     setupEventListeners() {
         // Element selector
         document.getElementById('elementSelector').addEventListener('change', (e) => {
@@ -307,6 +412,48 @@ class ExtensionDebugger {
             }
 
             output.insertBefore(entry, output.firstChild);
+        });
+    }
+
+    // Setup Security Panel
+    setupSecurityPanel() {
+        const runScanBtn = document.getElementById('runSecurityScan');
+        const output = document.getElementById('securityOutput');
+
+        if (runScanBtn) {
+            runScanBtn.addEventListener('click', async () => {
+                output.innerHTML = '<div style="text-align:center;padding:40px;color:#00FFFF;"><div style="font-size:32px;margin-bottom:10px;">🔍</div>Scanning page security...</div>';
+
+                try {
+                    const results = await this.securityPanel.runFullScan();
+                    output.innerHTML = this.securityPanel.generateReport(results);
+                } catch (err) {
+                    output.innerHTML = `<div style="color:#ef4444;padding:20px;">Error: ${err.message}</div>`;
+                }
+            });
+        }
+
+        // Individual check buttons
+        document.querySelectorAll('.security-check-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const check = btn.dataset.check;
+                output.innerHTML = `<div style="text-align:center;padding:40px;color:#00FFFF;">Checking ${check}...</div>`;
+
+                try {
+                    let result;
+                    switch (check) {
+                        case 'headers': result = await this.securityPanel.analyzeHeaders(); break;
+                        case 'cookies': result = await this.securityPanel.analyzeCookies(); break;
+                        case 'forms': result = await this.securityPanel.analyzeForms(); break;
+                        case 'storage': result = await this.securityPanel.analyzeStorage(); break;
+                        case 'scripts': result = await this.securityPanel.analyzeScripts(); break;
+                        case 'links': result = await this.securityPanel.analyzeLinks(); break;
+                    }
+                    output.innerHTML = `<pre style="color:#00FFFF;font-size:12px;white-space:pre-wrap;">${JSON.stringify(result, null, 2)}</pre>`;
+                } catch (err) {
+                    output.innerHTML = `<div style="color:#ef4444;">Error: ${err.message}</div>`;
+                }
+            });
         });
     }
 }

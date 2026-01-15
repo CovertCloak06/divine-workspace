@@ -12,7 +12,7 @@ from pathlib import Path
 editor_bp = Blueprint("editor", __name__)
 
 
-@editor_bp.route("/api/editor/files", methods=["GET"])
+@editor_bp.route("/files", methods=["GET"])
 def list_editable_files():
     """
     List all editable files in the PKN directory
@@ -56,7 +56,7 @@ def list_editable_files():
         return jsonify({"error": str(e)}), 500
 
 
-@editor_bp.route("/api/editor/read", methods=["POST"])
+@editor_bp.route("/read", methods=["POST"])
 def read_file_content():
     """
     Read content of a file
@@ -87,7 +87,7 @@ def read_file_content():
         return jsonify({"error": str(e)}), 500
 
 
-@editor_bp.route("/api/editor/write", methods=["POST"])
+@editor_bp.route("/write", methods=["POST"])
 def write_file_content():
     """
     Write content to a file
