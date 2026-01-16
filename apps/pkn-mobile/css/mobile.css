@@ -233,17 +233,17 @@
 
     .input-wrapper {
         flex: 1 !important;
-        background: transparent !important;
+        background: #141515 !important;
     }
 
-    /* ===== TEXTAREA - Solid dark background so text is readable ===== */
+    /* ===== TEXTAREA - Transparent to blend with input-wrapper ===== */
     #messageInput {
         width: 100% !important;
         font-size: 14px !important;
         padding: 10px !important;
-        background: #1a1b1b !important;
-        background-color: #1a1b1b !important;
-        border: 1px solid var(--theme-primary-fade) !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
         color: #fff !important;
     }
 
