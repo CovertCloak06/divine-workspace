@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed obsolete planning documents (archived to `docs/archive/2026-01/`)
+  - `COMPREHENSIVE_CLEANUP_PLAN.md`
+  - `HOUSEKEEPING_PLAN.md`
+  - `CODE_AUDIT_REPORT.md`
+  - `PURGE_COMPLETE_REPORT.md`
+- Removed temporary purge scripts
+  - `purge_phone_now.sh`
+  - `purge_pkn_now.sh`
+  - `test_analyzers.sh`
+- Removed redundant `packages/dev-dashboard/` (functionality exists in `dashboard/`)
+
 ## [2.0.0] - 2026-01-10
 
 ### Major Refactoring - Monorepo Modularization
