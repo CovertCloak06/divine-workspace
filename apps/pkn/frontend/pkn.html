@@ -67,6 +67,7 @@
     <script>
       // TODO: Replace https://ac86b958163985bad2c602fc9040c1be@o4509789486710784.ingest.us.sentry.io/4510695306100736 with your actual Sentry DSN
       // Get it from: https://sentry.io/settings/[your-org]/projects/pkn-frontend/keys/
+      if (typeof Sentry !== 'undefined') {
       Sentry.init({
         dsn: "https://ac86b958163985bad2c602fc9040c1be@o4509789486710784.ingest.us.sentry.io/4510695306100736",  // ← REPLACE THIS with your DSN
         release: "pkn@2.0.0",
@@ -130,6 +131,9 @@
           console.info('✅ Sentry error tracking active');
         }
       });
+      } else {
+        console.log('Sentry not loaded - skipping error tracking');
+      }
     </script>
 </head>
             <div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
@@ -393,19 +397,19 @@
                         </button>
 
                         <button class="example-card" onclick="openImageGenerator()">
-                            <span class="example-icon">🖼️</span>
+                            <span class="example-icon">🎨</span>
                             <span class="example-title">Create Image</span>
                             <span class="example-desc">Generate AI artwork from text prompts</span>
                         </button>
 
-                        <button class="example-card" onclick="sendExample('Debug this code: function add(a,b) { return a + b } add(1, \"2\")')">
+                        <button class="example-card" onclick="sendExample('Help me debug a JavaScript function that adds two numbers')">
                             <span class="example-icon">🐛</span>
                             <span class="example-title">Debug Code</span>
                             <span class="example-desc">Find and fix bugs in your code</span>
                         </button>
 
                         <button class="example-card" onclick="sendExample('Plan a system architecture for a real-time chat application')">
-                            <span class="example-icon">🏗️</span>
+                            <span class="example-icon">📐</span>
                             <span class="example-title">Plan & Design</span>
                             <span class="example-desc">Architect a real-time chat application</span>
                         </button>
@@ -1640,25 +1644,6 @@ function savePlaceholderText(text) {
 }
 </script>
 
-<!-- Eruda Mobile DevTools - ON-SCREEN DEV CONSOLE FOR MOBILE -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>
-    // Load Eruda on mobile devices (screens ≤768px)
-    if (window.innerWidth <= 768) {
-        eruda.init({
-            tool: ['console', 'elements', 'network', 'resources', 'info', 'snippets']
-        });
-        console.log('📱 Eruda DevTools loaded - Tap floating button to open');
-
-        // Auto-open Elements tab on load to inspect CSS
-        setTimeout(() => {
-            if (window.eruda) {
-                eruda.show();
-                eruda.show('elements');
-            }
-        }, 1000);
-    }
-</script>
 
 <!-- CSS Debug Panel - Shows live measurements -->
 <script>

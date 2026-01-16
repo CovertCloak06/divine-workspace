@@ -443,7 +443,7 @@ function sendMessage() {
     // CRITICAL: Change button to Stop with visual feedback
     if (sendBtn) {
         sendBtn.disabled = false; // Keep enabled so user can click to stop
-        sendBtn.textContent = 'STOP';
+        sendBtn.textContent = ''; // Clear text - CSS ::after handles "STOP" display
         sendBtn.setAttribute('data-state', 'stop');
         console.log('Button changed to STOP with data-state');
     }
