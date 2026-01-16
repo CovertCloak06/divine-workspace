@@ -120,10 +120,11 @@ Complete restructuring of Divine Node workspace into production-ready monorepo w
   - `run_tests_for_files.py` - Smart test runner (120 lines)
   - `health_check.py` - System health monitor (100 lines)
 
-- **Development Dashboard** (`packages/dev-dashboard/`)
-  - `src/dashboard.py` - Terminal UI for service monitoring (70 lines)
-  - Real-time status for PKN, Code Academy, PKN Mobile
-  - Built with rich library
+- **Web Dashboard** (`dashboard/`)
+  - `server.py` - Flask web dashboard for development tools (551 lines)
+  - VS Code-like IDE, builder, and classic dashboard views
+  - API endpoints for health checks, imports, CI, and file operations
+  - Built with Flask + Flask-CORS
 
 - **VS Code Integration** (`.vscode/`)
   - `tasks.json` - 10 workspace tasks
