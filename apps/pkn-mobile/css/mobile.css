@@ -9,30 +9,7 @@
         -ms-overflow-style: none !important;
     }
 
-    /* ===== HIDE HOVERSTRIP COMPLETELY ===== */
-    .hover-strip,
-    #hoverStrip {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        pointer-events: none !important;
-    }
-
-    .hover-strip *,
-    #hoverStrip * {
-        display: none !important;
-    }
-
-    /* ===== HIDE ANY STRAY ICONS ===== */
-    .sidebar-header-icon {
-        display: none !important;
-    }
-
-    .sidebar.hidden * {
-        display: none !important;
-    }
+    /* Sidebar controlled by swipe gestures (JS) - no hamburger or hoverstrip needed */
 
     /* ===== SIDEBAR - REMOVE BORDER ===== */
     .sidebar {
@@ -233,6 +210,8 @@
 
     .input-wrapper {
         flex: 1 !important;
+        max-width: 100% !important;
+        width: 100% !important;
         background: #141515 !important;
     }
 
