@@ -308,32 +308,4 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 768px) {
-    .osint-categories {
-        grid-template-columns: 1fr;
-    }
-
-    .osint-header h3 {
-        font-size: 1.1em;
-    }
-
-    .osint-btn {
-        font-size: 0.85em;
-        padding: 7px 10px;
-    }
-
-    .osint-field input {
-        font-size: 0.9em;
-    }
-}
-
 /* Dark mode enhancements */
-@media (prefers-color-scheme: dark) {
-    .osint-tools-panel {
-        box-shadow: 0 0 30px var(--theme-primary-glow);
-    }
-
-    .osint-field input {
-        background: rgba(0, 0, 0, 0.7);
-    }
-}

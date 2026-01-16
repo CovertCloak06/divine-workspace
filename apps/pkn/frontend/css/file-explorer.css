@@ -419,52 +419,6 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-    .files-grid {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 12px;
-    }
-
-    .files-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .toolbar-left,
-    .toolbar-right {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    #fileSearch {
-        width: 100%;
-    }
-
-    .file-location-tabs {
-        width: 100%;
-        justify-content: stretch;
-    }
-
-    .file-location-tab {
-        flex: 1;
-    }
-}
-
-@media (max-width: 480px) {
-    .files-grid {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 8px;
-    }
-
-    .file-icon {
-        font-size: 36px;
-    }
-
-    .file-name {
-        font-size: 11px;
-    }
-}
-
 /* Scrollbar Styling */
 .files-container::-webkit-scrollbar,
 .preview-body::-webkit-scrollbar {

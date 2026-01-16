@@ -1,6 +1,54 @@
-/* Desktop Mobile CSS - Responsive layout for small screens, KEEPS hoverstrip functional */
+/* =============================================================================
+   PKN RESPONSIVE CSS - ALL BREAKPOINTS CONSOLIDATED
+   =============================================================================
+   Single source of truth for all responsive styles.
+   Breakpoints: 1024px (tablet), 768px (mobile), 600px (small), 480px (tiny)
+   ============================================================================= */
+
+/* =============================================================================
+   TABLET BREAKPOINT (769px - 1024px)
+   ============================================================================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 300px;
+    }
+
+    .messages {
+        padding: 20px;
+    }
+
+    button,
+    .send-btn {
+        min-height: 40px;
+    }
+
+    /* Session display - more space on large screens */
+    .session-display-header {
+        bottom: 90px;
+    }
+
+    .session-info-header {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+
+    .session-label-header {
+        font-size: 10px;
+    }
+
+    .session-id-header {
+        font-size: 11px;
+    }
+}
+
+/* =============================================================================
+   MOBILE BREAKPOINT (max-width: 768px)
+   ============================================================================= */
 @media (max-width: 768px) {
-    /* ===== HIDE SCROLLBARS ===== */
+
+    /* =========================================================================
+       GLOBAL / SCROLLBARS
+       ========================================================================= */
     *::-webkit-scrollbar {
         display: none !important;
     }
@@ -9,8 +57,50 @@
         -ms-overflow-style: none !important;
     }
 
+    html, body {
+        overscroll-behavior-y: contain;
+        font-size: 16px;
+    }
 
-    /* ===== HIDE ANY STRAY ICONS ===== */
+    input, textarea, select {
+        font-size: 16px; /* Prevents iOS zoom */
+    }
+
+    /* =========================================================================
+       LAYOUT - BODY / CONTAINER
+       ========================================================================= */
+    body {
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    .container {
+        flex-direction: column;
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    /* =========================================================================
+       SIDEBAR
+       ========================================================================= */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 85vw;
+        max-width: 320px;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+        border-right: none !important;
+        border: none !important;
+    }
+
+    .sidebar:not(.hidden) {
+        transform: translateX(0);
+    }
+
     .sidebar-header-icon {
         display: none !important;
     }
@@ -19,49 +109,104 @@
         display: none !important;
     }
 
-    /* ===== SIDEBAR - REMOVE BORDER ===== */
-    .sidebar {
-        border-right: none !important;
-        border: none !important;
+    .sidebar-section-header {
+        padding: 14px 16px;
+        font-size: 15px;
     }
 
-    /* ===== HIDE HELP ICONS AND EMOJI HEADERS ===== */
-    .help-icon {
-        display: none !important;
-    }
-
-    /* Hide settings group headers that contain emojis */
-    .settings-group h3 {
-        display: none !important;
-    }
-
-    /* Hide modal headers that contain emojis */
-    .modal-header h3 {
-        display: none !important;
-    }
-
-    /* ===== ENSURE MODALS START HIDDEN ===== */
-    .settings-modal,
-    .files-manager-modal,
-    .ai-models-modal,
-    .image-generator-modal,
-    .modal-overlay {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-    }
-
-    .settings-modal.show,
-    .files-manager-modal.show,
-    .ai-models-modal.show,
-    .image-generator-modal.show,
-    .modal-overlay.show {
+    .sidebar-footer {
         display: flex !important;
-        opacity: 1 !important;
-        visibility: visible !important;
     }
 
-    /* ===== AGENT DROPDOWN ===== */
+    /* =========================================================================
+       MAIN CONTENT AREA
+       ========================================================================= */
+    .main {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100vw !important;
+        max-width: 100%;
+        height: 100vh;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .main::before {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+    }
+
+    /* =========================================================================
+       HEADER
+       ========================================================================= */
+    .header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 12px !important;
+        position: relative !important;
+        left: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+        padding-bottom: 36px;
+    }
+
+    .header::after {
+        content: '' !important;
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-primary-glow) 50%, var(--theme-primary) 100%) !important;
+        box-shadow: 0 0 10px var(--theme-primary-glow) !important;
+        z-index: 1 !important;
+    }
+
+    .header-logo {
+        display: flex !important;
+        flex-direction: column !important;
+        width: auto;
+        min-width: 90px;
+        font-size: 18px;
+        gap: 0;
+        margin-left: 44px;
+    }
+
+    .logo-text,
+    .logo-line-1,
+    .logo-line-2 {
+        font-size: 18px !important;
+        line-height: 1.1 !important;
+    }
+
+    .logo-line-2 {
+        margin-left: 48px;
+    }
+
+    .header-text h1 {
+        font-size: 24px;
+    }
+
+    .header-text p {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .header-model-select {
+        bottom: 6px;
+        right: 10px;
+    }
+
+    /* Hide agent selector on mobile - use dropdown instead */
     .header-agent-selector {
         display: none !important;
     }
@@ -87,83 +232,79 @@
         padding-right: 28px !important;
     }
 
-    /* ===== HEADER ===== */
-    .header {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        gap: 12px !important;
-        padding: 10px !important;
-        /* Position at screen edge and allow pseudo-element overflow */
-        position: relative !important;
-        left: 0 !important;
-        width: 100% !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        overflow: visible !important;
+    /* =========================================================================
+       MESSAGES / CHAT AREA
+       ========================================================================= */
+    .messages {
+        padding: 16px 12px;
     }
 
-    .header-logo {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    .logo-text {
-        font-size: 18px !important;
-        line-height: 1.1 !important;
-    }
-
-    /* ===== MAIN CONTENT - SPAN TO LEFT EDGE ===== */
-    .main {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100vw !important;
-        margin-left: 0 !important;
-        padding-left: 0 !important;
-        box-sizing: border-box !important;
-    }
-
-    /* Make pseudo-element background span full width */
-    .main::before {
-        left: 0 !important;
-        width: 100% !important;
-    }
-
-    .container {
-        padding-left: 0 !important;
-        margin-left: 0 !important;
-    }
-
-    /* ===== MESSAGES CONTAINER - FULL WIDTH ===== */
     #messagesContainer {
         padding-left: 10px !important;
         padding-right: 10px !important;
-        padding-bottom: 70px !important;
+        padding-bottom: 100px !important;
         margin-left: 0 !important;
     }
 
-    .welcome-screen {
-        margin-left: 0 !important;
-        padding-left: 10px !important;
-        z-index: 1 !important;
+    .message {
+        margin-bottom: 20px;
+        padding: 14px;
+        font-size: 15px;
+        max-width: 95%;
     }
 
-    /* ===== CHAT CONTENT - FULL WIDTH ===== */
+    .message-bubble {
+        font-size: 13px;
+    }
+
+    .message-header {
+        font-size: 11px;
+    }
+
     .chat-content {
         margin-left: 0 !important;
         padding-left: 0 !important;
         padding-bottom: 70px !important;
     }
 
-    /* ===== INPUT CONTAINER - SOLID OPAQUE BACKGROUND ===== */
+    /* =========================================================================
+       MESSAGE ACTIONS
+       ========================================================================= */
+    .message-actions {
+        gap: 2px !important;
+        margin-top: 4px !important;
+        opacity: 1;
+    }
+
+    .message-action-btn {
+        font-size: 16px;
+        padding: 6px 10px;
+        min-width: 40px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent !important;
+        border: none !important;
+        color: var(--theme-primary-glow) !important;
+    }
+
+    .message-action-btn:hover,
+    .message-action-btn:active {
+        background: var(--theme-primary-fade) !important;
+        transform: none !important;
+    }
+
+    /* =========================================================================
+       INPUT CONTAINER
+       ========================================================================= */
     .input-container {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
         width: 100vw !important;
-        padding: 8px !important;
+        padding: 12px !important;
         display: flex !important;
         gap: 6px !important;
         align-items: center !important;
@@ -174,14 +315,9 @@
         opacity: 1 !important;
         box-sizing: border-box !important;
         margin: 0 !important;
-        /* Allow pseudo-element to overflow */
         overflow: visible !important;
     }
 
-    /* ===== PSEUDO-ELEMENT LINES - Full screen width ===== */
-    /* Containers are now 100vw, so pseudo-elements can use simple left:0 width:100% */
-
-    /* Input container top line */
     .input-container::before {
         content: '' !important;
         position: absolute !important;
@@ -194,25 +330,13 @@
         z-index: 2001 !important;
     }
 
-    /* Header bottom line */
-    .header::after {
-        content: '' !important;
-        position: absolute !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        height: 2px !important;
-        background: linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-primary-glow) 50%, var(--theme-primary) 100%) !important;
-        box-shadow: 0 0 10px var(--theme-primary-glow) !important;
-        z-index: 1 !important;
-    }
-
     .input-row {
         flex: 1 !important;
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
+        max-width: 100%;
+        box-sizing: border-box;
         background: transparent !important;
     }
 
@@ -223,43 +347,37 @@
         background: #141515 !important;
     }
 
-    /* ===== TEXTAREA - Transparent to blend with input-wrapper ===== */
     #messageInput {
         width: 100% !important;
-        font-size: 13px !important;
-        padding: 8px !important;
+        font-size: 16px !important;
+        padding: 12px !important;
         background: transparent !important;
         background-color: transparent !important;
         border: none !important;
         color: #fff !important;
-        min-height: 40px !important;
+        min-height: 44px !important;
     }
 
     #messageInput::placeholder {
-        font-size: 12px !important;
+        font-size: 14px !important;
     }
 
-    /* ===== HIDE ATTACHMENT BUTTONS ON MOBILE ===== */
+    /* Hide attachment buttons on mobile */
     .paperclip-btn,
     .image-gen-btn {
         display: none !important;
     }
 
-    /* ===== QUICK ACTIONS BUTTON - Smaller on mobile ===== */
-    .quick-actions-btn {
-        width: 40px !important;
-        height: 36px !important;
-        min-width: 40px !important;
-        padding: 0 !important;
-    }
-
-    /* ===== SEND BUTTON - Outline style like toolbar buttons ===== */
+    /* =========================================================================
+       SEND BUTTON
+       ========================================================================= */
     .send-btn {
         position: static !important;
         flex-shrink: 0 !important;
-        width: 40px !important;
-        height: 36px !important;
-        min-width: 40px !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
         font-size: 0 !important;
         padding: 0 !important;
         border-radius: 6px !important;
@@ -271,99 +389,245 @@
         justify-content: center !important;
     }
 
-    /* Hide the ::after from main.css in normal state only (stop state uses ::after) */
     .send-btn:not([data-state="stop"])::after,
     #sendBtn:not([data-state="stop"])::after {
         content: "" !important;
         display: none !important;
     }
 
-    /* Arrow via ::before for send state - theme color */
     .send-btn::before {
-        content: "➤" !important;
-        font-size: 16px !important;
+        content: "\27A4" !important;
+        font-size: 18px !important;
         color: var(--theme-primary) !important;
         display: block !important;
     }
 
-    /* Hide any child elements */
     .send-btn * {
         display: none !important;
     }
 
-    /* Stop state - red outline with STOP text */
+    /* Stop state */
     .send-btn[data-state="stop"],
     #sendBtn[data-state="stop"] {
         background: transparent !important;
         border-color: #ff4444 !important;
-        width: 60px !important;
-        min-width: 60px !important;
+        width: 70px !important;
+        min-width: 70px !important;
+        font-size: 14px !important;
     }
 
-    /* Stop state: hide ::before, let main.css ::after show "STOP" */
     .send-btn[data-state="stop"]::before,
     #sendBtn[data-state="stop"]::before {
         content: "" !important;
         display: none !important;
     }
 
-    /* Stop state ::after styling */
     .send-btn[data-state="stop"]::after,
     #sendBtn[data-state="stop"]::after {
+        content: "STOP" !important;
         color: #ff4444 !important;
+        display: block !important;
     }
 
-    /* ===== SIDEBAR FOOTER ===== */
-    .sidebar-footer {
-        display: flex !important;
+    /* =========================================================================
+       ACTION BUTTONS / TOOLBAR
+       ========================================================================= */
+    .action-buttons {
+        padding: 6px 8px;
+        gap: 4px;
     }
 
-    /* ===== HIDE OTHER FOOTERS ===== */
-    footer:not(.sidebar-footer),
-    .projects-footer {
-        display: none !important;
+    .action-btn {
+        padding: 5px 8px;
+        font-size: 10px;
     }
 
-    /* ===== TOOLBAR BUTTONS ===== */
     .chat-toolbar {
         gap: 6px !important;
-        padding: 8px !important;
+        padding: 6px 12px !important;
         margin-left: 0 !important;
     }
 
+    .chat-toolbar-btn,
     .toolbar-btn {
-        width: 32px !important;
-        height: 32px !important;
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px;
         padding: 6px !important;
-        font-size: 14px !important;
+        font-size: 18px !important;
     }
 
-    /* ===== MESSAGE ACTION BUTTONS - Smaller ===== */
-    .message-actions {
-        gap: 2px !important;
-        margin-top: 4px !important;
+    .chat-search-input {
+        max-width: none;
+        font-size: 14px;
+    }
+
+    .quick-actions-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        padding: 0 !important;
+    }
+
+    /* =========================================================================
+       WELCOME SCREEN
+       ========================================================================= */
+    .welcome-screen {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 20px 12px;
+        max-width: 100% !important;
+        min-height: 50vh;
+        margin-left: 0 !important;
+        padding-left: 10px !important;
+        z-index: 1 !important;
+    }
+
+    .welcome-header {
+        margin-bottom: 20px;
+    }
+
+    .welcome-header h2 {
+        font-size: 28px;
+    }
+
+    .welcome-subtitle {
+        font-size: 14px;
+    }
+
+    .welcome-grid,
+    .features-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .welcome-box {
+        width: 100% !important;
+        padding: 16px !important;
+        margin: 0 !important;
+    }
+
+    .example-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .example-card {
+        padding: 16px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .feature-card {
+        width: 100% !important;
+        padding: 16px !important;
+    }
+
+    .agent-badges {
+        gap: 8px;
+    }
+
+    .agent-badge {
+        font-size: 18px;
+    }
+
+    .agent-badge-preview {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    /* =========================================================================
+       MODALS / PANELS / OVERLAYS
+       ========================================================================= */
+    .help-icon {
+        display: none !important;
+    }
+
+    .settings-group h3 {
+        display: none !important;
+    }
+
+    .modal-header h3 {
+        display: none !important;
+    }
+
+    .settings-modal,
+    .files-manager-modal,
+    .ai-models-modal,
+    .image-generator-modal,
+    .modal-overlay {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+
+    .settings-modal.show,
+    .files-manager-modal.show,
+    .ai-models-modal.show,
+    .image-generator-modal.show,
+    .modal-overlay.show {
+        display: flex !important;
         opacity: 1 !important;
+        visibility: visible !important;
     }
 
-    .message-action-btn {
-        font-size: 10px !important;
-        padding: 2px 4px !important;
-        min-width: 20px !important;
-        min-height: 20px !important;
-        width: auto !important;
-        height: auto !important;
-        background: transparent !important;
-        border: none !important;
-        color: var(--theme-primary-glow) !important;
+    .modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        max-height: 90vh;
+        margin: 20px auto;
     }
 
-    .message-action-btn:hover,
-    .message-action-btn:active {
-        background: var(--theme-primary-fade) !important;
-        transform: none !important;
+    .settings-overlay .settings-panel {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
     }
 
-    /* ===== QUICK ACTIONS MENU - FIT MOBILE SCREEN ===== */
+    .close-btn,
+    .settings-close-x {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 28px !important;
+        top: 12px !important;
+        right: 12px !important;
+    }
+
+    /* Files panel */
+    .files-panel {
+        right: 8px;
+        left: 8px;
+        top: 90px;
+        width: auto;
+        height: 60vh;
+        z-index: 2000 !important;
+        position: fixed !important;
+    }
+
+    .files-list {
+        width: 40%;
+    }
+
+    #filesPanel .settings-panel {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    /* Image modal */
+    #imageModal .modal-content {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    /* Quick actions menu */
     .quick-actions-menu {
         width: calc(100vw - 40px) !important;
         max-width: 380px !important;
@@ -376,7 +640,7 @@
         max-height: 60vh !important;
     }
 
-    /* ===== AGENT MEMORY PANEL - FULL WIDTH ON MOBILE ===== */
+    /* Agent memory panel */
     .agent-memory-panel {
         width: 100vw !important;
         max-width: 100vw !important;
@@ -386,5 +650,335 @@
 
     .agent-memory-panel .panel-content {
         padding: 10px !important;
+    }
+
+    /* Agent switcher */
+    .agent-switcher-panel {
+        width: 100vw;
+        max-width: 100vw;
+    }
+
+    .agent-switcher-fab {
+        bottom: 80px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    /* =========================================================================
+       AGENT STATUS BAR (multi_agent.css)
+       ========================================================================= */
+    .agent-status-bar {
+        padding: 10px 15px;
+    }
+
+    .agent-status-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .agent-info {
+        min-width: auto;
+        justify-content: space-between;
+    }
+
+    .agent-mode-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .mode-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .agent-selector {
+        min-width: auto;
+    }
+
+    .session-info {
+        justify-content: space-between;
+    }
+
+    .session-display-header {
+        bottom: 70px;
+        right: 20px;
+    }
+
+    .session-info-header {
+        padding: 3px 6px;
+        font-size: 9px;
+    }
+
+    .session-label-header {
+        font-size: 8px;
+    }
+
+    .session-id-header {
+        font-size: 9px;
+    }
+
+    /* =========================================================================
+       OSINT TOOLS (osint.css)
+       ========================================================================= */
+    .osint-categories {
+        grid-template-columns: 1fr;
+    }
+
+    .osint-header h3 {
+        font-size: 1.1em;
+    }
+
+    .osint-btn {
+        font-size: 0.85em;
+        padding: 7px 10px;
+    }
+
+    .osint-field input {
+        font-size: 0.9em;
+    }
+
+    /* =========================================================================
+       FILE EXPLORER (file-explorer.css)
+       ========================================================================= */
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+    }
+
+    .files-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    #fileSearch {
+        width: 100%;
+    }
+
+    .file-location-tabs {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .file-location-tab {
+        flex: 1;
+    }
+
+    /* =========================================================================
+       CODE BLOCKS
+       ========================================================================= */
+    .code-block-wrapper pre {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .code-copy-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .code-block-language {
+        font-size: 11px;
+    }
+
+    /* =========================================================================
+       PWA INSTALL BUTTON
+       ========================================================================= */
+    .pwa-install-btn {
+        bottom: 70px;
+        right: 16px;
+        padding: 10px 20px;
+        font-size: 13px;
+        border-radius: 20px;
+    }
+
+    .pwa-install-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .pwa-install-btn span {
+        margin-left: 6px !important;
+    }
+
+    /* =========================================================================
+       TOUCH TARGETS - Minimum 44px for all interactive elements
+       ========================================================================= */
+    button,
+    .send-btn,
+    .stop-button,
+    .settings-btn,
+    .chat-item,
+    .project-item,
+    .example-card,
+    a,
+    .clickable {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* =========================================================================
+       HIDE OTHER FOOTERS
+       ========================================================================= */
+    footer:not(.sidebar-footer),
+    .projects-footer {
+        display: none !important;
+    }
+}
+
+/* =============================================================================
+   SMALL SETTINGS PANEL (max-width: 600px)
+   ============================================================================= */
+@media (max-width: 600px) {
+    .settings-panel {
+        max-width: 94vw !important;
+        width: 94vw !important;
+        min-width: 0 !important;
+        border-radius: 0 !important;
+        padding: 0 1vw !important;
+        max-height: 70vh !important;
+        height: auto !important;
+    }
+
+    #aiModelsModal .settings-panel {
+        max-width: 92vw !important;
+        width: 92vw !important;
+        min-width: 0 !important;
+        max-height: 75vh !important;
+        height: auto !important;
+        padding: 0 1vw !important;
+    }
+
+    #aiModelsModal .settings-body {
+        max-height: 55vh !important;
+        overflow-y: auto !important;
+    }
+}
+
+/* =============================================================================
+   SMALL MOBILE (max-width: 480px)
+   ============================================================================= */
+@media (max-width: 480px) {
+    /* Multi-agent adjustments */
+    .mode-text {
+        display: none;
+    }
+
+    .mode-btn {
+        padding: 6px 10px;
+    }
+
+    .agent-label,
+    .session-label {
+        font-size: 10px;
+    }
+
+    .agent-name,
+    .session-id {
+        font-size: 12px;
+    }
+
+    .session-display-header {
+        bottom: 65px;
+        right: 16px;
+    }
+
+    .session-label-header {
+        display: none;
+    }
+
+    .session-info-header {
+        padding: 2px 5px;
+        font-size: 8px;
+    }
+
+    .session-id-header {
+        font-size: 8px;
+    }
+
+    /* File explorer adjustments */
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+    }
+
+    .file-icon {
+        font-size: 36px;
+    }
+
+    .file-name {
+        font-size: 11px;
+    }
+
+    /* PWA button adjustments */
+    .pwa-install-btn {
+        bottom: 60px;
+        right: 12px;
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+
+/* =============================================================================
+   LANDSCAPE ORIENTATION (max-width: 900px)
+   ============================================================================= */
+@media (max-width: 900px) and (orientation: landscape) {
+    .header {
+        padding: 8px 12px;
+    }
+
+    .header-logo {
+        font-size: 16px;
+    }
+
+    .messages {
+        padding: 12px;
+    }
+
+    .input-container {
+        padding: 8px 12px;
+    }
+
+    #messageInput {
+        max-height: 60px;
+    }
+}
+
+/* =============================================================================
+   TOUCH DEVICES (no hover capability)
+   ============================================================================= */
+@media (hover: none) and (pointer: coarse) {
+    /* Visual feedback for touch */
+    button:active,
+    .send-btn:active,
+    .chat-item:active,
+    .project-item:active {
+        transform: scale(0.97);
+        opacity: 0.8;
+    }
+
+    /* Remove hover states on touch devices */
+    .chat-item:hover,
+    .project-item:hover,
+    .example-card:hover {
+        transform: none;
+    }
+
+    /* Larger scrollbars for touch */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border-radius: 6px;
     }
 }
