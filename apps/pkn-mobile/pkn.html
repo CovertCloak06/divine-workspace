@@ -135,72 +135,6 @@
     <!-- Divine Debugger -->
     <script src="js/debugger.js"></script>
 </head>
-            <div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
-                <div class="settings-panel" style="max-width: 900px; max-height: 90vh;">
-                    <div class="settings-header">
-                        <div class="settings-title">📁 File Explorer</div>
-                        <button class="settings-close-x" onclick="hideFilesPanel()">×</button>
-                    </div>
-
-                    <div class="settings-body" style="max-height: calc(90vh - 80px); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
-
-                        <!-- Enhanced Toolbar -->
-                        <div class="files-toolbar">
-                            <div class="toolbar-left">
-                                <!-- Location Tabs -->
-                                <div class="file-location-tabs">
-                                    <button class="file-location-tab active" data-location="uploads">📤 Uploads</button>
-                                    <button class="file-location-tab" data-location="sdcard">📱 SD Card</button>
-                                    <button class="file-location-tab" data-location="home">🏠 Home</button>
-                                    <button class="file-location-tab" data-location="pkn">PKN</button>
-                                </div>
-                            </div>
-                            <div class="toolbar-right">
-                                <!-- Search -->
-                                <input type="text" id="fileSearch" placeholder="🔍 Search files..." />
-
-                                <!-- Sort -->
-                                <select id="sortBy" class="file-toolbar-btn" style="padding: 6px 12px;">
-                                    <option value="name">Name</option>
-                                    <option value="date">Date</option>
-                                    <option value="size">Size</option>
-                                    <option value="type">Type</option>
-                                </select>
-
-                                <!-- View Mode Toggle -->
-                                <button id="toggleViewMode" class="file-toolbar-btn" title="Toggle Grid/List View">
-                                    📊
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Breadcrumb navigation -->
-                        <div class="file-breadcrumb">
-                            <div id="fileBreadcrumb" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                                <span style="cursor: pointer; color: #00FFFF;">📂 Root</span>
-                            </div>
-                        </div>
-
-                        <!-- Files container -->
-                        <div id="filesList" class="files-container" style="flex: 1; overflow-y: auto; padding: 16px;">
-                            <div class="loading">Loading files...</div>
-                        </div>
-
-                        <!-- Bottom Toolbar -->
-                        <div class="files-toolbar" style="border-top: 1px solid #333; border-bottom: none;">
-                            <div class="toolbar-left">
-                                <span id="selectedCount" style="color: #888; font-size: 12px;"></span>
-                            </div>
-                            <div class="toolbar-right">
-                                <button id="uploadFileBtn" class="file-toolbar-btn">📤 Upload</button>
-                                <button id="newFolderBtn" class="file-toolbar-btn">📁 New Folder</button>
-                                <button id="refreshFilesBtn" class="file-toolbar-btn">🔄 Refresh</button>
-                                <button id="deleteSelectedBtn" class="file-toolbar-btn danger">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 <body>
 <div id="hoverStrip" class="hover-strip" aria-hidden="true" tabindex="0" role="button" aria-label="Open sidebar">
     <!-- Sidebar hover trigger (see app.js: setupSidebarHover) -->
@@ -475,6 +409,61 @@
                 <button class="file-action-btn" onclick="sendSmartFileAction('summarize')">Summarize file(s)</button>
                 <button class="file-action-btn" onclick="sendSmartFileAction('keypoints')">Key points</button>
                 <button class="file-action-btn" onclick="sendSmartFileAction('explain_code')">Explain code</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- File Explorer Modal (moved from invalid location outside body) -->
+<div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
+    <div class="settings-panel" style="max-width: 900px; max-height: 90vh;">
+        <div class="settings-header">
+            <div class="settings-title">File Explorer</div>
+            <button class="settings-close-x" onclick="hideFilesPanel()">&times;</button>
+        </div>
+        <div class="settings-body" style="max-height: calc(90vh - 80px); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+            <!-- Enhanced Toolbar -->
+            <div class="files-toolbar">
+                <div class="toolbar-left">
+                    <div class="file-location-tabs">
+                        <button class="file-location-tab active" data-location="uploads">Uploads</button>
+                        <button class="file-location-tab" data-location="sdcard">SD Card</button>
+                        <button class="file-location-tab" data-location="home">Home</button>
+                        <button class="file-location-tab" data-location="pkn">PKN</button>
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <input type="text" id="fileSearch" placeholder="Search files..." />
+                    <select id="sortBy" class="file-toolbar-btn" style="padding: 6px 12px;">
+                        <option value="name">Name</option>
+                        <option value="date">Date</option>
+                        <option value="size">Size</option>
+                        <option value="type">Type</option>
+                    </select>
+                    <button id="toggleViewMode" class="file-toolbar-btn" title="Toggle Grid/List View">Grid</button>
+                </div>
+            </div>
+            <!-- Breadcrumb navigation -->
+            <div class="file-breadcrumb">
+                <div id="fileBreadcrumb" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    <span style="cursor: pointer; color: #00FFFF;">Root</span>
+                </div>
+            </div>
+            <!-- Files container -->
+            <div id="filesList" class="files-container" style="flex: 1; overflow-y: auto; padding: 16px;">
+                <div class="loading">Loading files...</div>
+            </div>
+            <!-- Bottom Toolbar -->
+            <div class="files-toolbar" style="border-top: 1px solid #333; border-bottom: none;">
+                <div class="toolbar-left">
+                    <span id="selectedCount" style="color: #888; font-size: 12px;"></span>
+                </div>
+                <div class="toolbar-right">
+                    <button id="uploadFileBtn" class="file-toolbar-btn">Upload</button>
+                    <button id="newFolderBtn" class="file-toolbar-btn">New Folder</button>
+                    <button id="refreshFilesBtn" class="file-toolbar-btn">Refresh</button>
+                    <button id="deleteSelectedBtn" class="file-toolbar-btn danger">Delete</button>
+                </div>
             </div>
         </div>
     </div>
