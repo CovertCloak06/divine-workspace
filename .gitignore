@@ -226,3 +226,10 @@ token.json
 # Custom Ignores
 # ==========================================
 # Add project-specific ignores here
+
+# Codex
+AGENTS.override.md
+
+# Claude Code
+.claude/settings.local.json
+CLAUDE.local.md

@@ -131,6 +131,9 @@
         }
       });
     </script>
+
+    <!-- Divine Debugger -->
+    <script src="js/debugger.js"></script>
 </head>
             <div id="filesPanel" class="settings-overlay hidden" aria-hidden="true">
                 <div class="settings-panel" style="max-width: 900px; max-height: 90vh;">
@@ -276,6 +279,10 @@
 
         <div class="sidebar-section-header clickable" onclick="OSINTTools.togglePanel()">
             <span>OSINT Tools</span>
+        </div>
+
+        <div class="sidebar-section-header clickable" onclick="toggleDebugger()">
+            <span>🐞 Debugger</span>
         </div>
 
         </div>
@@ -1003,10 +1010,7 @@
     </div>
 </div>
 
-<!-- Floating Agent Switcher Button -->
-<button id="agentSwitcherBtn" class="agent-switcher-fab" onclick="toggleAgentSwitcher()" title="Switch Agent (Ctrl+A)">
-    <img src="img/icchat.png" alt="AI" style="width: 24px; height: 24px; border-radius: 50%; opacity: 0.8;" />
-</button>
+<!-- Floating Agent Switcher Button - REMOVED -->
 
 <!-- Keyboard Shortcuts Help Modal -->
 <div id="keyboardShortcutsModal" class="modal-overlay hidden">
@@ -1632,5 +1636,7 @@ if (typeof saveShowTimestamps === 'undefined') {
     }
 }
 </script>
+
+<!-- Divine Debugger loaded from js/debugger.js -->
 </body>
 </html>

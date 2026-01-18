@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Debugger - Mobile</title>
+    <style>
+        /* Divine Debugger Mobile Styles - Standalone Version */
+        :root {
+            --debug-bg: #1a1a2e;
+            --debug-panel: #16213e;
+            --debug-accent: #0ff;
+            --debug-accent-dim: rgba(0, 255, 255, 0.3);
+            --debug-text: #e0e0e0;
+            --debug-border: #0f3460;
+            --debug-success: #00ff88;
+            --debug-error: #ff4757;
+            --debug-warning: #ffa502;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--debug-bg);
+            color: var(--debug-text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .debugger-header {
+            background: var(--debug-panel);
+            border-bottom: 2px solid var(--debug-accent);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .debugger-title {
+            color: var(--debug-accent);
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--debug-accent-dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debugger-title::before {
+            content: '';
+            font-size: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            background: transparent;
+            border: 1px solid var(--debug-accent);
+            color: var(--debug-accent);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: var(--debug-accent);
+            color: var(--debug-bg);
+        }
+
+        /* Tabs */
+        .debugger-tabs {
+            display: flex;
+            background: var(--debug-panel);
+            border-bottom: 1px solid var(--debug-border);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--debug-text);
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .tab-btn.active {
+            color: var(--debug-accent);
+            border-bottom-color: var(--debug-accent);
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        /* Content Panels */
+        .debugger-content {
+            padding: 16px;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* Console Panel */
+        .console-output {
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            min-height: 300px;
+            max-height: 50vh;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .console-line {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .console-line:last-child {
+            border-bottom: none;
+        }
+
+        .console-line.log { color: var(--debug-text); }
+        .console-line.info { color: #3498db; }
+        .console-line.warn { color: var(--debug-warning); background: rgba(255, 165, 2, 0.1); }
+        .console-line.error { color: var(--debug-error); background: rgba(255, 71, 87, 0.1); }
+        .console-line.result { color: var(--debug-success); }
+        .console-line.input { color: var(--debug-accent); }
+
+        .console-prefix {
+            opacity: 0.6;
+            min-width: 20px;
+        }
+
+        .console-message {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .console-time {
+            font-size: 10px;
+            opacity: 0.5;
+        }
+
+        .console-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        #consoleInput {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: var(--debug-text);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        #consoleInput:focus {
+            outline: none;
+            border-color: var(--debug-accent);
+            box-shadow: 0 0 8px var(--debug-accent-dim);
+        }
+
+        .execute-btn {
+            background: var(--debug-accent);
+            border: none;
+            color: var(--debug-bg);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .execute-btn:hover {
+            box-shadow: 0 0 15px var(--debug-accent-dim);
+        }
+
+        /* Elements Panel */
+        .dom-tree {
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        .dom-node {
+            padding: 4px 0;
+            padding-left: 16px;
+            border-left: 1px solid var(--debug-border);
+            margin-left: 8px;
+        }
+
+        .dom-node.root {
+            padding-left: 0;
+            border-left: none;
+            margin-left: 0;
+        }
+
+        .dom-tag {
+            color: #ff79c6;
+        }
+
+        .dom-attr-name {
+            color: #50fa7b;
+        }
+
+        .dom-attr-value {
+            color: #f1fa8c;
+        }
+
+        .dom-text {
+            color: #8be9fd;
+            font-style: italic;
+        }
+
+        .dom-toggle {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 16px;
+            color: var(--debug-accent);
+        }
+
+        .dom-node.collapsed > .dom-children {
+            display: none;
+        }
+
+        /* Network Panel */
+        .network-list {
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .network-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--debug-panel);
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--debug-accent);
+            border-bottom: 1px solid var(--debug-border);
+        }
+
+        .network-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .network-item:hover {
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .network-url {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .network-status.success { color: var(--debug-success); }
+        .network-status.redirect { color: var(--debug-warning); }
+        .network-status.error { color: var(--debug-error); }
+
+        /* Storage Panel */
+        .storage-section {
+            margin-bottom: 20px;
+        }
+
+        .storage-title {
+            color: var(--debug-accent);
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--debug-border);
+        }
+
+        .storage-table {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .storage-table th {
+            background: var(--debug-panel);
+            color: var(--debug-accent);
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--debug-border);
+        }
+
+        .storage-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            word-break: break-word;
+        }
+
+        .storage-key {
+            color: var(--debug-success);
+            font-family: monospace;
+        }
+
+        .storage-value {
+            color: var(--debug-text);
+            font-family: monospace;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .storage-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .storage-action-btn {
+            background: transparent;
+            border: 1px solid var(--debug-border);
+            color: var(--debug-text);
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .storage-action-btn:hover {
+            border-color: var(--debug-accent);
+            color: var(--debug-accent);
+        }
+
+        .storage-action-btn.danger:hover {
+            border-color: var(--debug-error);
+            color: var(--debug-error);
+        }
+
+        /* Info Panel */
+        .info-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-card {
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .info-card-title {
+            color: var(--debug-accent);
+            font-size: 14px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--debug-border);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: var(--debug-text);
+            font-family: monospace;
+        }
+
+        /* Bookmarklet Section */
+        .bookmarklet-section {
+            background: var(--debug-panel);
+            border: 2px solid var(--debug-accent);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .bookmarklet-title {
+            color: var(--debug-accent);
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .bookmarklet-instructions {
+            color: var(--debug-text);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .bookmarklet-code {
+            background: #0d1117;
+            border: 1px solid var(--debug-border);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            color: var(--debug-success);
+            margin-bottom: 12px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            background: var(--debug-accent);
+            border: none;
+            color: var(--debug-bg);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            box-shadow: 0 0 15px var(--debug-accent-dim);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: var(--debug-panel);
+            border-top: 1px solid var(--debug-border);
+            padding: 8px 16px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--debug-success);
+        }
+
+        .status-dot.disconnected {
+            background: var(--debug-error);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--debug-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--debug-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--debug-accent-dim);
+        }
+    </style>
+</head>
+<body>
+    <header class="debugger-header">
+        <div class="debugger-title">Divine Debugger Mobile</div>
+        <div class="header-actions">
+            <button class="header-btn" onclick="clearConsole()">Clear</button>
+            <button class="header-btn" onclick="refreshAll()">Refresh</button>
+        </div>
+    </header>
+
+    <nav class="debugger-tabs">
+        <button class="tab-btn active" data-tab="console">Console</button>
+        <button class="tab-btn" data-tab="elements">Elements</button>
+        <button class="tab-btn" data-tab="network">Network</button>
+        <button class="tab-btn" data-tab="storage">Storage</button>
+        <button class="tab-btn" data-tab="info">Info</button>
+        <button class="tab-btn" data-tab="inject">Inject</button>
+    </nav>
+
+    <main class="debugger-content">
+        <!-- Console Panel -->
+        <div id="console" class="panel active">
+            <div class="console-output" id="consoleOutput">
+                <div class="console-line info">
+                    <span class="console-prefix">i</span>
+                    <span class="console-message">Divine Debugger Mobile initialized. Type JavaScript to execute.</span>
+                </div>
+            </div>
+            <div class="console-input-wrapper">
+                <input type="text" id="consoleInput" placeholder="Enter JavaScript code..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <button class="execute-btn" onclick="executeConsole()">Run</button>
+            </div>
+        </div>
+
+        <!-- Elements Panel -->
+        <div id="elements" class="panel">
+            <div class="dom-tree" id="domTree">
+                <div class="empty-state">
+                    <div class="empty-icon">🌳</div>
+                    <div>DOM tree will appear when injected into a page</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Panel -->
+        <div id="network" class="panel">
+            <div class="network-list">
+                <div class="network-header">
+                    <div>URL</div>
+                    <div>Method</div>
+                    <div>Status</div>
+                    <div>Time</div>
+                </div>
+                <div id="networkItems">
+                    <div class="empty-state">
+                        <div class="empty-icon">🌐</div>
+                        <div>Network requests will be captured here</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Panel -->
+        <div id="storage" class="panel">
+            <div class="storage-section">
+                <h3 class="storage-title">Local Storage</h3>
+                <table class="storage-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="localStorageBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="storage-section">
+                <h3 class="storage-title">Session Storage</h3>
+                <table class="storage-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionStorageBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div id="info" class="panel">
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3 class="info-card-title">Page Info</h3>
+                    <div class="info-item">
+                        <span class="info-label">URL</span>
+                        <span class="info-value" id="infoUrl">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Title</span>
+                        <span class="info-value" id="infoTitle">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Domain</span>
+                        <span class="info-value" id="infoDomain">-</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3 class="info-card-title">Browser Info</h3>
+                    <div class="info-item">
+                        <span class="info-label">User Agent</span>
+                        <span class="info-value" id="infoUserAgent">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Platform</span>
+                        <span class="info-value" id="infoPlatform">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Language</span>
+                        <span class="info-value" id="infoLanguage">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Online</span>
+                        <span class="info-value" id="infoOnline">-</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3 class="info-card-title">Screen Info</h3>
+                    <div class="info-item">
+                        <span class="info-label">Screen Size</span>
+                        <span class="info-value" id="infoScreen">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Viewport</span>
+                        <span class="info-value" id="infoViewport">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Pixel Ratio</span>
+                        <span class="info-value" id="infoPixelRatio">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inject Panel (Bookmarklet) -->
+        <div id="inject" class="panel">
+            <div class="bookmarklet-section">
+                <h3 class="bookmarklet-title">Inject Debugger into Any Page</h3>
+                <div class="bookmarklet-instructions">
+                    <p><strong>Option 1: Bookmarklet</strong></p>
+                    <p>Create a new bookmark and paste the code below as the URL. Then click the bookmark on any page to inject the debugger.</p>
+                </div>
+                <div class="bookmarklet-code" id="bookmarkletCode"></div>
+                <button class="copy-btn" onclick="copyBookmarklet()">Copy Bookmarklet</button>
+
+                <div class="bookmarklet-instructions" style="margin-top: 24px;">
+                    <p><strong>Option 2: Console Injection</strong></p>
+                    <p>Open browser DevTools (or use Eruda on mobile), paste this into the console:</p>
+                </div>
+                <div class="bookmarklet-code" id="consoleInjectCode"></div>
+                <button class="copy-btn" onclick="copyConsoleInject()">Copy Console Code</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="status-bar">
+        <div class="status-item">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Standalone Mode</span>
+        </div>
+        <div class="status-item">
+            <span id="memoryUsage">-</span>
+        </div>
+    </footer>
+
+    <script>
+        // Divine Debugger Mobile - Standalone Version
+        const DivineDebugger = {
+            logs: [],
+            networkRequests: [],
+            isInjected: false,
+
+            init() {
+                this.setupTabs();
+                this.setupConsole();
+                this.interceptConsoleMethods();
+                this.interceptNetwork();
+                this.updateStorage();
+                this.updateInfo();
+                this.generateBookmarklet();
+                this.startMemoryMonitor();
+
+                // Check if we're running inside another page
+                if (window.parent !== window || window.opener) {
+                    this.isInjected = true;
+                    document.getElementById('statusText').textContent = 'Injected Mode';
+                }
+            },
+
+            setupTabs() {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById(btn.dataset.tab).classList.add('active');
+                    });
+                });
+            },
+
+            setupConsole() {
+                const input = document.getElementById('consoleInput');
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        executeConsole();
+                    }
+                });
+
+                // Command history
+                this.commandHistory = [];
+                this.historyIndex = -1;
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (this.historyIndex < this.commandHistory.length - 1) {
+                            this.historyIndex++;
+                            input.value = this.commandHistory[this.commandHistory.length - 1 - this.historyIndex];
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (this.historyIndex > 0) {
+                            this.historyIndex--;
+                            input.value = this.commandHistory[this.commandHistory.length - 1 - this.historyIndex];
+                        } else {
+                            this.historyIndex = -1;
+                            input.value = '';
+                        }
+                    }
+                });
+            },
+
+            interceptConsoleMethods() {
+                const self = this;
+                const methods = ['log', 'info', 'warn', 'error'];
+
+                methods.forEach(method => {
+                    const original = console[method];
+                    console[method] = function(...args) {
+                        self.addLog(method, args);
+                        original.apply(console, args);
+                    };
+                });
+
+                // Catch errors
+                window.addEventListener('error', (e) => {
+                    this.addLog('error', [`${e.message} at ${e.filename}:${e.lineno}`]);
+                });
+
+                window.addEventListener('unhandledrejection', (e) => {
+                    this.addLog('error', [`Unhandled Promise Rejection: ${e.reason}`]);
+                });
+            },
+
+            addLog(type, args) {
+                const output = document.getElementById('consoleOutput');
+                const line = document.createElement('div');
+                line.className = `console-line ${type}`;
+
+                const prefixes = { log: '>', info: 'i', warn: '!', error: 'x', result: '<', input: '>' };
+
+                const message = args.map(arg => {
+                    if (typeof arg === 'object') {
+                        try {
+                            return JSON.stringify(arg, null, 2);
+                        } catch {
+                            return String(arg);
+                        }
+                    }
+                    return String(arg);
+                }).join(' ');
+
+                const time = new Date().toLocaleTimeString();
+
+                line.innerHTML = `
+                    <span class="console-prefix">${prefixes[type] || '>'}</span>
+                    <span class="console-message">${this.escapeHtml(message)}</span>
+                    <span class="console-time">${time}</span>
+                `;
+
+                output.appendChild(line);
+                output.scrollTop = output.scrollHeight;
+
+                this.logs.push({ type, message, time });
+            },
+
+            interceptNetwork() {
+                const self = this;
+
+                // Intercept fetch
+                const originalFetch = window.fetch;
+                window.fetch = async function(...args) {
+                    const startTime = performance.now();
+                    const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+                    const method = args[1]?.method || 'GET';
+
+                    try {
+                        const response = await originalFetch.apply(this, args);
+                        const duration = Math.round(performance.now() - startTime);
+                        self.addNetworkRequest(url, method, response.status, duration);
+                        return response;
+                    } catch (error) {
+                        const duration = Math.round(performance.now() - startTime);
+                        self.addNetworkRequest(url, method, 'ERR', duration);
+                        throw error;
+                    }
+                };
+
+                // Intercept XMLHttpRequest
+                const originalXHR = window.XMLHttpRequest;
+                window.XMLHttpRequest = function() {
+                    const xhr = new originalXHR();
+                    const originalOpen = xhr.open;
+                    const originalSend = xhr.send;
+                    let method, url, startTime;
+
+                    xhr.open = function(m, u, ...rest) {
+                        method = m;
+                        url = u;
+                        return originalOpen.apply(this, [m, u, ...rest]);
+                    };
+
+                    xhr.send = function(...args) {
+                        startTime = performance.now();
+                        xhr.addEventListener('loadend', () => {
+                            const duration = Math.round(performance.now() - startTime);
+                            self.addNetworkRequest(url, method, xhr.status || 'ERR', duration);
+                        });
+                        return originalSend.apply(this, args);
+                    };
+
+                    return xhr;
+                };
+            },
+
+            addNetworkRequest(url, method, status, duration) {
+                const container = document.getElementById('networkItems');
+
+                // Remove empty state if present
+                const empty = container.querySelector('.empty-state');
+                if (empty) empty.remove();
+
+                const item = document.createElement('div');
+                item.className = 'network-item';
+
+                let statusClass = 'success';
+                if (status >= 300 && status < 400) statusClass = 'redirect';
+                if (status >= 400 || status === 'ERR') statusClass = 'error';
+
+                item.innerHTML = `
+                    <div class="network-url" title="${this.escapeHtml(url)}">${this.escapeHtml(url)}</div>
+                    <div>${method}</div>
+                    <div class="network-status ${statusClass}">${status}</div>
+                    <div>${duration}ms</div>
+                `;
+
+                container.appendChild(item);
+                this.networkRequests.push({ url, method, status, duration });
+            },
+
+            updateStorage() {
+                // Local Storage
+                const localBody = document.getElementById('localStorageBody');
+                localBody.innerHTML = '';
+
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    localBody.appendChild(this.createStorageRow(key, value, 'local'));
+                }
+
+                if (localStorage.length === 0) {
+                    localBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#666;">No items</td></tr>';
+                }
+
+                // Session Storage
+                const sessionBody = document.getElementById('sessionStorageBody');
+                sessionBody.innerHTML = '';
+
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    const value = sessionStorage.getItem(key);
+                    sessionBody.appendChild(this.createStorageRow(key, value, 'session'));
+                }
+
+                if (sessionStorage.length === 0) {
+                    sessionBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#666;">No items</td></tr>';
+                }
+            },
+
+            createStorageRow(key, value, type) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="storage-key">${this.escapeHtml(key)}</td>
+                    <td class="storage-value" title="${this.escapeHtml(value)}">${this.escapeHtml(value.substring(0, 100))}${value.length > 100 ? '...' : ''}</td>
+                    <td class="storage-actions">
+                        <button class="storage-action-btn" onclick="DivineDebugger.copyStorageValue('${type}', '${this.escapeHtml(key)}')">Copy</button>
+                        <button class="storage-action-btn danger" onclick="DivineDebugger.deleteStorageItem('${type}', '${this.escapeHtml(key)}')">Delete</button>
+                    </td>
+                `;
+                return row;
+            },
+
+            copyStorageValue(type, key) {
+                const storage = type === 'local' ? localStorage : sessionStorage;
+                navigator.clipboard.writeText(storage.getItem(key));
+                this.addLog('info', [`Copied value for key: ${key}`]);
+            },
+
+            deleteStorageItem(type, key) {
+                const storage = type === 'local' ? localStorage : sessionStorage;
+                storage.removeItem(key);
+                this.updateStorage();
+                this.addLog('info', [`Deleted ${type} storage item: ${key}`]);
+            },
+
+            updateInfo() {
+                document.getElementById('infoUrl').textContent = location.href;
+                document.getElementById('infoTitle').textContent = document.title || '-';
+                document.getElementById('infoDomain').textContent = location.hostname;
+                document.getElementById('infoUserAgent').textContent = navigator.userAgent.substring(0, 50) + '...';
+                document.getElementById('infoPlatform').textContent = navigator.platform;
+                document.getElementById('infoLanguage').textContent = navigator.language;
+                document.getElementById('infoOnline').textContent = navigator.onLine ? 'Yes' : 'No';
+                document.getElementById('infoScreen').textContent = `${screen.width}x${screen.height}`;
+                document.getElementById('infoViewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+                document.getElementById('infoPixelRatio').textContent = window.devicePixelRatio;
+            },
+
+            generateBookmarklet() {
+                // Minified injectable debugger script
+                const debuggerScript = `
+(function(){
+    if(window.__divineDebugger){alert('Debugger already loaded');return;}
+    window.__divineDebugger=true;
+    var d=document.createElement('div');
+    d.id='divine-debugger-overlay';
+    d.style.cssText='position:fixed;bottom:0;left:0;right:0;height:40vh;background:#1a1a2e;border-top:2px solid #0ff;z-index:999999;overflow:auto;font-family:monospace;font-size:12px;';
+    d.innerHTML='<div style="display:flex;justify-content:space-between;padding:8px;background:#16213e;border-bottom:1px solid #0f3460;"><span style="color:#0ff;font-weight:bold;">Divine Debugger</span><button onclick="this.parentElement.parentElement.remove();delete window.__divineDebugger;" style="background:#ff4757;border:none;color:#fff;padding:4px 8px;cursor:pointer;">X</button></div><div id="__dd_output" style="padding:8px;color:#e0e0e0;max-height:calc(40vh - 80px);overflow:auto;"></div><div style="display:flex;padding:8px;gap:8px;"><input id="__dd_input" type="text" placeholder="Enter JS..." style="flex:1;background:#0d1117;border:1px solid #0f3460;color:#e0e0e0;padding:8px;border-radius:4px;"><button onclick="__dd_exec()" style="background:#0ff;color:#1a1a2e;border:none;padding:8px 16px;cursor:pointer;border-radius:4px;font-weight:bold;">Run</button></div>';
+    document.body.appendChild(d);
+    window.__dd_log=function(m,t){var o=document.getElementById('__dd_output');var l=document.createElement('div');l.style.cssText='padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1);color:'+(t==='error'?'#ff4757':t==='warn'?'#ffa502':'#e0e0e0');l.textContent=(t==='error'?'[ERR] ':t==='warn'?'[WARN] ':'> ')+m;o.appendChild(l);o.scrollTop=o.scrollHeight;};
+    window.__dd_exec=function(){var i=document.getElementById('__dd_input');var c=i.value;if(!c)return;__dd_log('>> '+c,'input');try{var r=eval(c);__dd_log(typeof r==='object'?JSON.stringify(r,null,2):String(r));}catch(e){__dd_log(e.message,'error');}i.value='';};
+    var _l=console.log,_e=console.error,_w=console.warn;
+    console.log=function(){_l.apply(console,arguments);__dd_log(Array.from(arguments).join(' '));};
+    console.error=function(){_e.apply(console,arguments);__dd_log(Array.from(arguments).join(' '),'error');};
+    console.warn=function(){_w.apply(console,arguments);__dd_log(Array.from(arguments).join(' '),'warn');};
+    document.getElementById('__dd_input').addEventListener('keypress',function(e){if(e.key==='Enter')__dd_exec();});
+    __dd_log('Divine Debugger injected. Console output will appear here.');
+})();`.replace(/\s+/g, ' ').trim();
+
+                const bookmarklet = 'javascript:' + encodeURIComponent(debuggerScript);
+                document.getElementById('bookmarkletCode').textContent = bookmarklet;
+                document.getElementById('consoleInjectCode').textContent = debuggerScript;
+            },
+
+            startMemoryMonitor() {
+                setInterval(() => {
+                    if (performance.memory) {
+                        const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                        document.getElementById('memoryUsage').textContent = `Memory: ${used}MB`;
+                    }
+                }, 2000);
+            },
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        };
+
+        // Global functions
+        function executeConsole() {
+            const input = document.getElementById('consoleInput');
+            const code = input.value.trim();
+            if (!code) return;
+
+            DivineDebugger.commandHistory.push(code);
+            DivineDebugger.historyIndex = -1;
+
+            DivineDebugger.addLog('input', [code]);
+
+            try {
+                const result = eval(code);
+                DivineDebugger.addLog('result', [result]);
+            } catch (error) {
+                DivineDebugger.addLog('error', [error.message]);
+            }
+
+            input.value = '';
+        }
+
+        function clearConsole() {
+            document.getElementById('consoleOutput').innerHTML = '';
+            DivineDebugger.logs = [];
+        }
+
+        function refreshAll() {
+            DivineDebugger.updateStorage();
+            DivineDebugger.updateInfo();
+            DivineDebugger.addLog('info', ['Refreshed all panels']);
+        }
+
+        function copyBookmarklet() {
+            navigator.clipboard.writeText(document.getElementById('bookmarkletCode').textContent);
+            alert('Bookmarklet copied! Create a new bookmark and paste as the URL.');
+        }
+
+        function copyConsoleInject() {
+            navigator.clipboard.writeText(document.getElementById('consoleInjectCode').textContent);
+            alert('Console code copied! Paste into browser DevTools console.');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            DivineDebugger.init();
+        });
+    </script>
+</body>
+</html>

@@ -52,37 +52,76 @@ code_tools, file_tools, system_tools, web_tools, memory_tools, osint_tools, rag_
 
 ```
 apps/pkn-mobile/
-├── backend/
+├── backend/                          # Python Flask backend
 │   ├── server.py                     # Flask app initialization
 │   ├── routes/                       # API route blueprints
-│   │   ├── multi_agent.py           # /api/multi-agent/*
-│   │   ├── osint.py                 # /api/osint/*
-│   │   ├── files.py                 # /api/files/*
-│   │   └── health.py                # /health
-│   ├── agents/
-│   │   ├── manager.py               # Agent orchestration (mobile config)
-│   │   ├── classifier.py            # Task classification
-│   │   └── external_llm.py          # OpenAI API integration
-│   ├── tools/                       # Agent tools (13 modules)
-│   └── config/
-│       └── settings.py              # Mobile-specific settings
-├── frontend/
-│   ├── pkn.html                     # Main HTML
-│   ├── css/
-│   │   ├── main.css                 # Base styles
-│   │   └── mobile.css               # Mobile responsive overrides
-│   └── js/                          # JavaScript modules
+│   ├── agents/                       # Agent orchestration
+│   ├── tools/                        # Agent tools (13 modules)
+│   └── config/                       # Settings
+├── css/                              # Stylesheets
+│   ├── main.css                      # Base styles
+│   └── mobile.css                    # Mobile responsive overrides
+├── js/                               # JavaScript modules
+│   ├── debugger.js                   # Divine Debugger module
+│   ├── core/                         # Core app logic
+│   ├── features/                     # Feature modules
+│   └── plugins/                      # Plugin system
 ├── scripts/
-│   └── termux_menu.sh               # Termux launcher script
-└── docs/
-    └── mobile_ui_fixes.md           # UI fix documentation
+│   ├── termux_menu.sh                # Termux launcher
+│   └── deploy-to-phone.sh            # ADB deployment helper
+├── pkn.html                          # Main HTML
+├── service-worker.js                 # PWA service worker
+└── server.py                         # Server entry point
 ```
+
+## Divine Debugger (Added 2026-01-17)
+
+Mobile debug panel accessible via sidebar toggle.
+
+**Features:**
+- **Console tab**: Intercepts console.log/error/warn, displays in panel
+- **Analysis tab**: Finds duplicate IDs, undefined functions, missing selectors
+- **Security tab**: Protocol check, cookies, localStorage, external scripts audit
+
+**Files:**
+- `js/debugger.js` - Main debugger module
+- `css/mobile.css` - Mobile styles for debugger panel
+
+**Usage:**
+1. Open sidebar (swipe from left)
+2. Tap "Debugger" toggle
+3. Panel appears at bottom with 3 tabs
+
+**To toggle via code:** `toggleDebugger()`
+
+## Deployment to Phone (via SSH)
+
+**Prerequisites:** SSH running in Termux (`sshd`), ADB connected
+
+```bash
+# From PC - establish connections
+adb forward tcp:8022 tcp:8022
+
+# Copy files via SSH
+scp -r -P 8022 /path/to/pkn-mobile/* localhost:~/pkn-phone/
+
+# Or use the helper script
+./scripts/deploy-to-phone.sh
+```
+
+**Restart server in Termux:**
+```bash
+pkill -f server.py
+cd ~/pkn-phone && python server.py &
+```
+
+**Cache busting:** Increment version in `service-worker.js` or add `?v=timestamp` to URL
 
 ## Mobile-Specific Configuration
 
 ### Termux Environment
 
-**Installation Location:** `~/pkn-mobile/` on Termux
+**Installation Location:** `~/pkn-phone/` on Termux
 **Port:** 8010 (same as desktop)
 **Python:** Termux Python 3.x
 **Dependencies:** `requirements.txt` (minimal for mobile)

@@ -366,4 +366,33 @@
     .agent-memory-panel .panel-content {
         padding: 10px !important;
     }
+
+    /* ===== DIVINE DEBUGGER - MOBILE OVERRIDES ===== */
+    #divine-debugger {
+        width: calc(100vw - 20px) !important;
+        max-width: none !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 70px !important;
+        height: 280px !important;
+    }
+
+    #divine-debugger .dd-header {
+        padding: 6px 8px !important;
+    }
+
+    #divine-debugger .dd-tab {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    #divine-debugger .dd-btn {
+        min-height: 44px !important;
+        font-size: 14px !important;
+    }
+
+    #divine-debugger .dd-close {
+        min-width: 36px !important;
+        min-height: 36px !important;
+    }
 }
