@@ -74,6 +74,103 @@ apps/pkn-mobile/
 └── server.py                         # Server entry point
 ```
 
+## Architecture Deep Dive (Updated 2026-01-17)
+
+### File Size Status
+
+| File | Lines | Status | Notes |
+|------|-------|--------|-------|
+| `js/core/app.js` | 4,244 | ⚠️ Large | Monolithic, has 141 functions. Contains duplicates of modular files. |
+| `css/main.css` | 3,589 | ✅ OK | Well-organized with 19 section headers. Keep as-is. |
+| `pkn.html` | ~1,580 | ⚠️ Large | Includes 445 lines of inline scripts. |
+| `backend/agents/manager.py` | 1,111 | ⚠️ Large | Core orchestration, refactor carefully. |
+| `js/features/files.js` | 795 | ⚠️ Large | File explorer, isolated module. |
+| `css/mobile.css` | 398 | ✅ OK | Mobile overrides only. |
+
+### JavaScript Architecture
+
+**Loading Order (from pkn.html):**
+1. Sentry (CDN) - Error tracking
+2. `js/debugger.js` - Divine Debugger (IIFE)
+3. `tools.js` - `window.ParakleonTools`
+4. `config.js` - `window.PARAKLEON_CONFIG`
+5. `js/core/app.js` - **4,244 lines, 141 functions** (traditional script)
+6. `js/features/agent_quality.js` - AgentQualityMonitor
+7. ES6 modules via `<script type="module">` - loads last
+
+**Critical Issue:** `app.js` loads as traditional script, defining 80+ global functions. Modular files (`chat.js`, `settings.js`, etc.) exist but may duplicate functions in `app.js`. Changes to either require careful testing.
+
+**Global State Variables:**
+```javascript
+window.currentChatId       // Active chat session
+window.currentProjectId    // Active project
+window.appInitialized      // App ready flag
+window.ParakleonTools      // OSINT/network tools
+window.PARAKLEON_CONFIG    // Configuration
+window.openMenuElement     // Menu state tracking
+```
+
+### CSS Architecture
+
+**main.css Section Map (3,589 lines):**
+| Section | Lines | Content |
+|---------|-------|---------|
+| RESET & GLOBAL | 1-127 | Variables, themes, scrollbars |
+| LAYOUT & CONTAINERS | 128-199 | Grid, flexbox structure |
+| SIDEBAR STYLES | 200-478 | Navigation, history items |
+| MAIN CONTENT | 479-1007 | Messages, chat area |
+| INPUT AREA | 1008-1287 | Textarea, send button |
+| MODALS & OVERLAYS | 1288-1638 | Settings, file explorer |
+| RESPONSIVE (MOBILE) | 1639-1971 | Breakpoint overrides |
+| WELCOME SCREEN | 1972-2167 | Landing page |
+| AGENT SWITCHER | 2238-2442 | Quick access panel |
+| CODE BLOCKS | 2790-2935 | Syntax highlighting |
+| LIGHT MODE | 3008-3277 | Theme variant |
+| PLUGINS | 3386-3589 | Plugin system UI |
+
+**mobile.css** (398 lines) - Single `@media (max-width: 768px)` wrapper that overrides main.css for mobile devices. Includes: hidden hoverstrip, arrow send button, swipe gestures.
+
+### HTML Event Handler Coupling
+
+**87 inline event handlers** in pkn.html call functions from `app.js`:
+- 67 onclick handlers
+- 13 onchange handlers
+- 7 range slider handlers
+
+**High-risk functions (called from HTML, defined in app.js):**
+- `sendMessage()`, `toggleSettings()`, `showFilesPanel()`, `hideFilesPanel()`
+- `selectHeaderAgent()`, `openImageGenerator()`, `toggleDebugger()`
+- `createNewProject()`, `saveNewProject()`, `toggleSection()`
+
+### Backend API Endpoints (50+ routes)
+
+**Most Used:**
+| Endpoint | Method | Frontend Caller | Purpose |
+|----------|--------|-----------------|---------|
+| `/api/multi-agent/chat` | POST | app.js, multi_agent_ui.js | Main chat |
+| `/api/multi-agent/chat/stream` | POST | multi_agent_ui.js | Streaming chat |
+| `/api/models/ollama` | GET | models.js, app.js | List models |
+| `/api/files/list` | GET | files.js, app.js | List uploads |
+| `/api/osint/*` | POST | osint_ui.js | 11 OSINT tools |
+
+### Refactoring Guidelines
+
+**Safe Changes:**
+- CSS within existing sections (main.css is well-organized)
+- Adding new modular JS files (don't modify app.js globals)
+- Backend route additions (new blueprints)
+
+**Risky Changes:**
+- Modifying `app.js` functions (87 HTML handlers depend on them)
+- Changing function signatures (breaks onclick calls)
+- Splitting CSS files (requires updating all imports)
+
+**Before Refactoring app.js:**
+1. Map all onclick handlers to their function targets
+2. Identify which modular file duplicates exist
+3. Test each function removal individually
+4. Keep backward compatibility via `window.functionName = functionName`
+
 ## Divine Debugger (Added 2026-01-17)
 
 Mobile debug panel accessible via sidebar toggle.
