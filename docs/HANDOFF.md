@@ -885,19 +885,3 @@ curl -X POST http://localhost:8010/api/memory/clear-session
 **END OF HANDOFF DOCUMENT**
 
 For the next session, start by verifying the two pending fixes (bashrc Enter key, termux_menu changes). Test both and report results before proceeding with new work.
-
----
-
-## 12. Cheatsheet Widget (Added 2026-01-18)
-
-**Files:**
-- `~/pkn/scripts/cheatsheet.sh` - fzf command picker, copies to clipboard
-- `~/pkn/scripts/commands.txt` - customizable command list (auto-created on first run)
-- `~/.shortcuts/Cheatsheet` - Termux widget shortcut
-
-**Usage:**
-- Widget: tap "Cheatsheet" from home screen
-- Terminal: `bash ~/pkn/scripts/cheatsheet.sh`
-- Alias: `alias cheat='bash ~/pkn/scripts/cheatsheet.sh'`
-
-**Requires:** `pkg install termux-api` for clipboard support
