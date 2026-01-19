@@ -1,0 +1,17 @@
+[
+  {
+    "title": "Deduplicate & Organize Workspace",
+    "description": "Scan for duplicate files, dead code, and conflicting UI assets. Propose a safe PR with consolidation plan.",
+    "agents": ["Parakleon Overseer", "Coder", "Tester"]
+  },
+  {
+    "title": "Wire Tools Agent",
+    "description": "Connect local execution endpoint, validate permissions, add safe command allowlist.",
+    "agents": ["Tools", "Tester"]
+  },
+  {
+    "title": "UI System Standardization",
+    "description": "Create a consistent theme, component palette, and exportable layout structure.",
+    "agents": ["Designer", "Coder"]
+  }
+]

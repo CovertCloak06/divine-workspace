@@ -1,0 +1,86 @@
+{
+  "project": {
+    "name": "Divine Workspace",
+    "type": "workspace",
+    "defaultBranch": "main"
+  },
+  "agents": [
+    {
+      "name": "Parakleon Overseer",
+      "role": "router",
+      "endpointUrl": "http://127.0.0.1:8000",
+      "enabled": true,
+      "permissions": ["read", "task_assign"],
+      "model": "local"
+    },
+    {
+      "name": "Coder",
+      "role": "coder",
+      "endpointUrl": "http://127.0.0.1:8002",
+      "enabled": true,
+      "permissions": ["read", "write", "diff"],
+      "model": "local"
+    },
+    {
+      "name": "Designer",
+      "role": "designer",
+      "endpointUrl": "http://127.0.0.1:8003",
+      "enabled": true,
+      "permissions": ["read", "write", "ui_generate"],
+      "model": "local"
+    },
+    {
+      "name": "Tools",
+      "role": "tools",
+      "endpointUrl": "http://127.0.0.1:8004",
+      "enabled": true,
+      "permissions": ["exec", "read", "logs"],
+      "model": "system"
+    },
+    {
+      "name": "Tester",
+      "role": "tester",
+      "endpointUrl": "http://127.0.0.1:8001",
+      "enabled": true,
+      "permissions": ["exec", "read", "logs"],
+      "model": "local"
+    }
+  ],
+  "tools": [
+    {
+      "name": "doctor",
+      "type": "command",
+      "command": "bash ./scripts/doctor.sh",
+      "description": "Run workspace diagnostics"
+    },
+    {
+      "name": "dev",
+      "type": "command",
+      "command": "bash ./scripts/dev.sh",
+      "description": "Start dev servers"
+    },
+    {
+      "name": "build",
+      "type": "command",
+      "command": "bash ./scripts/build.sh",
+      "description": "Build all targets"
+    },
+    {
+      "name": "test",
+      "type": "command",
+      "command": "bash ./scripts/test.sh",
+      "description": "Run test suite"
+    },
+    {
+      "name": "ports",
+      "type": "command",
+      "command": "bash ./scripts/ports.sh",
+      "description": "List expected ports + health"
+    }
+  ],
+  "policies": {
+    "defaultEditMode": "pr_only",
+    "requireDiffApproval": true,
+    "neverPushToMain": true
+  }
+}
