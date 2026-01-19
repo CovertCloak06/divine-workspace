@@ -503,7 +503,7 @@ body {
     bottom: 0;
     width: auto;
     height: auto;
-    background-image: url('../img/avatar_labs_transparent.png');
+    background-image: url('../img/gh0stbanner.png');
     background-repeat: no-repeat;
     background-position: center center;
     background-size: contain;
@@ -1125,9 +1125,10 @@ select optgroup {
 }
 
 /* Send button - used in pkn.html with id="sendBtn", click handler in app.js sendMessage() */
+/* Mobile-style at all viewports: transparent bg with theme border */
 .send-btn {
-    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-    color: #000000;
+    background: transparent;
+    color: var(--theme-primary);
     border: 2px solid var(--theme-primary);
     border-radius: 8px;
     padding: 12px 20px;
@@ -1135,7 +1136,7 @@ select optgroup {
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px var(--theme-primary-glow);
+    box-shadow: none;
     margin-left: 12px;
     min-width: 48px;
     height: 48px;
@@ -1145,19 +1146,19 @@ select optgroup {
     position: relative;
 }
 
-/* Arrow icon for send state */
+/* Arrow icon for send state - uses theme color for consistency across all viewport sizes */
 .send-btn::after {
     content: "➤";
     font-size: 18px;
-    color: #fff;
+    color: var(--theme-primary);
     display: inline-block;
     transition: transform 0.2s;
 }
 
 .send-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px var(--theme-primary-glow);
-    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+    box-shadow: 0 4px 12px var(--theme-primary-glow);
+    background: rgba(var(--theme-primary-rgb), 0.1);
 }
 
 .send-btn:hover::after {
@@ -1179,30 +1180,30 @@ select optgroup {
     content: "⏸";
 }
 
-/* Stop state styling */
+/* Stop state styling - mobile style with transparent bg and red border */
 .send-btn[data-state="stop"] {
-    background: linear-gradient(135deg, #ff4444, #cc0000) !important;
-    border-color: transparent !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4) !important;
+    background: transparent !important;
+    border-color: #ff4444 !important;
+    color: #ff4444 !important;
+    box-shadow: none !important;
     font-size: 12px !important;
-    min-width: 80px !important;
-    padding: 12px 20px !important;
+    min-width: 70px !important;
+    padding: 12px 16px !important;
     font-weight: 700 !important;
     letter-spacing: 1px !important;
 }
 
-/* Remove arrow, show STOP text */
+/* Remove arrow, show STOP text in red */
 .send-btn[data-state="stop"]::after {
     content: "STOP" !important;
     font-size: 12px !important;
-    color: #ffffff !important;
+    color: #ff4444 !important;
     transform: none !important;
 }
 
 .send-btn[data-state="stop"]:hover {
-    background: linear-gradient(135deg, #ff6666, #ee2222) !important;
-    box-shadow: 0 6px 16px rgba(255, 68, 68, 0.6) !important;
+    background: rgba(255, 68, 68, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3) !important;
 }
 
 .file-preview {

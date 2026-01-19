@@ -823,8 +823,8 @@
                     </label>
                 </div>
                 <div style="margin-top: 12px; font-size: 11px; color: #666; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
-                    <strong style="color: var(--theme-primary);">Local:</strong> Uses llama.cpp on your machine (private, free, offline)<br>
-                    <strong style="color: var(--theme-primary);">Cloud:</strong> Uses OpenAI API (fast, requires API key, online)
+                    <strong style="color: var(--theme-primary);">Local:</strong> Ollama on your machine (uncensored, private, offline)<br>
+                    <strong style="color: var(--theme-primary);">Cloud:</strong> Groq API (fast ~2s, FREE, online)
                 </div>
             </div>
 
@@ -1093,8 +1093,11 @@
 <!-- Multi-agent UI CSS -->
 <link rel="stylesheet" href="css/multi_agent.css">
 
-<!-- Main application (monolithic version) -->
+<!-- Main application (monolithic version - being refactored) -->
 <script src="js/core/app.js"></script>
+
+<!-- Modular entry point (overrides app.js globals with ES6 module versions) -->
+<script type="module" src="js/core/main.js"></script>
 
 <!-- Agent Quality Monitor (comprehensive health check) -->
 <script src="js/features/agent_quality.js"></script>
@@ -1567,11 +1570,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
 
-            // Only trigger if horizontal swipe is dominant
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                // Swipe right to open (min 50px swipe)
-                if (diffX > 50 && sidebar.classList.contains('hidden')) {
+            // Only trigger if horizontal swipe is dominant (at least 50px)
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                if (diffX > 0 && sidebar.classList.contains('hidden')) {
+                    // Swipe RIGHT to OPEN (when sidebar is hidden)
                     sidebar.classList.remove('hidden');
+                } else if (diffX < 0 && !sidebar.classList.contains('hidden')) {
+                    // Swipe LEFT to CLOSE (when sidebar is visible)
+                    sidebar.classList.add('hidden');
                 }
             }
         }

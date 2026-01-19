@@ -2,7 +2,7 @@
 """
 Multi-Agent Coordination System
 Manages and coordinates multiple specialized AI agents
-ENHANCED with full tool integration
+ENHANCED with full tool integration and cloud/local toggle
 """
 
 import os
@@ -21,7 +21,18 @@ from ..tools import (
     web_tools,
     memory_tools,
     osint_tools,
+    scratchpad_tools,
+    workflow_tools,
+    git_tools,
+    project_tools,
+    # Security/Pentesting tools (Kali-style)
+    pentest_tools,
+    recon_tools,
+    privesc_tools,
+    network_tools,
+    crypto_tools,
 )
+from ..tools.shadow import tools as shadow_tools
 
 # Import advanced agent features
 from ..tools.rag_tools import RAGMemory
@@ -31,16 +42,43 @@ from ..tools.chain_tools import ToolChainExecutor
 from ..tools.sandbox_tools import CodeSandbox
 from ..tools.evaluation_tools import AgentEvaluator
 
+# Import model configuration
+from ..config.model_config import (
+    BackendType,
+    DeviceType,
+    get_model_config,
+    get_all_models_for_device,
+    MOBILE_LOCAL_MODELS,
+    PC_LOCAL_MODELS,
+    CLOUD_MODELS,
+    is_cloud_available,
+)
+
+# Import cloud providers
+from ..utils.groq_cloud import groq_cloud, is_groq_available
 
 # Import local modules
 from .types import AgentType, TaskComplexity, AgentMessage
 from .classifier import TaskClassifier
 
 
+def detect_device_type() -> DeviceType:
+    """Detect if running on mobile (Termux) or PC."""
+    # Check for Termux environment
+    if os.path.exists("/data/data/com.termux"):
+        return DeviceType.MOBILE
+    if "TERMUX_VERSION" in os.environ:
+        return DeviceType.MOBILE
+    if "com.termux" in os.environ.get("PREFIX", ""):
+        return DeviceType.MOBILE
+    return DeviceType.PC
+
+
 class AgentManager:
     """
     Coordinates multiple specialized agents.
     Routes tasks to the most appropriate agent based on task type and complexity.
+    Supports local (Ollama) and cloud (Groq/OpenAI) backends.
     """
 
     def __init__(self, project_root: str = None):
@@ -55,14 +93,21 @@ class AgentManager:
         self.conversation_history = {}
         self.agent_stats = {}
 
+        # Device and backend configuration
+        self.device_type = detect_device_type()
+        self.backend_mode = BackendType.LOCAL  # Default to local
+        self._load_backend_preference()
+
         # Initialize classifier
         self.classifier = TaskClassifier()
 
-        # Initialize available agents
+        # Initialize available agents based on device and backend
         self._init_agents()
 
         # Give classifier access to agent configurations
         self.classifier.agents = self.agents
+
+        print(f"Device: {self.device_type.value.upper()}, Backend: {self.backend_mode.value.upper()}")
 
         # Initialize advanced features
         try:
@@ -109,154 +154,171 @@ class AgentManager:
         except ImportError:
             self.evaluator = None
 
+    def _load_backend_preference(self):
+        """Load backend preference from environment or config file."""
+        # Check environment variable first
+        backend_env = os.getenv("PKN_BACKEND", "").lower()
+        if backend_env == "cloud":
+            self.backend_mode = BackendType.CLOUD
+        elif backend_env == "local":
+            self.backend_mode = BackendType.LOCAL
+
+        # Try to load from config file
+        config_file = self.project_root / "data" / "backend_config.json"
+        if config_file.exists():
+            try:
+                with open(config_file, "r") as f:
+                    config = json.load(f)
+                    if config.get("backend") == "cloud":
+                        self.backend_mode = BackendType.CLOUD
+            except Exception:
+                pass
+
+    def set_backend(self, backend: str) -> Dict[str, Any]:
+        """
+        Switch between local and cloud backend.
+
+        Args:
+            backend: 'local' or 'cloud'
+
+        Returns:
+            Status dict with new configuration
+        """
+        if backend.lower() == "cloud":
+            if not is_groq_available():
+                return {
+                    "success": False,
+                    "error": "Groq API key not configured. Get free key at https://console.groq.com",
+                    "backend": self.backend_mode.value,
+                }
+            self.backend_mode = BackendType.CLOUD
+        else:
+            self.backend_mode = BackendType.LOCAL
+
+        # Save preference
+        config_file = self.project_root / "data" / "backend_config.json"
+        config_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_file, "w") as f:
+            json.dump({"backend": self.backend_mode.value}, f)
+
+        # Reinitialize agents with new backend
+        self._init_agents()
+        self.classifier.agents = self.agents
+
+        return {
+            "success": True,
+            "backend": self.backend_mode.value,
+            "device": self.device_type.value,
+            "agents_count": len(self.agents),
+            "cloud_available": is_groq_available(),
+        }
+
+    def get_backend_status(self) -> Dict[str, Any]:
+        """Get current backend configuration status."""
+        return {
+            "backend": self.backend_mode.value,
+            "device": self.device_type.value,
+            "cloud_available": is_groq_available(),
+            "agents_count": len(self.agents),
+        }
+
     def _init_agents(self):
-        """Initialize available agent configurations"""
+        """Initialize agents based on device type and backend mode."""
+        self.agents = {}
+        is_cloud = self.backend_mode == BackendType.CLOUD
+        is_mobile = self.device_type == DeviceType.MOBILE
 
-        # Coder Agent - Qwen2.5-Coder-7B via ollama (LOCAL, UNCENSORED)
-        self.agents[AgentType.CODER] = {
-            "name": "Qwen Coder Mobile",
-            "model": "ollama:qwen2.5-coder:7b",
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": ["code_writing", "debugging", "refactoring", "code_review", "cybersecurity"],
-            "speed": "medium",  # Faster on phone than llamacpp
-            "quality": "high",  # Uncensored, great for code
-            "tools_enabled": True,  # ✅ ENABLED: code_tools, file_tools, sandbox, web_tools, memory
+        # Select model source based on backend mode
+        if is_cloud:
+            model_source = CLOUD_MODELS
+            mode_label = "CLOUD (Groq)"
+        elif is_mobile:
+            model_source = MOBILE_LOCAL_MODELS
+            mode_label = "MOBILE LOCAL (Ollama)"
+        else:
+            model_source = PC_LOCAL_MODELS
+            mode_label = "PC LOCAL (Ollama)"
+
+        # Core agents with their capabilities
+        agent_capabilities = {
+            "coder": ["code_writing", "debugging", "refactoring", "code_review"],
+            "general": ["conversation", "simple_qa", "explanations"],
+            "reasoner": ["planning", "logic", "problem_solving", "analysis"],
+            "security": ["pentesting", "vulnerability_analysis", "exploit_dev", "osint"],
+            "researcher": ["web_search", "documentation", "fact_checking"],
+            "executor": ["command_execution", "file_operations", "system_tasks"],
+            "vision": ["image_analysis", "screenshot_analysis", "ocr"],
         }
 
-        # Reasoner Agent - Same model, different prompt
-        self.agents[AgentType.REASONER] = {
-            "name": "Reasoning Agent Mobile",
-            "model": "ollama:qwen2.5-coder:7b",
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": ["planning", "logic", "problem_solving", "analysis"],
-            "speed": "medium",
-            "quality": "high",
-            "tools_enabled": True,  # ✅ ENABLED: planning_tools, memory_tools, delegation_tools
+        # Map agent keys to AgentType enum
+        agent_type_map = {
+            "coder": AgentType.CODER,
+            "general": AgentType.GENERAL,
+            "reasoner": AgentType.REASONER,
+            "security": AgentType.SECURITY,
+            "researcher": AgentType.RESEARCHER,
+            "executor": AgentType.EXECUTOR,
+            "vision": AgentType.VISION,
         }
 
-        # Researcher Agent - Use mistral for variety
-        self.agents[AgentType.RESEARCHER] = {
-            "name": "Research Agent Mobile",
-            "model": "ollama:mistral:latest",
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": ["web_search", "documentation", "fact_checking"],
-            "speed": "medium",
-            "quality": "high",
-            "tools_enabled": True,  # ✅ ENABLED: web_tools, osint_tools, rag_tools, memory_tools
-        }
+        # Initialize each core agent
+        for agent_key, agent_type in agent_type_map.items():
+            model_cfg = model_source.get(agent_key, model_source.get("general", {}))
 
-        # Executor Agent - For system commands
-        self.agents[AgentType.EXECUTOR] = {
-            "name": "Executor Agent Mobile",
-            "model": "ollama:qwen2.5-coder:7b",
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": ["command_execution", "file_operations", "system_tasks"],
+            self.agents[agent_type] = {
+                "name": model_cfg.get("name", f"{agent_key.title()} Agent"),
+                "model": model_cfg.get("model", "ollama:mistral:latest"),
+                "endpoint": "http://127.0.0.1:11434" if not is_cloud else None,
+                "capabilities": agent_capabilities.get(agent_key, []),
+                "speed": model_cfg.get("speed", "medium"),
+                "quality": model_cfg.get("quality", "medium"),
+                "tools_enabled": True,
+                "uncensored": model_cfg.get("uncensored", False),
+                "cloud": is_cloud,
+                "provider": model_cfg.get("provider", "ollama"),
+            }
+
+        # Always add Vision Cloud agent (Groq free)
+        self.agents[AgentType.VISION_CLOUD] = {
+            "name": "Vision Analyst (Groq Cloud)",
+            "model": "groq:llama-3.2-90b-vision-preview",
+            "endpoint": None,
+            "capabilities": ["image_analysis", "screenshot_analysis", "ocr", "visual_qa"],
             "speed": "fast",
-            "quality": "medium",
-            "tools_enabled": True,  # ✅ ENABLED: system_tools, file_tools, sandbox_tools, evaluation_tools
+            "quality": "very_high",
+            "tools_enabled": False,
+            "vision": True,
+            "cloud": True,
+            "free": True,
+            "provider": "groq",
         }
 
-        # General Agent - Lightweight qwen for quick answers
-        self.agents[AgentType.GENERAL] = {
-            "name": "General Assistant Mobile",
-            "model": "ollama:qwen:latest",  # Smaller, faster
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": ["conversation", "simple_qa", "explanations"],
-            "speed": "fast",
-            "quality": "medium",
-            "tools_enabled": True,  # ✅ ENABLED: memory_tools, web_tools, chain_tools
-        }
-
-        # Consultant Agent - Claude API for maximum intelligence
+        # Always add Claude Consultant (premium cloud)
         self.agents[AgentType.CONSULTANT] = {
             "name": "Claude Consultant",
-            "model": "claude_api",
-            "endpoint": None,  # Uses claude_api module
-            "capabilities": [
-                "high_level_decisions",
-                "voting",
-                "expert_advice",
-                "complex_reasoning",
-            ],
-            "speed": "medium",  # API latency ~3-5s
-            "quality": "very_high",  # Maximum intelligence
-            "tools_enabled": True,  # Claude can use ALL tools!
+            "model": "claude:claude-3-5-sonnet-20241022",
+            "endpoint": None,
+            "capabilities": ["high_level_decisions", "voting", "expert_advice", "complex_reasoning"],
+            "speed": "medium",
+            "quality": "exceptional",
+            "tools_enabled": True,
+            "cloud": True,
+            "provider": "anthropic",
         }
 
-        # Security Agent - UNCENSORED cybersecurity expert
-        # Uses Qwen2.5-Coder-7B via ollama (uncensored alternative)
-        self.agents[AgentType.SECURITY] = {
-            "name": "Security Expert Mobile (Uncensored)",
-            "model": "ollama:qwen2.5-coder:7b",
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": [
-                "penetration_testing",
-                "vulnerability_analysis",
-                "exploit_development",
-                "security_auditing",
-                "malware_analysis",
-                "network_security",
-                "web_security",
-                "cryptography",
-                "reverse_engineering",
-                "osint",
-                "social_engineering",
-                "red_teaming",
-                "blue_teaming",
-            ],
-            "speed": "medium",  # Faster on mobile via ollama
-            "quality": "high",  # Expert-level security knowledge
-            "tools_enabled": True,  # Full access to OSINT, web, system tools
-            "uncensored": True,  # NO content filtering
-        }
+        # Load specialist agents
+        self._init_specialist_agents()
 
-        # Vision Agent - LLaVA via ollama (LOCAL)
-        self.agents[AgentType.VISION] = {
-            "name": "Vision Analyst Mobile",
-            "model": "ollama:llava:latest",  # Vision model via ollama
-            "endpoint": "http://127.0.0.1:11434",
-            "capabilities": [
-                "image_analysis",
-                "screenshot_analysis",
-                "ui_understanding",
-                "visual_debugging",
-                "diagram_interpretation",
-                "ocr",
-                "visual_qa",
-                "object_detection",
-                "scene_understanding",
-            ],
-            "speed": "medium",  # ~5-10s for vision analysis
-            "quality": "high",  # Good vision understanding
-            "tools_enabled": True,  # Can use file tools to load images
-            "vision": True,  # Supports image input
-        }
+        print(f"✅ Initialized {len(self.agents)} agents [{mode_label}]")
 
-        # Vision Cloud Agent - Groq Llama-3.2-90B-Vision (FREE, FAST, ENGLISH-ONLY)
-        self.agents[AgentType.VISION_CLOUD] = {
-            "name": "Vision Analyst (Cloud)",
-            "model": "groq_vision",  # Groq cloud vision API
-            "endpoint": None,  # Uses groq_vision module
-            "capabilities": [
-                "image_analysis",
-                "screenshot_analysis",
-                "ui_understanding",
-                "visual_debugging",
-                "diagram_interpretation",
-                "ocr",
-                "visual_qa",
-                "object_detection",
-                "scene_understanding",
-            ],
-            "speed": "fast",  # ~1-3s for vision analysis (cloud)
-            "quality": "very_high",  # Llama-3.2-90B is extremely powerful
-            "tools_enabled": False,  # Cloud API handles images directly
-            "vision": True,  # Supports image input
-            "cloud": True,  # Cloud-based (requires API key)
-            "free": True,  # Completely free (no credit card needed)
-        }
-
-        print(f"✅ Initialized {len(self.agents)} agents for MOBILE (ollama + optional cloud)")
+    def _init_specialist_agents(self):
+        """Load specialist agent configurations."""
+        try:
+            from .specialist_agents import get_specialist_agents
+            specialists = get_specialist_agents()
+            self.agents.update(specialists)
+        except ImportError as e:
+            print(f"⚠️ Could not load specialist agents: {e}")
 
     def get_tools_for_agent(self, agent_type: AgentType) -> List:
         """
@@ -264,16 +326,26 @@ class AgentManager:
 
         Returns list of langchain tools that the agent can use.
         """
-        # All agents can use memory tools
-        common_tools = memory_tools.TOOLS
+        # All agents can use memory, scratchpad, and workflow tools
+        common_tools = (
+            memory_tools.TOOLS
+            + scratchpad_tools.TOOLS  # Agent handoff storage
+            + workflow_tools.TOOLS    # Multi-agent workflow coordination
+        )
 
         if agent_type == AgentType.CODER:
             # Code operations + file search
             return code_tools.TOOLS + file_tools.TOOLS + common_tools
 
         elif agent_type == AgentType.EXECUTOR:
-            # System control + file operations
-            return system_tools.TOOLS + file_tools.TOOLS + common_tools
+            # System control + file operations + git + project management
+            return (
+                system_tools.TOOLS
+                + file_tools.TOOLS
+                + git_tools.TOOLS      # Version control
+                + project_tools.TOOLS  # Project management
+                + common_tools
+            )
 
         elif agent_type == AgentType.RESEARCHER:
             # Web research + OSINT + file search
@@ -284,24 +356,38 @@ class AgentManager:
             return common_tools
 
         elif agent_type == AgentType.SECURITY:
-            # Security & pentesting tools: OSINT, web, system, file access
+            # Security & pentesting tools: Full Kali-style toolkit
             return (
-                osint_tools.TOOLS  # Port scanning, DNS, IP lookup
-                + web_tools.TOOLS  # Web reconnaissance
-                + system_tools.TOOLS  # System analysis, command execution
-                + file_tools.TOOLS  # File operations for analysis
-                + code_tools.TOOLS  # Code review for vulnerabilities
+                osint_tools.TOOLS      # Port scanning, DNS, IP lookup
+                + web_tools.TOOLS      # Web reconnaissance
+                + system_tools.TOOLS   # System analysis, command execution
+                + file_tools.TOOLS     # File operations for analysis
+                + code_tools.TOOLS     # Code review for vulnerabilities
+                + pentest_tools.TOOLS  # Shells, payloads, exploits
+                + recon_tools.TOOLS    # Banner grab, headers, directory enum
+                + privesc_tools.TOOLS  # SUID, cron, kernel exploits
+                + network_tools.TOOLS  # TCP/UDP scan, traceroute, ARP
+                + crypto_tools.TOOLS   # Hash crack, JWT, encoding
+                + shadow_tools.TOOLS   # Shadow OSINT: username hunt, dorks, recon
                 + common_tools
             )
 
         elif agent_type == AgentType.CONSULTANT:
-            # ALL tools available
+            # ALL tools available (full suite)
             return (
                 code_tools.TOOLS
                 + file_tools.TOOLS
                 + system_tools.TOOLS
                 + web_tools.TOOLS
                 + osint_tools.TOOLS
+                + git_tools.TOOLS       # Version control
+                + project_tools.TOOLS   # Project management
+                + pentest_tools.TOOLS   # Shells, payloads, exploits
+                + recon_tools.TOOLS     # Banner grab, headers, directory enum
+                + privesc_tools.TOOLS   # SUID, cron, kernel exploits
+                + network_tools.TOOLS   # TCP/UDP scan, traceroute, ARP
+                + crypto_tools.TOOLS    # Hash crack, JWT, encoding
+                + shadow_tools.TOOLS    # Shadow OSINT: username hunt, dorks, recon
                 + common_tools
             )
 
@@ -339,6 +425,38 @@ class AgentManager:
 
         for tool in memory_tools.TOOLS:
             registry[f"memory_tools.{tool.name}"] = tool
+
+        for tool in scratchpad_tools.TOOLS:
+            registry[f"scratchpad_tools.{tool.name}"] = tool
+
+        for tool in workflow_tools.TOOLS:
+            registry[f"workflow_tools.{tool.name}"] = tool
+
+        for tool in git_tools.TOOLS:
+            registry[f"git_tools.{tool.name}"] = tool
+
+        for tool in project_tools.TOOLS:
+            registry[f"project_tools.{tool.name}"] = tool
+
+        # Security/Pentesting tools (Kali-style)
+        for tool in pentest_tools.TOOLS:
+            registry[f"pentest_tools.{tool.name}"] = tool
+
+        for tool in recon_tools.TOOLS:
+            registry[f"recon_tools.{tool.name}"] = tool
+
+        for tool in privesc_tools.TOOLS:
+            registry[f"privesc_tools.{tool.name}"] = tool
+
+        for tool in network_tools.TOOLS:
+            registry[f"network_tools.{tool.name}"] = tool
+
+        for tool in crypto_tools.TOOLS:
+            registry[f"crypto_tools.{tool.name}"] = tool
+
+        # Shadow OSINT suite
+        for tool in shadow_tools.TOOLS:
+            registry[f"shadow_tools.{tool.name}"] = tool
 
         return registry
 
@@ -399,8 +517,42 @@ class AgentManager:
         }
 
         try:
+            # Check if using cloud backend (Groq)
+            if self.backend_mode == BackendType.CLOUD and agent_config.get("provider") == "groq":
+                # Use Groq cloud for fast execution
+                system_prompts = {
+                    AgentType.CODER: "You are an expert code writer. Write clean, efficient code. Always respond in English.",
+                    AgentType.GENERAL: "You are a helpful AI assistant. Always respond in English.",
+                    AgentType.REASONER: "You are a reasoning expert. Think step by step. Always respond in English.",
+                    AgentType.SECURITY: "You are a cybersecurity expert. Provide detailed security analysis. Always respond in English.",
+                    AgentType.RESEARCHER: "You are a research expert. Provide accurate, well-sourced information. Always respond in English.",
+                    AgentType.EXECUTOR: "You are a system administration expert. Provide clear commands and explanations. Always respond in English.",
+                }
+                system_prompt = system_prompts.get(agent_type, "You are a helpful AI assistant. Always respond in English.")
+
+                result = groq_cloud.chat(
+                    message=instruction,
+                    system_prompt=system_prompt,
+                    temperature=0.7,
+                    max_tokens=2048,
+                )
+
+                if result["success"]:
+                    response = result["response"]
+                    tools_used = ["groq_cloud"]
+                else:
+                    # Fallback to local if cloud fails
+                    response = f"⚠️ Cloud error: {result.get('error', 'Unknown')}\nFalling back to local..."
+                    response = await self._call_chat_api(
+                        instruction,
+                        "http://127.0.0.1:11434",
+                        "ollama:mistral:latest",
+                        system_prompt,
+                    )
+                    tools_used = ["cloud_fallback_to_local"]
+
             # Execute based on agent type and tool requirements
-            if agent_config["model"] == "groq_vision":
+            elif agent_config["model"] == "groq_vision" or agent_config.get("model", "").startswith("groq:"):
                 # Use Groq cloud vision API
                 from groq_vision import groq_vision
 

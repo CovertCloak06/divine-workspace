@@ -4,35 +4,7 @@
  * Integrated into PKN - Non-module version
  */
 
-// Utility functions (inline to avoid module dependencies)
-// Only define showToast if it doesn't already exist (avoid recursion)
-if (!window.showToast) {
-    window.showToast = function(message, duration = 3000, type = 'info') {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-
-        // Create toast notification element
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: ${type === 'error' ? '#f00' : type === 'success' ? '#0f0' : '#0ff'};
-            color: #000;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 10000;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        `;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, duration);
-    };
-}
+// showToast is provided by js/utils/utils.js via main.js module
 
 function escapeHtml(text) {
     const div = document.createElement('div');

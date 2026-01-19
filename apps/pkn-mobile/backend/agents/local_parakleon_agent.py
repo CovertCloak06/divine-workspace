@@ -25,15 +25,14 @@ except ImportError:
     print("Warning: web_tools module not available. Web search features disabled.")
 
 # ============================================================================
-# LLM setup: llama.cpp OpenAI-compatible server (chat_format=qwen)
+# LLM setup: Ollama or OpenAI-compatible server
+# Mobile uses Ollama (port 11434), Desktop may use llama.cpp (port 8000)
 # ============================================================================
 
-LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:8000/v1")
-LLAMA_MODEL_NAME = os.getenv(
-    "LLAMA_MODEL_NAME",
-    "/home/gh0st/pkn/llama.cpp/models/"
-    "Qwen2.5-Coder-14B-Instruct-abliterated-Q4_K_M.gguf",
-)
+# Default to Ollama endpoint for mobile
+LLAMA_SERVER_URL = os.getenv("LLAMA_SERVER_URL", "http://127.0.0.1:11434/v1")
+# Model name - for Ollama, just the model tag (e.g., "qwen2.5-coder:7b")
+LLAMA_MODEL_NAME = os.getenv("LLAMA_MODEL_NAME", "qwen2.5-coder:7b")
 
 os.environ.setdefault("OPENAI_API_KEY", "local")
 

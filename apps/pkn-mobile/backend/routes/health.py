@@ -16,14 +16,13 @@ health_bp = Blueprint("health", __name__)
 
 @health_bp.route("/health", methods=["GET"])
 def health():
+    """Health check at /health"""
     return jsonify({"status": "ok", "service": "phonescan"}), 200
 
 
-# Add API-style health endpoint for clients expecting /api/health
-
-
-@health_bp.route("/health", methods=["GET"])
+@health_bp.route("/api/health", methods=["GET"])
 def api_health():
+    """Health check at /api/health for frontend compatibility"""
     return jsonify({"status": "ok", "service": "divinenode_api"}), 200
 
 

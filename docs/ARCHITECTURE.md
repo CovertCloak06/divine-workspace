@@ -26,7 +26,7 @@ Divine Node Workspace is a **monorepo** containing three production applications
 3. **PKN Mobile** - Simplified AI assistant (Android/Termux)
 
 **Key Characteristics:**
-- Modular architecture (200-line file limit)
+- Modular architecture (utils ~200 lines, app files 300-500 lines)
 - Shared configurations (DRY principle)
 - Comprehensive developer tooling
 - Production-ready applications
@@ -117,9 +117,11 @@ divine-workspace/
 
 ## Design Principles
 
-### 1. Modular Architecture (200-Line Limit)
+### 1. Modular Architecture (Size Guidelines)
 
-**Rule**: Every source file MUST be ≤200 lines.
+**Rule**: Keep files maintainable:
+- **Utilities/Components**: ~200 lines
+- **App/Core files**: 300-500 lines acceptable
 
 **Why:**
 - Forces good separation of concerns
@@ -130,6 +132,7 @@ divine-workspace/
 **Enforcement:**
 - Pre-commit hook (`scripts/check_file_size.py`)
 - CI pipeline (`just check-file-sizes`)
+- Smart detection: app.js, main.js, /core/ files get higher limit
 
 **How to Split Large Files:**
 
@@ -506,7 +509,7 @@ Android Phone (Termux)
 
 **Divine Node Workspace** is a well-architected monorepo that prioritizes:
 
-1. **Modularity** - 200-line file limit enforced
+1. **Modularity** - Sensible file size limits (utils ~200, app files ~500)
 2. **Developer Experience** - One-command workflows
 3. **Code Quality** - Pre-commit hooks, linting, formatting
 4. **Documentation** - Comprehensive guides for AI/human developers
@@ -514,7 +517,7 @@ Android Phone (Termux)
 
 **Key Metrics:**
 - 3 production apps
-- 200-line file limit (strictly enforced)
+- Smart file size limits (utilities ~200, app/core ~500)
 - 30+ just commands
 - 100% test coverage for critical paths
 - <5 minute onboarding time

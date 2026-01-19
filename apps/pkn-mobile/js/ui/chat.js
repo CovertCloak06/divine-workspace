@@ -280,13 +280,16 @@ export function addMessage(text, sender = 'user', saveToChat = true, attachments
  * Send a message to the AI
  */
 export function sendMessage() {
-    const input = messageInput.value.trim();
+    const inputEl = messageInput || document.getElementById('messageInput');
+    const input = inputEl ? inputEl.value.trim() : '';
     if (!input) return;
+
+    // Hide welcome screen when sending a message
+    window.hideWelcomeScreen?.();
 
     // Disable input and button during request
     const sendBtn = document.getElementById('sendBtn');
-    const messageInput = document.getElementById('messageInput');
-    if (messageInput) messageInput.disabled = true;
+    if (inputEl) inputEl.disabled = true;
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.dataset.originalText = sendBtn.textContent;
@@ -296,7 +299,7 @@ export function sendMessage() {
     // Add user message to chat and storage immediately
     addMessage(input, 'user', false);
     appendMessageToCurrentChat('user', input);
-    messageInput.value = '';
+    if (inputEl) inputEl.value = '';
 
     // Show thinking/typing animation (AI is responding)
     const thinkingId = 'thinking_' + Date.now();
@@ -307,19 +310,15 @@ export function sendMessage() {
     let chat = getCurrentChat(chats);
     let messages = chat && chat.messages ? chat.messages.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })) : [{ role: 'user', content: input }];
 
-    // Build provider-prefixed modelId for server compatibility (e.g., "llamacpp:local", "ollama:xyz")
-    const ACTIVE_MODEL = window.ACTIVE_MODEL || 'openai';
-    const ACTIVE_PROVIDER = window.ACTIVE_PROVIDER || 'openai';
-    const modelIdToSend = (typeof ACTIVE_MODEL === 'string' && ACTIVE_MODEL.includes(':')) ? ACTIVE_MODEL : (ACTIVE_PROVIDER ? `${ACTIVE_PROVIDER}:${ACTIVE_MODEL}` : ACTIVE_MODEL);
-
-    // Add timeout handling (30 seconds)
+    // Add timeout handling (60 seconds for AI responses)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-    fetch('/api/chat', {
+    // Use multi-agent chat endpoint
+    fetch('/api/multi-agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, modelId: modelIdToSend }),
+        body: JSON.stringify({ message: input, mode: 'auto' }),
         signal: controller.signal
     })
     .then(async res => {
@@ -332,7 +331,7 @@ export function sendMessage() {
             // Provide more specific error messages
             let errorMsg = 'Unknown error';
             if (res.status === 502) {
-                errorMsg = 'Backend service unavailable. Please check if llama.cpp/Ollama is running.';
+                errorMsg = 'Backend service unavailable. Please check server status.';
             } else if (res.status === 500) {
                 errorMsg = json.error || 'Server error. Check server logs for details.';
             } else if (res.status === 404) {
@@ -352,9 +351,11 @@ export function sendMessage() {
         const thinkingElem = document.getElementById(thinkingId);
         if (thinkingElem) thinkingElem.remove();
 
-        // Add AI response to chat
+        // Add AI response to chat (multi-agent format)
         let aiText = '';
-        if (data.choices && data.choices[0] && data.choices[0].message) {
+        if (data.response) {
+            aiText = data.response;
+        } else if (data.choices && data.choices[0] && data.choices[0].message) {
             aiText = data.choices[0].message.content;
         } else if (data.output) {
             aiText = data.output;
@@ -386,12 +387,12 @@ export function sendMessage() {
     })
     .finally(() => {
         // Re-enable input and button
-        if (messageInput) messageInput.disabled = false;
+        if (inputEl) inputEl.disabled = false;
         if (sendBtn) {
             sendBtn.disabled = false;
             sendBtn.textContent = sendBtn.dataset.originalText || 'Send';
         }
-        if (messageInput) messageInput.focus();
+        if (inputEl) inputEl.focus();
     });
 }
 

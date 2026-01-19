@@ -11,8 +11,9 @@ from pathlib import Path
 
 from .routes import register_all_routes
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from app root .env (override shell vars)
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path, override=True)
 
 # Initialize Flask app
 app = Flask(__name__)

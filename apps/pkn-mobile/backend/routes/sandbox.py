@@ -6,8 +6,7 @@ Extracted from divinenode_server.py
 from flask import Blueprint, request, jsonify
 import json
 import time
-# TODO: Update import after agent_manager is split
-# from ..agents.manager import AgentManager
+# Note: AgentManager imported lazily in functions to avoid circular imports
 
 
 # Create blueprint

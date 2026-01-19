@@ -1,9 +1,9 @@
 // Divine Node PWA Service Worker
-// Version 1.0.0
+// Version 2.0.0 - Network-first for HTML/JS to prevent black screen
 // Provides offline support, caching, and background capabilities
 
-const CACHE_NAME = 'divine-node-v1.0.0';
-const RUNTIME_CACHE = 'divine-node-runtime';
+const CACHE_NAME = 'divine-node-v2.0.0';
+const RUNTIME_CACHE = 'divine-node-runtime-v2';
 
 // Files to cache immediately on install
 const STATIC_CACHE_URLS = [
@@ -23,7 +23,13 @@ const STATIC_CACHE_URLS = [
   '/js/models.js',
   '/js/files.js',
   '/js/projects.js',
-  '/manifest.json'
+  '/manifest.json',
+  // Images
+  '/img/icchat.png',
+  '/img/gh0stbanner.png',
+  '/img/icsword.png',
+  '/img/icon-192.png',
+  '/img/icon-512.png'
 ];
 
 // Install event - cache static assets
@@ -103,17 +109,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first strategy for static assets
+  // Network-first for HTML and JS (prevents black screen on stale cache)
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname === '/') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful responses for offline use
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if offline
+          return caches.match(request).then((cachedResponse) => {
+            return cachedResponse || caches.match('/pkn.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // Cache-first strategy for CSS, images, and other static assets
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
         if (cachedResponse) {
-          console.log('[Service Worker] Serving from cache:', request.url);
           return cachedResponse;
         }
 
         // Not in cache, fetch from network
-        console.log('[Service Worker] Fetching from network:', request.url);
         return fetch(request)
           .then((response) => {
             // Don't cache non-successful responses
@@ -134,12 +162,6 @@ self.addEventListener('fetch', (event) => {
           })
           .catch((error) => {
             console.error('[Service Worker] Fetch failed:', error);
-
-            // Return offline page for HTML requests
-            if (request.headers.get('accept').includes('text/html')) {
-              return caches.match('/pkn.html');
-            }
-
             return new Response('Offline', { status: 503 });
           });
       })

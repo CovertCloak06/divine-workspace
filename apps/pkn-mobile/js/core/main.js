@@ -3,11 +3,24 @@
  * Ties together all modules and sets up event handlers
  */
 
-import { showToast, toggleSection, closeHistoryMenu, checkBackend } from '../utils/utils.js';
-import { sendMessage, addMessage } from '../ui/chat.js';
-// renderHistory is in app.js (loaded globally)
-import { initModelSelector } from '../features/models.js';
+import { showToast, toggleSection, closeHistoryMenu, checkBackend, escapeHtml } from '../utils/utils.js';
+import { sendMessage, addMessage, appendMessageToCurrentChat, getCurrentChat } from '../ui/chat.js';
+import { loadChatsFromStorage, saveChatsToStorage } from '../utils/storage.js';
+import { initModelSelector, refreshOllamaModels, getAllModels } from '../features/models.js';
 import { renderProjects } from '../features/projects.js';
+import {
+    initHistory,
+    renderHistory,
+    newChat,
+    loadChat,
+    deleteChat,
+    reloadCurrentChat,
+    backupChat,
+    importBackup
+} from '../features/history.js';
+import { showFilesPanel, hideFilesPanel, initFilesPanelRefs } from '../ui/files-panel.js';
+import { formatError, showFormattedError } from '../utils/errors.js';
+import { showWelcomeScreen, hideWelcomeScreen, sendExample } from '../ui/welcome-screen.js';
 import {
     toggleSettings,
     saveTemperature,
@@ -18,10 +31,21 @@ import {
     saveEnterToSend,
     saveShowTimestamps,
     savePlaceholder,
-    saveApiKey
+    saveApiKey,
+    // Appearance settings
+    applyAppearanceSettings,
+    saveChatFontFamily,
+    saveUIFontFamily,
+    saveInputTextColor,
+    saveOutputTextColor,
+    saveChatFontSize,
+    getStorageUsage,
+    formatFileSize,
+    // Data management
+    toggleFullHistory,
+    confirmDeleteAllChats,
+    confirmDeleteAllProjects
 } from '../features/settings.js';
-// Files panel functions are in app.js (loaded globally)
-// import { showFilesPanel, hideFilesPanel, initFilesPanelRefs } from './files.js';
 import {
     openImageGenerator,
     closeImageGenerator,
@@ -251,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filesBtn) filesBtn.onclick = showFilesPanel;
     const closeFilesBtn = document.getElementById('closeFilesBtn');
     if (closeFilesBtn) closeFilesBtn.onclick = hideFilesPanel;
-    if (typeof initFilesPanelRefs === 'function') initFilesPanelRefs();
+    initFilesPanelRefs();
 
     // Projects panel buttons
     const projectsBtn = document.getElementById('projectsBtn');
@@ -283,15 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const networkBtn = document.getElementById('networkBtn');
     if (networkBtn) networkBtn.onclick = networkAction;
 
-    // Send message on Enter key
-    if (messageInput) {
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    }
+    // Enter key handler is in app.js - don't duplicate here
+    // The app.js version correctly uses /api/multi-agent/chat
 
     // Initialize the application
     init();
@@ -305,6 +322,7 @@ export async function init() {
     init._ran = true;
 
     // Initialize modules
+    initHistory();
     initModelSelector();
     renderProjects();
     renderHistory();
@@ -375,10 +393,41 @@ export async function init() {
 
 // Make functions available globally for inline HTML handlers
 window.toggleSection = toggleSection;
-window.sendMessage = sendMessage;
+// Don't overwrite sendMessage - app.js defines the correct version using /api/multi-agent/chat
+// window.sendMessage = sendMessage;
 window.networkAction = networkAction;
 window.addMessage = addMessage;
+window.appendMessageToCurrentChat = appendMessageToCurrentChat;  // Used by app.js sendMessage
+window.escapeHtml = escapeHtml;
+
+// Storage functions (used by app.js)
+window.loadChatsFromStorage = loadChatsFromStorage;
+window.saveChatsToStorage = saveChatsToStorage;
+
+// Chat functions (used by app.js)
+window.getCurrentChat = getCurrentChat;
+
+// History functions
 window.renderHistory = renderHistory;
+window.newChat = newChat;
+window.loadChat = loadChat;
+window.deleteChat = deleteChat;
+window.reloadCurrentChat = reloadCurrentChat;
+window.backupChat = backupChat;
+window.importBackup = importBackup;
+
+// Model functions (from models.js)
+window.refreshOllamaModels = refreshOllamaModels;
+window.getAllModels = getAllModels;
+
+// Files panel functions
+window.showFilesPanel = showFilesPanel;
+window.hideFilesPanel = hideFilesPanel;
+window.initFilesPanelRefs = initFilesPanelRefs;
+
+// Error handling
+window.formatError = formatError;
+window.showFormattedError = showFormattedError;
 
 // Settings functions
 window.toggleSettings = toggleSettings;
@@ -391,6 +440,21 @@ window.saveEnterToSend = saveEnterToSend;
 window.saveShowTimestamps = saveShowTimestamps;
 window.savePlaceholder = savePlaceholder;
 window.saveApiKey = saveApiKey;
+
+// Appearance settings functions
+window.applyAppearanceSettings = applyAppearanceSettings;
+window.saveChatFontFamily = saveChatFontFamily;
+window.saveUIFontFamily = saveUIFontFamily;
+window.saveInputTextColor = saveInputTextColor;
+window.saveOutputTextColor = saveOutputTextColor;
+window.saveChatFontSize = saveChatFontSize;
+window.getStorageUsage = getStorageUsage;
+window.formatFileSize = formatFileSize;
+
+// Data management functions
+window.toggleFullHistory = toggleFullHistory;
+window.confirmDeleteAllChats = confirmDeleteAllChats;
+window.confirmDeleteAllProjects = confirmDeleteAllProjects;
 
 // Image generation functions
 window.openImageGenerator = openImageGenerator;

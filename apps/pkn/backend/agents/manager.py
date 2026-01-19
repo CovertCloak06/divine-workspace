@@ -21,7 +21,19 @@ from ..tools import (
     web_tools,
     memory_tools,
     osint_tools,
+    # New tools from MCP integration
+    scratchpad_tools,
+    workflow_tools,
+    git_tools,
+    project_tools,
+    # Security/Pentesting tools (Kali-style)
+    pentest_tools,
+    recon_tools,
+    privesc_tools,
+    network_tools,
+    crypto_tools,
 )
+from ..tools.shadow import tools as shadow_tools
 
 # Import advanced agent features
 from ..tools.rag_tools import RAGMemory
@@ -262,16 +274,26 @@ class AgentManager:
 
         Returns list of langchain tools that the agent can use.
         """
-        # All agents can use memory tools
-        common_tools = memory_tools.TOOLS
+        # All agents can use memory, scratchpad, and workflow tools
+        common_tools = (
+            memory_tools.TOOLS
+            + scratchpad_tools.TOOLS  # Agent handoff storage
+            + workflow_tools.TOOLS    # Multi-agent workflow coordination
+        )
 
         if agent_type == AgentType.CODER:
             # Code operations + file search
             return code_tools.TOOLS + file_tools.TOOLS + common_tools
 
         elif agent_type == AgentType.EXECUTOR:
-            # System control + file operations
-            return system_tools.TOOLS + file_tools.TOOLS + common_tools
+            # System control + file operations + git + project management
+            return (
+                system_tools.TOOLS
+                + file_tools.TOOLS
+                + git_tools.TOOLS      # Version control
+                + project_tools.TOOLS  # Project management
+                + common_tools
+            )
 
         elif agent_type == AgentType.RESEARCHER:
             # Web research + OSINT + file search
@@ -282,24 +304,38 @@ class AgentManager:
             return common_tools
 
         elif agent_type == AgentType.SECURITY:
-            # Security & pentesting tools: OSINT, web, system, file access
+            # Security & pentesting tools: Full Kali-style toolkit
             return (
-                osint_tools.TOOLS  # Port scanning, DNS, IP lookup
-                + web_tools.TOOLS  # Web reconnaissance
-                + system_tools.TOOLS  # System analysis, command execution
-                + file_tools.TOOLS  # File operations for analysis
-                + code_tools.TOOLS  # Code review for vulnerabilities
+                osint_tools.TOOLS      # Port scanning, DNS, IP lookup
+                + web_tools.TOOLS      # Web reconnaissance
+                + system_tools.TOOLS   # System analysis, command execution
+                + file_tools.TOOLS     # File operations for analysis
+                + code_tools.TOOLS     # Code review for vulnerabilities
+                + pentest_tools.TOOLS  # Shells, payloads, exploits
+                + recon_tools.TOOLS    # Banner grab, headers, directory enum
+                + privesc_tools.TOOLS  # SUID, cron, kernel exploits
+                + network_tools.TOOLS  # TCP/UDP scan, traceroute, ARP
+                + crypto_tools.TOOLS   # Hash crack, JWT, encoding
+                + shadow_tools.TOOLS   # Shadow OSINT: username hunt, dorks, recon
                 + common_tools
             )
 
         elif agent_type == AgentType.CONSULTANT:
-            # ALL tools available
+            # ALL tools available (full suite)
             return (
                 code_tools.TOOLS
                 + file_tools.TOOLS
                 + system_tools.TOOLS
                 + web_tools.TOOLS
                 + osint_tools.TOOLS
+                + git_tools.TOOLS       # Version control
+                + project_tools.TOOLS   # Project management
+                + pentest_tools.TOOLS   # Shells, payloads, exploits
+                + recon_tools.TOOLS     # Banner grab, headers, directory enum
+                + privesc_tools.TOOLS   # SUID, cron, kernel exploits
+                + network_tools.TOOLS   # TCP/UDP scan, traceroute, ARP
+                + crypto_tools.TOOLS    # Hash crack, JWT, encoding
+                + shadow_tools.TOOLS    # Shadow OSINT: username hunt, dorks, recon
                 + common_tools
             )
 
@@ -337,6 +373,39 @@ class AgentManager:
 
         for tool in memory_tools.TOOLS:
             registry[f"memory_tools.{tool.name}"] = tool
+
+        # MCP integration tools
+        for tool in scratchpad_tools.TOOLS:
+            registry[f"scratchpad_tools.{tool.name}"] = tool
+
+        for tool in workflow_tools.TOOLS:
+            registry[f"workflow_tools.{tool.name}"] = tool
+
+        for tool in git_tools.TOOLS:
+            registry[f"git_tools.{tool.name}"] = tool
+
+        for tool in project_tools.TOOLS:
+            registry[f"project_tools.{tool.name}"] = tool
+
+        # Security/Pentesting tools (Kali-style)
+        for tool in pentest_tools.TOOLS:
+            registry[f"pentest_tools.{tool.name}"] = tool
+
+        for tool in recon_tools.TOOLS:
+            registry[f"recon_tools.{tool.name}"] = tool
+
+        for tool in privesc_tools.TOOLS:
+            registry[f"privesc_tools.{tool.name}"] = tool
+
+        for tool in network_tools.TOOLS:
+            registry[f"network_tools.{tool.name}"] = tool
+
+        for tool in crypto_tools.TOOLS:
+            registry[f"crypto_tools.{tool.name}"] = tool
+
+        # Shadow OSINT suite
+        for tool in shadow_tools.TOOLS:
+            registry[f"shadow_tools.{tool.name}"] = tool
 
         return registry
 

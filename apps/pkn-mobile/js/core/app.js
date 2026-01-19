@@ -1,390 +1,22 @@
 // Parakleon Main Chat Application
+// Toast notifications: use showToast from js/utils/utils.js (loaded via main.js module)
+// Error handling: use formatError from js/utils/errors.js (loaded via main.js module)
 
-// --- Utility Functions ---
-// Toast notification system for user feedback
-function showToast(message, duration = 3000, type = 'info') {
-    const container = document.getElementById('toastContainer') || document.body;
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-        max-width: 350px;
-        word-wrap: break-word;
-    `;
-    container.appendChild(toast);
-
-    // Auto-remove after duration
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
-}
-
-// Add CSS animations for toast if not already present
-if (!document.getElementById('toast-animations')) {
-    const style = document.createElement('style');
-    style.id = 'toast-animations';
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(400px); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// --- Error Message Handling System ---
-// Maps technical errors to user-friendly messages with actionable recovery steps
-const ERROR_MESSAGES = {
-    // Network & Connection Errors
-    'ECONNREFUSED': {
-        title: '🔌 Service Not Running',
-        message: 'The AI service isn\'t responding.',
-        actions: [
-            'Start services: Open Settings → CLI Access → Copy Commands',
-            'Or run: ./pkn_control.sh start-all',
-            'Check status: ./pkn_control.sh status'
-        ],
-        severity: 'error',
-        docs: '#service-not-running'
-    },
-    'Failed to fetch': {
-        title: '🌐 Connection Failed',
-        message: 'Cannot reach the server.',
-        actions: [
-            'Check if server is running: curl http://localhost:8010/health',
-            'Restart services: ./pkn_control.sh restart-divinenode',
-            'Check browser console (F12) for details'
-        ],
-        severity: 'error',
-        docs: '#connection-failed'
-    },
-    'NetworkError': {
-        title: '🌐 Network Error',
-        message: 'Network request failed.',
-        actions: [
-            'Check your internet connection',
-            'Verify server is running on port 8010',
-            'Try refreshing the page'
-        ],
-        severity: 'error'
-    },
-
-    // Port & Service Errors
-    'port 8010': {
-        title: '⚠️ Port Conflict',
-        message: 'Port 8010 is already in use by another application.',
-        actions: [
-            'Stop conflicting service: lsof -i :8010',
-            'Or change Divine Node port in divinenode_server.py',
-            'Then restart: ./pkn_control.sh restart-divinenode'
-        ],
-        severity: 'warning',
-        docs: '#port-conflict'
-    },
-    'port 8000': {
-        title: '⚠️ LLM Port Conflict',
-        message: 'Port 8000 (llama.cpp) is already in use.',
-        actions: [
-            'Stop conflicting service: lsof -i :8000',
-            'Or restart llama.cpp: ./pkn_control.sh restart-llama'
-        ],
-        severity: 'warning'
-    },
-
-    // Image Generation Errors
-    'IndexError': {
-        title: '🎨 Image Generation Failed',
-        message: 'The image generator encountered a configuration error.',
-        actions: [
-            'Restart services: ./pkn_control.sh restart-divinenode',
-            'Check logs: tail -20 divinenode.log',
-            'Try a simpler prompt'
-        ],
-        severity: 'error',
-        docs: '#image-generation'
-    },
-    'timed out': {
-        title: '⏱️ Generation Timeout',
-        message: 'The operation took too long to complete.',
-        actions: [
-            'CPU mode takes ~3 minutes - this is normal',
-            'If using GPU and still timing out, check GPU availability',
-            'Try reducing image complexity or step count'
-        ],
-        severity: 'warning'
-    },
-
-    // Model & AI Errors
-    'Model not found': {
-        title: '🤖 Model Not Available',
-        message: 'The requested AI model isn\'t loaded.',
-        actions: [
-            'Check available models: curl http://localhost:8000/v1/models',
-            'Verify model path in pkn_control.sh',
-            'Download model if missing'
-        ],
-        severity: 'error',
-        docs: '#model-not-found'
-    },
-    'CUDA': {
-        title: 'ℹ️ GPU Not Available',
-        message: 'CUDA not available - using CPU mode.',
-        actions: [
-            'This is expected on systems without NVIDIA GPU',
-            'CPU mode works fine, just slower (~3-5x)',
-            'No action needed unless you expected GPU acceleration'
-        ],
-        severity: 'info'
-    },
-
-    // File & Storage Errors
-    'QuotaExceededError': {
-        title: '💾 Storage Full',
-        message: 'Browser storage limit exceeded.',
-        actions: [
-            'Clear old chats: Settings → Delete Chats',
-            'Clear images: Settings → Clear Images',
-            'Export important chats first: Settings → Export Chats'
-        ],
-        severity: 'warning',
-        docs: '#storage-full'
-    },
-    'File too large': {
-        title: '📁 File Too Large',
-        message: 'The uploaded file exceeds size limits.',
-        actions: [
-            'Maximum file size: 10MB',
-            'Try compressing the file',
-            'Or split into smaller chunks'
-        ],
-        severity: 'warning'
-    },
-
-    // HTTP Status Errors
-    '404': {
-        title: '🔍 Not Found',
-        message: 'The requested resource doesn\'t exist.',
-        actions: [
-            'Check the URL or endpoint',
-            'Verify server is running latest version',
-            'Try restarting services'
-        ],
-        severity: 'error'
-    },
-    '500': {
-        title: '🔥 Server Error',
-        message: 'Internal server error occurred.',
-        actions: [
-            'Check server logs: tail -20 divinenode.log',
-            'Restart services: ./pkn_control.sh restart-all',
-            'Report issue if error persists'
-        ],
-        severity: 'error',
-        docs: '#server-errors'
-    },
-    '503': {
-        title: '⚠️ Service Unavailable',
-        message: 'Server is temporarily unavailable.',
-        actions: [
-            'Server might be starting up (wait 10-15 seconds)',
-            'Check status: ./pkn_control.sh status',
-            'Restart if needed: ./pkn_control.sh restart-all'
-        ],
-        severity: 'warning'
+// Clear messages while preserving welcome screen
+function clearMessages() {
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+        container.querySelectorAll('.message').forEach(el => el.remove());
     }
-};
-
-/**
- * Format error into user-friendly message with recovery actions
- * @param {Error|string} error - Error object or message
- * @param {string} context - Optional context (e.g., "image_generation", "chat")
- * @returns {Object} Formatted error with title, message, actions, severity
- */
-function formatError(error, context = '') {
-    const errorMsg = typeof error === 'string' ? error : (error.message || String(error));
-
-    // Try to match error patterns
-    for (const [pattern, errorInfo] of Object.entries(ERROR_MESSAGES)) {
-        if (errorMsg.includes(pattern) || errorMsg.toLowerCase().includes(pattern.toLowerCase())) {
-            return {
-                title: errorInfo.title,
-                message: errorInfo.message,
-                actions: errorInfo.actions || [],
-                severity: errorInfo.severity || 'error',
-                docs: errorInfo.docs || null,
-                originalError: errorMsg
-            };
-        }
-    }
-
-    // Fallback for unknown errors
-    return {
-        title: '❌ Error',
-        message: errorMsg,
-        actions: [
-            'Check browser console (F12) for details',
-            'View server logs: tail -20 divinenode.log',
-            'Try restarting services if issue persists'
-        ],
-        severity: 'error',
-        originalError: errorMsg
-    };
-}
-
-/**
- * Display formatted error to user with recovery options
- * @param {Error|string} error - Error object or message
- * @param {string} context - Optional context
- * @param {HTMLElement} targetElement - Optional element to show error in
- */
-function showFormattedError(error, context = '', targetElement = null) {
-    const formatted = formatError(error, context);
-
-    // Create error card HTML
-    const errorHTML = `
-        <div class="error-card" style="
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid ${formatted.severity === 'error' ? '#ef4444' : formatted.severity === 'warning' ? '#f59e0b' : '#3b82f6'};
-            border-radius: 8px;
-            padding: 16px;
-            margin: 12px 0;
-            font-size: 13px;
-        ">
-            <div class="error-title" style="
-                color: ${formatted.severity === 'error' ? '#ef4444' : formatted.severity === 'warning' ? '#f59e0b' : '#3b82f6'};
-                font-weight: 700;
-                font-size: 14px;
-                margin-bottom: 8px;
-            ">${formatted.title}</div>
-
-            <div class="error-message" style="color: #ccc; margin-bottom: 12px;">
-                ${formatted.message}
-            </div>
-
-            ${formatted.actions.length > 0 ? `
-                <div class="error-actions" style="margin-top: 12px;">
-                    <div style="color: #999; font-size: 12px; margin-bottom: 6px; font-weight: 600;">💡 Try these fixes:</div>
-                    <ul style="margin: 0; padding-left: 20px; color: #aaa; font-size: 12px; line-height: 1.6;">
-                        ${formatted.actions.map(action => `<li>${action}</li>`).join('')}
-                    </ul>
-                </div>
-            ` : ''}
-
-            ${formatted.docs ? `
-                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <a href="/docs${formatted.docs}" style="color: var(--theme-primary); font-size: 12px; text-decoration: none;">
-                        📖 Learn more →
-                    </a>
-                </div>
-            ` : ''}
-
-            <details style="margin-top: 12px; font-size: 11px;">
-                <summary style="cursor: pointer; color: #666;">Technical details</summary>
-                <pre style="margin-top: 6px; padding: 8px; background: #000; border-radius: 4px; overflow-x: auto; color: #999;">${formatted.originalError}</pre>
-            </details>
-        </div>
-    `;
-
-    if (targetElement) {
-        targetElement.innerHTML = errorHTML;
-        targetElement.style.display = 'block';
-    } else {
-        // Add to chat as system message
-        const container = document.getElementById('messagesContainer');
-        if (container) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'message system-message';
-            errorDiv.innerHTML = errorHTML;
-            container.appendChild(errorDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-    }
-
-    // Also show toast for immediate feedback
-    showToast(formatted.title, 4000, formatted.severity);
 }
 
 // --- Send Message Handler ---
 // Global abort controller for stopping AI responses
 let currentAbortController = null;
 let userInitiatedStop = false;
+let timeoutTriggered = false;
 
-// Send example prompt from welcome screen
-function sendExample(exampleText) {
-    const messageInput = document.getElementById('messageInput');
-    if (messageInput) {
-        messageInput.value = exampleText;
-        hideWelcomeScreen(); // Hide welcome screen before sending
-        sendMessage();
-    }
-}
-
-// Export to window for onclick handlers
-window.sendExample = sendExample;
-
-// Hide welcome screen when messages exist
-function hideWelcomeScreen() {
-    const welcomeScreen = document.getElementById('welcomeScreen');
-    if (welcomeScreen) {
-        welcomeScreen.style.display = 'none';
-        console.log('Welcome screen hidden');
-    }
-}
-
-// Show welcome screen (can be called to recall it)
-function showWelcomeScreen() {
-    console.log('showWelcomeScreen called');
-    const messagesContainer = document.getElementById('messagesContainer');
-    const welcomeScreen = document.getElementById('welcomeScreen');
-
-    console.log('messagesContainer:', messagesContainer);
-    console.log('welcomeScreen:', welcomeScreen);
-
-    if (!messagesContainer) {
-        console.error('No messages container found');
-        return;
-    }
-
-    const hasMessages = messagesContainer.querySelectorAll('.message').length > 0;
-    console.log('hasMessages:', hasMessages);
-
-    if (!hasMessages && welcomeScreen) {
-        // Show welcome screen only if no messages
-        welcomeScreen.style.display = 'flex';
-        console.log('Welcome screen shown');
-    } else if (hasMessages) {
-        // Can't show welcome screen with messages - clear chat first
-        console.log('Has messages, asking to clear');
-        if (confirm('Clear current chat to show welcome screen?')) {
-            console.log('User confirmed, clearing messages');
-            messagesContainer.innerHTML = '';
-            if (welcomeScreen) {
-                welcomeScreen.style.display = 'flex';
-            } else {
-                location.reload();
-            }
-        }
-    } else if (!welcomeScreen) {
-        // Welcome screen was removed - reload page
-        console.log('Welcome screen missing, reloading');
-        location.reload();
-    }
-}
+// Welcome screen functions moved to js/ui/welcome-screen.js
 
 // Header agent selector function
 function selectHeaderAgent(agentType) {
@@ -411,6 +43,11 @@ function sendMessage() {
         userInitiatedStop = true;
         currentAbortController.abort();
         currentAbortController = null;
+
+        // Add immediate feedback
+        if (typeof showToast === 'function') {
+            showToast('Stopping...', 1000, 'info');
+        }
 
         if (sendBtn) {
             sendBtn.textContent = 'SEND';
@@ -472,7 +109,11 @@ function sendMessage() {
 
     // Add timeout handling (120 seconds for multi-agent responses)
     currentAbortController = new AbortController();
-    const timeoutId = setTimeout(() => currentAbortController.abort(), 120000);
+    timeoutTriggered = false;
+    const timeoutId = setTimeout(() => {
+        timeoutTriggered = true;
+        currentAbortController.abort();
+    }, 120000);
 
     // Always use multi-agent endpoint (backend preference passed to Flask server)
     fetch('/api/multi-agent/chat', {
@@ -534,18 +175,27 @@ function sendMessage() {
         if (thinkingElem) thinkingElem.remove();
 
         // Handle different error types with formatted error system
-        if (err.name === 'AbortError' && userInitiatedStop) {
-            // User clicked stop - just show simple toast, no error card
-            showToast('Request stopped by user', 2000, 'info');
+        if (err.name === 'AbortError') {
+            if (userInitiatedStop) {
+                // User clicked stop - just show simple toast, no error card
+                showToast('Request stopped by user', 2000, 'info');
+            } else if (timeoutTriggered) {
+                // Timeout - show friendly message
+                showToast('Request timed out after 2 minutes. The AI may be busy or the model is loading.', 5000, 'warning');
+            } else {
+                // Unexpected abort
+                showFormattedError('Request was cancelled unexpectedly', 'chat');
+            }
         } else {
             // Show formatted error with recovery suggestions
             showFormattedError(err, 'chat');
         }
     })
     .finally(() => {
-        // Clear abort controller and reset flag
+        // Clear abort controller and reset flags
         currentAbortController = null;
         userInitiatedStop = false;
+        timeoutTriggered = false;
 
         // Re-enable input and button
         if (messageInput) {
@@ -662,52 +312,8 @@ function addMessage(text, sender = 'user', saveToChat = true, attachments = [], 
     }
 }
 
-// Simple helper to toggle sidebar sections by id (used by inline onclick handlers in HTML)
-function toggleSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (!section) return;
-    section.classList.toggle('collapsed');
-    const chevronId = sectionId.replace(/Section$/, 'Chevron');
-    const chevron = document.getElementById(chevronId);
-    if (chevron) chevron.textContent = section.classList.contains('collapsed') ? '►' : '▼';
-}
-
-// Network action menu helper (invoked by Network button) | Displays Port Scan, Ping, DNS Lookup, IP Info options | ref:pkn.html (Network button), ParakleonTools
-function networkAction(e) {
-    try {
-        e.stopPropagation();  // Prevent event from bubbling to global click handler
-        closeHistoryMenu();  // Close any existing menu before opening new one | ref:closeHistoryMenu()
-        const menu = document.createElement('div');
-        menu.className = 'history-menu';  // Reuse history menu styling | ref:main.css:.history-menu
-
-        const items = [  // Define network tool menu items | Each calls function from window.ParakleonTools
-            { label: 'Port Scan', action: () => window.ParakleonTools.portScan && window.ParakleonTools.portScan() },
-            { label: 'Ping', action: () => window.ParakleonTools.ping && window.ParakleonTools.ping() },
-            { label: 'DNS Lookup', action: () => window.ParakleonTools.dnsLookup && window.ParakleonTools.dnsLookup() },
-            { label: 'IP Info', action: () => window.ParakleonTools.ipInfo && window.ParakleonTools.ipInfo() },
-        ];
-
-        items.forEach(itm => {  // Create menu item for each tool
-            const it = document.createElement('div');
-            it.className = 'history-menu-item';  // ref:main.css:.history-menu-item
-            it.textContent = itm.label;
-            it.onclick = () => { itm.action(); closeHistoryMenu(); };  // Execute tool action and close menu
-            menu.appendChild(it);
-        });
-
-        const rect = e && e.currentTarget && e.currentTarget.getBoundingClientRect ? e.currentTarget.getBoundingClientRect() : { top: 0, left: 0, bottom: 0 };  // Get button position or fallback to origin
-        const containerRect = document.body.getBoundingClientRect();
-        const top = rect.top - containerRect.top + window.scrollY;  // Position menu below button | Account for scroll
-        const left = rect.left - containerRect.left + window.scrollX;
-        menu.style.top = top + 'px';
-        menu.style.left = left + 'px';
-
-        document.body.appendChild(menu);  // Add menu to DOM
-        openMenuElement = menu;  // Store reference for global click handler | ref:app.js:2324, app.js:2241
-    } catch (err) {
-        console.error('networkAction error', err);
-    }
-}
+// toggleSection moved to js/utils/utils.js (exported to window via main.js)
+// networkAction moved to js/core/main.js (exported to window via main.js)
 
 const messagesContainer = document.getElementById('messagesContainer');
 const messageInput = document.getElementById('messageInput');
@@ -728,34 +334,8 @@ const stopBtn = document.getElementById('stopBtn');
 // Use window-scoped arrays so multiple modules and functions can reference dynamic models consistently
 window.dynamicOllamaModels = window.dynamicOllamaModels || [];
 
-// 2) fetch models from Flask/Ollama
-async function refreshOllamaModels() {
-  try {
-    const res = await fetch('/api/models/ollama');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const models = data.models || [];
-
-        // Store discovered Ollama models on the window object so other refresh functions can merge them
-        window.dynamicOllamaModels = models.map(m => ({
-            provider: 'ollama',
-            id: `ollama:${m.name}`,
-            name: m.name,
-            enabled: true,
-        }));
-
-        // Update all UI that depends on available models
-        updateModelSelectDropdown();
-        renderModelsList && renderModelsList();
-  } catch (e) {
-    console.error('Failed to refresh Ollama models', e);
-  }
-}
-
-// 3) helper to return all models (temporary local helper - a canonical merged version appears later)
-function getAllModels() {
-    return window.dynamicOllamaModels || [];
-}
+// 2) refreshOllamaModels moved to js/features/models.js (exported to window via main.js)
+// 3) getAllModels moved to js/features/models.js (exported to window via main.js)
 
 // 4) rebuild dropdown DOM
 function rebuildModelDropdown() {
@@ -809,7 +389,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Chat send button and Enter-to-send
-    if (sendBtn) sendBtn.onclick = sendMessage;
+    if (sendBtn) {
+        sendBtn.onclick = sendMessage;
+        // Ensure touch works on mobile
+        sendBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            sendMessage();
+        }, { passive: false });
+    }
     if (messageInput) {
         messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (!e.shiftKey)) {
@@ -832,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modelSelect) modelSelect.onchange = onModelChange;
 
     // Dynamic model discovery: fetch Ollama and llama.cpp models
-    refreshOllamaModels();
+    window.refreshOllamaModels && window.refreshOllamaModels();
     refreshLlamaCppModels && refreshLlamaCppModels();
     initModelSelector && initModelSelector();
 
@@ -868,14 +455,7 @@ async function refreshLlamaCppModels() {
     }
 }
 
-// Patch getAllModels to merge all dynamic models
-function getAllModels() {
-    return [
-        ...(window.dynamicOllamaModels || []),
-        ...(window.dynamicLlamaCppModels || []),
-        ...loadModelsFromStorage().filter(m => m.enabled !== false)
-    ];
-}
+// getAllModels moved to js/features/models.js (exported to window via main.js)
 
 let isWaiting = false;
 let abortController = null;
@@ -979,50 +559,131 @@ function closeAIModelsManager() {
     if (modal) modal.classList.add('hidden');
 }
 
-function switchBackend(useCloud) {  // Toggle between local llama.cpp and cloud OpenAI | ref:pkn.html AI Models modal toggle
-    // Save preference to localStorage
-    localStorage.setItem('ai-backend', useCloud ? 'cloud' : 'local');
+async function switchBackend(useCloud) {  // Toggle between local Ollama and cloud Groq | ref:pkn.html AI Models modal toggle
+    const backend = useCloud ? 'cloud' : 'local';
 
-    // Update UI status indicators
+    // Update UI immediately for responsiveness
     const icon = document.getElementById('backendStatusIcon');
     const text = document.getElementById('backendStatusText');
     const desc = document.getElementById('backendStatusDesc');
 
     if (useCloud) {
         icon.textContent = '☁️';
-        text.textContent = 'Cloud API';
-        desc.textContent = 'Fast • Requires API Key • Online';
+        text.textContent = 'Cloud (Groq)';
+        desc.textContent = 'Fast ~2s • Free API • Online';
     } else {
         icon.textContent = '🏠';
-        text.textContent = 'Local Model';
-        desc.textContent = 'Private • Offline • Free';
+        text.textContent = 'Local (Ollama)';
+        desc.textContent = 'Private • Uncensored • Offline';
     }
 
-    // Store backend type globally for chat requests
-    window.AI_BACKEND = useCloud ? 'cloud' : 'local';
+    // Call backend API to switch
+    try {
+        const response = await fetch('/api/multi-agent/backend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ backend })
+        });
+        const result = await response.json();
 
-    console.log(`[Backend] Switched to: ${useCloud ? 'Cloud (OpenAI)' : 'Local (llama.cpp)'}`);
+        if (result.success) {
+            // Save preference to localStorage
+            localStorage.setItem('ai-backend', backend);
+            window.AI_BACKEND = backend;
+
+            // Update description with device info
+            if (useCloud) {
+                desc.textContent = `Fast ~2s • ${result.agents_count} agents • Groq Free`;
+            } else {
+                desc.textContent = `${result.device === 'mobile' ? 'Mobile' : 'PC'} • ${result.agents_count} agents • Uncensored`;
+            }
+
+            console.log(`[Backend] Switched to: ${backend.toUpperCase()} (${result.device})`);
+        } else {
+            // Revert toggle on error
+            const toggle = document.getElementById('backendToggle');
+            if (toggle) toggle.checked = !useCloud;
+            icon.textContent = useCloud ? '🏠' : '☁️';
+            text.textContent = useCloud ? 'Local (Ollama)' : 'Cloud (Groq)';
+            console.error('[Backend] Switch failed:', result.error);
+            alert(result.error || 'Failed to switch backend');
+            return;
+        }
+    } catch (error) {
+        console.error('[Backend] API error:', error);
+        // Keep localStorage state for offline compatibility
+        localStorage.setItem('ai-backend', backend);
+        window.AI_BACKEND = backend;
+    }
 
     // Show notification toast
     const toast = document.createElement('div');
-    toast.textContent = `AI Backend: ${useCloud ? 'Cloud ☁️' : 'Local 🏠'}`;
+    toast.textContent = `AI Backend: ${useCloud ? 'Cloud ☁️ (Fast)' : 'Local 🏠 (Uncensored)'}`;
     toast.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--theme-primary);color:#000;padding:12px 24px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 12px rgba(0,255,255,0.3);';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
-function loadBackendPreference() {  // Load saved backend preference on page load | Called during init
+async function loadBackendPreference() {  // Load saved backend preference on page load | Called during init
+    // First check localStorage for cached preference
     const savedBackend = localStorage.getItem('ai-backend') || 'local';
     const toggle = document.getElementById('backendToggle');
 
+    // Set initial UI state from cache
     if (toggle) {
         toggle.checked = (savedBackend === 'cloud');
-        // Trigger the switch to update UI
-        switchBackend(savedBackend === 'cloud');
     }
-
-    // Set global
     window.AI_BACKEND = savedBackend;
+
+    // Then sync with server to get actual status
+    try {
+        const response = await fetch('/api/multi-agent/backend');
+        const status = await response.json();
+
+        if (status.status === 'success') {
+            const icon = document.getElementById('backendStatusIcon');
+            const text = document.getElementById('backendStatusText');
+            const desc = document.getElementById('backendStatusDesc');
+
+            const isCloud = status.backend === 'cloud';
+
+            if (toggle) toggle.checked = isCloud;
+            window.AI_BACKEND = status.backend;
+            localStorage.setItem('ai-backend', status.backend);
+
+            if (icon && text && desc) {
+                if (isCloud) {
+                    icon.textContent = '☁️';
+                    text.textContent = 'Cloud (Groq)';
+                    desc.textContent = `Fast ~2s • ${status.agents_count} agents • Groq Free`;
+                } else {
+                    icon.textContent = '🏠';
+                    text.textContent = 'Local (Ollama)';
+                    desc.textContent = `${status.device === 'mobile' ? 'Mobile' : 'PC'} • ${status.agents_count} agents • Uncensored`;
+                }
+            }
+
+            console.log(`[Backend] Loaded: ${status.backend.toUpperCase()} (${status.device}, ${status.agents_count} agents)`);
+        }
+    } catch (error) {
+        console.warn('[Backend] Could not sync with server, using cached preference');
+        // Use cached value - already set above
+        const icon = document.getElementById('backendStatusIcon');
+        const text = document.getElementById('backendStatusText');
+        const desc = document.getElementById('backendStatusDesc');
+
+        if (icon && text && desc) {
+            if (savedBackend === 'cloud') {
+                icon.textContent = '☁️';
+                text.textContent = 'Cloud (Groq)';
+                desc.textContent = 'Fast ~2s • Free API • Online';
+            } else {
+                icon.textContent = '🏠';
+                text.textContent = 'Local (Ollama)';
+                desc.textContent = 'Private • Uncensored • Offline';
+            }
+        }
+    }
 }
 
 function openCodeAcademy() {  // Open DVN Code Academy in new tab | ref:pkn.html sidebar onclick
@@ -1037,7 +698,7 @@ function renderModelsList() {
     // Combine stored models and dynamically discovered models (detected)
     const stored = loadModelsFromStorage() || [];
     let dynamic = [];
-    try { dynamic = (typeof getAllModels === 'function') ? getAllModels() : []; } catch(e) { dynamic = []; }
+    try { dynamic = window.getAllModels ? window.getAllModels() : []; } catch(e) { dynamic = []; }
 
     // Create a map of models by id with stored taking precedence
     const map = new Map();
@@ -1217,7 +878,7 @@ function updateModelSelectDropdown() {
     const storedModels = loadModelsFromStorage() || [];
     let dynamicModels = [];
     try {
-        dynamicModels = (typeof getAllModels === 'function') ? getAllModels() : [];
+        dynamicModels = window.getAllModels ? window.getAllModels() : [];
     } catch (e) {
         dynamicModels = [];
     }
@@ -1320,42 +981,8 @@ function onModelChange() {
     }
 }
 
-function toggleSettings() {
-    const settingsOverlay = document.getElementById('settingsOverlay');
-    
-    if (!settingsOverlay) {
-        console.error('Settings overlay not found!');
-        return;
-    }
-
-    // Toggle the .hidden class (has !important in CSS)
-    const isHidden = settingsOverlay.classList.contains('hidden');
-    
-    if (isHidden) {
-        // Opening - update settings first
-        const fullHistoryToggle = document.getElementById('fullHistoryToggle');
-        if (fullHistoryToggle) {
-            let chat = null;
-            if (window.currentProjectId) {
-                const projects = loadProjectsFromStorage();
-                const project = projects.find(p => p.id === window.currentProjectId);
-                chat = project && project.chats ? project.chats.find(c => c.id === window.currentChatId) : null;
-            } else {
-                const chats = loadChatsFromStorage();
-                chat = getCurrentChat(chats);
-            }
-            fullHistoryToggle.checked = chat ? !!chat.useFullHistory : true;
-        }
-        
-        updateSettingsUI();
-        
-        const storageEl = document.getElementById('storageUsage');
-        if (storageEl) storageEl.textContent = getStorageUsage() + ' MB';
-    }
-    
-    // Toggle the class
-    settingsOverlay.classList.toggle('hidden');
-}
+// toggleSettings() - MOVED TO js/features/settings.js
+// Function is exposed via window.toggleSettings by main.js module
 
 function toggleAgentSwitcher() {
     const panel = document.getElementById('agentSwitcherPanel');
@@ -1987,7 +1614,7 @@ function confirmDeleteAllChats() {
         localStorage.removeItem('parakleon_chats_v1');
         localStorage.removeItem('window.currentChatId');
         window.currentChatId = null;
-        messagesContainer.innerHTML = '';
+        clearMessages();
         toggleSettings();
         renderHistory(); // Re-render to show the "+ New chat" button
         // Show system message without saving to chat
@@ -2004,7 +1631,7 @@ function confirmDeleteAllProjects() {
         if (window.currentProjectId) {
             window.currentProjectId = null;
             window.currentChatId = null;
-            messagesContainer.innerHTML = '';
+            clearMessages();
         }
         toggleSettings();
         renderProjects();
@@ -2171,633 +1798,21 @@ function showCliHelp() {
     document.body.appendChild(overlay);
 }
 
-function loadChatsFromStorage() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        return JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load history', e);
-        return [];
-    }
-}
+// Storage functions moved to ../utils/storage.js (loaded via main.js module)
 
-function saveChatsToStorage(chats) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
-    } catch (e) {
-        console.error('Failed to save history', e);
-    }
-}
+// renderHistory moved to ../features/history.js (loaded via main.js module)
 
-function sortChats(chats) {
-    return chats.sort((a, b) => {
-        const aTime = a.updatedAt || 0;
-        const bTime = b.updatedAt || 0;
-        return bTime - aTime;
-    });
-}
+// History menu functions moved to ../features/history.js (loaded via main.js module)
+// closeHistoryMenu, openHistoryMenu, toggleFavoriteChat, toggleArchiveChat
 
-function renderHistory() {
-    historyList.innerHTML = '';
-    favoritesList.innerHTML = '';
-    archiveList.innerHTML = '';
+// toggleArchiveChat, getCurrentChat, ensureCurrentChat moved to ../features/history.js and ../ui/chat.js
 
-    let chats = loadChatsFromStorage();
-    chats = sortChats(chats);
+// appendMessageToCurrentChat moved to ../ui/chat.js
 
-    // Add "+ New chat" button at the top of chats list
-    const newChatBtn = document.createElement('div');
-    newChatBtn.className = 'history-item new-chat-btn';
-    newChatBtn.innerHTML = '<span class="history-title">+ New chat</span>';
-    newChatBtn.onclick = () => {
-        newChat();
-    };
-    historyList.appendChild(newChatBtn);
+// loadChat moved to ../features/history.js
 
-    chats.forEach(chat => {
-        const item = document.createElement('div');
-        item.className = 'history-item' + (chat.id === window.currentChatId ? ' active' : '');
-        item.dataset.chatId = chat.id;
-
-        const title = document.createElement('span');
-        title.className = 'history-title';
-        title.textContent = chat.title || 'Untitled chat';
-        title.onclick = (e) => {
-            e.stopPropagation();
-            loadChat(chat.id);
-        };
-        item.appendChild(title);
-
-        const menuBtn = document.createElement('button');
-        menuBtn.className = 'history-menu-btn';
-        menuBtn.textContent = '⋮';
-        menuBtn.onclick = (e) => {
-            e.stopPropagation();
-            openHistoryMenu(chat.id, menuBtn, !!chat.starred, !!chat.archived);
-        };
-        item.appendChild(menuBtn);
-
-        if (chat.archived) {
-            archiveList.appendChild(item);
-        } else if (chat.starred) {
-            favoritesList.appendChild(item);
-        } else {
-            historyList.appendChild(item);
-        }
-    });
-
-    // Add empty state messages
-    if (favoritesList.children.length === 0) {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.innerHTML = `
-            <div class="empty-state-icon">⭐</div>
-            <div class="empty-state-text">No favorites yet</div>
-            <div class="empty-state-hint">Star chats to see them here</div>
-        `;
-        favoritesList.appendChild(emptyState);
-    }
-
-    if (archiveList.children.length === 0) {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.innerHTML = `
-            <div class="empty-state-icon">📦</div>
-            <div class="empty-state-text">No archived chats</div>
-            <div class="empty-state-hint">Archive old chats to keep them organized</div>
-        `;
-        archiveList.appendChild(emptyState);
-    }
-
-    if (historyList.children.length === 1) { // Only "+ New chat" button
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.innerHTML = `
-            <div class="empty-state-icon">💬</div>
-            <div class="empty-state-text">No chats yet</div>
-            <div class="empty-state-hint">Start a new conversation</div>
-        `;
-        historyList.appendChild(emptyState);
-    }
-}
-
-// Close any open context menu (chat history or project menu) | Called by global click handler and menu item clicks | ref:main.js:75, projects.js:172
-function closeHistoryMenu() {
-    if (window.openMenuElement && window.openMenuElement.parentNode) {  // Check menu exists and is in DOM
-        window.openMenuElement.parentNode.removeChild(window.openMenuElement);  // Remove menu element from DOM
-    }
-    window.openMenuElement = null;  // Clear global reference | Initialized in main.js:75, used by projects.js:172
-}
-
-function openHistoryMenu(chatId, anchorButton, isStarred, isArchived) {
-    closeHistoryMenu();
-
-    const rect = anchorButton.getBoundingClientRect();
-    const containerRect = document.body.getBoundingClientRect();
-
-    const menu = document.createElement('div');
-    menu.className = 'history-menu';
-
-    const favItem = document.createElement('div');
-    favItem.className = 'history-menu-item';
-    favItem.textContent = isStarred ? 'Unfavorite' : 'Add to favorites';
-    favItem.onclick = () => {
-        toggleFavoriteChat(chatId);
-        closeHistoryMenu();
-    };
-    menu.appendChild(favItem);
-
-    const archItem = document.createElement('div');
-    archItem.className = 'history-menu-item';
-    archItem.textContent = isArchived ? 'Unarchive' : 'Archive chat';
-    archItem.onclick = () => {
-        toggleArchiveChat(chatId);
-        closeHistoryMenu();
-    };
-    menu.appendChild(archItem);
-
-    const renameItem = document.createElement('div');
-    renameItem.className = 'history-menu-item';
-    renameItem.textContent = 'Rename chat';
-    renameItem.onclick = () => {
-        renameChatPrompt(chatId);
-        closeHistoryMenu();
-    };
-    menu.appendChild(renameItem);
-
-    const moveItem = document.createElement('div');
-    moveItem.className = 'history-menu-item';
-    moveItem.textContent = 'Move to Project';
-    moveItem.onclick = () => {
-        showMoveToProjectModal(chatId);
-        closeHistoryMenu();
-    };
-    menu.appendChild(moveItem);
-
-    const deleteItem = document.createElement('div');
-    deleteItem.className = 'history-menu-item';
-    deleteItem.textContent = 'Delete chat';
-    deleteItem.onclick = () => {
-        deleteChat(chatId);
-        closeHistoryMenu();
-    };
-    menu.appendChild(deleteItem);
-
-    const top = rect.top - containerRect.top + window.scrollY;  // Position menu relative to button | Account for scroll offset
-    const left = rect.left - containerRect.left + window.scrollX;
-    menu.style.top = top + 'px';
-    menu.style.left = left + 'px';
-
-    document.body.appendChild(menu);  // Add menu to DOM
-    window.openMenuElement = menu;  // Store reference for click-outside detection | Used by global click handler | ref:main.js:75
-}
-
-// Global click handler for closing menus when clicking outside | Handles all context menus (chat history, projects) | ref:openHistoryMenu(), openProjectMenu(), closeHistoryMenu()
-document.addEventListener('click', (e) => {
-    const activeMenu = window.openMenuElement;  // Global menu reference | Initialized in main.js:75, set by openHistoryMenu/projects.js
-    if (activeMenu) {  // Check if any menu is currently open
-        const clickedInsideMenu = activeMenu.contains(e.target);  // Check if click was inside the menu element
-        const clickedMenuButton = e.target.classList.contains('history-menu-btn') ||  // Check if click was on 3-dot menu button | ref:pkn.html:.history-menu-btn
-                                  e.target.closest('.history-menu-btn');
-
-        if (!clickedInsideMenu && !clickedMenuButton) {  // Close menu only if clicked outside menu AND not on menu button (prevents toggle issues)
-            closeHistoryMenu();  // Remove menu from DOM and cleanup | ref:closeHistoryMenu()
-        }
-    }
-}, true);  // Use capture phase to handle clicks before other handlers | Ensures menu closes even if other code stops propagation
-
-function toggleFavoriteChat(id) {
-    // Global
-    let chats = loadChatsFromStorage();
-    let chat = chats.find(c => c.id === id);
-    if (chat) {
-        chat.starred = !chat.starred;
-        chat.updatedAt = Date.now();
-        saveChatsToStorage(chats);
-        renderHistory();
-        return;
-    }
-
-    // Projects
-    let projects = loadProjectsFromStorage();
-    for (const project of projects) {
-        if (project.chats && project.chats.find(c => c.id === id)) {
-            const projChat = project.chats.find(c => c.id === id);
-            projChat.starred = !projChat.starred;
-            projChat.updatedAt = Date.now();
-            saveProjectsToStorage(projects);
-            renderProjects();
-            return;
-        }
-    }
-}
-
-function toggleArchiveChat(id) {
-    // Global
-    let chats = loadChatsFromStorage();
-    let chat = chats.find(c => c.id === id);
-    if (chat) {
-        chat.archived = !chat.archived;
-        chat.updatedAt = Date.now();
-        saveChatsToStorage(chats);
-        renderHistory();
-        return;
-    }
-
-    // Projects
-    let projects = loadProjectsFromStorage();
-    for (const project of projects) {
-        if (project.chats && project.chats.find(c => c.id === id)) {
-            const projChat = project.chats.find(c => c.id === id);
-            projChat.archived = !projChat.archived;
-            projChat.updatedAt = Date.now();
-            saveProjectsToStorage(projects);
-            renderProjects();
-            return;
-        }
-    }
-}
-
-function getCurrentChat(chats) {
-    return chats.find(c => c.id === window.currentChatId);
-}
-
-function ensureCurrentChat() {
-    if (window.currentProjectId) {
-        // Project mode: use project chats
-        const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === window.currentProjectId);
-        
-        if (project) {
-            if (!project.chats) project.chats = [];
-            
-            // If we have a current chat ID and it exists in project, we're good
-            if (window.currentChatId && project.chats.find(c => c.id === window.currentChatId)) {
-                return;
-            }
-            
-            // Don't auto-create chat - let user explicitly create one
-            window.currentChatId = null;
-        }
-    } else {
-        // Global mode: use global chats
-        let chats = loadChatsFromStorage();
-        
-        // If we have a current chat ID and it exists, we're good
-        if (window.currentChatId && getCurrentChat(chats)) {
-            return;
-        }
-        
-        // Don't auto-create chat - let user explicitly create one
-        window.currentChatId = null;
-    }
-}
-
-function appendMessageToCurrentChat(sender, text, attachments = [], messageId = null, model = null) {
-    ensureCurrentChat();
-    
-    let chat = null;
-    if (window.currentProjectId) {
-        // Get chat from project
-        const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === window.currentProjectId);
-        if (project && project.chats) {
-            chat = project.chats.find(c => c.id === window.currentChatId);
-        }
-        
-        if (chat) {
-            const now = Date.now();
-            if (editingMessageId && sender === 'user' && messageId) {
-                const idx = chat.messages.findIndex(m => m.id === messageId);
-                if (idx !== -1) {
-                    chat.messages[idx].text = text;
-                    chat.messages[idx].attachments = attachments;
-                    // Remove all messages after this edited message
-                    chat.messages = chat.messages.slice(0, idx + 1);
-                }
-                editingMessageId = null;
-                saveProjectsToStorage(projects);
-                // Reload chat to show changes
-                setTimeout(() => reloadCurrentChat(), 100);
-                return;
-            } else {
-                const id = 'msg_' + now + '_' + Math.floor(Math.random() * 10000);
-                const message = {id, sender, text, attachments, timestamp: now};
-                if (model) message.model = model;
-                chat.messages.push(message);
-            }
-            if (chat.title === 'Project Chat' && sender === 'user') {
-                chat.title = text.slice(0, 30);
-            }
-            if (chat.useFullHistory === undefined) chat.useFullHistory = true;
-            chat.updatedAt = now;
-            saveProjectsToStorage(projects);
-        }
-    } else {
-        // Get chat from global storage
-        let chats = loadChatsFromStorage();
-        chat = getCurrentChat(chats);
-        
-        if (chat) {
-            const now = Date.now();
-            if (editingMessageId && sender === 'user' && messageId) {
-                const idx = chat.messages.findIndex(m => m.id === messageId);
-                if (idx !== -1) {
-                    chat.messages[idx].text = text;
-                    chat.messages[idx].attachments = attachments;
-                    // Remove all messages after this edited message
-                    chat.messages = chat.messages.slice(0, idx + 1);
-                }
-                editingMessageId = null;
-                saveChatsToStorage(chats);
-                renderHistory();
-                // Reload chat to show changes
-                setTimeout(() => reloadCurrentChat(), 100);
-                return;
-            } else {
-                const id = 'msg_' + now + '_' + Math.floor(Math.random() * 10000);
-                const message = {id, sender, text, attachments, timestamp: now};
-                if (model) message.model = model;
-                chat.messages.push(message);
-            }
-            if (chat.title === 'New chat' && sender === 'user') {
-                chat.title = text.slice(0, 30);
-            }
-            if (chat.useFullHistory === undefined) chat.useFullHistory = true;
-            chat.updatedAt = now;
-            saveChatsToStorage(chats);
-            renderHistory();
-        }
-    }
-}
-
-function loadChat(id) {
-    // Try global chats first
-    let chats = loadChatsFromStorage();
-    let chat = chats.find(c => c.id === id);
-    if (chat) {
-        window.currentProjectId = null;
-        window.currentChatId = id;
-        messagesContainer.innerHTML = '';
-        chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments, m.id, m.model, m.timestamp));
-        fullHistoryToggle.checked = chat.useFullHistory !== false;
-        renderProjects();
-        renderHistory();
-        // Show welcome screen if chat is empty
-        setTimeout(() => showWelcomeScreen(), 50);
-        return;
-    }
-
-    // Search project chats
-    const projects = loadProjectsFromStorage();
-    for (const project of projects) {
-        const projChat = (project.chats || []).find(c => c.id === id);
-        if (projChat) {
-            window.currentProjectId = project.id;
-            window.currentChatId = id;
-            messagesContainer.innerHTML = '';
-            projChat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments || [], m.id, m.model, m.timestamp));
-            fullHistoryToggle.checked = projChat.useFullHistory !== false;
-            renderProjects();
-            renderHistory();
-            // Show welcome screen if chat is empty
-            setTimeout(() => showWelcomeScreen(), 50);
-            return;
-        }
-    }
-
-    console.warn('Chat not found:', id);
-}
-
-function reloadCurrentChat() {
-    if (!window.currentChatId) return;
-
-    messagesContainer.innerHTML = '';
-
-    if (window.currentProjectId) {
-        // Reload project chat
-        const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === window.currentProjectId);
-        if (project && project.chats) {
-            const chat = project.chats.find(c => c.id === window.currentChatId);
-            if (chat && chat.messages) {
-                chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments || [], m.id, m.model, m.timestamp));
-            }
-        }
-    } else {
-        // Reload global chat
-        const chats = loadChatsFromStorage();
-        const chat = chats.find(c => c.id === window.currentChatId);
-        if (chat && chat.messages) {
-            chat.messages.forEach(m => addMessage(m.text, m.sender, false, m.attachments, m.id, m.model, m.timestamp));
-        }
-    }
-
-    // Show welcome screen if chat is empty
-    setTimeout(() => showWelcomeScreen(), 50);
-}
-
-function deleteChat(id) {
-    // Try global chats first
-    let chats = loadChatsFromStorage();
-    if (chats.find(c => c.id === id)) {
-        chats = chats.filter(c => c.id !== id);
-        saveChatsToStorage(chats);
-        if (window.currentChatId === id) {
-            window.currentChatId = null;
-            messagesContainer.innerHTML = '';
-        }
-        renderHistory();
-        return;
-    }
-
-    // Otherwise, search projects
-    let projects = loadProjectsFromStorage();
-    for (const project of projects) {
-        if (project.chats && project.chats.find(c => c.id === id)) {
-            project.chats = project.chats.filter(c => c.id !== id);
-            saveProjectsToStorage(projects);
-            if (window.currentChatId === id) {
-                window.currentChatId = null;
-                messagesContainer.innerHTML = '';
-            }
-            renderProjects();
-            return;
-        }
-    }
-}
-
-function renameChatPrompt(chatId) {
-    // Try global first
-    let chats = loadChatsFromStorage();
-    let chat = chats.find(c => c.id === chatId);
-
-    // If not found, search project chats
-    if (!chat) {
-        const projects = loadProjectsFromStorage();
-        for (const project of projects) {
-            if (project.chats && project.chats.find(c => c.id === chatId)) {
-                chat = project.chats.find(c => c.id === chatId);
-                break;
-            }
-        }
-    }
-
-    if (!chat) return;
-    
-    const newTitle = prompt('Enter new chat name:', chat.title);
-    if (newTitle !== null && newTitle.trim() !== '') {
-        renameChat(chatId, newTitle.trim());
-    }
-}
-
-function renameChat(chatId, newTitle) {
-    // Try rename in global chats first
-    let chats = loadChatsFromStorage();
-    let chat = chats.find(c => c.id === chatId);
-    if (chat) {
-        chat.title = newTitle;
-        chat.updatedAt = Date.now();
-        saveChatsToStorage(chats);
-        renderHistory();
-        return;
-    }
-
-    // Otherwise search projects
-    const projects = loadProjectsFromStorage();
-    for (const project of projects) {
-        if (project.chats && project.chats.find(c => c.id === chatId)) {
-            const projChat = project.chats.find(c => c.id === chatId);
-            projChat.title = newTitle;
-            projChat.updatedAt = Date.now();
-            saveProjectsToStorage(projects);
-            renderProjects();
-            return;
-        }
-    }
-}
-
-function newChat() {
-    const id = 'chat_' + Date.now();
-
-    // If in project mode, create a project-local chat
-    if (window.currentProjectId) {
-        const projects = loadProjectsFromStorage();
-        const project = projects.find(p => p.id === window.currentProjectId);
-        if (project) {
-            project.chats = project.chats || [];
-            project.chats.unshift({
-                id,
-                title: 'Project Chat',
-                messages: [],
-                starred: false,
-                archived: false,
-                useFullHistory: true,
-                updatedAt: Date.now()
-            });
-            saveProjectsToStorage(projects);
-            window.currentChatId = id;
-            messagesContainer.innerHTML = '';
-            renderProjects();
-            renderHistory();
-            // Show welcome screen for new empty chat
-            setTimeout(() => showWelcomeScreen(), 50);
-            return;
-        }
-    }
-
-    // Global chat fallback
-    const chats = loadChatsFromStorage();
-    chats.unshift({
-        id,
-        title: 'New chat',
-        messages: [],
-        starred: false,
-        archived: false,
-        useFullHistory: true,
-        updatedAt: Date.now()
-    });
-    saveChatsToStorage(chats);
-    window.currentChatId = id;
-    window.currentProjectId = null;
-    messagesContainer.innerHTML = '';
-    renderProjects();
-    renderHistory();
-    // Show welcome screen for new empty chat
-    setTimeout(() => showWelcomeScreen(), 50);
-}
-
-// Export to window for onclick handlers
-window.newChat = newChat;
-
-function backupChat() {
-    const chats = loadChatsFromStorage();
-    const blob = new Blob([JSON.stringify(chats, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'parakleon_chat_backup.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    alert('Backup downloaded.');
-}
-
-function importBackup() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        try {
-            const text = await file.text();
-            const imported = JSON.parse(text);
-            
-            if (!Array.isArray(imported)) {
-                alert('Invalid backup file format.');
-                return;
-            }
-            
-            // Validate structure
-            const isValid = imported.every(chat => 
-                chat.id && chat.title && Array.isArray(chat.messages)
-            );
-            
-            if (!isValid) {
-                alert('Invalid chat backup structure.');
-                return;
-            }
-            
-            const existingChats = loadChatsFromStorage();
-            const existingIds = new Set(existingChats.map(c => c.id));
-            
-            let importedCount = 0;
-            let skippedCount = 0;
-            
-            imported.forEach(chat => {
-                if (existingIds.has(chat.id)) {
-                    skippedCount++;
-                } else {
-                    existingChats.push(chat);
-                    importedCount++;
-                }
-            });
-            
-            saveChatsToStorage(existingChats);
-            renderHistory();
-            
-            alert(`Imported ${importedCount} chats. Skipped ${skippedCount} duplicates.`);
-        } catch (err) {
-            console.error('Import failed:', err);
-            alert('Failed to import backup: ' + err.message);
-        }
-    };
-    input.click();
-}
+// reloadCurrentChat, deleteChat, renameChatPrompt, renameChat, newChat, backupChat, importBackup
+// All moved to ../features/history.js (loaded via main.js module)
 
 // ===== SETTINGS MANAGEMENT =====
 function loadSettings() {
@@ -2929,168 +1944,25 @@ function updateSettingsUI() {
     window.ACTIVE_PRESENCE_PENALTY = settings.presencePenalty || 0.0;
 }
 
-function saveTemperature(value) {
-    const settings = loadSettings();
-    settings.temperature = parseFloat(value);
-    saveSettings(settings);
-    window.ACTIVE_TEMPERATURE = settings.temperature;
-    document.getElementById('temperatureValue').textContent = value;
-}
+// ===== SETTINGS SAVE FUNCTIONS - MOVED TO js/features/settings.js =====
+// The following functions are now in settings.js and exposed via window.* by main.js:
+// - saveTemperature, saveMaxTokens, saveTopP
+// - saveFrequencyPenalty, savePresencePenalty
+// - saveEnterToSend, saveShowTimestamps, saveApiKey
 
-function saveMaxTokens(value) {
-    const settings = loadSettings();
-    settings.maxTokens = parseInt(value);
-    saveSettings(settings);
-    window.ACTIVE_MAX_TOKENS = settings.maxTokens;
-    document.getElementById('maxTokensValue').textContent = value;
-}
+// ===== APPEARANCE FUNCTIONS - MOVED TO js/features/settings.js =====
+// The following functions are now in settings.js and exposed via window.* by main.js:
+// - applyAppearanceSettings, saveChatFontFamily, saveUIFontFamily
+// - saveInputTextColor, saveOutputTextColor, saveChatFontSize
+// - getStorageUsage, formatFileSize
+// - toggleFullHistory, confirmDeleteAllChats, confirmDeleteAllProjects
 
-function saveTopP(value) {
-    const settings = loadSettings();
-    settings.topP = parseFloat(value);
-    saveSettings(settings);
-    window.ACTIVE_TOP_P = settings.topP;
-    document.getElementById('topPValue').textContent = value;
-}
-
-function saveFrequencyPenalty(value) {
-    const settings = loadSettings();
-    settings.frequencyPenalty = parseFloat(value);
-    saveSettings(settings);
-    window.ACTIVE_FREQUENCY_PENALTY = settings.frequencyPenalty;
-    document.getElementById('frequencyPenaltyValue').textContent = value;
-}
-
-function savePresencePenalty(value) {
-    const settings = loadSettings();
-    settings.presencePenalty = parseFloat(value);
-    saveSettings(settings);
-    window.ACTIVE_PRESENCE_PENALTY = settings.presencePenalty;
-    document.getElementById('presencePenaltyValue').textContent = value;
-}
-
-function saveEnterToSend(checked) {
-    const settings = loadSettings();
-    settings.enterToSend = checked;
-    saveSettings(settings);
-}
-
-function saveShowTimestamps(checked) {
-    const settings = loadSettings();
-    settings.showTimestamps = checked;
-    saveSettings(settings);
-    // Re-render messages to apply timestamp visibility
-    if (window.currentChatId) {
-        const chats = loadChatsFromStorage();
-        const chat = chats.find(c => c.id === window.currentChatId);
-        if (chat) {
-            messagesContainer.innerHTML = '';
-            chat.messages.forEach(m => {
-                addMessage(m.sender, m.text, false, m.id, m.attachments, m.model, m.timestamp);
-            });
-        }
-    }
-}
-
-function saveApiKey(provider, value) {
-    const settings = loadSettings();
-    settings.apiKeys[provider] = value.trim();
-    saveSettings(settings);
-    
-    // Update placeholder to show key is configured
-    const input = document.getElementById(`apiKey_${provider}`);
-    if (input && value.trim()) {
-        input.placeholder = '••••••••';
-    }
-}
-
-// ===== Appearance / Font Settings =====
-function applyAppearanceSettings() {
-    try {
-        const settings = loadSettings();
-        const root = document.documentElement;
-        if (!root) return;
-
-        root.style.setProperty('--chat-font-family', settings.chatFontFamily || DEFAULT_SETTINGS.chatFontFamily);
-        // Chat font size (in px)
-        root.style.setProperty('--chat-font-size', (settings.chatFontSize || DEFAULT_SETTINGS.chatFontSize) + 'px');
-        root.style.setProperty('--ui-font-family', settings.uiFontFamily || DEFAULT_SETTINGS.uiFontFamily);
-        root.style.setProperty('--input-text-color', settings.inputTextColor || DEFAULT_SETTINGS.inputTextColor);
-        root.style.setProperty('--output-text-color', settings.outputTextColor || DEFAULT_SETTINGS.outputTextColor);
-    } catch (e) {
-        console.error('applyAppearanceSettings error', e);
-    }
-}
-
-function saveChatFontFamily(value) {
-    const settings = loadSettings();
-    settings.chatFontFamily = value;
-    saveSettings(settings);
-    applyAppearanceSettings();
-}
-
-function saveUIFontFamily(value) {
-    const settings = loadSettings();
-    settings.uiFontFamily = value;
-    saveSettings(settings);
-    applyAppearanceSettings();
-}
-
-function saveInputTextColor(value) {
-    const settings = loadSettings();
-    settings.inputTextColor = value;
-    saveSettings(settings);
-    applyAppearanceSettings();
-}
-
-function saveOutputTextColor(value) {
-    const settings = loadSettings();
-    settings.outputTextColor = value;
-    saveSettings(settings);
-    applyAppearanceSettings();
-}
-
-function saveChatFontSize(value) {
-    const settings = loadSettings();
-    settings.chatFontSize = parseInt(value, 10) || DEFAULT_SETTINGS.chatFontSize;
-    saveSettings(settings);
-    applyAppearanceSettings();
-    const lbl = document.getElementById('chatFontSizeValue');
-    if (lbl) lbl.textContent = settings.chatFontSize + 'px';
-}
-
-function getStorageUsage() {
-    let total = 0;
-    for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
-            total += localStorage[key].length * 2; // UTF-16 = 2 bytes per char
-        }
-    }
-    return (total / 1024 / 1024).toFixed(2); // MB
-}
-
-// Format bytes into human-readable string (e.g., 1.23 MB)
-function formatFileSize(bytes) {
-    if (bytes === undefined || bytes === null) return '0 B';
-    const thresh = 1024;
-    if (Math.abs(bytes) < thresh) return bytes + ' B';
-    const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
-    let u = -1;
-    do {
-        bytes /= thresh;
-        ++u;
-    } while (Math.abs(bytes) >= thresh && u < units.length - 1);
-    const precision = (bytes < 10) ? 2 : (bytes < 100 ? 1 : 0);
-    return bytes.toFixed(precision) + ' ' + units[u];
-}
-
-function clearGeneratedImages() {
-    if (confirm('Delete all generated images from storage?')) {
-        localStorage.removeItem('parakleon_images_v1');
-        renderImages();
-        alert('All generated images cleared.');
-    }
-}
+// ===== IMAGE FUNCTIONS - MOVED TO js/features/images.js =====
+// The following functions are now in images.js and exposed via window.* by main.js:
+// - openImageGenerator, closeImageGenerator, generateImage
+// - openImagesGallery, closeImagesGallery, clearGeneratedImages
+// - renderImages, saveGeneratedImages, renderImagesGallery
+// - openImageModal, deleteImage, deleteImageFromGallery
 
 // ===== GLOBAL FILES PANEL MANAGEMENT =====
 let filesPanel, filesListEl;
@@ -3299,7 +2171,7 @@ function moveChatToProject(chatId, projectId) {
     // Update UI
     if (window.currentChatId === chatId) {
         window.currentChatId = null;
-        messagesContainer.innerHTML = '';
+        clearMessages();
     }
     renderHistory();
     
@@ -3418,7 +2290,7 @@ async function saveNewProject() {
     closeProjectModal();
     
     // Load the project's first chat
-    messagesContainer.innerHTML = '';
+    clearMessages();
     if (systemPrompt) {
         addMessage('System Prompt: ' + systemPrompt, 'system', false);
     }
@@ -3475,7 +2347,7 @@ function switchProject(projectId) {
     } else {
         window.currentChatId = null;
     }
-    messagesContainer.innerHTML = '';
+    clearMessages();
     if (window.currentChatId) {
         reloadCurrentChat();
     } else if (project.systemPrompt) {
@@ -3532,7 +2404,7 @@ function openProjectMenu(projectId, anchorButton) {
             if (window.currentProjectId === projectId) {
                 window.currentProjectId = null;
                 window.currentChatId = null;
-                messagesContainer.innerHTML = '';
+                clearMessages();
             }
             renderProjects();
             renderHistory();
@@ -3548,471 +2420,6 @@ function openProjectMenu(projectId, anchorButton) {
 
     document.body.appendChild(menu);
     openMenuElement = menu;
-}
-
-function saveGeneratedImages(imageAttachments, prompt) {
-    const STORAGE_KEY = 'parakleon_images_v1';
-    let images = [];
-    
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load images', e);
-    }
-    
-    imageAttachments.forEach(img => {
-        images.unshift({
-            id: 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            url: img.url,
-            name: img.name,
-            prompt: prompt,
-            projectId: window.currentProjectId || null,
-            chatId: window.currentChatId || null,
-            createdAt: Date.now()
-        });
-    });
-    
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        renderImages();
-    } catch (e) {
-        console.error('Failed to save images', e);
-    }
-}
-
-// ========== Images Gallery Modal ==========
-function openImagesGallery() {
-    const modal = document.getElementById('imagesGalleryModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        renderImagesGallery();
-    }
-}
-
-function closeImagesGallery() {
-    const modal = document.getElementById('imagesGalleryModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-function renderImagesGallery() {
-    const STORAGE_KEY = 'parakleon_images_v1';
-    const grid = document.getElementById('imagesGalleryGrid');
-    
-    if (!grid) return;
-    
-    let images = [];
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load images', e);
-    }
-    
-    grid.innerHTML = '';
-    
-    if (images.length === 0) {
-        grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #666; font-size: 13px;">No images yet. Click "Generate New" to create one!</div>';
-        return;
-    }
-    
-    images.forEach(img => {
-        const item = document.createElement('div');
-        item.style.cssText = 'position: relative; border: 1px solid #00FFFF; border-radius: 6px; overflow: hidden; cursor: pointer; transition: all 0.2s ease;';
-        
-        const thumb = document.createElement('img');
-        thumb.src = img.url;
-        thumb.style.cssText = 'width: 100%; height: 100px; object-fit: cover;';
-        thumb.alt = img.name;
-        
-        const info = document.createElement('div');
-        info.style.cssText = 'padding: 6px; background: rgba(0,0,0,0.8); font-size: 10px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
-        info.textContent = img.name;
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '×';
-        deleteBtn.style.cssText = 'position: absolute; top: 4px; right: 4px; background: rgba(255,0,0,0.8); border: none; color: #fff; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; opacity: 0; transition: opacity 0.2s;';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteImageFromGallery(img.id);
-        };
-        
-        item.appendChild(thumb);
-        item.appendChild(info);
-        item.appendChild(deleteBtn);
-        
-        item.onmouseover = () => {
-            item.style.boxShadow = '0 0 8px rgba(0, 255, 255, 0.4)';
-            deleteBtn.style.opacity = '1';
-        };
-        item.onmouseout = () => {
-            item.style.boxShadow = '';
-            deleteBtn.style.opacity = '0';
-        };
-        
-        item.onclick = () => {
-            closeImagesGallery();
-            openImageModal(img);
-        };
-        
-        grid.appendChild(item);
-    });
-}
-
-function deleteImageFromGallery(imageId) {
-    if (!confirm('Delete this image?')) return;
-    
-    const STORAGE_KEY = 'parakleon_images_v1';
-    let images = [];
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-        images = images.filter(img => img.id !== imageId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        renderImagesGallery();
-    } catch (e) {
-        console.error('Failed to delete image', e);
-    }
-}
-
-function renderImages() {
-    const STORAGE_KEY = 'parakleon_images_v1';
-    const imagesList = document.getElementById('imagesList');
-    
-    if (!imagesList) return;
-    
-    let images = [];
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load images', e);
-    }
-    
-    imagesList.innerHTML = '';
-    
-    if (images.length === 0) {
-        imagesList.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 11px;">No images yet</div>';
-        return;
-    }
-    
-    images.forEach(img => {
-        const item = document.createElement('div');
-        item.className = 'image-item';
-        item.style.cssText = 'padding: 8px; border-bottom: 1px solid #222; cursor: pointer; transition: background 0.2s;';
-        
-        const thumb = document.createElement('img');
-        thumb.src = img.url;
-        thumb.style.cssText = 'width: 100%; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #00FFFF; margin-bottom: 4px;';
-        thumb.alt = img.name;
-        
-        const info = document.createElement('div');
-        info.style.cssText = 'font-size: 10px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
-        info.textContent = img.name;
-        
-        item.appendChild(thumb);
-        item.appendChild(info);
-        
-        item.onmouseover = () => item.style.background = '#1a1a1a';
-        item.onmouseout = () => item.style.background = '';
-        
-        item.onclick = () => openImageModal(img);
-        
-        imagesList.appendChild(item);
-    });
-}
-
-function openImageModal(img) {
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    closeBtn.style.cssText = 'position: absolute; top: 20px; right: 30px; background: transparent; border: 2px solid #00FFFF; color: #00FFFF; font-size: 32px; cursor: pointer; padding: 5px 15px; border-radius: 4px;';
-    closeBtn.onclick = () => document.body.removeChild(modal);
-    
-    const image = document.createElement('img');
-    image.src = img.url;
-    image.style.cssText = 'max-width: 90%; max-height: 70%; border: 2px solid #00FFFF; border-radius: 8px; object-fit: contain;';
-    
-    const info = document.createElement('div');
-    info.style.cssText = 'margin-top: 20px; color: #00FFFF; text-align: center; max-width: 600px;';
-    info.innerHTML = `
-        <div style="font-size: 14px; margin-bottom: 8px;"><strong>${escapeHtml(img.name)}</strong></div>
-        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">Generated: ${new Date(img.createdAt).toLocaleString()}</div>
-        ${img.prompt ? `<div style="font-size: 11px; color: #666; font-style: italic;">"${escapeHtml(img.prompt.substring(0, 100))}${img.prompt.length > 100 ? '...' : ''}"</div>` : ''}
-    `;
-    
-    const actions = document.createElement('div');
-    actions.style.cssText = 'margin-top: 12px; display: flex; gap: 12px; justify-content: center;';
-    
-    const downloadBtn = document.createElement('a');
-    downloadBtn.href = img.url;
-    downloadBtn.download = img.name;
-    downloadBtn.textContent = '⬇ Download';
-    downloadBtn.style.cssText = 'padding: 8px 16px; background: #00FFFF; color: #000; text-decoration: none; border-radius: 4px; font-size: 12px;';
-    
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = '🗑 Delete';
-    deleteBtn.style.cssText = 'padding: 8px 16px; background: transparent; border: 1px solid #ff0000; color: #ff0000; border-radius: 4px; font-size: 12px; cursor: pointer;';
-    deleteBtn.onclick = () => {
-        if (confirm('Delete this image?')) {
-            deleteImage(img.id);
-            document.body.removeChild(modal);
-        }
-    };
-    
-    actions.appendChild(downloadBtn);
-    actions.appendChild(deleteBtn);
-    
-    modal.appendChild(closeBtn);
-    modal.appendChild(image);
-    modal.appendChild(info);
-    modal.appendChild(actions);
-    
-    document.body.appendChild(modal);
-}
-
-function deleteImage(imageId) {
-    const STORAGE_KEY = 'parakleon_images_v1';
-    let images = [];
-    
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load images', e);
-        return;
-    }
-    
-    images = images.filter(img => img.id !== imageId);
-    
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        renderImages();
-    } catch (e) {
-        console.error('Failed to save images', e);
-    }
-}
-
-// Duplicate renderProjects removed. Only one canonical implementation remains.
-
-function saveGeneratedImages(imageAttachments, prompt) {
-    const STORAGE_KEY = 'parakleon_images_v1';
-    let images = [];
-    
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) images = JSON.parse(raw);
-    } catch (e) {
-        console.error('Failed to load images', e);
-    }
-    
-    imageAttachments.forEach(img => {
-        images.unshift({
-            id: 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            url: img.url,
-            name: img.name,
-            prompt: prompt,
-            projectId: window.currentProjectId || null,
-            chatId: window.currentChatId || null,
-            createdAt: Date.now()
-        });
-    });
-    
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        renderImages();
-    } catch (e) {
-        console.error('Failed to save images', e);
-    }
-}
-
-// ========== Image Generation ==========
-
-function openImageGenerator() {
-    const modal = document.getElementById('imageGenModal');
-    const prompt = document.getElementById('imagePrompt');
-    const status = document.getElementById('imageGenStatus');
-
-    modal.classList.remove('hidden');
-    prompt.value = '';
-    status.style.display = 'none';
-    prompt.focus();
-}
-
-function closeImageGenerator() {
-    const modal = document.getElementById('imageGenModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-async function generateImage() {
-    const prompt = document.getElementById('imagePrompt').value.trim();
-    const status = document.getElementById('imageGenStatus');
-    const generateBtn = document.querySelector('#imageGeneratorModal button[onclick="generateImage()"]');
-
-    if (!prompt) {
-        status.textContent = '⚠ Please enter a description';
-        status.style.display = 'block';
-        status.style.color = '#ff6b6b';
-        showToast('Please enter an image description', 3000, 'error');
-        return;
-    }
-
-    // Disable button during generation
-    if (generateBtn) {
-        generateBtn.disabled = true;
-        generateBtn.textContent = 'Generating...';
-    }
-
-    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#00ffff';
-
-    // Create progress bar
-    const progressContainer = document.createElement('div');
-    progressContainer.id = 'imageGenProgress';
-    progressContainer.style.cssText = 'margin-top: 12px; width: 100%;';
-    progressContainer.innerHTML = `
-        <div style="margin-bottom: 6px;">
-            <span id="progressText" style="color: ${themeColor}; font-size: 12px;">🎨 Starting...</span>
-        </div>
-        <div style="width: 100%; height: 8px; background: #222; border-radius: 4px; overflow: hidden;">
-            <div id="progressBar" style="width: 0%; height: 100%; background: ${themeColor}; transition: width 0.3s;"></div>
-        </div>
-        <div style="margin-top: 4px; font-size: 11px; color: #666;" id="progressDetails">Estimated time: ~3 minutes</div>
-    `;
-
-    // Insert progress bar after status
-    status.parentNode.insertBefore(progressContainer, status.nextSibling);
-    status.style.display = 'none';
-
-    try {
-        // Use SSE endpoint for real-time progress
-        const streamUrl = window.PARAKLEON_CONFIG.LOCAL_IMAGE_GEN_URL.replace('/api/generate-image', '/api/generate-image-stream');
-
-        // Create SSE connection
-        const response = await fetch(streamUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                prompt: prompt
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-
-        // Read SSE stream
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let base64Image = null;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = JSON.parse(line.slice(6));
-                    const progressBar = document.getElementById('progressBar');
-                    const progressText = document.getElementById('progressText');
-                    const progressDetails = document.getElementById('progressDetails');
-
-                    if (data.status === 'starting') {
-                        progressText.textContent = data.message;
-                    } else if (data.status === 'progress') {
-                        const percent = Math.round(data.progress * 100);
-                        progressBar.style.width = `${percent}%`;
-                        progressText.textContent = `🎨 ${data.message}`;
-
-                        // Calculate estimated time remaining
-                        const elapsed = (data.step / data.total_steps);
-                        const avgTimePerStep = 6; // ~6 seconds per step on CPU
-                        const remaining = Math.round(avgTimePerStep * (data.total_steps - data.step));
-                        progressDetails.textContent = `Step ${data.step}/${data.total_steps} • ~${remaining}s remaining`;
-                    } else if (data.status === 'complete') {
-                        progressBar.style.width = '100%';
-                        progressText.textContent = '✓ ' + data.message;
-                        progressDetails.textContent = 'Done!';
-                        base64Image = data.image;
-                    } else if (data.status === 'error') {
-                        throw new Error(data.error);
-                    }
-                }
-            }
-        }
-
-        if (!base64Image) {
-            throw new Error('No image data received from server.');
-        }
-
-        // Create an attachment object for the new image
-        const imageAttachment = {
-            type: 'image/png',
-            url: base64Image,
-            previewUrl: base64Image,
-            name: `${prompt.slice(0, 20).replace(/\s/g, '_')}.png`
-        };
-
-        // Add to chat as an assistant message with the image
-        addMessage(`Generated image for: "${prompt}"`, 'ai', true, [imageAttachment]);
-
-        // Auto-save to Images gallery
-        saveGeneratedImages([imageAttachment], prompt);
-
-        showToast('Image generated successfully!', 3000, 'success');
-
-        // Close modal after a brief delay to show completion
-        setTimeout(() => closeImageGenerator(), 1000);
-
-    } catch (error) {
-        console.error('Image generation error:', error);
-
-        // Remove progress bar
-        const progressContainer = document.getElementById('imageGenProgress');
-        if (progressContainer) {
-            progressContainer.remove();
-        }
-
-        // Use formatted error with recovery suggestions
-        const formatted = formatError(error, 'image_generation');
-
-        // Update modal status
-        if (status) {
-            status.textContent = `❌ ${formatted.title}`;
-            status.style.color = formatted.severity === 'error' ? '#ff6b6b' : '#f59e0b';
-            status.style.display = 'block';
-        }
-
-        // Show toast with actionable error
-        showToast(formatted.title, 5000, formatted.severity);
-
-        // For severe errors, also show formatted error card
-        if (formatted.severity === 'error') {
-            showFormattedError(error, 'image_generation');
-        }
-    } finally {
-        // Re-enable button
-        if (generateBtn) {
-            generateBtn.disabled = false;
-            generateBtn.textContent = 'Generate Image';
-        }
-
-        // Clean up progress bar if still present
-        setTimeout(() => {
-            const progressContainer = document.getElementById('imageGenProgress');
-            if (progressContainer) {
-                progressContainer.remove();
-            }
-        }, 2000);
-    }
 }
 
 // Add backend health check + UI banner (shows when a simple static server is running)
@@ -4037,7 +2444,7 @@ async function checkBackend(showToastOnFail = true) {
 		} else {
 			hideBackendBanner();
 			// Re-fetch models when backend comes online
-			refreshOllamaModels();
+			window.refreshOllamaModels && window.refreshOllamaModels();
 			if (typeof showToast === 'function' && showToastOnFail) showToast('Backend online', 1200);
 			return true;
 		}
@@ -4097,8 +2504,7 @@ function init() {
 	// Ensure send button calls sendMessage (in case inline handlers missed)
 	if (sendBtn) sendBtn.onclick = sendMessage;
 
-	// Initialize sidebar hover/toggle behavior
-	if (typeof setupSidebarHover === 'function') setupSidebarHover();
+	// Sidebar hover/toggle is now handled by main.js module
 
 	// Check backend availability (shows banner if only a static file server is running)
 	checkBackend(false);
@@ -4117,128 +2523,3 @@ function init() {
 
 // Ensure init runs on load
 window.addEventListener('DOMContentLoaded', init);
-
-// Replace the IIFE with a named, re-entrant initializer for sidebar hover behavior
-function setupSidebarHover() {
-    if (setupSidebarHover._attached) return; // prevent double-attach
-    setupSidebarHover._attached = true;
-
-    if (typeof window === 'undefined') return;
-
-    const HOVER_ZONE = 50; // px from left edge to open (slightly larger for reliability)
-    const CLOSE_DELAY = 1200; // ms delay before closing
-    const isTouchDevice = 'ontouchstart' in window;
-    let closeTimer = null;
-
-    const sidebar = document.querySelector('.sidebar');
-    const hoverStrip = document.getElementById('hoverStrip');
-    if (!sidebar) return;
-
-    const clearCloseTimer = () => { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } };
-
-    function openSidebar() {
-        clearCloseTimer();
-        if (sidebar.classList.contains('hidden')) {
-            sidebar.classList.remove('hidden');
-            if (hoverStrip) hoverStrip.classList.add('hidden');
-        }
-    }
-    function closeSidebar() {
-        clearCloseTimer();
-        if (!sidebar.classList.contains('hidden')) {
-            sidebar.classList.add('hidden');
-            if (hoverStrip) hoverStrip.classList.remove('hidden');
-        }
-    }
-
-    if (!isTouchDevice) {
-        // Sidebar hover logic (see main.css for .sidebar and .hover-strip)
-        document.addEventListener('mousemove', (e) => {
-            const x = e.clientX;
-            if (x <= HOVER_ZONE) {
-                openSidebar();
-            } else if (!sidebar.matches(':hover') && !(hoverStrip && hoverStrip.matches(':hover')) && !sidebar.classList.contains('hidden') && !closeTimer) {
-                closeTimer = setTimeout(closeSidebar, CLOSE_DELAY);
-            }
-        });
-
-        sidebar.addEventListener('mouseenter', () => { clearCloseTimer(); });
-        sidebar.addEventListener('mouseleave', () => { clearCloseTimer(); closeTimer = setTimeout(closeSidebar, CLOSE_DELAY); });
-
-        if (hoverStrip) {
-            hoverStrip.addEventListener('mouseenter', () => { openSidebar(); });
-        }
-    } else {
-        // Touch: swipe gestures for sidebar
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        const SWIPE_THRESHOLD = 50; // Minimum px to register as swipe
-        const EDGE_ZONE = 30; // px from left edge to start swipe-to-open
-
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-
-        document.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            const touchEndY = e.changedTouches[0].screenY;
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = Math.abs(touchEndY - touchStartY);
-
-            // Only register horizontal swipes (not vertical scrolling)
-            if (Math.abs(deltaX) > SWIPE_THRESHOLD && deltaY < 100) {
-                if (deltaX > 0 && touchStartX < EDGE_ZONE) {
-                    // Swipe right from left edge → open sidebar
-                    openSidebar();
-                } else if (deltaX < 0 && !sidebar.classList.contains('hidden')) {
-                    // Swipe left anywhere → close sidebar (if open)
-                    closeSidebar();
-                }
-            }
-        }, { passive: true });
-
-        // Keep hoverStrip click as fallback toggle
-        if (hoverStrip) {
-            hoverStrip.addEventListener('click', (e) => {
-                e.preventDefault(); e.stopPropagation();
-                if (sidebar.classList.contains('hidden')) openSidebar(); else closeSidebar();
-            });
-        }
-    }
-
-    if (hoverStrip) {
-        hoverStrip.addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
-                ev.preventDefault(); openSidebar();
-            } else if (ev.key === 'Escape') {
-                ev.preventDefault(); closeSidebar();
-            }
-        });
-        if (!sidebar.classList.contains('hidden')) hoverStrip.classList.add('hidden');
-    }
-
-    // Global keyboard: Escape closes open panels
-    document.addEventListener('keydown', (ev) => {
-        // Ctrl+` shortcut to show CLI commands
-        if (ev.ctrlKey && ev.key === '`') {
-            ev.preventDefault();
-            showCliHelp();
-            return;
-        }
-
-        if (ev.key === 'Escape') {
-            const filesPanel = document.getElementById('filesPanel');
-            if (filesPanel && !filesPanel.classList.contains('hidden')) {
-                hideFilesPanel();
-                ev.stopPropagation();
-                return;
-            }
-            if (sidebar && !sidebar.classList.contains('hidden')) {
-                closeSidebar();
-                ev.stopPropagation();
-            }
-        }
-    });
-}

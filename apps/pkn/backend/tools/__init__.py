@@ -8,7 +8,7 @@ Architecture:
 - Universal execution interface for agent tool calls
 - Standard result formatting across all tools
 
-Tool modules (13 total):
+Tool modules (22 total):
 - code_tools: Edit, Write, Read (surgical code operations)
 - file_tools: Glob, Grep, Find (file search and discovery)
 - system_tools: Bash, Process, TodoWrite (execution and monitoring)
@@ -21,6 +21,15 @@ Tool modules (13 total):
 - chain_tools: Multi-step workflows
 - sandbox_tools: Safe code execution
 - evaluation_tools: Agent performance tracking
+- scratchpad_tools: Agent handoff storage for workflows
+- workflow_tools: Multi-agent workflow coordination (12 workflows)
+- git_tools: Version control operations
+- project_tools: Project management and health checks
+- pentest_tools: Offensive security utilities (shells, payloads, exploits)
+- recon_tools: Banner grab, HTTP headers, directory enum, CORS testing
+- privesc_tools: SUID finder, cron enum, kernel exploits, docker escape
+- network_tools: TCP/UDP scan, traceroute, ARP scan, zone transfer
+- crypto_tools: Hash cracking, JWT decode/forge, base decode, XOR
 - Advanced: RAGMemory, TaskPlanner, CodeSandbox, etc.
 """
 
@@ -41,6 +50,17 @@ from . import delegation_tools
 from . import chain_tools
 from . import sandbox_tools
 from . import evaluation_tools
+# New tools from MCP integration (2026-01-18)
+from . import scratchpad_tools
+from . import workflow_tools
+from . import git_tools
+from . import project_tools
+from . import pentest_tools
+# Kali-style security tools (2026-01-18)
+from . import recon_tools
+from . import privesc_tools
+from . import network_tools
+from . import crypto_tools
 
 __all__ = [
     "code_tools",
@@ -55,6 +75,18 @@ __all__ = [
     "chain_tools",
     "sandbox_tools",
     "evaluation_tools",
+    # New tools from MCP integration
+    "scratchpad_tools",
+    "workflow_tools",
+    "git_tools",
+    "project_tools",
+    "pentest_tools",
+    # Kali-style security tools
+    "recon_tools",
+    "privesc_tools",
+    "network_tools",
+    "crypto_tools",
+    # Registry and helpers
     "TOOL_REGISTRY",
     "get_tool_schemas",
     "execute_tool",
@@ -95,6 +127,17 @@ class ToolRegistry:
             ("chain_tools", chain_tools),
             ("sandbox_tools", sandbox_tools),
             ("evaluation_tools", evaluation_tools),
+            # New tools from MCP integration (2026-01-18)
+            ("scratchpad_tools", scratchpad_tools),
+            ("workflow_tools", workflow_tools),
+            ("git_tools", git_tools),
+            ("project_tools", project_tools),
+            ("pentest_tools", pentest_tools),
+            # Kali-style security tools
+            ("recon_tools", recon_tools),
+            ("privesc_tools", privesc_tools),
+            ("network_tools", network_tools),
+            ("crypto_tools", crypto_tools),
         ]
 
         for module_name, module in modules:
@@ -230,12 +273,20 @@ class ToolRegistry:
         """
         # Capability to tool module mapping
         capability_map = {
-            "code_writing": ["code_tools", "file_tools"],
+            "code_writing": ["code_tools", "file_tools", "git_tools"],
             "debugging": ["code_tools", "file_tools", "system_tools"],
             "research": ["web_tools", "rag_tools", "osint_tools"],
-            "planning": ["planning_tools"],
-            "system_operations": ["system_tools", "file_tools"],
-            "security": ["osint_tools", "web_tools", "system_tools"],
+            "planning": ["planning_tools", "workflow_tools"],
+            "system_operations": ["system_tools", "file_tools", "project_tools"],
+            "security": ["osint_tools", "web_tools", "system_tools", "pentest_tools"],
+            # New capabilities from MCP integration
+            "workflow": ["scratchpad_tools", "workflow_tools"],
+            "version_control": ["git_tools"],
+            "project_management": ["project_tools"],
+            "pentesting": ["pentest_tools", "osint_tools", "recon_tools", "privesc_tools", "network_tools"],
+            "reconnaissance": ["recon_tools", "osint_tools", "network_tools"],
+            "cryptography": ["crypto_tools"],
+            "privilege_escalation": ["privesc_tools"],
         }
 
         # Collect relevant modules

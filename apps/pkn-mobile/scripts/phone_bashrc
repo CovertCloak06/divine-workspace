@@ -1,0 +1,117 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  ~/.bashrc - PKN Mobile (Termux)
+#  Gh0st Divine Workspace
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Exit if not interactive
+[[ $- != *i* ]] && return
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SHELL SETTINGS
+# ═══════════════════════════════════════════════════════════════════════════════
+HISTCONTROL=ignoreboth
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# Prompt
+PS1="\[\033[1;36m\]PKN\[\033[0m\]:\[\033[1;34m\]\W\[\033[0m\]$ "
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PATH & ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+export PATH="$HOME/bin:$HOME/pkn/scripts:$PATH"
+
+# PKN Configuration
+export PKN_HOME="$HOME/pkn"
+export PKN_PORT="8010"
+export PKN_URL="http://127.0.0.1:${PKN_PORT}"
+
+# Load API keys from .env
+[ -f "$PKN_HOME/.env" ] && export $(grep -v '^#' "$PKN_HOME/.env" | xargs)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PKN ALIASES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Server control
+alias pkn='cd "$PKN_HOME" && python -m backend.server'
+alias pkn-bg='cd "$PKN_HOME" && nohup python -m backend.server > data/server.log 2>&1 &'
+alias pkn-stop='pkill -f "python.*backend.server"; pkill -f "python.*server.py"'
+alias pkn-restart='pkn-stop; sleep 1; pkn-bg'
+
+# Status & health
+alias pkn-status='curl -s "$PKN_URL/health" 2>/dev/null | python -m json.tool || echo "Not running"'
+alias pkn-agents='curl -s "$PKN_URL/api/multi-agent/agents" 2>/dev/null | python -m json.tool'
+alias pkn-backend='curl -s "$PKN_URL/api/multi-agent/backend" 2>/dev/null | python -m json.tool'
+
+# Backend switching
+alias pkn-cloud='curl -s -X POST "$PKN_URL/api/multi-agent/backend" -H "Content-Type: application/json" -d "{\"backend\":\"cloud\"}" | python -m json.tool'
+alias pkn-local='curl -s -X POST "$PKN_URL/api/multi-agent/backend" -H "Content-Type: application/json" -d "{\"backend\":\"local\"}" | python -m json.tool'
+
+# Browser
+alias pkn-ui='am start -n com.android.chrome/com.google.android.apps.chrome.Main -a android.intent.action.VIEW -d "${PKN_URL}/?v=$(date +%s)"'
+alias pkn-incognito='am start -n com.android.chrome/com.google.android.apps.chrome.Main -a android.intent.action.VIEW -d "${PKN_URL}/?v=$(date +%s)" --ez incognito true'
+
+# Logs
+alias pkn-logs='tail -50 "$PKN_HOME/data/server.log"'
+alias pkn-logs-f='tail -f "$PKN_HOME/data/server.log"'
+
+# Menu
+alias pkn-menu='bash "$PKN_HOME/scripts/termux_menu.sh"'
+alias menu='pkn-menu'
+
+# Directory shortcuts
+alias cdpkn='cd "$PKN_HOME"'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  OLLAMA ALIASES
+# ═══════════════════════════════════════════════════════════════════════════════
+alias ollama-start='nohup ollama serve > /dev/null 2>&1 &'
+alias ollama-stop='pkill ollama'
+alias ollama-models='curl -s http://127.0.0.1:11434/api/tags | python -m json.tool'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  DVN TOOLKIT
+# ═══════════════════════════════════════════════════════════════════════════════
+alias toolkit="bash ~/dvn-toolkit/toolkit_menu.sh"
+alias pwgen="python ~/dvn-toolkit/cli/pwgen.py"
+alias recon="python ~/dvn-toolkit/security/recon.py"
+alias encode="python ~/dvn-toolkit/security/encoder.py"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  QUICK START FUNCTION
+# ═══════════════════════════════════════════════════════════════════════════════
+pkn-quick() {
+    echo -e "\033[1;36m▸ Quick starting PKN...\033[0m"
+    pkn-stop 2>/dev/null
+    sleep 1
+    cd "$PKN_HOME"
+    [ -f ".env" ] && export $(grep -v '^#' .env | xargs)
+    mkdir -p data
+    nohup python -m backend.server > data/server.log 2>&1 &
+
+    for i in {1..8}; do
+        sleep 1
+        if curl -s "$PKN_URL/health" > /dev/null 2>&1; then
+            echo -e "\033[1;32m✓ PKN ready at $PKN_URL\033[0m"
+            pkn-incognito
+            return 0
+        fi
+    done
+    echo -e "\033[1;31m✗ Startup failed\033[0m"
+    tail -5 data/server.log
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  AUTO-START MENU
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Only run menu on fresh terminal (not when sourced or in subshell)
+if [[ -z "$PKN_MENU_LOADED" && -z "$TMUX" && -z "$SSH_CONNECTION" ]]; then
+    export PKN_MENU_LOADED=1
+
+    # Run the menu - returns to shell when user presses Enter
+    if [[ -f "$PKN_HOME/scripts/termux_menu.sh" ]]; then
+        source "$PKN_HOME/scripts/termux_menu.sh"
+    fi
+fi

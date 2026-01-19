@@ -4,6 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **🔴 CRITICAL: Read `/home/gh0st/dvn/ARCHITECTURE_STANDARDS.md` BEFORE making any changes to ANY Divine Node project.**
 
+---
+
+## 📚 Documentation Cross-References
+
+**This file is part of a larger documentation system. See related docs:**
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| **All Docs Index** | [docs/INDEX.md](../../docs/INDEX.md) | Central documentation hub |
+| **Agents** | [docs/AGENTS.md](../../docs/AGENTS.md) | All 9 agents, models, tools |
+| **Tools** | [docs/TOOLS.md](../../docs/TOOLS.md) | 90+ tools reference |
+| **OSINT** | [docs/SHADOW_OSINT.md](../../docs/SHADOW_OSINT.md) | 35 Shadow OSINT tools |
+| **Deployment** | [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) | Deploy all apps |
+| **Architecture** | [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) | System design |
+| **Troubleshooting** | [docs/TROUBLESHOOTING.md](../../docs/TROUBLESHOOTING.md) | Common issues |
+| **Contributing** | [docs/CONTRIBUTING.md](../../docs/CONTRIBUTING.md) | Development workflow |
+
+**App-Specific Docs:**
+- [PKN Docs Index](./docs/README.md) - All PKN documentation
+- [Agent Configuration](./docs/AGENT_CONFIGURATION.md) - Detailed agent setup
+- [Build Instructions](./docs/build/BUILD_README.md) - Build from source
+
+**When to reference other docs:**
+- Agent configuration details → [AGENTS.md](../../docs/AGENTS.md)
+- Tool usage → [TOOLS.md](../../docs/TOOLS.md)
+- OSINT operations → [SHADOW_OSINT.md](../../docs/SHADOW_OSINT.md)
+- Deployment → [DEPLOYMENT.md](../../docs/DEPLOYMENT.md)
+
+---
+
 ## Project Overview
 
 Divine Node (PKN - Parakleon) is a self-hosted, multi-agent AI system that runs locally with complete privacy. It combines 9 specialized AI agents coordinated through a Flask backend, using Ollama for local LLM inference (with models like Qwen2.5-Coder-14B, Qwen3-14B, Mistral, etc.), and a cyberpunk-themed web UI. The system is designed for both desktop Linux and Android (Termux). All agents have full tool access via 13 integrated tool modules.

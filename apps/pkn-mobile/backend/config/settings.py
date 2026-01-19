@@ -10,8 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # LLM Backend URLs
+# Mobile uses Ollama (port 11434) as primary backend
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434")
-LOCAL_LLM_BASE = os.environ.get("LOCAL_LLM_BASE", "http://127.0.0.1:8000/v1")
+# LOCAL_LLM_BASE defaults to Ollama for mobile (desktop may use llama.cpp on 8000)
+LOCAL_LLM_BASE = os.environ.get("LOCAL_LLM_BASE", "http://127.0.0.1:11434/v1")
 
 
 def join_url(base: str, *parts: str) -> str:

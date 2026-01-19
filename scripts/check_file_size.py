@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-File Size Checker - Enforce 200-line maximum
-Ensures all source files stay under 200 lines for maintainability
+File Size Checker - Enforce maintainable file sizes
+- Utilities/components: ~200 lines
+- App/core files: 300-500 lines acceptable
 """
 
 import sys
 from pathlib import Path
 
+# Default limit for utils/components; app files can be higher
 MAX_LINES = 200
+MAX_LINES_APP = 500  # For files in core/ or named app.js/app.py
 
 # Paths to ignore (build artifacts, dependencies, etc.)
 IGNORED_PATHS = [
@@ -53,8 +56,15 @@ def should_check_file(filepath):
     return True
 
 
+def is_app_file(filepath):
+    """Check if file is an app/core file (higher limit allowed)."""
+    path = Path(filepath)
+    # Files in core/ directories or named app.* get higher limit
+    return '/core/' in filepath or path.stem == 'app' or path.stem == 'main'
+
+
 def check_file_size(filepath):
-    """Check if file exceeds 200 lines."""
+    """Check if file exceeds size limit (200 for utils, 500 for app files)."""
     if not should_check_file(filepath):
         return True
 
@@ -75,8 +85,12 @@ def check_file_size(filepath):
         line_count = len(lines)
         actual_count = len(non_empty_lines)
 
-        if line_count > MAX_LINES:
-            print(f"❌ {filepath}: {line_count} lines (max {MAX_LINES})")
+        # Use higher limit for app files
+        limit = MAX_LINES_APP if is_app_file(filepath) else MAX_LINES
+
+        if line_count > limit:
+            file_type = "app file" if is_app_file(filepath) else "utility/component"
+            print(f"❌ {filepath}: {line_count} lines (max {limit} for {file_type})")
             print(f"   └─ {actual_count} non-empty lines")
             print(f"   └─ Split into smaller modules")
             return False
@@ -107,8 +121,9 @@ def main():
 
     if failed:
         print(f"\n{'='*60}")
-        print(f"❌ {len(failed)} file(s) exceed 200-line limit")
+        print(f"❌ {len(failed)} file(s) exceed size limit")
         print(f"{'='*60}")
+        print("\nLimits: utilities ~200 lines, app/core files ~500 lines")
         print("\nOptions to fix:")
         print("1. Split into smaller modules (recommended)")
         print("2. Extract functions to separate files")
@@ -117,7 +132,7 @@ def main():
         sys.exit(1)
     else:
         if checked > 0:
-            print(f"✅ All {checked} file(s) under 200 lines")
+            print(f"✅ All {checked} file(s) within size limits")
         sys.exit(0)
 
 

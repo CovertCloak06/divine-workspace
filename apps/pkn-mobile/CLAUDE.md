@@ -4,6 +4,221 @@ This file provides guidance to Claude Code when working with the PKN Mobile code
 
 **🔴 CRITICAL: Read `/home/gh0st/dvn/ARCHITECTURE_STANDARDS.md` BEFORE making any changes.**
 
+---
+
+## 📚 Documentation Cross-References
+
+**This file is part of a larger documentation system. See related docs:**
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| **All Docs Index** | [docs/INDEX.md](../../docs/INDEX.md) | Central documentation hub |
+| **Agents** | [docs/AGENTS.md](../../docs/AGENTS.md) | All 9 agents, models, tools |
+| **Tools** | [docs/TOOLS.md](../../docs/TOOLS.md) | 90+ tools reference |
+| **OSINT** | [docs/SHADOW_OSINT.md](../../docs/SHADOW_OSINT.md) | 35 Shadow OSINT tools |
+| **Deployment** | [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) | Deploy all apps |
+| **Mobile Deploy** | [docs/DEPLOYMENT_MOBILE.md](./docs/DEPLOYMENT_MOBILE.md) | Termux/Android setup |
+| **Mobile Issues** | [docs/TROUBLESHOOTING_MOBILE.md](./docs/TROUBLESHOOTING_MOBILE.md) | Mobile troubleshooting |
+| **Architecture** | [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md) | System design |
+| **Troubleshooting** | [docs/TROUBLESHOOTING.md](../../docs/TROUBLESHOOTING.md) | Common issues |
+
+**When to reference other docs:**
+- Agent configuration details → [AGENTS.md](../../docs/AGENTS.md)
+- Tool usage → [TOOLS.md](../../docs/TOOLS.md)
+- OSINT operations → [SHADOW_OSINT.md](../../docs/SHADOW_OSINT.md)
+- Deployment issues → [DEPLOYMENT_MOBILE.md](./docs/DEPLOYMENT_MOBILE.md)
+
+---
+
+## 🚨 NON-NEGOTIABLE PROJECT REQUIREMENTS
+
+**READ THIS SECTION FIRST. THESE ARE HARD REQUIREMENTS THAT MUST NEVER BE VIOLATED.**
+
+### 1. LOCAL-FIRST ARCHITECTURE (Privacy by Default)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  THIS PROJECT IS BUILT AROUND GIVING THE USER A MORE PRIVATE   │
+│  EXPERIENCE PLUS THE OPTION TO RUN CLOUD IF SPEED IS NEEDED.   │
+│                                                                 │
+│  LOCAL INFERENCE IS THE DEFAULT. CLOUD IS THE OPTION.          │
+│  NEVER SUGGEST CLOUD-ONLY OR REMOVE LOCAL CAPABILITY.          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**What this means:**
+- ✅ DEFAULT: All agents run locally via Ollama
+- ✅ OPTION: User can toggle to cloud (Groq/OpenAI) when speed needed
+- ❌ NEVER: Suggest removing local inference
+- ❌ NEVER: Make cloud the only option
+- ❌ NEVER: Say "local is too slow, just use cloud"
+
+**Backend Toggle:**
+- Endpoint: `/api/multi-agent/backend`
+- Values: `"local"` (default) or `"cloud"`
+- User controls this, not Claude
+
+### 2. UNCENSORED/ABLITERATED MODELS (Security Work)
+
+**The security agent MUST use uncensored models for legitimate pentesting work.**
+
+**Required Uncensored Models (Installed on Phone):**
+| Model | Size | Purpose | Agent |
+|-------|------|---------|-------|
+| `dolphin-phi:latest` | 1.6GB | Fast uncensored security | SECURITY |
+| `nous-hermes:latest` | 3.8GB | Uncensored reasoning | REASONER |
+
+**Why uncensored models are required:**
+- User does legitimate security/pentesting work
+- Need models that can discuss: SQL injection, XSS, buffer overflows, etc.
+- Censored models refuse helpful security education
+- "Abliterated" = fine-tuned to remove safety guardrails
+
+**Model Assignment (in `backend/config/model_config.py`):**
+```python
+MOBILE_LOCAL_MODELS = {
+    "security": {
+        "model": "ollama:dolphin-phi:latest",  # MUST be uncensored
+        "uncensored": True,
+    },
+    "reasoner": {
+        "model": "ollama:nous-hermes:latest",  # Uncensored for security analysis
+        "uncensored": True,
+    },
+    # ... other agents use standard models
+}
+```
+
+### 3. USER'S HARDWARE (Samsung Galaxy S24 Ultra)
+
+**DO NOT UNDERESTIMATE THIS PHONE'S CAPABILITIES.**
+
+| Spec | Value |
+|------|-------|
+| **Model** | Samsung Galaxy S24 Ultra (SM-S938U) |
+| **SoC** | Snapdragon 8 Gen 3 |
+| **RAM** | 12GB |
+| **Storage** | 256GB+ |
+| **AI Capability** | Can run 7B models easily, 14B models with patience |
+
+**This phone CAN:**
+- ✅ Run Ollama with multiple 7B models
+- ✅ Run qwen2.5-coder:7b (4.7GB) in ~10 seconds
+- ✅ Run dolphin-phi:latest in ~7 seconds
+- ✅ Handle local LLM inference for all daily use
+
+**Response Time Benchmarks (Measured 2026-01-18):**
+| Model | Response Time | Use Case |
+|-------|---------------|----------|
+| qwen:latest (2.3GB) | ~0.8s | Fast general queries |
+| dolphin-phi:latest (1.6GB) | ~7.2s | Security questions |
+| nous-hermes:latest (3.8GB) | ~12.9s | Complex reasoning |
+| qwen2.5-coder:7b (4.7GB) | ~10s | Code generation |
+
+### 4. AGENT CONFIGURATION EXPECTATIONS
+
+**All 9 agents must be configured with appropriate models:**
+
+| Agent | Model | Uncensored | Purpose |
+|-------|-------|------------|---------|
+| CODER | qwen2.5-coder:7b | No | Code writing, debugging |
+| GENERAL | qwen:latest | No | Quick Q&A |
+| REASONER | nous-hermes:latest | **Yes** | Planning, logic |
+| SECURITY | dolphin-phi:latest | **Yes** | Pentesting, security |
+| RESEARCHER | mistral:latest | No | Research, docs |
+| EXECUTOR | qwen2.5-coder:7b | No | System commands |
+| VISION | llava:latest | No | Image analysis |
+| CONSULTANT | Claude API | N/A | Cloud fallback |
+| VISION_CLOUD | Groq | N/A | Fast cloud vision |
+
+### 6. MODEL CHANGES POLICY
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  DO NOT CHANGE THE AI MODEL CONFIGURATION UNLESS:              │
+│                                                                 │
+│  1. A BETTER model exists that improves ALL-AROUND performance │
+│  2. The new model is FASTER and HIGHER QUALITY                 │
+│  3. Uncensored requirements are STILL MET                      │
+│                                                                 │
+│  NEVER change models just because you think something else     │
+│  would be "easier" or "more standard". Performance is king.    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Valid reasons to suggest a model change:**
+- ✅ New uncensored model released that's faster AND better quality
+- ✅ Existing model deprecated/unavailable
+- ✅ User explicitly requests evaluation of alternatives
+
+**Invalid reasons:**
+- ❌ "This model is more popular"
+- ❌ "This would be simpler to configure"
+- ❌ "I'm more familiar with this model"
+- ❌ "The censored version is safer"
+
+### 5. TOOLS MUST BE ENABLED
+
+**All 13 tool modules must be accessible to all agents:**
+- code_tools, file_tools, system_tools, web_tools
+- memory_tools, osint_tools, rag_tools, planning_tools
+- delegation_tools, chain_tools, sandbox_tools, evaluation_tools
+- advanced features
+
+**Never disable tools or suggest removing them.**
+
+---
+
+## 🐛 DEBUGGING HISTORY & KNOWN ISSUES
+
+### Issues We've Already Solved (Don't Re-Introduce)
+
+**1. PWA Black Screen on PC (Fixed 2026-01-18)**
+- **Problem:** PC PWA opened to black screen, needed hard refresh
+- **Cause:** Service worker v1.0.0 using cache-first for HTML/JS
+- **Fix:** Updated to v2.0.0 with network-first for HTML/JS
+- **File:** `/apps/pkn/www/service-worker.js`
+
+**2. Model Config Referencing Missing Models (Fixed 2026-01-18)**
+- **Problem:** MOBILE_LOCAL_MODELS referenced models not installed
+- **Fix:** Updated config to use actually installed models
+- **File:** `~/pkn/backend/config/model_config.py` (on phone)
+
+**3. Phone Cleanup - Old Files Removed (Fixed 2026-01-17)**
+- **Removed:** ~/pkn-phone/ (17MB old duplicate)
+- **Removed:** ~/llama.cpp-termux/ (2.4GB duplicate)
+- **Removed:** 22+ old scripts and configs
+- **Single PKN directory:** `~/pkn/` on phone
+
+**4. Mobile Background Image Too Small (Fixed 2026-01-18)**
+- **Problem:** gh0stbanner.png displayed too small on mobile
+- **Fix:** Changed `background-size: contain` to `85% auto`
+- **File:** `css/mobile.css` line 132
+
+**5. Settings Panel X Button Not Visible (Fixed 2026-01-09)**
+- **Problem:** Close button cut off by screen edge
+- **Fix:** 44px cyan circular button with high z-index
+- **CSS:** `.settings-close-x { width: 44px; height: 44px; z-index: 9999; }`
+
+### Current Phone Configuration
+
+**Ollama Models Installed:**
+```
+qwen:latest           2.3GB   Fast general
+qwen2.5-coder:7b      4.7GB   Code generation
+mistral:latest        4.4GB   Research
+dolphin-phi:latest    1.6GB   Uncensored security
+nous-hermes:latest    3.8GB   Uncensored reasoning
+```
+
+**Backend Status:**
+- Mode: `local` (using Ollama)
+- Port: 8010
+- Agents: 39 configured
+- Cloud available: Yes (toggle option)
+
+---
+
 ## Project Overview
 
 PKN Mobile is the Android/Termux deployment of the Divine Node multi-agent AI system. It runs the same backend architecture as the desktop version but with optimized, lighter models for mobile hardware.
@@ -11,24 +226,24 @@ PKN Mobile is the Android/Termux deployment of the Divine Node multi-agent AI sy
 **Key Differences from Desktop PKN:**
 - Uses 7B models instead of 14B for better mobile performance
 - All agents use Ollama (port 11434) - no llama.cpp
-- OpenAI API integration as fallback/cloud option
+- Cloud API integration as fallback option (NOT default)
 - Mobile-optimized UI with responsive CSS
 - Simplified configuration for Termux environment
 
-## Agent Configuration (Updated 2026-01-14)
+## Agent Configuration (Updated 2026-01-18)
 
-**IMPORTANT: All mobile agents use lighter models optimized for phone hardware.**
+**IMPORTANT: Mobile agents use lighter models. Security/Reasoner use UNCENSORED models.**
 
-PKN Mobile uses 9 specialized AI agents (same as desktop, lighter models):
-- **CODER** (qwen2.5-coder:7b) - Code writing, debugging [10s]
-- **REASONER** (qwen2.5-coder:7b) - Planning, logic, analysis [10s]
-- **RESEARCHER** (mistral:latest) - Web research, documentation [15s]
-- **EXECUTOR** (qwen2.5-coder:7b) - System commands, file ops [10s]
-- **GENERAL** (qwen:latest) - Quick Q&A [8s]
-- **SECURITY** (qwen2.5-coder:7b) - Pentesting [10s]
-- **VISION** (llava:latest) - Image/screenshot analysis [15s]
-- **VISION_CLOUD** (Groq) - Optional cloud vision [2s]
-- **CONSULTANT** (Claude API) - Optional cloud reasoning [3s]
+PKN Mobile uses 9 specialized AI agents:
+- **CODER** (qwen2.5-coder:7b) - Code writing, debugging [~10s]
+- **REASONER** (nous-hermes:latest) - Planning, logic, analysis [~13s] **UNCENSORED**
+- **RESEARCHER** (mistral:latest) - Web research, documentation [~15s]
+- **EXECUTOR** (qwen2.5-coder:7b) - System commands, file ops [~10s]
+- **GENERAL** (qwen:latest) - Quick Q&A [~1s]
+- **SECURITY** (dolphin-phi:latest) - Pentesting, security [~7s] **UNCENSORED**
+- **VISION** (llava:latest) - Image/screenshot analysis [~15s]
+- **VISION_CLOUD** (Groq) - Optional cloud vision [~2s]
+- **CONSULTANT** (Claude API) - Optional cloud reasoning [~3s]
 
 **All agents have access to 13 tool modules:**
 code_tools, file_tools, system_tools, web_tools, memory_tools, osint_tools, rag_tools, planning_tools, delegation_tools, chain_tools, sandbox_tools, evaluation_tools, and advanced features.
@@ -497,5 +712,5 @@ Same as desktop PKN - test agents, tools, routes
 
 ---
 
-**Last Updated:** 2026-01-14
-**Version:** 2.0 (Full Ollama, Tools Enabled)
+**Last Updated:** 2026-01-18
+**Version:** 2.1 (Local-First with Uncensored Models)

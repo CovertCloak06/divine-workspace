@@ -1,10 +1,10 @@
 """
-from ..config.settings import OLLAMA_BASE, LOCAL_LLM_BASE, join_url
 Chat Routes Blueprint
 Extracted from divinenode_server.py
 """
 
 from flask import Blueprint, request, jsonify, current_app
+from ..config.settings import OLLAMA_BASE, LOCAL_LLM_BASE, join_url
 import json
 import uuid
 import requests

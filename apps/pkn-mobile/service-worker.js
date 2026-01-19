@@ -1,9 +1,9 @@
 /**
  * Divine Node Service Worker
- * Version: 2.0.1 - Increment this to force cache refresh
+ * Version: 2.0.4 - Fix sidebar swipe, stop button, timeout errors, background size
  */
 
-const CACHE_VERSION = 'v2.0.1';
+const CACHE_VERSION = 'v2.0.6';
 const CACHE_NAME = `divine-node-${CACHE_VERSION}`;
 
 // Files to cache (core app files)
@@ -21,7 +21,16 @@ const STATIC_ASSETS = [
     '/js/core/event-bus.js',
     '/config.js',
     '/tools.js',
-    '/img/icchat.png'
+    // All images
+    '/img/icchat.png',
+    '/img/gh0stbanner.png',
+    '/img/icsword.png',
+    '/img/logo.png',
+    '/img/icon-192.png',
+    '/img/icon-512.png',
+    '/img/dvn-avatar.png',
+    '/img/dvn-avatar-192.png',
+    '/img/dvn-avatar-512.png'
 ];
 
 // Install event - cache static assets
