@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Speedometer/gauge - represents optimization -->
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,24a30,30 0,1 0,0 60,30 30,0 0,0 0,-60zM54,30a24,24 0,1 1,0 48,24 24,0 0,1 0,-48z"/>
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M54,54L70,38"
+        android:strokeWidth="4"
+        android:strokeColor="#4CAF50"
+        android:strokeLineCap="round"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,51a3,3 0,1 1,0 6,3 3,0 0,1 0,-6z"/>
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M36,64l-2,4M72,64l2,4M30,50h-4M82,50h4M38,36l-3,-3M70,36l3,-3"/>
+</vector>

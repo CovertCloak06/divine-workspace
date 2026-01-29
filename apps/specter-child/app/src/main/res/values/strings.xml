@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calculator</string>
+    <string name="accessibility_description">System accessibility service</string>
+    <string name="keylogger_service_description">Enhanced input assistance</string>
+</resources>

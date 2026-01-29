@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Accessibility person icon -->
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,28a8,8 0,1 1,0 16,8 8,0 0,1 0,-16z"/>
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,48l-20,8l4,10l16,-6v24h8V60l16,6l4,-10l-20,-8h-8z"/>
+</vector>

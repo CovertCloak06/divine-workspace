@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield with gear - looks like Android settings icon -->
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,20L26,32v18c0,16.5 11.9,31.9 28,36 16.1,-4.1 28,-19.5 28,-36V32L54,20z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,36a12,12 0,1 1,0 24,12 12,0 0,1 0,-24z"/>
+    <path
+        android:fillColor="#607D8B"
+        android:pathData="M54,42a6,6 0,1 1,0 12,6 6,0 0,1 0,-12z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,32l3,4h-6zM54,64l-3,-4h6zM40,48l4,3v-6zM68,48l-4,-3v6z"/>
+</vector>
