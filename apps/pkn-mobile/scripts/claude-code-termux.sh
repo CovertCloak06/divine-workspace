@@ -133,7 +133,7 @@ health_check() {
                 CLI_JS=$(npm root -g 2>/dev/null)/@anthropic-ai/claude-code/cli.js 2>/dev/null || true
             fi
             if [ -f "$CLI_JS" ]; then
-                HARDCODED=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null || echo "0")
+                HARDCODED=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null) || HARDCODED=0
                 if [ "$HARDCODED" -gt 0 ]; then
                     fail "cli.js has $HARDCODED hardcoded /tmp/claude references (unpatched)"
                     ISSUES=$((ISSUES + 1))
@@ -373,8 +373,8 @@ apply_termux_fix() {
     info "Found cli.js at: $CLI_JS"
 
     # Count hardcoded paths
-    HARDCODED=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null || echo "0")
-    HARDCODED_SCREENSHOT=$(grep -c '/tmp/claude_cli_latest_screenshot' "$CLI_JS" 2>/dev/null || echo "0")
+    HARDCODED=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null) || HARDCODED=0
+    HARDCODED_SCREENSHOT=$(grep -c '/tmp/claude_cli_latest_screenshot' "$CLI_JS" 2>/dev/null) || HARDCODED_SCREENSHOT=0
 
     if [ "$HARDCODED" -eq 0 ] && [ "$HARDCODED_SCREENSHOT" -eq 0 ]; then
         pass "cli.js already patched or no hardcoded paths found"
@@ -394,8 +394,8 @@ apply_termux_fix() {
     sed -i "s|/tmp/claude_cli_latest_screenshot|${ESCAPED_TMPDIR}/claude_cli_latest_screenshot|g" "$CLI_JS"
 
     # Verify patch
-    REMAINING=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null || echo "0")
-    REMAINING_SS=$(grep -c '/tmp/claude_cli_latest_screenshot' "$CLI_JS" 2>/dev/null || echo "0")
+    REMAINING=$(grep -c '"/tmp/claude"' "$CLI_JS" 2>/dev/null) || REMAINING=0
+    REMAINING_SS=$(grep -c '/tmp/claude_cli_latest_screenshot' "$CLI_JS" 2>/dev/null) || REMAINING_SS=0
 
     if [ "$REMAINING" -eq 0 ] && [ "$REMAINING_SS" -eq 0 ]; then
         pass "Patch applied successfully"
