@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ca_tax_calculator import (
     calculate_overtime_pay,
+    calculate_prevailing_wage_ot,
     calculate_premium_deduction,
     calculate_itemized_deductions,
     calculate_federal_tax,
@@ -30,6 +31,80 @@ def test_overtime_with_double_time():
     assert result["overtime_pay"] == 360.0  # 8 * 45
     assert result["double_time_pay"] == 240.0  # 4 * 60
     assert result["gross_pay"] == 1800.0
+
+
+def test_prevailing_wage_ot_basic():
+    """Prevailing wage: $45/hr base + $20/hr fringe, 40 reg + 10 OT hours.
+
+    Regular: 40 x $45 = $1,800
+    OT: 10 x ($45 x 1.5) = 10 x $67.50 = $675
+    OT premium: 10 x ($45 x 0.5) = $225  (the extra above straight time)
+    Fringe: 50 hrs x $20 = $1,000
+    Total base: $1,800 + $675 = $2,475
+    Gross: $2,475 + $1,000 = $3,475
+    """
+    r = calculate_prevailing_wage_ot(
+        base_rate=45, fringe_rate=20,
+        regular_hours=40, ot_hours=10,
+    )
+    assert r["prevailing_wage_rate"] == 65.0
+    assert r["regular_base_pay"] == 1800.0
+    assert r["ot_base_rate"] == 67.5
+    assert r["ot_base_pay"] == 675.0
+    assert r["ot_premium_amount"] == 225.0
+    assert r["total_fringe"] == 1000.0
+    assert r["total_base_pay"] == 2475.0
+    assert r["gross_compensation"] == 3475.0
+    assert r["total_premium_ot"] == 225.0
+
+
+def test_prevailing_wage_ot_with_dt():
+    """Prevailing wage with double time (Sunday).
+
+    Base $50, Fringe $15
+    Regular: 32 hrs x $50 = $1,600
+    Saturday (1.5x): 8 hrs x $75 = $600, premium = 8 x $25 = $200
+    Sunday (2x): 8 hrs x $100 = $800, premium = 8 x $50 = $400
+    Total hours: 48
+    Fringe: 48 x $15 = $720
+    """
+    r = calculate_prevailing_wage_ot(
+        base_rate=50, fringe_rate=15,
+        regular_hours=32, saturday_hours=8, sunday_hours=8,
+    )
+    assert r["regular_base_pay"] == 1600.0
+    assert r["ot_base_pay"] == 600.0     # Saturday 1.5x
+    assert r["dt_base_pay"] == 800.0     # Sunday 2x
+    assert r["ot_premium_amount"] == 200.0
+    assert r["dt_premium_amount"] == 400.0
+    assert r["total_premium_ot"] == 600.0
+    assert r["total_fringe"] == 720.0
+    assert r["total_hours"] == 48.0
+    assert r["gross_compensation"] == 3720.0  # 1600+600+800+720
+
+
+def test_prevailing_wage_fringe_cash_taxable():
+    """When fringe paid as cash, taxable wages include fringe."""
+    r = calculate_prevailing_wage_ot(
+        base_rate=45, fringe_rate=20,
+        regular_hours=40, fringe_paid_as_cash=True,
+    )
+    # Base: 40 x 45 = 1800, Fringe: 40 x 20 = 800
+    assert r["total_base_pay"] == 1800.0
+    assert r["total_fringe"] == 800.0
+    # Cash fringe is taxable
+    assert r["taxable_wages"] == 2600.0  # 1800 + 800
+    assert r["fringe_paid_as_cash"] is True
+
+
+def test_prevailing_wage_fringe_benefits_not_taxable():
+    """When fringe paid as benefits, taxable wages exclude fringe."""
+    r = calculate_prevailing_wage_ot(
+        base_rate=45, fringe_rate=20,
+        regular_hours=40, fringe_paid_as_cash=False,
+    )
+    assert r["taxable_wages"] == 1800.0  # only base pay
+    assert r["fringe_paid_as_cash"] is False
 
 
 def test_premium_deduction_employee():

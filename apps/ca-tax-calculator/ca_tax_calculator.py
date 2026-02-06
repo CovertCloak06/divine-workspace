@@ -122,6 +122,92 @@ def calculate_overtime_pay(hourly_rate: float, regular_hours: float = 40.0,
     }
 
 
+def calculate_prevailing_wage_ot(base_rate: float,
+                                  fringe_rate: float = 0.0,
+                                  regular_hours: float = 0.0,
+                                  ot_hours: float = 0.0,
+                                  dt_hours: float = 0.0,
+                                  saturday_hours: float = 0.0,
+                                  sunday_hours: float = 0.0,
+                                  fringe_paid_as_cash: bool = False) -> dict:
+    """Calculate prevailing wage overtime per California DIR rules.
+
+    Prevailing wage OT differs from regular OT:
+    - OT premium (1.5x, 2x) applies to BASE RATE only, not fringe
+    - Fringe benefits are paid at flat rate for ALL hours worked
+    - Saturday = 1.5x base, Sunday = 2x base (CA DIR)
+    - Cash-in-lieu fringes are TAXABLE wages
+
+    Args:
+        base_rate: Hourly base rate from DIR wage determination
+        fringe_rate: Hourly fringe benefit rate (health, pension, training, etc.)
+        regular_hours: Straight-time hours (weekday, under 8/day and 40/week)
+        ot_hours: Overtime hours at 1.5x (over 8/day or 40/week, or Saturday)
+        dt_hours: Double-time hours at 2x (over 12/day or Sunday)
+        saturday_hours: Saturday hours (1.5x base by default in CA)
+        sunday_hours: Sunday hours (2x base by default in CA)
+        fringe_paid_as_cash: True if employer pays fringe as cash (taxable)
+    """
+    total_ot_hours = ot_hours + saturday_hours
+    total_dt_hours = dt_hours + sunday_hours
+    total_hours = regular_hours + total_ot_hours + total_dt_hours
+    prevailing_wage_rate = base_rate + fringe_rate
+
+    # --- Base rate calculations ---
+    regular_base_pay = base_rate * regular_hours
+
+    ot_base_rate = base_rate * 1.5
+    ot_base_pay = ot_base_rate * total_ot_hours
+    ot_premium = (base_rate * 0.5) * total_ot_hours  # the extra 0.5x portion
+
+    dt_base_rate = base_rate * 2.0
+    dt_base_pay = dt_base_rate * total_dt_hours
+    dt_premium = (base_rate * 1.0) * total_dt_hours  # the extra 1.0x portion
+
+    total_base_pay = regular_base_pay + ot_base_pay + dt_base_pay
+    total_premium = ot_premium + dt_premium
+
+    # --- Fringe calculations (flat rate, every hour) ---
+    total_fringe = fringe_rate * total_hours
+
+    # --- Totals ---
+    gross_pay = total_base_pay + total_fringe
+    taxable_wages = total_base_pay + (total_fringe if fringe_paid_as_cash else 0)
+
+    return {
+        # Rates
+        "base_rate": base_rate,
+        "fringe_rate": fringe_rate,
+        "prevailing_wage_rate": round(prevailing_wage_rate, 2),
+        # Hours
+        "regular_hours": regular_hours,
+        "ot_hours": total_ot_hours,
+        "ot_hours_weekday": ot_hours,
+        "ot_hours_saturday": saturday_hours,
+        "dt_hours": total_dt_hours,
+        "dt_hours_weekday": dt_hours,
+        "dt_hours_sunday": sunday_hours,
+        "total_hours": round(total_hours, 2),
+        # Regular pay
+        "regular_base_pay": round(regular_base_pay, 2),
+        # OT breakdown
+        "ot_base_rate": round(ot_base_rate, 2),
+        "ot_base_pay": round(ot_base_pay, 2),
+        "ot_premium_amount": round(ot_premium, 2),
+        # DT breakdown
+        "dt_base_rate": round(dt_base_rate, 2),
+        "dt_base_pay": round(dt_base_pay, 2),
+        "dt_premium_amount": round(dt_premium, 2),
+        # Totals
+        "total_base_pay": round(total_base_pay, 2),
+        "total_premium_ot": round(total_premium, 2),
+        "total_fringe": round(total_fringe, 2),
+        "fringe_paid_as_cash": fringe_paid_as_cash,
+        "gross_compensation": round(gross_pay, 2),
+        "taxable_wages": round(taxable_wages, 2),
+    }
+
+
 def calculate_premium_deduction(annual_premium: float,
                                 employer_contribution: float = 0.0,
                                 is_self_employed: bool = False) -> dict:

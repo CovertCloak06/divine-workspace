@@ -2,13 +2,14 @@
 """CA Tax Calculator - CLI Interface
 
 Usage:
-    python main.py                          # Interactive mode (with auto-save)
-    python main.py --quick 85000            # Quick estimate for $85k income
-    python main.py --ot 25 40 10            # OT calc: $25/hr, 40 reg, 10 OT hrs
+    python main.py --pw                     # Prevailing wage OT calculator (main feature)
+    python main.py --pw-quick 45 20 40 10 4 # Quick PW OT: base fringe reg ot dt
+    python main.py                          # Full tax return calculator (interactive)
+    python main.py --quick 85000            # Quick tax estimate for $85k income
+    python main.py --ot 25 40 10            # Simple OT calc: $25/hr, 40 reg, 10 OT hrs
     python main.py --import-adp stub.csv    # Import from ADP CSV export
     python main.py --adp                    # Guided ADP pay stub entry
     python main.py --profile default        # Load saved profile
-    python main.py --save-profile myname    # Save current inputs as profile
     python main.py --history                # View past calculations
 """
 
@@ -18,6 +19,7 @@ import sys
 
 from ca_tax_calculator import (
     calculate_overtime_pay,
+    calculate_prevailing_wage_ot,
     calculate_premium_deduction,
     full_tax_summary,
     STANDARD_DEDUCTION,
@@ -285,6 +287,121 @@ def ot_calc(hourly: float, regular: float, overtime: float,
     print()
 
 
+def pw_ot_interactive():
+    """Prevailing wage OT calculator - guided mode."""
+    print_section("PREVAILING WAGE OT CALCULATOR")
+    print("  California DIR prevailing wage overtime breakdown.")
+    print("  OT premium applies to BASE RATE only (not fringe).")
+    print("  Fringe is paid flat for every hour worked.\n")
+
+    print("  --- RATES (from DIR wage determination) ---")
+    base_rate = get_dollar_input("  Base hourly rate: $")
+    if base_rate <= 0:
+        print("  Base rate is required.")
+        return
+    fringe_rate = get_dollar_input("  Fringe benefit rate (per hour): $")
+    print_row("  Prevailing wage rate:", fmt(base_rate + fringe_rate))
+
+    fringe_cash = get_yn_input("  Fringe paid as cash (taxable)? ")
+
+    print("\n  --- HOURS (for the pay period or YTD) ---")
+    print("  Enter total hours for the period you need.\n")
+    regular = get_dollar_input("  Regular hours (straight time): ")
+    ot_weekday = get_dollar_input("  Weekday OT hours (1.5x, over 8/day or 40/wk): ")
+    saturday = get_dollar_input("  Saturday hours (1.5x): ")
+    dt_weekday = get_dollar_input("  Weekday double-time hours (2x, over 12/day): ")
+    sunday = get_dollar_input("  Sunday hours (2x): ")
+
+    result = calculate_prevailing_wage_ot(
+        base_rate=base_rate,
+        fringe_rate=fringe_rate,
+        regular_hours=regular,
+        ot_hours=ot_weekday,
+        dt_hours=dt_weekday,
+        saturday_hours=saturday,
+        sunday_hours=sunday,
+        fringe_paid_as_cash=fringe_cash,
+    )
+
+    display_pw_results(result)
+    return result
+
+
+def pw_ot_quick(base_rate: float, fringe_rate: float,
+                regular: float, ot: float, dt: float = 0.0,
+                fringe_cash: bool = False):
+    """Quick prevailing wage OT calc from CLI args."""
+    result = calculate_prevailing_wage_ot(
+        base_rate=base_rate,
+        fringe_rate=fringe_rate,
+        regular_hours=regular,
+        ot_hours=ot,
+        dt_hours=dt,
+        fringe_paid_as_cash=fringe_cash,
+    )
+    display_pw_results(result)
+    return result
+
+
+def display_pw_results(r: dict):
+    """Display prevailing wage OT breakdown."""
+    print_section("RATES")
+    print_row("Base rate:", fmt(r["base_rate"]))
+    print_row("Fringe rate:", fmt(r["fringe_rate"]))
+    print_row("Prevailing wage rate:", fmt(r["prevailing_wage_rate"]))
+
+    print_section("HOURS")
+    print_row("Regular (straight time):", f"{r['regular_hours']} hrs")
+    if r["ot_hours"] > 0:
+        parts = []
+        if r["ot_hours_weekday"] > 0:
+            parts.append(f"{r['ot_hours_weekday']} weekday")
+        if r["ot_hours_saturday"] > 0:
+            parts.append(f"{r['ot_hours_saturday']} Saturday")
+        print_row("OT hours (1.5x):", f"{r['ot_hours']} hrs ({', '.join(parts)})")
+    if r["dt_hours"] > 0:
+        parts = []
+        if r["dt_hours_weekday"] > 0:
+            parts.append(f"{r['dt_hours_weekday']} weekday")
+        if r["dt_hours_sunday"] > 0:
+            parts.append(f"{r['dt_hours_sunday']} Sunday")
+        print_row("DT hours (2x):", f"{r['dt_hours']} hrs ({', '.join(parts)})")
+    print_row("Total hours:", f"{r['total_hours']} hrs")
+
+    print_section("PAY BREAKDOWN")
+    print_row("Regular pay:",
+              f"{r['regular_hours']} hrs x {fmt(r['base_rate'])} = {fmt(r['regular_base_pay'])}")
+    if r["ot_hours"] > 0:
+        print_row("OT pay (1.5x base):",
+                  f"{r['ot_hours']} hrs x {fmt(r['ot_base_rate'])} = {fmt(r['ot_base_pay'])}")
+        print_row("  OT premium (extra 0.5x):", fmt(r["ot_premium_amount"]))
+    if r["dt_hours"] > 0:
+        print_row("DT pay (2x base):",
+                  f"{r['dt_hours']} hrs x {fmt(r['dt_base_rate'])} = {fmt(r['dt_base_pay'])}")
+        print_row("  DT premium (extra 1.0x):", fmt(r["dt_premium_amount"]))
+    print(f"  {'-' * 45}")
+    print_row("Total base wages:", fmt(r["total_base_pay"]))
+
+    print_section("FRINGE BENEFITS")
+    cash_note = " (TAXABLE - paid as cash)" if r["fringe_paid_as_cash"] else " (non-taxable benefits)"
+    print_row("Fringe:",
+              f"{r['total_hours']} hrs x {fmt(r['fringe_rate'])} = {fmt(r['total_fringe'])}{cash_note}")
+
+    print_section("PREMIUM OT SUMMARY (for tax return)")
+    print_row("Total premium OT amount:", fmt(r["total_premium_ot"]))
+    print("  (This is the extra amount above straight-time")
+    print("   due to 1.5x and 2x multipliers on your base rate)")
+
+    print_section("TOTALS")
+    print_row("Total base wages:", fmt(r["total_base_pay"]))
+    print_row("Total fringe:", fmt(r["total_fringe"]))
+    print_row("Gross compensation:", fmt(r["gross_compensation"]))
+    print_row("Taxable wages (W-2):", fmt(r["taxable_wages"]))
+    if not r["fringe_paid_as_cash"]:
+        print("  (Fringe paid as benefits, not included in taxable wages)")
+    print()
+
+
 def show_history():
     """Display past calculation results."""
     results = list_results()
@@ -331,6 +448,13 @@ def main():
                         default="single", help="Filing status (default: single)")
     parser.add_argument("--ot", nargs=3, type=float, metavar=("RATE", "REG_HRS", "OT_HRS"),
                         help="Overtime calc: hourly_rate regular_hours overtime_hours")
+    parser.add_argument("--pw", action="store_true",
+                        help="Prevailing wage OT calculator (interactive)")
+    parser.add_argument("--pw-quick", nargs=5, type=float,
+                        metavar=("BASE", "FRINGE", "REG", "OT", "DT"),
+                        help="Quick prevailing wage OT: base_rate fringe_rate reg_hrs ot_hrs dt_hrs")
+    parser.add_argument("--fringe-cash", action="store_true",
+                        help="With --pw-quick: fringe paid as taxable cash")
     parser.add_argument("--json", action="store_true",
                         help="Output results as JSON")
     parser.add_argument("--import-adp", metavar="CSV_FILE",
@@ -362,6 +486,25 @@ def main():
                 print(f"    - {p}")
         else:
             print("\n  No saved profiles. Use --save-profile NAME after a calculation.")
+        return
+
+    # Prevailing wage OT (interactive)
+    if args.pw:
+        pw_ot_interactive()
+        return
+
+    # Prevailing wage OT (quick)
+    if args.pw_quick:
+        b, f, reg, ot, dt = args.pw_quick
+        result = calculate_prevailing_wage_ot(
+            base_rate=b, fringe_rate=f,
+            regular_hours=reg, ot_hours=ot, dt_hours=dt,
+            fringe_paid_as_cash=args.fringe_cash,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            display_pw_results(result)
         return
 
     # OT quick calc
