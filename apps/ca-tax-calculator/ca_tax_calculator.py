@@ -92,6 +92,11 @@ SALT_PHASEOUT_START = 500_000  # 30% reduction per dollar over this
 SALT_PHASEOUT_FLOOR = 10_000  # Minimum cap after phaseout
 
 
+def _clamp(value: float) -> float:
+    """Clamp negative values to 0."""
+    return max(0.0, value)
+
+
 def calculate_overtime_pay(hourly_rate: float, regular_hours: float = 40.0,
                            overtime_hours: float = 0.0,
                            double_time_hours: float = 0.0) -> dict:
@@ -101,6 +106,10 @@ def calculate_overtime_pay(hourly_rate: float, regular_hours: float = 40.0,
     - 1.5x for hours over 8/day or 40/week (up to 12 hrs/day)
     - 2.0x for hours over 12/day or any hours on 7th consecutive day after 8 hrs
     """
+    hourly_rate = _clamp(hourly_rate)
+    regular_hours = _clamp(regular_hours)
+    overtime_hours = _clamp(overtime_hours)
+    double_time_hours = _clamp(double_time_hours)
     regular_pay = hourly_rate * regular_hours
     ot_rate = hourly_rate * 1.5
     ot_pay = ot_rate * overtime_hours
@@ -148,6 +157,14 @@ def calculate_prevailing_wage_ot(base_rate: float,
         sunday_hours: Sunday hours (2x base by default in CA)
         fringe_paid_as_cash: True if employer pays fringe as cash (taxable)
     """
+    base_rate = _clamp(base_rate)
+    fringe_rate = _clamp(fringe_rate)
+    regular_hours = _clamp(regular_hours)
+    ot_hours = _clamp(ot_hours)
+    dt_hours = _clamp(dt_hours)
+    saturday_hours = _clamp(saturday_hours)
+    sunday_hours = _clamp(sunday_hours)
+
     total_ot_hours = ot_hours + saturday_hours
     total_dt_hours = dt_hours + sunday_hours
     total_hours = regular_hours + total_ot_hours + total_dt_hours
@@ -380,6 +397,13 @@ def full_tax_summary(gross_income: float,
                      overtime_hours: float = 0.0,
                      double_time_hours: float = 0.0) -> dict:
     """Generate a complete CA tax return summary."""
+    gross_income = _clamp(gross_income)
+    health_premium = _clamp(health_premium)
+    employer_health_contribution = _clamp(employer_health_contribution)
+    medical_expenses = _clamp(medical_expenses)
+    mortgage_interest = _clamp(mortgage_interest)
+    state_local_taxes = _clamp(state_local_taxes)
+    charitable_donations = _clamp(charitable_donations)
     result = {}
 
     # 1. Overtime breakdown (if applicable)

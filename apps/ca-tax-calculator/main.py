@@ -13,6 +13,8 @@ Usage:
     python main.py --history                # View past calculations
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import sys

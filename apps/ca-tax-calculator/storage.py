@@ -4,6 +4,8 @@ All data stored in ~/.ca-tax-calc/ (never in the repo).
 Sensitive financial data stays on the user's machine only.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import stat
