@@ -7,3 +7,10 @@ dist/
 build/
 .venv/
 venv/
+
+# Local user data (financial info - NEVER commit)
+.ca-tax-calc/
+drafts/
+profiles/
+results/
+*.csv

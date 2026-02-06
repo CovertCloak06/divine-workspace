@@ -2,9 +2,14 @@
 """CA Tax Calculator - CLI Interface
 
 Usage:
-    python main.py                          # Interactive mode
+    python main.py                          # Interactive mode (with auto-save)
     python main.py --quick 85000            # Quick estimate for $85k income
     python main.py --ot 25 40 10            # OT calc: $25/hr, 40 reg, 10 OT hrs
+    python main.py --import-adp stub.csv    # Import from ADP CSV export
+    python main.py --adp                    # Guided ADP pay stub entry
+    python main.py --profile default        # Load saved profile
+    python main.py --save-profile myname    # Save current inputs as profile
+    python main.py --history                # View past calculations
 """
 
 import argparse
@@ -17,6 +22,12 @@ from ca_tax_calculator import (
     full_tax_summary,
     STANDARD_DEDUCTION,
 )
+from storage import (
+    save_draft, load_draft, clear_draft, format_draft_summary,
+    save_profile, load_profile, list_profiles,
+    save_result, list_results,
+)
+from adp_import import parse_adp_csv, guided_adp_entry, apply_adp_data
 
 
 def fmt(amount: float) -> str:
@@ -34,11 +45,15 @@ def print_row(label: str, value, width: int = 35):
     print(f"  {label:<{width}} {value}")
 
 
-def get_dollar_input(prompt: str, default: float = 0.0) -> float:
-    """Safely get a dollar amount from user input."""
-    raw = input(prompt).strip().replace(",", "").replace("$", "")
+def get_dollar_input(prompt: str, default: float = 0.0, prefill: float = None) -> float:
+    """Safely get a dollar amount from user input, with optional pre-fill."""
+    if prefill is not None and prefill > 0:
+        display = f"{prompt}[{prefill:,.2f}] "
+    else:
+        display = prompt
+    raw = input(display).strip().replace(",", "").replace("$", "")
     if not raw:
-        return default
+        return prefill if (prefill is not None and prefill > 0) else default
     try:
         value = float(raw)
         if value < 0:
@@ -50,51 +65,95 @@ def get_dollar_input(prompt: str, default: float = 0.0) -> float:
         return default
 
 
-def run_interactive():
-    """Interactive mode - walk through all inputs."""
+def get_yn_input(prompt: str, default: str = "n", prefill: bool = None) -> bool:
+    """Get yes/no input with optional pre-fill."""
+    if prefill is not None:
+        hint = "Y/n" if prefill else "y/N"
+    else:
+        hint = "y/n"
+    raw = input(f"{prompt}({hint}) [{default}]: ").strip().lower()
+    if not raw:
+        return prefill if prefill is not None else (default == "y")
+    return raw == "y"
+
+
+def run_interactive(prefill: dict = None):
+    """Interactive mode with auto-save and optional pre-filled values."""
+    pf = prefill or {}
+    fields = {}
+
     print_section("CA TAX CALCULATOR")
     print("  Calculates premium deductions, OT rates,")
-    print("  and estimated tax for California returns.\n")
+    print("  and estimated tax for California returns.")
+    if pf:
+        source = pf.pop("_source", "saved data")
+        print(f"\n  Pre-filled from: {source}")
+        print("  Press Enter to accept [shown values] or type new ones.\n")
+    else:
+        print()
 
     # Filing status
     print("  Filing status:")
     print("    1. Single")
     print("    2. Married filing jointly")
     print("    3. Head of household")
-    choice = input("\n  Select (1-3) [1]: ").strip() or "1"
     status_map = {"1": "single", "2": "married", "3": "head_of_household"}
+    reverse_map = {v: k for k, v in status_map.items()}
+    default_choice = reverse_map.get(pf.get("filing_status", ""), "1")
+    choice = input(f"\n  Select (1-3) [{default_choice}]: ").strip() or default_choice
     filing_status = status_map.get(choice, "single")
+    fields["filing_status"] = filing_status
+    save_draft(fields)
 
     # Income
     print_section("INCOME")
-    gross = get_dollar_input("  Annual gross income: $")
+    gross = get_dollar_input("  Annual gross income: $", prefill=pf.get("gross_income"))
+    fields["gross_income"] = gross
+    save_draft(fields)
 
     # Employment type
-    is_se = input("  Self-employed? (y/n) [n]: ").strip().lower() == "y"
+    is_se = get_yn_input("  Self-employed? ", prefill=pf.get("is_self_employed"))
+    fields["is_self_employed"] = is_se
+    save_draft(fields)
 
     # Overtime
     print_section("OVERTIME (optional)")
-    has_ot = input("  Calculate overtime pay? (y/n) [n]: ").strip().lower() == "y"
+    has_ot_prefill = pf.get("hourly_rate", 0) > 0
+    has_ot = get_yn_input("  Calculate overtime pay? ", prefill=has_ot_prefill)
     hourly = reg_hrs = ot_hrs = dt_hrs = 0.0
     if has_ot:
-        hourly = get_dollar_input("  Hourly rate: $")
-        reg_hrs = get_dollar_input("  Regular hours/week: ", 40.0)
-        ot_hrs = get_dollar_input("  Overtime hours (1.5x): ")
-        dt_hrs = get_dollar_input("  Double-time hours (2x): ")
+        hourly = get_dollar_input("  Hourly rate: $", prefill=pf.get("hourly_rate"))
+        reg_hrs = get_dollar_input("  Regular hours/week: ", 40.0, prefill=pf.get("regular_hours"))
+        ot_hrs = get_dollar_input("  Overtime hours (1.5x): ", prefill=pf.get("overtime_hours"))
+        dt_hrs = get_dollar_input("  Double-time hours (2x): ", prefill=pf.get("double_time_hours"))
+    fields.update(hourly_rate=hourly, regular_hours=reg_hrs,
+                  overtime_hours=ot_hrs, double_time_hours=dt_hrs)
+    save_draft(fields)
 
     # Health insurance
     print_section("HEALTH INSURANCE PREMIUMS")
-    premium = get_dollar_input("  Annual health insurance premium: $")
+    premium = get_dollar_input("  Annual health insurance premium: $",
+                               prefill=pf.get("health_premium"))
     employer_contrib = 0.0
     if premium > 0 and not is_se:
-        employer_contrib = get_dollar_input("  Employer contribution: $")
+        employer_contrib = get_dollar_input("  Employer contribution: $",
+                                           prefill=pf.get("employer_health_contribution"))
+    fields.update(health_premium=premium, employer_health_contribution=employer_contrib)
+    save_draft(fields)
 
     # Deductions
     print_section("DEDUCTIONS (for itemizing)")
-    medical = get_dollar_input("  Total medical expenses: $")
-    mortgage = get_dollar_input("  Mortgage interest paid: $")
-    salt = get_dollar_input("  State & local taxes paid: $")
-    charity = get_dollar_input("  Charitable donations: $")
+    medical = get_dollar_input("  Total medical expenses: $",
+                               prefill=pf.get("medical_expenses"))
+    mortgage = get_dollar_input("  Mortgage interest paid: $",
+                                prefill=pf.get("mortgage_interest"))
+    salt = get_dollar_input("  State & local taxes paid: $",
+                            prefill=pf.get("state_local_taxes"))
+    charity = get_dollar_input("  Charitable donations: $",
+                               prefill=pf.get("charitable_donations"))
+    fields.update(medical_expenses=medical, mortgage_interest=mortgage,
+                  state_local_taxes=salt, charitable_donations=charity)
+    save_draft(fields)
 
     # Calculate
     result = full_tax_summary(
@@ -115,6 +174,32 @@ def run_interactive():
 
     # Display results
     display_results(result, filing_status)
+
+    # Show withholding comparison if we have ADP data
+    fed_withheld = pf.get("_federal_withheld", 0)
+    state_withheld = pf.get("_state_withheld", 0)
+    if fed_withheld > 0 or state_withheld > 0:
+        print_section("WITHHOLDING COMPARISON (vs ADP)")
+        if fed_withheld > 0:
+            diff = fed_withheld - result["federal"]["federal_tax"]
+            status = "OVERPAID (refund expected)" if diff > 0 else "UNDERPAID (may owe)"
+            print_row("ADP Federal withheld:", fmt(fed_withheld))
+            print_row("Calculated Federal tax:", fmt(result["federal"]["federal_tax"]))
+            print_row("Difference:", f"{fmt(abs(diff))} - {status}")
+        if state_withheld > 0:
+            diff = state_withheld - result["california"]["ca_state_tax"]
+            status = "OVERPAID (refund expected)" if diff > 0 else "UNDERPAID (may owe)"
+            print_row("ADP CA State withheld:", fmt(state_withheld))
+            print_row("Calculated CA tax:", fmt(result["california"]["ca_state_tax"]))
+            print_row("Difference:", f"{fmt(abs(diff))} - {status}")
+        print()
+
+    # Save result and clear draft
+    save_result(result, fields)
+    clear_draft()
+    print("  Result saved. View past calculations with: python main.py --history")
+
+    return fields
 
 
 def display_results(result: dict, filing_status: str = "single"):
@@ -200,6 +285,42 @@ def ot_calc(hourly: float, regular: float, overtime: float,
     print()
 
 
+def show_history():
+    """Display past calculation results."""
+    results = list_results()
+    if not results:
+        print("\n  No saved calculations yet.")
+        return
+
+    print_section("CALCULATION HISTORY")
+    for i, r in enumerate(results[:10]):  # Show last 10
+        ts = r["timestamp"][:16].replace("T", " ")
+        inputs = r.get("inputs", {})
+        summary = r.get("result", {}).get("summary", {})
+        income = inputs.get("gross_income", 0)
+        status = inputs.get("filing_status", "single")
+        take_home = summary.get("estimated_take_home", 0)
+        rate = summary.get("overall_effective_rate", 0)
+        print(f"  {i+1}. {ts} | {status.title()} | "
+              f"Income: {fmt(income)} | Take-home: {fmt(take_home)} | Rate: {rate}%")
+    print()
+
+
+def check_resume() -> dict | None:
+    """Check for saved draft and offer to resume."""
+    draft = load_draft()
+    if not draft:
+        return None
+
+    print(f"\n  Saved draft found:")
+    print(f"    {format_draft_summary(draft)}")
+    choice = input("\n  Resume? (y/n) [y]: ").strip().lower()
+    if choice == "n":
+        clear_draft()
+        return None
+    return draft["fields"]
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="CA Tax Calculator - Premium, deductible, and OT rate calculator"
@@ -212,24 +333,107 @@ def main():
                         help="Overtime calc: hourly_rate regular_hours overtime_hours")
     parser.add_argument("--json", action="store_true",
                         help="Output results as JSON")
+    parser.add_argument("--import-adp", metavar="CSV_FILE",
+                        help="Import pay data from ADP CSV export")
+    parser.add_argument("--adp", action="store_true",
+                        help="Guided entry from ADP pay stub")
+    parser.add_argument("--profile", metavar="NAME",
+                        help="Load a saved profile to pre-fill fields")
+    parser.add_argument("--save-profile", metavar="NAME",
+                        help="Save inputs as a named profile after calculation")
+    parser.add_argument("--list-profiles", action="store_true",
+                        help="List saved profiles")
+    parser.add_argument("--history", action="store_true",
+                        help="View past calculations")
 
     args = parser.parse_args()
 
+    # History
+    if args.history:
+        show_history()
+        return
+
+    # List profiles
+    if args.list_profiles:
+        profiles = list_profiles()
+        if profiles:
+            print("\n  Saved profiles:")
+            for p in profiles:
+                print(f"    - {p}")
+        else:
+            print("\n  No saved profiles. Use --save-profile NAME after a calculation.")
+        return
+
+    # OT quick calc
     if args.ot:
         if args.json:
             result = calculate_overtime_pay(args.ot[0], args.ot[1], args.ot[2])
             print(json.dumps(result, indent=2))
         else:
             ot_calc(args.ot[0], args.ot[1], args.ot[2])
-    elif args.quick:
+        return
+
+    # Quick estimate
+    if args.quick:
         if args.json:
             result = full_tax_summary(gross_income=args.quick,
                                       filing_status=args.status)
             print(json.dumps(result, indent=2, default=str))
         else:
             quick_estimate(args.quick, args.status)
-    else:
-        run_interactive()
+        return
+
+    # Build prefill from various sources
+    prefill = {}
+
+    # Load profile if specified
+    if args.profile:
+        profile_data = load_profile(args.profile)
+        if profile_data:
+            prefill.update(profile_data)
+            prefill["_source"] = f"profile '{args.profile}'"
+            print(f"\n  Loaded profile: {args.profile}")
+        else:
+            print(f"\n  Profile '{args.profile}' not found. Starting fresh.")
+
+    # ADP CSV import
+    if args.import_adp:
+        adp_data = parse_adp_csv(args.import_adp)
+        if "error" in adp_data:
+            print(f"\n  ADP import error: {adp_data['error']}")
+            return
+        calc_fields = apply_adp_data(adp_data)
+        prefill.update(calc_fields)
+        prefill["_source"] = adp_data.get("_source", "ADP CSV")
+        periods = adp_data.get("_pay_periods", 0)
+        print(f"\n  Imported {periods} pay period(s) from ADP.")
+
+    # ADP guided entry
+    if args.adp:
+        adp_data = guided_adp_entry()
+        calc_fields = apply_adp_data(adp_data)
+        prefill.update(calc_fields)
+        prefill["_source"] = "ADP pay stub entry"
+
+    # Check for saved draft (only if no other prefill source)
+    if not prefill:
+        resumed = check_resume()
+        if resumed:
+            prefill = resumed
+            prefill["_source"] = "saved draft"
+
+    # Run interactive with whatever prefill we have
+    fields = run_interactive(prefill)
+
+    # Save profile if requested
+    if args.save_profile and fields:
+        # Only save stable fields (not amounts that change each year)
+        stable_fields = {
+            k: v for k, v in fields.items()
+            if k in ("filing_status", "is_self_employed", "hourly_rate", "regular_hours")
+        }
+        save_profile(args.save_profile, stable_fields)
+        print(f"  Profile saved as '{args.save_profile}'")
 
 
 if __name__ == "__main__":
