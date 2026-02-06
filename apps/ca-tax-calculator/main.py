@@ -34,6 +34,22 @@ def print_row(label: str, value, width: int = 35):
     print(f"  {label:<{width}} {value}")
 
 
+def get_dollar_input(prompt: str, default: float = 0.0) -> float:
+    """Safely get a dollar amount from user input."""
+    raw = input(prompt).strip().replace(",", "").replace("$", "")
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+        if value < 0:
+            print("  (Using 0 - negative values not allowed)")
+            return 0.0
+        return value
+    except ValueError:
+        print(f"  (Invalid number '{raw}', using {default})")
+        return default
+
+
 def run_interactive():
     """Interactive mode - walk through all inputs."""
     print_section("CA TAX CALCULATOR")
@@ -51,7 +67,7 @@ def run_interactive():
 
     # Income
     print_section("INCOME")
-    gross = float(input("  Annual gross income: $").strip() or "0")
+    gross = get_dollar_input("  Annual gross income: $")
 
     # Employment type
     is_se = input("  Self-employed? (y/n) [n]: ").strip().lower() == "y"
@@ -61,26 +77,24 @@ def run_interactive():
     has_ot = input("  Calculate overtime pay? (y/n) [n]: ").strip().lower() == "y"
     hourly = reg_hrs = ot_hrs = dt_hrs = 0.0
     if has_ot:
-        hourly = float(input("  Hourly rate: $").strip() or "0")
-        reg_hrs = float(input("  Regular hours/week: ").strip() or "40")
-        ot_hrs = float(input("  Overtime hours (1.5x): ").strip() or "0")
-        dt_hrs = float(input("  Double-time hours (2x): ").strip() or "0")
+        hourly = get_dollar_input("  Hourly rate: $")
+        reg_hrs = get_dollar_input("  Regular hours/week: ", 40.0)
+        ot_hrs = get_dollar_input("  Overtime hours (1.5x): ")
+        dt_hrs = get_dollar_input("  Double-time hours (2x): ")
 
     # Health insurance
     print_section("HEALTH INSURANCE PREMIUMS")
-    premium = float(input("  Annual health insurance premium: $").strip() or "0")
+    premium = get_dollar_input("  Annual health insurance premium: $")
     employer_contrib = 0.0
     if premium > 0 and not is_se:
-        employer_contrib = float(
-            input("  Employer contribution: $").strip() or "0"
-        )
+        employer_contrib = get_dollar_input("  Employer contribution: $")
 
     # Deductions
     print_section("DEDUCTIONS (for itemizing)")
-    medical = float(input("  Total medical expenses: $").strip() or "0")
-    mortgage = float(input("  Mortgage interest paid: $").strip() or "0")
-    salt = float(input("  State & local taxes paid: $").strip() or "0")
-    charity = float(input("  Charitable donations: $").strip() or "0")
+    medical = get_dollar_input("  Total medical expenses: $")
+    mortgage = get_dollar_input("  Mortgage interest paid: $")
+    salt = get_dollar_input("  State & local taxes paid: $")
+    charity = get_dollar_input("  Charitable donations: $")
 
     # Calculate
     result = full_tax_summary(

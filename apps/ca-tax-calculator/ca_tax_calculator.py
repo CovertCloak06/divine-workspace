@@ -10,74 +10,86 @@ Calculates:
 """
 
 # --- California State Tax Brackets (2025, Single Filer) ---
+# Source: CA FTB 2025 Tax Rate Schedules
+# Note: 1% Mental Health Services Tax on income over $1M is separate
 CA_TAX_BRACKETS_SINGLE = [
-    (10_099, 0.01),
-    (23_942, 0.02),
-    (37_788, 0.04),
-    (52_455, 0.06),
-    (66_295, 0.08),
-    (338_639, 0.093),
-    (406_364, 0.103),
-    (677_275, 0.113),
+    (11_079, 0.01),
+    (26_264, 0.02),
+    (41_452, 0.04),
+    (57_542, 0.06),
+    (72_724, 0.08),
+    (371_479, 0.093),
+    (445_771, 0.103),
+    (742_953, 0.113),
     (1_000_000, 0.123),
-    (float("inf"), 0.133),
+    (float("inf"), 0.133),  # 12.3% + 1% Mental Health Services Tax
 ]
 
 CA_TAX_BRACKETS_MARRIED = [
-    (20_198, 0.01),
-    (47_884, 0.02),
-    (75_576, 0.04),
-    (104_910, 0.06),
-    (132_590, 0.08),
-    (677_278, 0.093),
-    (812_728, 0.103),
-    (1_000_000, 0.113),
-    (1_354_550, 0.123),
-    (float("inf"), 0.133),
+    (22_158, 0.01),
+    (52_528, 0.02),
+    (82_904, 0.04),
+    (115_084, 0.06),
+    (145_448, 0.08),
+    (742_958, 0.093),
+    (891_542, 0.103),
+    (1_485_906, 0.113),
+    (2_000_000, 0.123),
+    (float("inf"), 0.133),  # 12.3% + 1% Mental Health Services Tax
 ]
 
 # --- Federal Tax Brackets (2025, Single Filer) ---
+# Source: IRS Rev. Proc. 2024-40 + Tax Foundation
 FEDERAL_TAX_BRACKETS_SINGLE = [
-    (11_600, 0.10),
-    (47_150, 0.12),
-    (100_525, 0.22),
-    (191_950, 0.24),
-    (243_725, 0.32),
-    (609_350, 0.35),
+    (11_925, 0.10),
+    (48_475, 0.12),
+    (103_350, 0.22),
+    (197_300, 0.24),
+    (250_525, 0.32),
+    (626_350, 0.35),
     (float("inf"), 0.37),
 ]
 
 FEDERAL_TAX_BRACKETS_MARRIED = [
-    (23_200, 0.10),
-    (94_300, 0.12),
-    (201_050, 0.22),
-    (383_900, 0.24),
-    (487_450, 0.32),
-    (731_200, 0.35),
+    (23_850, 0.10),
+    (96_950, 0.12),
+    (206_700, 0.22),
+    (394_600, 0.24),
+    (501_050, 0.32),
+    (751_600, 0.35),
     (float("inf"), 0.37),
 ]
 
-# --- Standard Deductions (2025) ---
+# --- Standard Deductions (2025, post-OBBB) ---
+# Source: IRS - One Big Beautiful Bill Act raised these above normal inflation adjustment
 STANDARD_DEDUCTION = {
-    "single": 14_600,
-    "married": 29_200,
-    "head_of_household": 21_900,
+    "single": 15_750,
+    "married": 31_500,
+    "head_of_household": 23_625,
 }
 
 # --- California Standard Deduction (2025) ---
+# Source: CA FTB
 CA_STANDARD_DEDUCTION = {
-    "single": 5_540,
-    "married": 11_080,
+    "single": 5_706,
+    "married": 11_412,
 }
 
 # --- FICA / Payroll ---
 SOCIAL_SECURITY_RATE = 0.062
-SOCIAL_SECURITY_WAGE_CAP = 168_600
+SOCIAL_SECURITY_WAGE_CAP = 176_100  # 2025 wage base (SSA)
 MEDICARE_RATE = 0.0145
 MEDICARE_SURTAX_RATE = 0.009  # on wages over $200k single / $250k married
 
 # --- SDI (CA State Disability Insurance) ---
-CA_SDI_RATE = 0.011
+CA_SDI_RATE = 0.012  # 2025 rate (1.2%), no wage cap since 2024
+
+# --- SALT (State and Local Tax) Deduction ---
+# OBBB raised from $10k to $40k for 2025, with phaseout for MAGI > $500k
+SALT_CAP = 40_000
+SALT_CAP_MFS = 20_000  # Married filing separately
+SALT_PHASEOUT_START = 500_000  # 30% reduction per dollar over this
+SALT_PHASEOUT_FLOOR = 10_000  # Minimum cap after phaseout
 
 
 def calculate_overtime_pay(hourly_rate: float, regular_hours: float = 40.0,
@@ -143,19 +155,40 @@ def calculate_premium_deduction(annual_premium: float,
         }
 
 
+def _calculate_salt_cap(agi: float, filing_status: str = "single") -> float:
+    """Calculate the effective SALT cap based on income phaseout (OBBB 2025).
+
+    Full $40k cap for MAGI <= $500k. Reduces by 30% of excess over $500k.
+    Floors at $10k (the old TCJA cap). MFS cap is $20k.
+    """
+    if filing_status == "married_filing_separately":
+        base_cap = SALT_CAP_MFS
+    else:
+        base_cap = SALT_CAP
+
+    if agi <= SALT_PHASEOUT_START:
+        return base_cap
+
+    reduction = 0.30 * (agi - SALT_PHASEOUT_START)
+    effective_cap = max(SALT_PHASEOUT_FLOOR, base_cap - reduction)
+    return effective_cap
+
+
 def calculate_itemized_deductions(medical_expenses: float = 0.0,
                                   agi: float = 0.0,
                                   mortgage_interest: float = 0.0,
                                   state_local_taxes: float = 0.0,
                                   charitable_donations: float = 0.0,
-                                  other_deductions: float = 0.0) -> dict:
+                                  other_deductions: float = 0.0,
+                                  filing_status: str = "single") -> dict:
     """Calculate itemized deductions vs standard deduction."""
     # Medical: only amount exceeding 7.5% of AGI
     medical_threshold = agi * 0.075
     medical_deductible = max(0, medical_expenses - medical_threshold)
 
-    # SALT cap: $10,000 ($5,000 if married filing separately)
-    salt_deductible = min(state_local_taxes, 10_000)
+    # SALT cap: $40,000 (OBBB 2025) with income phaseout
+    salt_cap = _calculate_salt_cap(agi, filing_status)
+    salt_deductible = min(state_local_taxes, salt_cap)
 
     total_itemized = (medical_deductible + mortgage_interest +
                       salt_deductible + charitable_donations + other_deductions)
@@ -166,7 +199,8 @@ def calculate_itemized_deductions(medical_expenses: float = 0.0,
         "medical_deductible": round(medical_deductible, 2),
         "mortgage_interest": mortgage_interest,
         "state_local_taxes_paid": state_local_taxes,
-        "salt_deductible_after_cap": salt_deductible,
+        "salt_cap": round(salt_cap, 2),
+        "salt_deductible_after_cap": round(salt_deductible, 2),
         "charitable_donations": charitable_donations,
         "other_deductions": other_deductions,
         "total_itemized": round(total_itemized, 2),
@@ -287,6 +321,7 @@ def full_tax_summary(gross_income: float,
         mortgage_interest=mortgage_interest,
         state_local_taxes=state_local_taxes,
         charitable_donations=charitable_donations,
+        filing_status=filing_status,
     )
     result["itemized_deductions"] = itemized
 
@@ -301,9 +336,9 @@ def full_tax_summary(gross_income: float,
         "federal_deduction_amount": federal_deduction,
     }
 
-    # 4. Federal tax
+    # 4. Federal tax (agi already has se_health_deduction subtracted)
     result["federal"] = calculate_federal_tax(
-        agi, federal_deduction + se_health_deduction, filing_status
+        agi, federal_deduction, filing_status
     )
 
     # 5. California state tax
