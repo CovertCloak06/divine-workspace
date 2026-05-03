@@ -1,8 +1,13 @@
 package com.divine.specter.child.worker
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.divine.specter.child.ChildApplication
 
@@ -18,6 +23,23 @@ class SyncWorker(
 
     companion object {
         private const val TAG = "SyncWorker"
+        private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "system_update"
+    }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(CHANNEL_ID, "System Update", NotificationManager.IMPORTANCE_LOW)
+            val manager = applicationContext.getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setContentTitle("System Update")
+            .setContentText("Checking for updates...")
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setSilent(true)
+            .build()
+        return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     override suspend fun doWork(): Result {

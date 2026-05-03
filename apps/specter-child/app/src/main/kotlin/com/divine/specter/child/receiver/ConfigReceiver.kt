@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.divine.specter.child.ChildApplication
 import com.divine.specter.child.worker.SyncWorker
 
 /**
@@ -50,8 +51,12 @@ class ConfigReceiver : BroadcastReceiver() {
             putString("device_id", getOrCreateDeviceId(prefs))
             putBoolean("is_configured", true)
             putLong("configured_at", System.currentTimeMillis())
+            remove("device_token") // Force re-registration on new config
             apply()
         }
+
+        // Clear in-memory token so SyncWorker re-registers on next run
+        ChildApplication.instance.sync.deviceToken = ""
 
         Log.i(TAG, "Configuration saved, scheduling sync worker")
 

