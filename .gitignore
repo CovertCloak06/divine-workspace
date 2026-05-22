@@ -221,6 +221,7 @@ token.json
 *.bak
 *.backup
 *.old
+backups/
 
 # ==========================================
 # Custom Ignores
@@ -233,3 +234,4 @@ AGENTS.override.md
 # Claude Code
 .claude/settings.local.json
 CLAUDE.local.md
+.aider*
