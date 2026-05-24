@@ -13,15 +13,23 @@ exports.handler = async (event) => {
   connectLambda(event)
 
   try {
-    const { id } = JSON.parse(event.body)
+    const { id, action = 'toggle', note = '' } = JSON.parse(event.body)
     if (!id || typeof id !== 'string') return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'id required' }) }
 
     const store = getStore('frostline')
-    const flags = (await store.get('flags', { type: 'json' })) || []
+    let flags = (await store.get('flags', { type: 'json' })) || {}
 
-    const idx = flags.indexOf(id)
-    if (idx >= 0) flags.splice(idx, 1)
-    else flags.push(id)
+    // Normalize old array format to object
+    if (Array.isArray(flags)) {
+      flags = Object.fromEntries(flags.map(fid => [fid, '']))
+    }
+
+    if (action === 'note') {
+      if (id in flags) flags[id] = note
+    } else {
+      if (id in flags) delete flags[id]
+      else flags[id] = note
+    }
 
     await store.setJSON('flags', flags)
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ flags }) }

@@ -14,8 +14,8 @@ const API = {
 // ── State ──────────────────────────────────────────────────────────────────
 const state = { activeTag: 'all', search: '', showFlagged: false }
 const authState = { unlocked: false, password: '' }
-let artData = []      // loaded from Blob, fallback to bundled ART
-let globalFlags = []  // loaded from Blob
+let artData = []       // loaded from Blob, fallback to bundled ART
+let globalFlags = {}   // {[id]: noteText} — loaded from Blob
 
 // ── Grapheme utils ─────────────────────────────────────────────────────────
 const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
@@ -53,7 +53,13 @@ async function loadArt() {
 
 async function loadFlags() {
   const { ok, data } = await apiFetch(API.getFlags)
-  globalFlags = (ok && Array.isArray(data?.flags)) ? data.flags : []
+  if (ok && data?.flags) {
+    globalFlags = Array.isArray(data.flags)
+      ? Object.fromEntries(data.flags.map(id => [id, '']))
+      : data.flags
+  } else {
+    globalFlags = {}
+  }
 }
 
 async function saveArt() {
@@ -64,15 +70,24 @@ async function saveArt() {
   })
 }
 
-async function saveFlag(id) {
+async function saveFlag(id, note = '') {
   const { ok, status, data } = await apiFetch(API.saveFlags, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
+    body: JSON.stringify({ id, action: 'toggle', note }),
   })
-  if (ok && Array.isArray(data?.flags)) globalFlags = data.flags
+  if (ok && data?.flags) globalFlags = data.flags
   if (!ok) console.warn(`save-flags failed: HTTP ${status}`, data)
   return ok
+}
+
+async function saveNote(id, note) {
+  const { ok, data } = await apiFetch(API.saveFlags, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, action: 'note', note }),
+  })
+  if (ok && data?.flags) globalFlags = data.flags
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -121,13 +136,20 @@ document.getElementById('auth-modal-close').onclick = closeAuthModal
 $authModal.addEventListener('click', e => { if (e.target === $authModal) closeAuthModal() })
 
 // ── Flag helpers ───────────────────────────────────────────────────────────
-function isFlagged(id) { return globalFlags.includes(id) }
+function isFlagged(id) { return id in globalFlags }
+function getNote(id)   { return globalFlags[id] || '' }
 
-async function toggleFlag(id, el) {
+async function toggleFlag(id, el, noteEl) {
   el.style.pointerEvents = 'none'
-  const ok = await saveFlag(id)
+  const note = noteEl ? noteEl.value : ''
+  const ok = await saveFlag(id, note)
   if (ok) {
-    el.classList.toggle('flagged', isFlagged(id))
+    const flagged = isFlagged(id)
+    el.classList.toggle('flagged', flagged)
+    if (noteEl) {
+      noteEl.style.display = flagged ? 'block' : 'none'
+      noteEl.value = flagged ? getNote(id) : ''
+    }
     renderTags()
   }
   el.style.pointerEvents = ''
@@ -151,7 +173,7 @@ const $search = document.getElementById('search')
 function renderTags() {
   $tags.innerHTML = ''
   const tagList = [...TAGS]
-  if (authState.unlocked && globalFlags.length > 0) tagList.push(`flagged (${globalFlags.length})`)
+  if (authState.unlocked && Object.keys(globalFlags).length > 0) tagList.push(`flagged (${Object.keys(globalFlags).length})`)
   for (const t of tagList) {
     const el = document.createElement('div')
     const isActive = state.activeTag === t || (t.startsWith('flagged') && state.showFlagged)
@@ -185,42 +207,30 @@ function visible(piece) {
 
 // ── WoS badge ──────────────────────────────────────────────────────────────
 function makeBadge(piece) {
-  if (piece.wosVerified) {
-    const b = document.createElement('span')
+  const verified = !!piece.wosVerified
+  const b = document.createElement('span')
+  if (verified) {
     b.className = 'wos-badge wos-verified' + (authState.unlocked ? ' editor-toggle' : '')
     b.textContent = '✅ WoS'
-    b.title = authState.unlocked ? 'Click to un-verify' : 'Verified works in WoS chat'
-    if (authState.unlocked) b.onclick = (e) => { e.stopPropagation(); toggleWosBadge(piece, 'verified') }
-    return b
+    b.title = authState.unlocked ? 'Click to mark unverified' : 'Verified works in WoS chat'
+  } else {
+    b.className = 'wos-badge wos-unverified' + (authState.unlocked ? ' editor-toggle' : '')
+    b.textContent = '? WoS'
+    b.title = authState.unlocked ? 'Click to mark verified' : 'WoS compatibility not confirmed'
   }
-  if (piece.wosRisk) {
-    const b = document.createElement('span')
-    b.className = 'wos-badge wos-risk' + (authState.unlocked ? ' editor-toggle' : '')
-    b.textContent = '⚠️ WoS?'
-    b.title = authState.unlocked ? 'Click to mark verified' : 'May not render in WoS chat'
-    if (authState.unlocked) b.onclick = (e) => { e.stopPropagation(); toggleWosBadge(piece, 'risk') }
-    return b
-  }
-  if (authState.unlocked) {
-    const b = document.createElement('span')
-    b.className = 'wos-badge wos-risk editor-toggle'
-    b.textContent = '+ WoS'
-    b.title = 'Mark as verified in WoS chat'
-    b.onclick = (e) => { e.stopPropagation(); toggleWosBadge(piece, 'none') }
-    return b
-  }
-  return null
+  if (authState.unlocked) b.onclick = (e) => { e.stopPropagation(); toggleWosBadge(piece) }
+  return b
 }
 
-async function toggleWosBadge(piece, current) {
+async function toggleWosBadge(piece) {
   const idx = artData.findIndex(p => p.id === piece.id)
   if (idx < 0) return
-  if (current === 'verified') {
+  if (artData[idx].wosVerified) {
     delete artData[idx].wosVerified
   } else {
     artData[idx].wosVerified = true
-    delete artData[idx].wosRisk
   }
+  delete artData[idx].wosRisk
   const { ok } = await saveArt()
   if (ok) renderGrid()
   else alert('Save failed — check your connection')
@@ -261,6 +271,7 @@ function renderGrid() {
       </div>
       <div class="preview"><pre></pre></div>
       <div class="card-tags"></div>
+      <textarea class="flag-note" placeholder="Why flagged? Add a note…" rows="2"></textarea>
       <button class="copy-btn">📋 Copy</button>
       <label class="flag-label">
         <span class="flag-box"></span>
@@ -281,12 +292,18 @@ function renderGrid() {
 
     const actions = card.querySelector('.card-actions')
 
-    const badge = makeBadge(piece)
-    if (badge) card.appendChild(badge)
+    card.appendChild(makeBadge(piece))
 
     const flagLabel = card.querySelector('.flag-label')
-    if (isFlagged(piece.id)) flagLabel.classList.add('flagged')
-    flagLabel.onclick = (e) => { e.stopPropagation(); toggleFlag(piece.id, flagLabel) }
+    const flagNote  = card.querySelector('.flag-note')
+    if (isFlagged(piece.id)) {
+      flagLabel.classList.add('flagged')
+      flagNote.style.display = 'block'
+      flagNote.value = getNote(piece.id)
+    }
+    flagLabel.onclick = (e) => { e.stopPropagation(); toggleFlag(piece.id, flagLabel, flagNote) }
+    flagNote.addEventListener('blur', () => { if (isFlagged(piece.id)) saveNote(piece.id, flagNote.value) })
+    flagNote.addEventListener('click', e => e.stopPropagation())
 
     if (authState.unlocked) {
       const editBtn = document.createElement('button')
