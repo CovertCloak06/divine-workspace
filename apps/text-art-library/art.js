@@ -170,6 +170,7 @@ const ART = [
     title: 'Welcome Banner',
     tags: ['banners', 'celebration'],
     width: 17, height: 3,
+    wosRisk: true,
     art:
 `╔═══════════════╗
 ║   WELCOME!    ║
@@ -223,6 +224,7 @@ const ART = [
     title: 'Diamond Divider',
     tags: ['borders', 'decorative'],
     width: 13, height: 1,
+    wosRisk: true,
     art: '◆━━━━━━━━━━━◆'
   },
   {
@@ -230,6 +232,7 @@ const ART = [
     title: 'Simple Frame',
     tags: ['borders'],
     width: 13, height: 3,
+    wosRisk: true,
     art:
 `┌───────────┐
 │           │
@@ -240,6 +243,7 @@ const ART = [
     title: 'Double Frame',
     tags: ['borders'],
     width: 13, height: 4,
+    wosRisk: true,
     art:
 `╔═══════════╗
 ║           ║
@@ -251,6 +255,7 @@ const ART = [
     title: 'Fancy Frame',
     tags: ['borders', 'decorative'],
     width: 17, height: 5,
+    wosRisk: true,
     art:
 `✦━━━━━━━━━━━━━━━✦
 ┃               ┃
@@ -1233,6 +1238,7 @@ const ART = [
     title: 'Cute Tiny Frame',
     tags: ['borders', 'aesthetic'],
     width: 13, height: 3,
+    wosRisk: true,
     art:
 `╭┈┈┈┈┈┈┈┈┈┈┈╮
 ┊             ┊
@@ -1243,6 +1249,7 @@ const ART = [
     title: 'Star Corners',
     tags: ['borders', 'aesthetic'],
     width: 13, height: 4,
+    wosRisk: true,
     art:
 `✦───────────✦
 │             │
@@ -1254,6 +1261,7 @@ const ART = [
     title: 'Heart Corners',
     tags: ['borders', 'love'],
     width: 13, height: 4,
+    wosRisk: true,
     art:
 `♡───────────♡
 │             │
@@ -1300,6 +1308,7 @@ const ART = [
     title: 'Not Kidnapper Van',
     tags: ['memes'],
     width: 22, height: 10,
+    wosRisk: true,
     art:
 `l┈╭━━━━━━━━━━━─╮
 ┈┃Not Kidnapper Van┃
@@ -1353,6 +1362,7 @@ Don't ask questions!`
     title: 'Cat with Sword (KR)',
     tags: ['memes', 'kawaii', 'animals', 'nsfw'],
     width: 50, height: 3,
+    wosRisk: true,
     art:
 `               /\\_/\\
 ̿̿ ̿̿ ̿̿ ̿'̿'\\̵͇̿̿\\з= ( *  ^  *) =ε/̵͇̿̿/'̿'̿ ̿ ̿̿ ̿̿ ̿̿
@@ -1378,6 +1388,7 @@ if you are useless`
     title: 'Cookie Cat',
     tags: ['kawaii', 'animals', 'memes'],
     width: 45, height: 6,
+    wosRisk: true,
     art:
 `.   /\\___/\\
 　 (´ ・ω・)　 ＿_
@@ -1435,6 +1446,7 @@ if you are useless`
     title: 'Angry Cat Scene',
     tags: ['memes', 'animals', 'kawaii'],
     width: 45, height: 7,
+    wosRisk: true,
     art:
 `　　　　   彡 ミ　　   /
 　　　   (｀･ω･´)　   /
