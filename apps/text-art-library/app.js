@@ -86,15 +86,14 @@ async function saveFlag(id, note = '') {
 }
 
 async function saveNote(id, note) {
-  const { ok, data } = await apiFetch(API.saveFlags, {
+  const { ok } = await apiFetch(API.saveFlags, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, action: 'note', note }),
   })
-  if (ok && data) {
-    if (data.flagged) globalFlags[id] = note
-    else delete globalFlags[id]  // server says item isn't flagged — sync client state
-  }
+  if (ok) globalFlags[id] = note
+  // Never delete globalFlags on note save — server now always writes without a
+  // stale read, so flagged:false is no longer a valid response for this action.
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -315,6 +314,12 @@ function renderGrid() {
     }
     flagLabel.onclick = (e) => { e.stopPropagation(); toggleFlag(piece.id, flagLabel, flagNote) }
     flagNote.addEventListener('blur', () => { if (isFlagged(piece.id)) saveNote(piece.id, flagNote.value) })
+    let _noteTimer
+    flagNote.addEventListener('input', () => {
+      if (!isFlagged(piece.id)) return
+      clearTimeout(_noteTimer)
+      _noteTimer = setTimeout(() => saveNote(piece.id, flagNote.value), 900)
+    })
     flagNote.addEventListener('click', e => e.stopPropagation())
 
     if (authState.unlocked) {

@@ -27,14 +27,12 @@ exports.handler = async (event) => {
     let flagged, finalNote
 
     if (action === 'note') {
-      if (existing !== null) {
-        await store.set(key, note)
-        flagged = true
-        finalNote = note
-      } else {
-        flagged = false
-        finalNote = ''
-      }
+      // Always write the note — no read-before-write. A stale blob read returning
+      // null for a real key caused the old check to silently drop notes and
+      // report flagged:false, which made the client delete the flag from memory.
+      await store.set(key, note)
+      flagged = true
+      finalNote = note
     } else {
       if (existing !== null) {
         await store.delete(key)
