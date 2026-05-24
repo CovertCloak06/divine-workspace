@@ -57,12 +57,13 @@ async function saveArt() {
 }
 
 async function saveFlag(id) {
-  const { ok, data } = await apiFetch(API.saveFlags, {
+  const { ok, status, data } = await apiFetch(API.saveFlags, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
   })
   if (ok && Array.isArray(data?.flags)) globalFlags = data.flags
+  if (!ok) console.warn(`save-flags failed: HTTP ${status}`, data)
   return ok
 }
 
@@ -119,7 +120,13 @@ async function toggleFlag(id, btn) {
   const ok = await saveFlag(id)
   if (ok) {
     btn.classList.toggle('flagged', isFlagged(id))
+    btn.title = isFlagged(id) ? 'Unflag' : 'Flag for WoS review'
     renderTags()
+  } else {
+    const orig = btn.textContent
+    btn.textContent = '✗'
+    btn.style.color = '#ef4444'
+    setTimeout(() => { btn.textContent = orig; btn.style.color = '' }, 2000)
   }
   btn.disabled = false
 }
