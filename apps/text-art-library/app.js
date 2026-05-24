@@ -473,10 +473,27 @@ document.getElementById('snowflake-trigger').addEventListener('click', () => {
   }
 })
 
+// ── Tag strip scroll arrows ────────────────────────────────────────────────
+const $tagsEl    = document.getElementById('tags')
+const $tagsLeft  = document.getElementById('tags-left')
+const $tagsRight = document.getElementById('tags-right')
+
+function updateTagArrows() {
+  const { scrollLeft, scrollWidth, clientWidth } = $tagsEl
+  $tagsLeft.classList.toggle('visible', scrollLeft > 4)
+  $tagsRight.classList.toggle('visible', scrollLeft + clientWidth < scrollWidth - 4)
+}
+
+$tagsEl.addEventListener('scroll', updateTagArrows)
+$tagsLeft.addEventListener('click',  () => { $tagsEl.scrollLeft -= 120; updateTagArrows() })
+$tagsRight.addEventListener('click', () => { $tagsEl.scrollLeft += 120; updateTagArrows() })
+new ResizeObserver(updateTagArrows).observe($tagsEl)
+
 // ── Init ───────────────────────────────────────────────────────────────────
 async function initApp() {
   await Promise.all([loadArt(), loadFlags()])
   renderTags()
+  updateTagArrows()
   renderGrid()
 }
 

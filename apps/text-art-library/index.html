@@ -67,11 +67,43 @@
     outline: none;
   }
   .search:focus { border-color: var(--accent); }
+  .tags-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+  }
   .tags {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+    padding: 2px 0;
   }
+  .tags::-webkit-scrollbar { display: none; }
+  .tags-arrow {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 24px; height: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--ink-dim);
+    z-index: 2;
+    user-select: none;
+  }
+  .tags-arrow.left { left: 0; }
+  .tags-arrow.right { right: 0; }
+  .tags-arrow.visible { display: flex; }
   .tag {
     padding: 6px 12px;
     background: var(--bg);
@@ -531,7 +563,11 @@
 
 <div class="controls">
   <input type="text" class="search" id="search" placeholder="Search art…" />
-  <div class="tags" id="tags"></div>
+  <div class="tags-wrap">
+    <button class="tags-arrow left" id="tags-left" aria-label="Scroll left">&#8249;</button>
+    <div class="tags" id="tags"></div>
+    <button class="tags-arrow right" id="tags-right" aria-label="Scroll right">&#8250;</button>
+  </div>
 </div>
 
 <main id="grid"></main>
