@@ -290,7 +290,13 @@ function renderGrid() {
       </label>
     `
     card.querySelector('.card-title').textContent = piece.title
-    card.querySelector('.card-size').textContent = `${piece.width}×${piece.height}`
+    const sizeEl = card.querySelector('.card-size')
+    const dims = autoDimensions(piece.art)
+    sizeEl.textContent = `${dims.width}×${dims.height}`
+    if (dims.width > 27) {
+      sizeEl.classList.add('over-limit')
+      sizeEl.title = 'Width exceeds WoS 27-char limit — may clip in chat'
+    }
     const preEl = card.querySelector('.preview pre')
     preEl.textContent = piece.art
     if (piece.art.includes('█')) preEl.classList.add('block-art')
