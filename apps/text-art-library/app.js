@@ -115,20 +115,14 @@ $authModal.addEventListener('click', e => { if (e.target === $authModal) closeAu
 // ── Flag helpers ───────────────────────────────────────────────────────────
 function isFlagged(id) { return globalFlags.includes(id) }
 
-async function toggleFlag(id, btn) {
-  btn.disabled = true
+async function toggleFlag(id, el) {
+  el.style.pointerEvents = 'none'
   const ok = await saveFlag(id)
   if (ok) {
-    btn.classList.toggle('flagged', isFlagged(id))
-    btn.title = isFlagged(id) ? 'Unflag' : 'Flag for WoS review'
+    el.classList.toggle('flagged', isFlagged(id))
     renderTags()
-  } else {
-    const orig = btn.textContent
-    btn.textContent = '✗'
-    btn.style.color = '#ef4444'
-    setTimeout(() => { btn.textContent = orig; btn.style.color = '' }, 2000)
   }
-  btn.disabled = false
+  el.style.pointerEvents = ''
 }
 
 // ── Clipboard ──────────────────────────────────────────────────────────────
@@ -260,6 +254,10 @@ function renderGrid() {
       <div class="preview"><pre></pre></div>
       <div class="card-tags"></div>
       <button class="copy-btn">📋 Copy</button>
+      <label class="flag-label">
+        <span class="flag-box"></span>
+        <span class="flag-text">flag</span>
+      </label>
     `
     card.querySelector('.card-title').textContent = piece.title
     card.querySelector('.card-size').textContent = `${piece.width}×${piece.height}`
@@ -278,12 +276,9 @@ function renderGrid() {
     const badge = makeBadge(piece)
     if (badge) actions.appendChild(badge)
 
-    const flagBtn = document.createElement('button')
-    flagBtn.className = 'flag-btn' + (isFlagged(piece.id) ? ' flagged' : '')
-    flagBtn.title = isFlagged(piece.id) ? 'Unflag' : 'Flag for WoS review'
-    flagBtn.textContent = '🚩'
-    flagBtn.onclick = (e) => { e.stopPropagation(); toggleFlag(piece.id, flagBtn) }
-    actions.appendChild(flagBtn)
+    const flagLabel = card.querySelector('.flag-label')
+    if (isFlagged(piece.id)) flagLabel.classList.add('flagged')
+    flagLabel.onclick = (e) => { e.stopPropagation(); toggleFlag(piece.id, flagLabel) }
 
     if (authState.unlocked) {
       const editBtn = document.createElement('button')

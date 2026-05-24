@@ -103,10 +103,12 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 14px;
+    padding-bottom: 32px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     cursor: zoom-in;
+    position: relative;
     transition: transform 0.12s, border-color 0.12s;
   }
   .card:hover { border-color: var(--accent); transform: translateY(-2px); }
@@ -452,14 +454,27 @@
   .lock-btn { display: none; }
 
   /* ── Flag button ── */
-  .flag-btn {
-    width: 28px; height: 28px; border-radius: 6px;
-    border: 1px solid var(--border); background: var(--bg);
-    color: var(--ink-dim); cursor: pointer; display: flex;
-    align-items: center; justify-content: center; font-size: 13px; padding: 0;
+  .flag-label {
+    position: absolute; bottom: 10px; right: 12px;
+    display: flex; align-items: center; gap: 5px;
+    cursor: pointer; user-select: none;
   }
-  .flag-btn:hover { color: #fbbf24; border-color: #fbbf24; }
-  .flag-btn.flagged { color: #fff; border-color: #ef4444; background: #ef4444; }
+  .flag-box {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; transition: background 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+  }
+  .flag-text {
+    font-size: 11px; color: var(--ink-dim);
+    transition: color 0.12s;
+  }
+  .flag-label:hover .flag-box { border-color: #ef4444; }
+  .flag-label:hover .flag-text { color: var(--ink); }
+  .flag-label.flagged .flag-box { background: #ef4444; border-color: #ef4444; }
+  .flag-label.flagged .flag-box::after { content: '🚩'; font-size: 9px; line-height: 1; }
+  .flag-label.flagged .flag-text { color: #ef4444; font-weight: 600; }
 
   /* ── WoS badges ── */
   .wos-badge {
