@@ -291,7 +291,9 @@ function renderGrid() {
     `
     card.querySelector('.card-title').textContent = piece.title
     card.querySelector('.card-size').textContent = `${piece.width}×${piece.height}`
-    card.querySelector('.preview pre').textContent = piece.art
+    const preEl = card.querySelector('.preview pre')
+    preEl.textContent = piece.art
+    if (piece.art.includes('█')) preEl.classList.add('block-art')
 
     const tagBox = card.querySelector('.card-tags')
     for (const t of piece.tags) {
