@@ -218,14 +218,18 @@ function visible(piece) {
 
 // ── WoS badge ──────────────────────────────────────────────────────────────
 function makeBadge(piece) {
-  const verified = !!piece.wosVerified
   const b = document.createElement('span')
-  if (verified) {
-    b.className = 'wos-badge wos-verified' + (authState.unlocked ? ' editor-toggle' : '')
+  const editorClass = authState.unlocked ? ' editor-toggle' : ''
+  if (piece.wosVerified) {
+    b.className = 'wos-badge wos-verified' + editorClass
     b.textContent = '✅ WoS'
     b.title = authState.unlocked ? 'Click to mark unverified' : 'Verified works in WoS chat'
+  } else if (piece.wosRisk) {
+    b.className = 'wos-badge wos-risk' + editorClass
+    b.textContent = '⚠️ WoS'
+    b.title = authState.unlocked ? 'Click to mark verified' : 'High-risk: may not render in WoS chat'
   } else {
-    b.className = 'wos-badge wos-unverified' + (authState.unlocked ? ' editor-toggle' : '')
+    b.className = 'wos-badge wos-unverified' + editorClass
     b.textContent = '? WoS'
     b.title = authState.unlocked ? 'Click to mark verified' : 'WoS compatibility not confirmed'
   }
