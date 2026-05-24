@@ -19,12 +19,12 @@ const ART = [
     tags: ['love', 'symbols'],
     width: 7, height: 6,
     art:
-` ██ ██
+`░██░██
 ███████
 ███████
- █████
-  ███
-   █   `
+░█████
+░░███
+░░░█`
   },
   {
     id: 'heart-bold',
@@ -32,15 +32,15 @@ const ART = [
     tags: ['love'],
     width: 11, height: 9,
     art:
-` ███ ███
+`░███░███
 █████████
 ███████████
 ███████████
 ███████████
- █████████
-  ███████
-   █████
-     █     `
+░█████████
+░░███████
+░░░█████
+░░░░░█`
   },
   {
     id: 'heart-row',
@@ -74,15 +74,15 @@ const ART = [
     tags: ['nature', 'symbols'],
     width: 9, height: 9,
     art:
-`    █
- █  █  █
-  █ █ █
-   ███
+`░░░░█
+░█░░█░░█
+░░█░█░█
+░░░███
 █████████
-   ███
-  █ █ █
- █  █  █
-    █    `
+░░░███
+░░█░█░█
+░█░░█░░█
+░░░░█`
   },
   {
     id: 'snowflake-emoji',
@@ -107,15 +107,15 @@ const ART = [
     tags: ['nature'],
     width: 11, height: 9,
     art:
-`     █
-    ███
-   █████
-  ███████
- █████████
+`░░░░░█
+░░░░███
+░░░█████
+░░███████
+░█████████
 ███████████
-    ███
-    ███
-    ███    `
+░░░░███
+░░░░███
+░░░░███`
   },
   {
     id: 'mountain',
@@ -123,12 +123,12 @@ const ART = [
     tags: ['nature'],
     width: 15, height: 6,
     art:
-`       █
-      ███
-     █████
-    ███████
-   █████████
-  ███████████  `
+`░░░░░░░█
+░░░░░░███
+░░░░░█████
+░░░░███████
+░░░█████████
+░░███████████`
   },
   {
     id: 'flower-row',
@@ -199,7 +199,7 @@ const ART = [
     width: 22, height: 3,
     art:
 `🎂✦━━━━━━━━━━━━━━━━━━✦🎂
-   HAPPY BIRTHDAY
+━ HAPPY BIRTHDAY ━
 🎂✦━━━━━━━━━━━━━━━━━━✦🎂`
   },
 
@@ -287,7 +287,7 @@ const ART = [
     tags: ['symbols', 'celebration'],
     width: 7, height: 4,
     art:
-`█ █ █ █
+`█░█░█░█
 ███████
 ███████
 ███████`
@@ -306,7 +306,7 @@ const ART = [
     title: 'Arrows',
     tags: ['symbols', 'decorative'],
     width: 7, height: 1,
-    art: '➳➳➳➳➳➳➳'
+    art: '▶▶▶▶▶▶▶'
   },
   {
     id: 'sparkle-line',
@@ -1267,6 +1267,7 @@ const ART = [
     title: 'Cat in Flowers',
     tags: ['kawaii', 'animals', 'nature', 'aesthetic'],
     width: 22, height: 6,
+    wosRisk: true,
     art:
 `.               🌸🌼🌸
     　   🌿🌼🌸🌼🌸🌿
@@ -1280,6 +1281,7 @@ const ART = [
     title: 'Block Books Pair',
     tags: ['decorative'],
     width: 36, height: 11,
+    wosRisk: true,
     art:
 `.          ◾◾◾                   ◾◾◾
      ◾📔📔📔◾           ◾📔📔📔◾
@@ -1328,6 +1330,7 @@ It's totally an ice cream truck!`
     title: 'Sniper',
     tags: ['memes'],
     width: 30, height: 5,
+    wosRisk: true,
     art:
 ` (\\   (\\
  (  ~_• )
@@ -1389,6 +1392,7 @@ if you are useless`
     title: 'Cookie Altar Cats',
     tags: ['kawaii', 'animals', 'love', 'celebration'],
     width: 26, height: 6,
+    wosRisk: true,
     art:
 `💓    /\\ _ /\\        /\\ _ /\\
       ( ˶^ω^˶)     (˶>ω<˶)
@@ -1402,6 +1406,7 @@ if you are useless`
     title: 'WHAT DO YOU MEAN',
     tags: ['memes'],
     width: 45, height: 8,
+    wosRisk: true,
     art:
 `      /|                              |\\
     /  .\\                            /.  \\
@@ -1417,6 +1422,7 @@ if you are useless`
     title: 'Finger Guns',
     tags: ['memes', 'animals'],
     width: 50, height: 5,
+    wosRisk: true,
     art:
 `.                                 (\\(\\
                            /)/)   (  - •)
@@ -1454,6 +1460,7 @@ if you are useless`
     title: 'Cat Cookout',
     tags: ['kawaii', 'animals', 'celebration'],
     width: 60, height: 7,
+    wosRisk: true,
     art:
 `                                        .                                       __
                                       / 👀)
