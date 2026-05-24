@@ -1,0 +1,8 @@
+{
+  "name": "text-art-library",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^10.7.8"
+  }
+}
