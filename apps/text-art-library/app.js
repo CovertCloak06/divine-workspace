@@ -274,7 +274,7 @@ function renderGrid() {
     const actions = card.querySelector('.card-actions')
 
     const badge = makeBadge(piece)
-    if (badge) actions.appendChild(badge)
+    if (badge) card.appendChild(badge)
 
     const flagLabel = card.querySelector('.flag-label')
     if (isFlagged(piece.id)) flagLabel.classList.add('flagged')
