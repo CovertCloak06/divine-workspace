@@ -40,7 +40,15 @@ async function apiFetch(url, opts = {}) {
 
 async function loadArt() {
   const { ok, data } = await apiFetch(API.getArt)
-  artData = (ok && Array.isArray(data?.art)) ? data.art : [...ART]
+  if (ok && Array.isArray(data?.art)) {
+    const wosIndex = Object.fromEntries(ART.map(p => [p.id, p]))
+    artData = data.art.map(p => {
+      const base = wosIndex[p.id] || {}
+      return { ...p, wosVerified: base.wosVerified || p.wosVerified, wosRisk: base.wosRisk || p.wosRisk }
+    })
+  } else {
+    artData = [...ART]
+  }
 }
 
 async function loadFlags() {
