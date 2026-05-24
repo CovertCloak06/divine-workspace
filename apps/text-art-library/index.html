@@ -449,12 +449,7 @@
 
   /* ── Auth ── */
   header { position: relative; }
-  .lock-btn {
-    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; font-size: 22px; cursor: pointer;
-    color: var(--ink-dim); line-height: 1;
-  }
-  .lock-btn:hover { color: var(--accent); }
+  .lock-btn { display: none; }
 
   /* ── Flag button ── */
   .flag-btn {
@@ -494,7 +489,7 @@
 <body>
 
 <header>
-  <h1>❄️ Frostline</h1>
+  <h1><span id="snowflake-trigger">❄️</span> Frostline</h1>
   <p class="subtitle">
     Hand-curated text art for Whiteout Survival chat &amp; other proportional-font
     apps. Tap any piece to copy &mdash; paste anywhere, it'll render right.

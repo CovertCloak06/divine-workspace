@@ -458,6 +458,19 @@ document.getElementById('share-bar').onclick = () => {
   })
 }
 
+// ── Secret snowflake trigger (7 taps) ─────────────────────────────────────
+let snowTaps = 0, snowTimer = null
+document.getElementById('snowflake-trigger').addEventListener('click', () => {
+  snowTaps++
+  clearTimeout(snowTimer)
+  if (snowTaps >= 7) {
+    snowTaps = 0
+    $lockBtn.onclick()
+  } else {
+    snowTimer = setTimeout(() => { snowTaps = 0 }, 3000)
+  }
+})
+
 // ── Init ───────────────────────────────────────────────────────────────────
 async function initApp() {
   await Promise.all([loadArt(), loadFlags()])
