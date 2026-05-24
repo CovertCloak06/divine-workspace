@@ -90,7 +90,10 @@ async function saveNote(id, note) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, action: 'note', note }),
   })
-  if (ok && data?.flagged) globalFlags[id] = note
+  if (ok && data) {
+    if (data.flagged) globalFlags[id] = note
+    else delete globalFlags[id]  // server says item isn't flagged — sync client state
+  }
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -142,7 +145,11 @@ $authModal.addEventListener('click', e => { if (e.target === $authModal) closeAu
 function isFlagged(id) { return id in globalFlags }
 function getNote(id)   { return globalFlags[id] || '' }
 
+const _flagInFlight = new Set()
+
 async function toggleFlag(id, el, noteEl) {
+  if (_flagInFlight.has(id)) return  // same item already in-flight (e.g. double-tap)
+  _flagInFlight.add(id)
   el.style.pointerEvents = 'none'
   const note = noteEl ? noteEl.value : ''
   const ok = await saveFlag(id, note)
@@ -155,6 +162,7 @@ async function toggleFlag(id, el, noteEl) {
     }
     renderTags()
   }
+  _flagInFlight.delete(id)
   el.style.pointerEvents = ''
 }
 

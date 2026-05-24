@@ -15,27 +15,31 @@ exports.handler = async (event) => {
   try {
     const store = getStore('frostline')
 
-    // Check for per-key flags (new format)
+    // Load per-key flags
     const { blobs } = await store.list({ prefix: 'flag/' })
+    const flags = {}
+    await Promise.all(blobs.map(async ({ key }) => {
+      flags[key.slice('flag/'.length)] = (await store.get(key)) || ''
+    }))
 
-    let flags = {}
-
-    if (blobs.length > 0) {
-      await Promise.all(blobs.map(async ({ key }) => {
-        flags[key.slice('flag/'.length)] = (await store.get(key)) || ''
-      }))
-    } else {
-      // Migrate from legacy monolithic 'flags' blob if it exists
-      const legacy = await store.get('flags', { type: 'json' })
-      if (legacy) {
-        const obj = Array.isArray(legacy)
-          ? Object.fromEntries(legacy.map(id => [id, '']))
-          : legacy
-        // Write each entry to its own key
-        await Promise.all(Object.entries(obj).map(([fid, fnote]) =>
-          store.set(`flag/${fid}`, fnote || '')
+    // Always check for legacy blob — migrate any entries not yet in per-key format.
+    // Idempotent: only writes entries that are missing, then deletes the legacy blob
+    // once all its entries are confirmed present as per-key keys.
+    const legacy = await store.get('flags', { type: 'json' })
+    if (legacy) {
+      const obj = Array.isArray(legacy)
+        ? Object.fromEntries(legacy.map(id => [id, '']))
+        : (typeof legacy === 'object' && legacy !== null ? legacy : {})
+      const unmigrated = Object.entries(obj).filter(([id]) => !(id in flags))
+      if (unmigrated.length > 0) {
+        await Promise.all(unmigrated.map(([id, note]) =>
+          store.set(`flag/${id}`, note || '')
         ))
-        flags = obj
+        for (const [id, note] of unmigrated) flags[id] = note || ''
+      }
+      // Delete legacy blob once all its entries are confirmed in per-key format
+      if (Object.keys(obj).every(id => id in flags)) {
+        await store.delete('flags').catch(() => {})
       }
     }
 
