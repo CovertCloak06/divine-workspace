@@ -252,7 +252,7 @@
   }
   .preview pre {
     margin: 0;
-    font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
     line-height: 1.05;
     white-space: pre;
@@ -410,7 +410,7 @@
   }
   .modal-preview pre {
     margin: 0;
-    font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 20px;
     line-height: 1.05;
     white-space: pre;
@@ -446,6 +446,49 @@
   }
   .modal-copy:hover { background: var(--accent-press); }
   .modal-copy.copied { background: var(--good); }
+
+  /* ── Auth ── */
+  header { position: relative; }
+  .lock-btn {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; font-size: 22px; cursor: pointer;
+    color: var(--ink-dim); line-height: 1;
+  }
+  .lock-btn:hover { color: var(--accent); }
+
+  /* ── Flag button ── */
+  .flag-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--ink-dim); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 13px; padding: 0;
+  }
+  .flag-btn:hover { color: #fbbf24; border-color: #fbbf24; }
+  .flag-btn.flagged { color: #ef4444; border-color: #ef4444; }
+
+  /* ── WoS badges ── */
+  .wos-badge {
+    font-size: 10px; padding: 1px 5px; border-radius: 4px;
+    font-weight: 600; flex-shrink: 0; cursor: default;
+  }
+  .wos-verified { background: var(--good); color: #0b1020; }
+  .wos-risk { background: #fbbf24; color: #0b1020; }
+  .wos-verified.editor-toggle, .wos-risk.editor-toggle { cursor: pointer; }
+
+  /* ── Auth modal ── */
+  .auth-form { display: flex; flex-direction: column; gap: 12px; }
+  .auth-form input {
+    width: 100%; padding: 10px 12px; background: var(--bg);
+    border: 1px solid var(--border); color: var(--ink);
+    border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box;
+  }
+  .auth-form input:focus { border-color: var(--accent); }
+  .auth-error { color: var(--bad); font-size: 13px; min-height: 18px; }
+  .auth-submit {
+    padding: 10px; background: var(--accent); color: #0b1020;
+    border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer;
+  }
+  .auth-submit:hover { background: var(--accent-press); }
 </style>
 </head>
 <body>
@@ -461,7 +504,22 @@
     <span class="share-url">frostline-art.netlify.app</span>
     <span class="share-label" id="share-label">Copy link</span>
   </div>
+  <button class="lock-btn" id="lock-btn" title="Editor login">🔒</button>
 </header>
+
+<div class="modal-backdrop" id="auth-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <h2 class="modal-title">Editor Login</h2>
+      <button class="modal-close" id="auth-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="auth-form">
+      <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" />
+      <div class="auth-error" id="auth-error"></div>
+      <button class="auth-submit" id="auth-submit">Unlock</button>
+    </div>
+  </div>
+</div>
 
 <div class="controls">
   <input type="text" class="search" id="search" placeholder="Search art…" />
@@ -521,331 +579,6 @@
 </footer>
 
 <script src="art.js"></script>
-<script>
-  const TAGS = ['all', 'love', 'nature', 'animals', 'banners', 'borders', 'decorative', 'celebration', 'symbols', 'aesthetic', 'kawaii', 'gothic', 'memes', 'sayings', 'minimalist', 'nsfw'];
-  const state = { activeTag: 'all', search: '' };
-  const STORAGE_KEY = 'frostline.userdata.v1';
-
-  // ── User data layer (localStorage overlays on top of built-in ART) ──
-  function loadUserData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { edits: {}, adds: [], deletes: [] };
-      const d = JSON.parse(raw);
-      return { edits: d.edits || {}, adds: d.adds || [], deletes: d.deletes || [] };
-    } catch (e) { return { edits: {}, adds: [], deletes: [] }; }
-  }
-  function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
-  let userData = loadUserData();
-
-  function effectiveArt() {
-    // Apply deletes + edits to built-in ART, then concat user-added pieces.
-    const out = [];
-    for (const p of ART) {
-      if (userData.deletes.includes(p.id)) continue;
-      const e = userData.edits[p.id];
-      out.push(e ? { ...p, ...e } : p);
-    }
-    for (const p of userData.adds) out.push(p);
-    return out;
-  }
-
-  // Grapheme-aware char counting for width detection on emoji rows.
-  const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-    : null;
-  function graphemeCount(s) {
-    if (segmenter) return [...segmenter.segment(s)].length;
-    return s.length;
-  }
-  function autoDimensions(art) {
-    const lines = art.split('\n');
-    return {
-      width: Math.max(1, ...lines.map(l => graphemeCount(l))),
-      height: lines.length,
-    };
-  }
-
-  const $tags = document.getElementById('tags');
-  const $grid = document.getElementById('grid');
-  const $search = document.getElementById('search');
-
-  function renderTags() {
-    $tags.innerHTML = '';
-    for (const t of TAGS) {
-      const el = document.createElement('div');
-      el.className = 'tag' + (state.activeTag === t ? ' active' : '');
-      el.textContent = t;
-      el.onclick = () => { state.activeTag = t; renderTags(); renderGrid(); };
-      $tags.appendChild(el);
-    }
-  }
-
-  function visible(piece) {
-    if (state.activeTag !== 'all' && !piece.tags.includes(state.activeTag)) return false;
-    if (state.search) {
-      const q = state.search.toLowerCase();
-      const hay = (piece.title + ' ' + piece.tags.join(' ')).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  }
-
-  function isBuiltIn(id) { return ART.some(p => p.id === id); }
-
-  function deletePiece(id) {
-    if (!confirm('Delete this piece?')) return;
-    if (isBuiltIn(id)) {
-      if (!userData.deletes.includes(id)) userData.deletes.push(id);
-    } else {
-      userData.adds = userData.adds.filter(p => p.id !== id);
-    }
-    delete userData.edits[id];
-    saveUserData(userData);
-    renderGrid();
-  }
-
-  function copyToClipboard(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = '✓ Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = orig;
-        btn.classList.remove('copied');
-      }, 1500);
-    }).catch(err => {
-      btn.textContent = '✗ Copy failed';
-      console.error(err);
-    });
-  }
-
-  function renderGrid() {
-    $grid.innerHTML = '';
-
-    // Top-of-grid Add button (spans full row in CSS grid).
-    const addRow = document.createElement('div');
-    addRow.className = 'add-card-row';
-    const addBtn = document.createElement('button');
-    addBtn.className = 'add-btn';
-    addBtn.textContent = '+ Add New Art';
-    addBtn.onclick = () => openEditModal(null);
-    addRow.appendChild(addBtn);
-    $grid.appendChild(addRow);
-
-    const all = effectiveArt();
-    const filtered = all.filter(visible);
-    if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = 'No art matches that filter.';
-      $grid.appendChild(empty);
-      return;
-    }
-    for (const piece of filtered) {
-      const card = document.createElement('article');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="card-head">
-          <h3 class="card-title"></h3>
-          <span class="card-size"></span>
-          <div class="card-actions">
-            <button class="card-action edit-btn" title="Edit">✎</button>
-            <button class="card-action danger del-btn" title="Delete">🗑</button>
-          </div>
-        </div>
-        <div class="preview"><pre></pre></div>
-        <div class="card-tags"></div>
-        <button class="copy-btn">📋 Copy</button>
-      `;
-      card.querySelector('.card-title').textContent = piece.title;
-      card.querySelector('.card-size').textContent = `${piece.width}×${piece.height}`;
-      card.querySelector('.preview pre').textContent = piece.art;
-      const tagBox = card.querySelector('.card-tags');
-      for (const t of piece.tags) {
-        const tEl = document.createElement('span');
-        tEl.className = 'card-tag';
-        tEl.textContent = t;
-        tagBox.appendChild(tEl);
-      }
-      const btn = card.querySelector('.copy-btn');
-      btn.onclick = (e) => { e.stopPropagation(); copyToClipboard(piece.art, btn); };
-      card.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); openEditModal(piece); };
-      card.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deletePiece(piece.id); };
-      card.onclick = () => openModal(piece);
-      $grid.appendChild(card);
-    }
-    // Double rAF + small delay — the first rAF can fire before <pre> has been
-    // laid out inside the flex container, so scrollWidth is 0. setTimeout 50
-    // guarantees the layout pass completed.
-    setTimeout(fitAllPreviews, 50);
-  }
-
-  function fitPreview(container, pre, opts = {}) {
-    const padding = opts.padding ?? 24;
-    const maxH = opts.maxHeight ?? 220;
-    const setHeight = opts.setHeight !== false;
-    pre.style.transform = 'none';
-    const containerW = container.clientWidth - padding;
-    const naturalW = pre.scrollWidth;
-    const naturalH = pre.scrollHeight;
-    if (naturalW <= 0) return;
-    const scale = Math.min(1, containerW / naturalW, maxH / naturalH);
-    pre.style.transform = `scale(${scale})`;
-    if (setHeight) {
-      container.style.height = Math.max(90, naturalH * scale) + 'px';
-    }
-  }
-
-  function fitAllPreviews() {
-    document.querySelectorAll('.preview').forEach(prev => {
-      const pre = prev.querySelector('pre');
-      if (pre) fitPreview(prev, pre);
-    });
-    if ($modal.classList.contains('open')) fitModalPreview();
-  }
-
-  function fitModalPreview() {
-    fitPreview($modalPreviewWrap, $modalPreview, {
-      padding: 48,
-      maxHeight: Math.min(window.innerHeight * 0.55, 520),
-      setHeight: false,
-    });
-  }
-
-  // Refit on window resize (covers rotation, dev-tools open, etc.).
-  window.addEventListener('resize', () => requestAnimationFrame(fitAllPreviews));
-
-  // ── Edit / Add modal ──
-  const $editModal = document.getElementById('edit-modal');
-  const $editModalTitle = document.getElementById('edit-modal-title');
-  const $editTitle = document.getElementById('edit-title');
-  const $editTags = document.getElementById('edit-tags');
-  const $editArt = document.getElementById('edit-art');
-  let editTarget = null; // null = adding new
-
-  function openEditModal(piece) {
-    editTarget = piece;
-    if (piece) {
-      $editModalTitle.textContent = `Edit: ${piece.title}`;
-      $editTitle.value = piece.title;
-      $editTags.value = piece.tags.join(', ');
-      $editArt.value = piece.art;
-    } else {
-      $editModalTitle.textContent = 'Add New Art';
-      $editTitle.value = '';
-      $editTags.value = '';
-      $editArt.value = '';
-    }
-    $editModal.classList.add('open');
-    setTimeout(() => $editTitle.focus(), 50);
-  }
-  function closeEditModal() { $editModal.classList.remove('open'); editTarget = null; }
-
-  document.getElementById('edit-modal-close').onclick = closeEditModal;
-  document.getElementById('edit-cancel').onclick = closeEditModal;
-  $editModal.addEventListener('click', (e) => { if (e.target === $editModal) closeEditModal(); });
-
-  document.getElementById('edit-save').onclick = () => {
-    const title = $editTitle.value.trim();
-    const tags = $editTags.value.split(',').map(t => t.trim()).filter(Boolean);
-    const art = $editArt.value;
-    if (!title) { alert('Title is required'); return; }
-    if (!art.trim()) { alert('Art is required'); return; }
-    const dim = autoDimensions(art);
-    const payload = { title, tags, art, width: dim.width, height: dim.height };
-
-    if (editTarget && isBuiltIn(editTarget.id)) {
-      // Edit a built-in: store as override.
-      userData.edits[editTarget.id] = payload;
-    } else if (editTarget) {
-      // Edit a user-added piece.
-      const idx = userData.adds.findIndex(p => p.id === editTarget.id);
-      if (idx >= 0) userData.adds[idx] = { ...userData.adds[idx], ...payload };
-    } else {
-      // New piece.
-      const id = 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
-      userData.adds.push({ id, ...payload });
-    }
-    saveUserData(userData);
-    closeEditModal();
-    renderGrid();
-  };
-
-  // ── Download updated art.js ──
-  document.getElementById('export-btn').onclick = () => {
-    const all = effectiveArt();
-    const escape = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
-    const entries = all.map(p =>
-`  {
-    id: '${p.id.replace(/'/g, "\\'")}',
-    title: ${JSON.stringify(p.title)},
-    tags: ${JSON.stringify(p.tags)},
-    width: ${p.width}, height: ${p.height},
-    art: \`${escape(p.art)}\`
-  }`).join(',\n');
-    const out = `// Frostline art library — exported ${new Date().toISOString()}\nconst ART = [\n${entries}\n];\n`;
-    const blob = new Blob([out], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'art.js';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // ── Modal / focus mode ──
-  const $modal = document.getElementById('modal');
-  const $modalTitle = document.getElementById('modal-title');
-  const $modalPreviewWrap = document.getElementById('modal-preview-wrap');
-  const $modalPreview = document.getElementById('modal-preview');
-  const $modalSize = document.getElementById('modal-size');
-  const $modalTags = document.getElementById('modal-tags');
-  const $modalCopy = document.getElementById('modal-copy');
-  const $modalClose = document.getElementById('modal-close');
-
-  function openModal(piece) {
-    $modalTitle.textContent = piece.title;
-    $modalPreview.textContent = piece.art;
-    $modalSize.textContent = `${piece.width} × ${piece.height}`;
-    $modalTags.innerHTML = '';
-    for (const t of piece.tags) {
-      const tEl = document.createElement('span');
-      tEl.className = 'card-tag';
-      tEl.textContent = t;
-      $modalTags.appendChild(tEl);
-    }
-    $modalCopy.textContent = '📋 Copy to Clipboard';
-    $modalCopy.classList.remove('copied');
-    $modalCopy.onclick = () => copyToClipboard(piece.art, $modalCopy);
-    $modal.classList.add('open');
-    // Scale to fit after the modal has been laid out.
-    requestAnimationFrame(fitModalPreview);
-  }
-  function closeModal() { $modal.classList.remove('open'); }
-  $modalClose.onclick = closeModal;
-  $modal.addEventListener('click', (e) => { if (e.target === $modal) closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
-  $search.addEventListener('input', e => {
-    state.search = e.target.value;
-    renderGrid();
-  });
-
-  renderTags();
-  renderGrid();
-
-  // Share link copy
-  document.getElementById('share-bar').onclick = () => {
-    const url = 'https://frostline-art.netlify.app';
-    const label = document.getElementById('share-label');
-    navigator.clipboard.writeText(url).then(() => {
-      label.textContent = '✓ Copied!';
-      setTimeout(() => { label.textContent = 'Copy link'; }, 2000);
-    });
-  };
-</script>
+<script src="app.js"></script>
 </body>
 </html>

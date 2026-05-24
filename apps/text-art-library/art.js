@@ -343,6 +343,7 @@ const ART = [
     title: 'Ornate Frame',
     tags: ['aesthetic', 'borders'],
     width: 19, height: 1,
+    wosRisk: true,
     art: '╔═.·:·.✧ ✦ ✧.·:·.═╗'
   },
   {
@@ -357,6 +358,7 @@ const ART = [
     title: 'Tiny Flowers',
     tags: ['aesthetic', 'minimalist'],
     width: 12, height: 1,
+    wosRisk: true,
     art: '𓇢𓆸 ⋆｡˚ 𓇢𓆸'
   },
   {
@@ -385,6 +387,7 @@ const ART = [
     title: 'Flourish',
     tags: ['aesthetic', 'decorative'],
     width: 17, height: 1,
+    wosRisk: true,
     art: '⊹ ࣪ ﹏𓊝﹏𓂁﹏⊹ ࣪'
   },
 
@@ -552,6 +555,7 @@ const ART = [
     title: 'Skull Borders',
     tags: ['gothic'],
     width: 13, height: 1,
+    wosRisk: true,
     art: '⋆༺𓆩☠︎︎𓆪༻⋆'
   },
   {
@@ -573,6 +577,7 @@ const ART = [
     title: 'Fang Bracket',
     tags: ['gothic'],
     width: 11, height: 1,
+    wosRisk: true,
     art: '𓆩♱𓆪 ━━ 𓆩♱𓆪'
   },
   {
@@ -1137,6 +1142,7 @@ const ART = [
     title: 'Star Eyes',
     tags: ['kawaii', 'celebration'],
     width: 7, height: 1,
+    wosRisk: true,
     art: '(☆▽☆)'
   },
   {
@@ -1354,6 +1360,7 @@ Don't ask questions!`
     title: 'Cats Hugging',
     tags: ['kawaii', 'animals', 'love', 'memes'],
     width: 17, height: 7,
+    wosRisk: true,
     art:
 `  ∧__∧
 (｀•ω• )づ__∧
@@ -1436,6 +1443,7 @@ if you are useless`
     title: 'Bunny (NSFW)',
     tags: ['memes', 'kawaii', 'animals', 'nsfw'],
     width: 50, height: 3,
+    wosRisk: true,
     art:
 ` (\\__/)  ˚  ○   .   ༓   * ᶠᶜᵏᵧₒᵤ   。࿐ ᶠᶜᵏᵧₒᵤ
 (  ｡•ᴗ•)   . ᶠᶜᵏᵧₒᵤ ˚  ࿐  ༶ ᶠᶜᵏᵧₒᵤ .    *    ˖
