@@ -56,7 +56,7 @@ const ART = [
     width: 13, height: 3,
     art:
 `✦━━━━━━━━━━━✦
-   ♥ LOVE ♥
+━ ♥ LOVE ♥ ━
 ✦━━━━━━━━━━━✦`
   },
   {
@@ -64,7 +64,7 @@ const ART = [
     title: 'Cupid Arrow',
     tags: ['love', 'symbols'],
     width: 11, height: 1,
-    art: '➳ ❤️ ❤️ ❤️ ➳'
+    art: '♥ ❤️ ❤️ ❤️ ♥'
   },
 
   // ────────────────────────── NATURE ──────────────────────────
@@ -145,9 +145,9 @@ const ART = [
     tags: ['animals'],
     width: 3, height: 3,
     art:
-`🔥🐉🔥
-🐉⚔️🐉
-🔥🐉🔥`
+`🔥⚡🔥
+⚡💀⚡
+🔥⚡🔥`
   },
   {
     id: 'animal-row',
@@ -188,9 +188,9 @@ const ART = [
     tags: ['banners'],
     width: 24, height: 3,
     art:
-`⚔️═══════════════════⚔️
-   ALLIANCE RECRUITING
-⚔️═══════════════════⚔️`
+`⚡═══════════════════⚡
+══ ALLIANCE RECRUITING
+⚡═══════════════════⚡`
   },
   {
     id: 'birthday-banner',
@@ -798,7 +798,7 @@ const ART = [
     width: 21, height: 3,
     art:
 `✦ ━━━━━━━━━━━━━━━ ✦
-   ⋆ YOUR NAME ⋆
+━━ ⋆ YOUR NAME ⋆ ━━
 ✦ ━━━━━━━━━━━━━━━ ✦`
   },
   {
@@ -808,7 +808,7 @@ const ART = [
     width: 21, height: 3,
     art:
 `╭━━━━━━━━ ♡ ━━━━━━━━╮
-       QUOTE HERE
+━━━━ QUOTE HERE ━━━━
 ╰━━━━━━━━ ♡ ━━━━━━━━╯`
   },
   {
@@ -909,7 +909,7 @@ const ART = [
     width: 21, height: 3,
     art:
 `🎄━━━━━━━━━━━━━━━🎄
-   MERRY CHRISTMAS
+━ MERRY CHRISTMAS ━
 🎄━━━━━━━━━━━━━━━🎄`
   },
   {

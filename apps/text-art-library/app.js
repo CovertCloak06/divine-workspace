@@ -41,11 +41,12 @@ async function apiFetch(url, opts = {}) {
 async function loadArt() {
   const { ok, data } = await apiFetch(API.getArt)
   if (ok && Array.isArray(data?.art)) {
-    const wosIndex = Object.fromEntries(ART.map(p => [p.id, p]))
-    artData = data.art.map(p => {
-      const base = wosIndex[p.id] || {}
-      return { ...p, wosVerified: base.wosVerified || p.wosVerified, wosRisk: base.wosRisk || p.wosRisk }
-    })
+    const blobIndex = Object.fromEntries(data.art.map(p => [p.id, p]))
+    // Bundle is source of truth for art content; blob only contributes wosVerified (editor state)
+    artData = ART.map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
+    // Append user-created pieces that exist in blob but not in the bundle
+    const bundleIds = new Set(ART.map(p => p.id))
+    data.art.forEach(p => { if (!bundleIds.has(p.id)) artData.push(p) })
   } else {
     artData = [...ART]
   }
@@ -224,10 +225,6 @@ function makeBadge(piece) {
     b.className = 'wos-badge wos-verified' + editorClass
     b.textContent = '✅ WoS'
     b.title = authState.unlocked ? 'Click to mark unverified' : 'Verified works in WoS chat'
-  } else if (piece.wosRisk) {
-    b.className = 'wos-badge wos-risk' + editorClass
-    b.textContent = '⚠️ WoS'
-    b.title = authState.unlocked ? 'Click to mark verified' : 'High-risk: may not render in WoS chat'
   } else {
     b.className = 'wos-badge wos-unverified' + editorClass
     b.textContent = '? WoS'

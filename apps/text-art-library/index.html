@@ -481,13 +481,7 @@
 
   /* ── Auth ── */
   header { position: relative; }
-  .lock-btn {
-    position: absolute; top: 16px; right: 16px;
-    background: none; border: none; font-size: 20px;
-    cursor: pointer; opacity: 0.6; transition: opacity 0.15s;
-    line-height: 1; padding: 4px;
-  }
-  .lock-btn:hover { opacity: 1; }
+  .lock-btn { display: none; }
 
   /* ── Flag button ── */
   .flag-label {
@@ -536,8 +530,7 @@
   }
   .wos-verified { background: #4dd9ff; color: #0b1020; }
   .wos-unverified { background: rgba(255,255,255,0.08); color: var(--ink-dim); border: 1px solid var(--border); }
-  .wos-risk { background: rgba(251,146,60,0.18); color: #fb923c; border: 1px solid rgba(251,146,60,0.4); }
-  .wos-verified.editor-toggle, .wos-unverified.editor-toggle, .wos-risk.editor-toggle { cursor: pointer; }
+  .wos-verified.editor-toggle, .wos-unverified.editor-toggle { cursor: pointer; }
 
   /* ── Auth modal ── */
   .auth-form { display: flex; flex-direction: column; gap: 12px; }
