@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs')
+const { getStore, connectLambda } = require('@netlify/blobs')
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +10,7 @@ const CORS = {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
+  connectLambda(event)
 
   const password = (event.headers.authorization || '').replace('Bearer ', '').trim()
   if (password !== process.env.EDITOR_PASSWORD) {
