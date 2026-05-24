@@ -7,6 +7,18 @@ const CORS = {
   'Content-Type': 'application/json',
 }
 
+// Each flag stored as its own key: flag/{id} → note text
+// This avoids the read-modify-write race condition that caused random flag resets
+// when two operations hit the server concurrently (both read stale state, last write wins).
+async function getAllFlags(store) {
+  const { blobs } = await store.list({ prefix: 'flag/' })
+  const flags = {}
+  await Promise.all(blobs.map(async ({ key }) => {
+    flags[key.slice('flag/'.length)] = (await store.get(key)) || ''
+  }))
+  return flags
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
@@ -17,21 +29,18 @@ exports.handler = async (event) => {
     if (!id || typeof id !== 'string') return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'id required' }) }
 
     const store = getStore('frostline')
-    let flags = (await store.get('flags', { type: 'json' })) || {}
-
-    // Normalize old array format to object
-    if (Array.isArray(flags)) {
-      flags = Object.fromEntries(flags.map(fid => [fid, '']))
-    }
+    const key = `flag/${id}`
 
     if (action === 'note') {
-      if (id in flags) flags[id] = note
+      const existing = await store.get(key)
+      if (existing !== null) await store.set(key, note)
     } else {
-      if (id in flags) delete flags[id]
-      else flags[id] = note
+      const existing = await store.get(key)
+      if (existing !== null) await store.delete(key)
+      else await store.set(key, note)
     }
 
-    await store.setJSON('flags', flags)
+    const flags = await getAllFlags(store)
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ flags }) }
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }
