@@ -76,7 +76,10 @@ async function saveFlag(id, note = '') {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, action: 'toggle', note }),
   })
-  if (ok && data?.flags) globalFlags = data.flags
+  if (ok && data) {
+    if (data.flagged) globalFlags[id] = data.note ?? ''
+    else delete globalFlags[id]
+  }
   if (!ok) console.warn(`save-flags failed: HTTP ${status}`, data)
   return ok
 }
@@ -87,7 +90,7 @@ async function saveNote(id, note) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, action: 'note', note }),
   })
-  if (ok && data?.flags) globalFlags = data.flags
+  if (ok && data?.flagged) globalFlags[id] = note
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────

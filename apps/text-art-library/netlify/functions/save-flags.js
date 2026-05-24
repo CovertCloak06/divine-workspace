@@ -7,18 +7,10 @@ const CORS = {
   'Content-Type': 'application/json',
 }
 
-// Each flag stored as its own key: flag/{id} → note text
-// This avoids the read-modify-write race condition that caused random flag resets
-// when two operations hit the server concurrently (both read stale state, last write wins).
-async function getAllFlags(store) {
-  const { blobs } = await store.list({ prefix: 'flag/' })
-  const flags = {}
-  await Promise.all(blobs.map(async ({ key }) => {
-    flags[key.slice('flag/'.length)] = (await store.get(key)) || ''
-  }))
-  return flags
-}
-
+// Each flag stored as its own key: flag/{id} → note text.
+// Returns a delta { id, flagged, note } instead of the full flags list
+// so the server only does 2 Blob ops per save (read + write/delete) rather
+// than N+1, which was causing rate limit hits and intermittent 500s.
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
@@ -30,18 +22,32 @@ exports.handler = async (event) => {
 
     const store = getStore('frostline')
     const key = `flag/${id}`
+    const existing = await store.get(key)
+
+    let flagged, finalNote
 
     if (action === 'note') {
-      const existing = await store.get(key)
-      if (existing !== null) await store.set(key, note)
+      if (existing !== null) {
+        await store.set(key, note)
+        flagged = true
+        finalNote = note
+      } else {
+        flagged = false
+        finalNote = ''
+      }
     } else {
-      const existing = await store.get(key)
-      if (existing !== null) await store.delete(key)
-      else await store.set(key, note)
+      if (existing !== null) {
+        await store.delete(key)
+        flagged = false
+        finalNote = ''
+      } else {
+        await store.set(key, note)
+        flagged = true
+        finalNote = note
+      }
     }
 
-    const flags = await getAllFlags(store)
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ flags }) }
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ id, flagged, note: finalNote }) }
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }
   }
