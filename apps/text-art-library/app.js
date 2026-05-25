@@ -18,6 +18,12 @@ let artData = []       // loaded from Blob, fallback to bundled ART
 let deletedIds = new Set()  // IDs deleted by the editor — persisted in blob
 let globalFlags = {}   // {[id]: noteText} — loaded from Blob
 
+// ── Data validation ────────────────────────────────────────────────────────
+const isValidPiece = p =>
+  p && typeof p.id === 'string' && p.id.length > 0
+  && typeof p.title === 'string'
+  && typeof p.art === 'string'
+
 // ── Grapheme utils ─────────────────────────────────────────────────────────
 const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
   ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null
@@ -80,7 +86,7 @@ async function loadArt() {
       .map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
     // Append user-created pieces that exist in blob but not in the bundle
     const bundleIds = new Set(ART.map(p => p.id))
-    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push(p) })
+    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id) && isValidPiece(p)) artData.push(p) })
   } else {
     artData = ART.map(p => ({ ...p }))
   }
@@ -98,10 +104,11 @@ async function loadFlags() {
 }
 
 async function saveArt() {
+  const clean = artData.filter(isValidPiece)
   return apiFetch(API.saveArt, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${authState.password}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ art: artData, deletedIds: [...deletedIds] }),
+    body: JSON.stringify({ art: clean, deletedIds: [...deletedIds] }),
   })
 }
 
@@ -333,7 +340,7 @@ function renderGrid() {
     }
     const previewEl = card.querySelector('.preview')
     const preEl = card.querySelector('.preview pre')
-    preEl.innerHTML = wosRenderLines(piece.art)
+    preEl.textContent = piece.art
 
     const tagBox = card.querySelector('.card-tags')
     for (const t of piece.tags) {
@@ -402,9 +409,9 @@ async function deletePiece(id) {
   if (!confirm('Delete this piece?')) return
   deletedIds.add(id)
   artData = artData.filter(p => p.id !== id)
-  const { ok } = await saveArt()
-  if (ok) renderGrid()
-  else { deletedIds.delete(id); alert('Save failed — check your connection') }
+  const result = await saveArt()
+  if (result.ok) renderGrid()
+  else { deletedIds.delete(id); artData.push(...ART.filter(p => p.id === id)); renderGrid(); alert('Save failed (HTTP ' + result.status + '): ' + (result.data?.error || 'check your connection')) }
 }
 
 // ── Preview fit ────────────────────────────────────────────────────────────
@@ -495,9 +502,9 @@ document.getElementById('edit-save').onclick = async () => {
     artData.push({ id, ...payload })
   }
 
-  const { ok } = await saveArt()
-  if (ok) { closeEditModal(); renderGrid() }
-  else alert('Save failed — check your connection')
+  const result = await saveArt()
+  if (result.ok) { closeEditModal(); renderGrid() }
+  else alert('Save failed (HTTP ' + result.status + '): ' + (result.data?.error || 'check your connection'))
 }
 
 // ── Lightbox modal ─────────────────────────────────────────────────────────
