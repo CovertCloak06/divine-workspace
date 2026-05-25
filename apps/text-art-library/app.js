@@ -12,7 +12,7 @@ const API = {
 }
 
 // ── State ──────────────────────────────────────────────────────────────────
-const state = { activeTag: 'all', search: '', showFlagged: false, wosMode: false }
+const state = { activeTag: 'all', search: '', showFlagged: false }
 const authState = { unlocked: false, password: '' }
 let artData = []       // loaded from Blob, fallback to bundled ART
 let deletedIds = new Set()  // IDs deleted by the editor — persisted in blob
@@ -311,13 +311,8 @@ function renderGrid() {
     }
     const previewEl = card.querySelector('.preview')
     const preEl = card.querySelector('.preview pre')
-    if (state.wosMode) {
-      previewEl.classList.add('wos-mode')
-      preEl.innerHTML = wosRenderLines(piece.art)
-    } else {
-      preEl.textContent = piece.art
-      if (piece.art.includes('█')) preEl.classList.add('block-art')
-    }
+    previewEl.classList.add('wos-mode')
+    preEl.innerHTML = wosRenderLines(piece.art)
 
     const tagBox = card.querySelector('.card-tags')
     for (const t of piece.tags) {
@@ -476,7 +471,8 @@ const $modalCopy        = document.getElementById('modal-copy')
 
 function openModal(piece) {
   $modalTitle.textContent  = piece.title
-  $modalPreview.textContent = piece.art
+  $modalPreviewWrap.classList.add('wos-mode')
+  $modalPreview.innerHTML = wosRenderLines(piece.art)
   $modalSize.textContent   = `${piece.width} × ${piece.height}`
   $modalTags.innerHTML = ''
   for (const t of piece.tags) {
@@ -499,13 +495,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 // ── Search ─────────────────────────────────────────────────────────────────
 $search.addEventListener('input', e => { state.search = e.target.value; renderGrid() })
 
-// ── WoS mode toggle ────────────────────────────────────────────────────────
-const $wosToggle = document.getElementById('wos-toggle')
-$wosToggle.addEventListener('click', () => {
-  state.wosMode = !state.wosMode
-  $wosToggle.classList.toggle('active', state.wosMode)
-  renderGrid()
-})
 
 // ── Export ─────────────────────────────────────────────────────────────────
 document.getElementById('export-btn').onclick = () => {
