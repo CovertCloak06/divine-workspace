@@ -16,7 +16,8 @@ exports.handler = async (event) => {
     const store = getStore('frostline')
     const art = await store.get('art', { type: 'json' })
     if (!art) return { statusCode: 404, headers: CORS, body: JSON.stringify({ art: null }) }
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ art }) }
+    const deletedIds = await store.get('deletedIds', { type: 'json' }) || []
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ art, deletedIds }) }
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }
   }

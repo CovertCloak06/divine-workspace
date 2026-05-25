@@ -15,6 +15,7 @@ const API = {
 const state = { activeTag: 'all', search: '', showFlagged: false, wosMode: false }
 const authState = { unlocked: false, password: '' }
 let artData = []       // loaded from Blob, fallback to bundled ART
+let deletedIds = new Set()  // IDs deleted by the editor — persisted in blob
 let globalFlags = {}   // {[id]: noteText} — loaded from Blob
 
 // ── Grapheme utils ─────────────────────────────────────────────────────────
@@ -49,12 +50,15 @@ async function apiFetch(url, opts = {}) {
 async function loadArt() {
   const { ok, data } = await apiFetch(API.getArt)
   if (ok && Array.isArray(data?.art)) {
+    deletedIds = new Set(Array.isArray(data.deletedIds) ? data.deletedIds : [])
     const blobIndex = Object.fromEntries(data.art.map(p => [p.id, p]))
-    // Bundle is source of truth for art content; blob only contributes wosVerified (editor state)
-    artData = ART.map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
+    // Bundle is source of truth for art content; blob contributes wosVerified + deletions
+    artData = ART
+      .filter(p => !deletedIds.has(p.id))
+      .map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
     // Append user-created pieces that exist in blob but not in the bundle
     const bundleIds = new Set(ART.map(p => p.id))
-    data.art.forEach(p => { if (!bundleIds.has(p.id)) artData.push(p) })
+    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push(p) })
   } else {
     artData = [...ART]
   }
@@ -75,7 +79,7 @@ async function saveArt() {
   return apiFetch(API.saveArt, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${authState.password}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ art: artData }),
+    body: JSON.stringify({ art: artData, deletedIds: [...deletedIds] }),
   })
 }
 
@@ -371,10 +375,11 @@ function renderGrid() {
 // ── Delete ─────────────────────────────────────────────────────────────────
 async function deletePiece(id) {
   if (!confirm('Delete this piece?')) return
+  deletedIds.add(id)
   artData = artData.filter(p => p.id !== id)
   const { ok } = await saveArt()
   if (ok) renderGrid()
-  else alert('Save failed — check your connection')
+  else { deletedIds.delete(id); alert('Save failed — check your connection') }
 }
 
 // ── Preview fit ────────────────────────────────────────────────────────────
