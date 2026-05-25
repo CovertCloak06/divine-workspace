@@ -306,7 +306,7 @@ main {
 }
 .preview pre {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
   font-size: 14px;
   line-height: 1.05;
   white-space: pre;
@@ -315,9 +315,6 @@ main {
   font-variant-ligatures: none;
   letter-spacing: 0;
   tab-size: 1;
-}
-.preview pre.block-art {
-  font-family: "Menlo", "Consolas", "Liberation Mono", monospace;
 }
 .card-tags {
   display: flex;

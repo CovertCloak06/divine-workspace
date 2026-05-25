@@ -39,7 +39,7 @@ function wosRenderLines(art) {
 
 // ── WoS compatibility ──────────────────────────────────────────────────────
 function normalizeSpaces(art) {
-  return art.replace(/ /g, ' ')  // regular space → non-breaking space (WoS strips U+0020)
+  return art ? art.replace(/ /g, ' ') : art  // U+0020 → U+00A0 (NBSP) for WoS paste
 }
 
 const WOS_SAFE_CP = cp =>
@@ -77,12 +77,12 @@ async function loadArt() {
     // Bundle is source of truth for art content; blob contributes wosVerified + deletions
     artData = ART
       .filter(p => !deletedIds.has(p.id))
-      .map(p => ({ ...p, art: normalizeSpaces(p.art), wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
+      .map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
     // Append user-created pieces that exist in blob but not in the bundle
     const bundleIds = new Set(ART.map(p => p.id))
-    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push({ ...p, art: normalizeSpaces(p.art) }) })
+    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push(p) })
   } else {
-    artData = ART.map(p => ({ ...p, art: normalizeSpaces(p.art) }))
+    artData = ART.map(p => ({ ...p }))
   }
 }
 
@@ -333,7 +333,6 @@ function renderGrid() {
     }
     const previewEl = card.querySelector('.preview')
     const preEl = card.querySelector('.preview pre')
-    previewEl.classList.add('wos-mode')
     preEl.innerHTML = wosRenderLines(piece.art)
 
     const tagBox = card.querySelector('.card-tags')
@@ -391,7 +390,7 @@ function renderGrid() {
     }
 
     const btn = card.querySelector('.copy-btn')
-    btn.onclick = (e) => { e.stopPropagation(); copyToClipboard(piece.art, btn) }
+    btn.onclick = (e) => { e.stopPropagation(); copyToClipboard(normalizeSpaces(piece.art) || '', btn) }
     card.onclick = () => openModal(piece)
     $grid.appendChild(card)
   }
@@ -513,7 +512,7 @@ const $modalCopy        = document.getElementById('modal-copy')
 function openModal(piece) {
   $modalTitle.textContent  = piece.title
   $modalPreviewWrap.classList.add('wos-mode')
-  $modalPreview.innerHTML = wosRenderLines(piece.art)
+  $modalPreview.innerHTML = wosRenderLines(normalizeSpaces(piece.art) || '')
   $modalSize.textContent   = `${piece.width} × ${piece.height}`
   $modalTags.innerHTML = ''
   for (const t of piece.tags) {
@@ -524,7 +523,7 @@ function openModal(piece) {
   }
   $modalCopy.textContent = '📋 Copy to Clipboard'
   $modalCopy.classList.remove('copied')
-  $modalCopy.onclick = () => copyToClipboard(piece.art, $modalCopy)
+  $modalCopy.onclick = () => copyToClipboard(normalizeSpaces(piece.art) || '', $modalCopy)
   $modal.classList.add('open')
   requestAnimationFrame(fitModalPreview)
 }
