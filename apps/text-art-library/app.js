@@ -572,6 +572,7 @@ async function initApp() {
   renderTags()
   updateTagArrows()
   renderGrid()
+  document.getElementById('export-btn').disabled = false
 }
 
 initApp()

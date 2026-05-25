@@ -1,4 +1,4 @@
-const { getStore, connectLambda } = require('@netlify/blobs')
+import { getStore } from '@netlify/blobs'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -7,24 +7,20 @@ const CORS = {
   'Content-Type': 'application/json',
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
-  connectLambda(event)
 
   try {
     const store = getStore('frostline')
 
-    // Load per-key flags
     const { blobs } = await store.list({ prefix: 'flag/' })
     const flags = {}
     await Promise.all(blobs.map(async ({ key }) => {
       flags[key.slice('flag/'.length)] = (await store.get(key)) || ''
     }))
 
-    // Always check for legacy blob — migrate any entries not yet in per-key format.
-    // Idempotent: only writes entries that are missing, then deletes the legacy blob
-    // once all its entries are confirmed present as per-key keys.
+    // Migrate legacy blob format — idempotent, deletes legacy blob once all entries are confirmed
     const legacy = await store.get('flags', { type: 'json' })
     if (legacy) {
       const obj = Array.isArray(legacy)
@@ -37,7 +33,6 @@ exports.handler = async (event) => {
         ))
         for (const [id, note] of unmigrated) flags[id] = note || ''
       }
-      // Delete legacy blob once all its entries are confirmed in per-key format
       if (Object.keys(obj).every(id => id in flags)) {
         await store.delete('flags').catch(() => {})
       }
@@ -45,6 +40,6 @@ exports.handler = async (event) => {
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ flags }) }
   } catch (err) {
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ flags: {} }) }
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }
   }
 }

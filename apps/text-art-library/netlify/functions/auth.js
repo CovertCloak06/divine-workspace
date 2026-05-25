@@ -5,7 +5,7 @@ const CORS = {
   'Content-Type': 'application/json',
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
 

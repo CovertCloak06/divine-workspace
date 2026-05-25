@@ -1,4 +1,4 @@
-const { getStore, connectLambda } = require('@netlify/blobs')
+import { getStore } from '@netlify/blobs'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -7,10 +7,9 @@ const CORS = {
   'Content-Type': 'application/json',
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
-  connectLambda(event)
 
   try {
     const store = getStore('frostline')
