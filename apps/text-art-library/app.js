@@ -12,7 +12,7 @@ const API = {
 }
 
 // ── State ──────────────────────────────────────────────────────────────────
-const state = { activeTag: 'all', search: '', showFlagged: false }
+const state = { activeTag: 'all', search: '', showFlagged: false, wosMode: false }
 const authState = { unlocked: false, password: '' }
 let artData = []       // loaded from Blob, fallback to bundled ART
 let globalFlags = {}   // {[id]: noteText} — loaded from Blob
@@ -26,6 +26,14 @@ function graphemeCount(s) {
 function autoDimensions(art) {
   const lines = art.split('\n')
   return { width: Math.max(1, ...lines.map(l => graphemeCount(l))), height: lines.length }
+}
+function wosRenderLines(art) {
+  return art.split('\n').map(line => {
+    const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '​'
+    return graphemeCount(line) > 27
+      ? `<span class="wos-over">${esc}</span>`
+      : `<span>${esc}</span>`
+  }).join('\n')
 }
 
 // ── API layer ──────────────────────────────────────────────────────────────
@@ -297,9 +305,15 @@ function renderGrid() {
       sizeEl.classList.add('over-limit')
       sizeEl.title = 'Width exceeds WoS 27-char limit — may clip in chat'
     }
+    const previewEl = card.querySelector('.preview')
     const preEl = card.querySelector('.preview pre')
-    preEl.textContent = piece.art
-    if (piece.art.includes('█')) preEl.classList.add('block-art')
+    if (state.wosMode) {
+      previewEl.classList.add('wos-mode')
+      preEl.innerHTML = wosRenderLines(piece.art)
+    } else {
+      preEl.textContent = piece.art
+      if (piece.art.includes('█')) preEl.classList.add('block-art')
+    }
 
     const tagBox = card.querySelector('.card-tags')
     for (const t of piece.tags) {
@@ -479,6 +493,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 
 // ── Search ─────────────────────────────────────────────────────────────────
 $search.addEventListener('input', e => { state.search = e.target.value; renderGrid() })
+
+// ── WoS mode toggle ────────────────────────────────────────────────────────
+const $wosToggle = document.getElementById('wos-toggle')
+$wosToggle.addEventListener('click', () => {
+  state.wosMode = !state.wosMode
+  $wosToggle.classList.toggle('active', state.wosMode)
+  renderGrid()
+})
 
 // ── Export ─────────────────────────────────────────────────────────────────
 document.getElementById('export-btn').onclick = () => {
