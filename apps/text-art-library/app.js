@@ -37,6 +37,28 @@ function wosRenderLines(art) {
   }).join('\n')
 }
 
+// ── WoS compatibility ──────────────────────────────────────────────────────
+function normalizeSpaces(art) {
+  return art.replace(/ /g, ' ')  // regular space → non-breaking space (WoS strips U+0020)
+}
+
+const WOS_SAFE_CP = cp =>
+  cp === 0x0A || cp === 0xA0 || cp === 0x3000 ||           // newline, NBSP, fullwidth space
+  (cp >= 0x21  && cp <= 0x7E)  ||                           // printable ASCII
+  (cp >= 0x2500 && cp <= 0x27BF) ||                         // box/block/geometric/dingbats
+  (cp >= 0x2600 && cp <= 0x26FF) ||                         // misc symbols
+  (cp >= 0xFF00 && cp <= 0xFFEF) ||                         // fullwidth/halfwidth forms
+  (cp >= 0x1F100 && cp <= 0x1FAFF)                          // emoji (broad range)
+
+function wosAudit(art) {
+  const issues = []
+  if (art.includes(' ')) issues.push({ type: 'space', msg: 'Contains regular spaces — auto-converted on save. Copy from here, not the text editor, to get WoS-safe version.' })
+  const unverified = new Set()
+  for (const ch of art) { if (!WOS_SAFE_CP(ch.codePointAt(0))) unverified.add(ch) }
+  if (unverified.size > 0) issues.push({ type: 'char', msg: `Unverified in WoS: ${[...unverified].join(' ')} — test in chat before publishing` })
+  return issues
+}
+
 // ── API layer ──────────────────────────────────────────────────────────────
 async function apiFetch(url, opts = {}) {
   try {
@@ -55,12 +77,12 @@ async function loadArt() {
     // Bundle is source of truth for art content; blob contributes wosVerified + deletions
     artData = ART
       .filter(p => !deletedIds.has(p.id))
-      .map(p => ({ ...p, wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
+      .map(p => ({ ...p, art: normalizeSpaces(p.art), wosVerified: blobIndex[p.id]?.wosVerified || p.wosVerified }))
     // Append user-created pieces that exist in blob but not in the bundle
     const bundleIds = new Set(ART.map(p => p.id))
-    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push(p) })
+    data.art.forEach(p => { if (!bundleIds.has(p.id) && !deletedIds.has(p.id)) artData.push({ ...p, art: normalizeSpaces(p.art) }) })
   } else {
-    artData = [...ART]
+    artData = ART.map(p => ({ ...p, art: normalizeSpaces(p.art) }))
   }
 }
 
@@ -325,6 +347,15 @@ function renderGrid() {
     const actions = card.querySelector('.card-actions')
 
     card.appendChild(makeBadge(piece))
+    const auditIssues = wosAudit(piece.art)
+    const charIssue = auditIssues.find(i => i.type === 'char')
+    if (charIssue) {
+      const warn = document.createElement('span')
+      warn.className = 'wos-warn'
+      warn.title = charIssue.msg
+      warn.textContent = '⚠'
+      card.querySelector('.card-head').appendChild(warn)
+    }
 
     const flagLabel = card.querySelector('.flag-label')
     const flagNote  = card.querySelector('.flag-note')
@@ -416,7 +447,16 @@ const $editModalTitle = document.getElementById('edit-modal-title')
 const $editTitle      = document.getElementById('edit-title')
 const $editTags       = document.getElementById('edit-tags')
 const $editArt        = document.getElementById('edit-art')
+const $editAudit      = document.getElementById('edit-audit')
 let editTarget = null
+
+function updateEditAudit() {
+  const issues = wosAudit($editArt.value)
+  $editAudit.innerHTML = issues.map(i =>
+    `<div class="audit-${i.type}">${i.msg}</div>`
+  ).join('')
+}
+$editArt.addEventListener('input', updateEditAudit)
 
 function openEditModal(piece) {
   editTarget = piece
@@ -429,6 +469,7 @@ function openEditModal(piece) {
     $editModalTitle.textContent = 'Add New Art'
     $editTitle.value = $editTags.value = $editArt.value = ''
   }
+  updateEditAudit()
   $editModal.classList.add('open')
   setTimeout(() => $editTitle.focus(), 50)
 }
@@ -441,7 +482,7 @@ $editModal.addEventListener('click', e => { if (e.target === $editModal) closeEd
 document.getElementById('edit-save').onclick = async () => {
   const title = $editTitle.value.trim()
   const tags  = $editTags.value.split(',').map(t => t.trim()).filter(Boolean)
-  const art   = $editArt.value
+  const art   = normalizeSpaces($editArt.value)
   if (!title) { alert('Title is required'); return }
   if (!art.trim()) { alert('Art is required'); return }
   const dim = autoDimensions(art)

@@ -567,3 +567,15 @@ footer a:hover { text-decoration: underline; }
   border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer;
 }
 .auth-submit:hover { background: var(--accent-press); }
+
+/* ── WoS audit ── */
+.edit-audit { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.audit-space, .audit-char {
+  font-size: 12px; padding: 6px 10px; border-radius: 6px; line-height: 1.4;
+}
+.audit-space { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+.audit-char  { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+.wos-warn {
+  font-size: 13px; cursor: help; margin-left: 4px;
+  color: #fbbf24; flex-shrink: 0;
+}
