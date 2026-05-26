@@ -1,5 +1,4 @@
 [build]
-  base = "apps/text-art-library"
   publish = "."
   functions = "netlify/functions"
 
