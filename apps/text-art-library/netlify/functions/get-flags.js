@@ -21,7 +21,8 @@ export const handler = async (event) => {
     }))
 
     // Migrate legacy blob format — idempotent, deletes legacy blob once all entries are confirmed
-    const legacy = await store.get('flags', { type: 'json' })
+    const legacyRaw = await store.get('flags')
+    const legacy = legacyRaw ? JSON.parse(legacyRaw) : null
     if (legacy) {
       const obj = Array.isArray(legacy)
         ? Object.fromEntries(legacy.map(id => [id, '']))

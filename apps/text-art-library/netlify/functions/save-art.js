@@ -31,8 +31,8 @@ export const handler = async (event) => {
     if (invalid) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'invalid piece in art array' }) }
 
     const store = getStore('frostline')
-    await store.setJSON('art', art)
-    if (Array.isArray(deletedIds)) await store.setJSON('deletedIds', deletedIds)
+    await store.set('art', JSON.stringify(art))
+    if (Array.isArray(deletedIds)) await store.set('deletedIds', JSON.stringify(deletedIds))
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) }
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }

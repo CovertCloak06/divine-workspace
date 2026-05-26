@@ -18,31 +18,29 @@ const ART = [
     title: 'Heart (small)',
     tags: ['love', 'symbols'],
     width: 7, height: 6,
-    wosRisk: true,
     art:
-` ██ ██
-███████
-███████
- █████
-  ███
-   █   `
+`　⬛⬛　⬛⬛
+⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛
+　⬛⬛⬛⬛⬛
+　　⬛⬛⬛
+　　　⬛`
   },
   {
     id: 'heart-bold',
     title: 'Heart (bold)',
     tags: ['love'],
     width: 11, height: 9,
-    wosRisk: true,
     art:
-` ███ ███
-█████████
-███████████
-███████████
-███████████
- █████████
-  ███████
-   █████
-     █     `
+`　⬛⬛⬛　⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+　⬛⬛⬛⬛⬛⬛⬛⬛⬛
+　　⬛⬛⬛⬛⬛⬛⬛
+　　　⬛⬛⬛⬛⬛
+　　　　　⬛`
   },
   {
     id: 'heart-row',
@@ -75,17 +73,16 @@ const ART = [
     title: 'Snowflake',
     tags: ['nature', 'symbols'],
     width: 9, height: 9,
-    wosRisk: true,
     art:
-`    █
- █  █  █
-  █ █ █
-   ███
-█████████
-   ███
-  █ █ █
- █  █  █
-    █    `
+`　　　　⬛
+　⬛　　⬛　　⬛
+　　⬛　⬛　⬛
+　　　⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛
+　　　⬛⬛⬛
+　　⬛　⬛　⬛
+　⬛　　⬛　　⬛
+　　　　⬛`
   },
   {
     id: 'snowflake-emoji',
@@ -109,31 +106,29 @@ const ART = [
     title: 'Pine Tree',
     tags: ['nature'],
     width: 11, height: 9,
-    wosRisk: true,
     art:
-`     █
-    ███
-   █████
-  ███████
- █████████
-███████████
-    ███
-    ███
-    ███    `
+`　　　　　⬛
+　　　　⬛⬛⬛
+　　　⬛⬛⬛⬛⬛
+　　⬛⬛⬛⬛⬛⬛⬛
+　⬛⬛⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛
+　　　　⬛⬛⬛
+　　　　⬛⬛⬛
+　　　　⬛⬛⬛`
   },
   {
     id: 'mountain',
     title: 'Mountain',
     tags: ['nature'],
-    width: 15, height: 6,
-    wosRisk: true,
+    width: 13, height: 6,
     art:
-`       █
-      ███
-     █████
-    ███████
-   █████████
-  ███████████  `
+`　　　　　　⬛
+　　　　　⬛⬛⬛
+　　　　⬛⬛⬛⬛⬛
+　　　⬛⬛⬛⬛⬛⬛⬛
+　　⬛⬛⬛⬛⬛⬛⬛⬛⬛
+　⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛`
   },
   {
     id: 'flower-row',
@@ -296,12 +291,11 @@ const ART = [
     title: 'Crown',
     tags: ['symbols', 'celebration'],
     width: 7, height: 4,
-    wosRisk: true,
     art:
-`█ █ █ █
-███████
-███████
-███████`
+`⬛　⬛　⬛　⬛
+⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛
+⬛⬛⬛⬛⬛⬛⬛`
   },
 
   // ────────────────────────── SYMBOLS ──────────────────────────

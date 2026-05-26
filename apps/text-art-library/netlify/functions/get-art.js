@@ -13,9 +13,11 @@ export const handler = async (event) => {
 
   try {
     const store = getStore('frostline')
-    const art = await store.get('art', { type: 'json' })
-    if (!art) return { statusCode: 404, headers: CORS, body: JSON.stringify({ art: null }) }
-    const deletedIds = await store.get('deletedIds', { type: 'json' }) || []
+    const artRaw = await store.get('art')
+    if (!artRaw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ art: null }) }
+    const art = JSON.parse(artRaw)
+    const deletedIdsRaw = await store.get('deletedIds')
+    const deletedIds = deletedIdsRaw ? JSON.parse(deletedIdsRaw) : []
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ art, deletedIds }) }
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }

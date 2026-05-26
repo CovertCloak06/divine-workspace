@@ -18,6 +18,14 @@ let artData = []       // loaded from Blob, fallback to bundled ART
 let deletedIds = new Set()  // IDs deleted by the editor — persisted in blob
 let globalFlags = {}   // {[id]: noteText} — loaded from Blob
 
+// ── Draw mode state ──────────────────────────────────────────────────────────
+let drawGrid = []
+let drawEraseMode = false
+let drawHistory = []
+let drawIsPainting = false
+let drawCurrentSymbol = '❤'
+const DRAW_PALETTE = ['❤','💛','💚','💙','💜','⭐','✦','★','♥','♠','♣','♦','◆','◇','●','○','▪','■','□','━','─','│','▲','▼','⬛','🟥','🟩','🟦','🟨','🟧','🟪','🌸','❄','✿','✾']
+
 // ── Data validation ────────────────────────────────────────────────────────
 const isValidPiece = p =>
   p && typeof p.id === 'string' && p.id.length > 0
@@ -202,6 +210,14 @@ async function toggleFlag(id, el, noteEl) {
       noteEl.value = flagged ? getNote(id) : ''
     }
     renderTags()
+  } else {
+    const ft = el.querySelector('.flag-text')
+    if (ft) {
+      const prev = ft.textContent
+      ft.textContent = '⚠ failed'
+      ft.style.color = '#ef4444'
+      setTimeout(() => { ft.textContent = prev; ft.style.color = '' }, 2500)
+    }
   }
   _flagInFlight.delete(id)
   el.style.pointerEvents = ''
@@ -477,15 +493,37 @@ function openEditModal(piece) {
   }
   updateEditAudit()
   $editModal.classList.add('open')
+  // Reset to text mode when opening
+  const drawContainer = document.getElementById('draw-canvas-container')
+  const artDiv = $editArt.closest('div')
+  if (drawContainer) {
+    drawContainer.style.display = 'none'
+    if (artDiv) artDiv.style.display = ''
+  }
+  const textBtn = document.getElementById('edit-text-mode-btn')
+  const drawBtn = document.getElementById('edit-draw-mode-btn')
+  if (textBtn) { textBtn.classList.add('active'); drawBtn.classList.remove('active') }
+  drawGrid = []
+  drawHistory = []
+  drawEraseMode = false
   setTimeout(() => $editTitle.focus(), 50)
 }
-function closeEditModal() { $editModal.classList.remove('open'); editTarget = null }
+function closeEditModal() {
+  $editModal.classList.remove('open')
+  editTarget = null
+  drawGrid = []; drawHistory = []; drawEraseMode = false; drawIsPainting = false
+}
 
 document.getElementById('edit-modal-close').onclick = closeEditModal
 document.getElementById('edit-cancel').onclick = closeEditModal
 $editModal.addEventListener('click', e => { if (e.target === $editModal) closeEditModal() })
 
 document.getElementById('edit-save').onclick = async () => {
+  // Sync art from draw grid if draw mode is active
+  const drawContainer = document.getElementById('draw-canvas-container')
+  if (drawContainer && drawContainer.style.display !== 'none' && drawGrid.length > 0) {
+    $editArt.value = gridToArt(drawGrid)
+  }
   const title = $editTitle.value.trim()
   const tags  = $editTags.value.split(',').map(t => t.trim()).filter(Boolean)
   const art   = normalizeSpaces($editArt.value)
@@ -601,6 +639,186 @@ $tagsEl.addEventListener('scroll', updateTagArrows)
 $tagsLeft.addEventListener('click',  () => { $tagsEl.scrollLeft -= 120; updateTagArrows() })
 $tagsRight.addEventListener('click', () => { $tagsEl.scrollLeft += 120; updateTagArrows() })
 new ResizeObserver(updateTagArrows).observe($tagsEl)
+
+// ── Draw mode functions ───────────────────────────────────────────────────────
+
+function artToGrid(art, cols) {
+  const lines = art.split('\n')
+  const parsedLines = lines.map(line => {
+    if (segmenter) {
+      return [...segmenter.segment(line)].map(s => s.segment)
+    }
+    return [...line]
+  })
+  const maxCols = cols ?? Math.max(1, ...parsedLines.map(r => r.length))
+  return parsedLines.map(row => {
+    const padded = row.slice(0, maxCols)
+    while (padded.length < maxCols) padded.push(' ')
+    return padded
+  })
+}
+
+function gridToArt(grid) {
+  const rows = grid.map(row => row.join('').replace(/ +$/, ''))
+  // rtrim trailing empty lines
+  let end = rows.length
+  while (end > 0 && rows[end - 1] === '') end--
+  return rows.slice(0, end).join('\n')
+}
+
+function renderDrawPalette() {
+  const palette = document.getElementById('draw-palette')
+  if (!palette) return
+  palette.innerHTML = ''
+  for (const sym of DRAW_PALETTE) {
+    const btn = document.createElement('button')
+    btn.className = 'draw-palette-btn' + (sym === drawCurrentSymbol ? ' active' : '')
+    btn.textContent = sym
+    btn.title = sym
+    btn.onclick = () => {
+      drawCurrentSymbol = sym
+      drawEraseMode = false
+      const eraserBtn = document.getElementById('draw-eraser-btn')
+      if (eraserBtn) eraserBtn.classList.remove('active')
+      palette.querySelectorAll('.draw-palette-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+    }
+    palette.appendChild(btn)
+  }
+
+  const undoBtn = document.getElementById('draw-undo-btn')
+  if (undoBtn) {
+    undoBtn.onclick = () => {
+      if (drawHistory.length === 0) return
+      drawGrid = drawHistory.pop()
+      renderDrawCanvas()
+    }
+  }
+
+  const eraserBtn = document.getElementById('draw-eraser-btn')
+  if (eraserBtn) {
+    eraserBtn.onclick = () => {
+      drawEraseMode = !drawEraseMode
+      eraserBtn.classList.toggle('active', drawEraseMode)
+      if (drawEraseMode) {
+        palette.querySelectorAll('.draw-palette-btn').forEach(b => b.classList.remove('active'))
+      } else {
+        palette.querySelectorAll('.draw-palette-btn').forEach(b => {
+          b.classList.toggle('active', b.textContent === drawCurrentSymbol)
+        })
+      }
+    }
+  }
+}
+
+function renderDrawCanvas() {
+  const canvas = document.getElementById('draw-canvas')
+  if (!canvas) return
+  canvas.innerHTML = ''
+  for (let r = 0; r < drawGrid.length; r++) {
+    const rowEl = document.createElement('div')
+    rowEl.className = 'draw-row'
+    for (let c = 0; c < drawGrid[r].length; c++) {
+      const cell = document.createElement('span')
+      cell.className = 'draw-cell'
+      cell.dataset.row = r
+      cell.dataset.col = c
+      cell.textContent = drawGrid[r][c]
+      rowEl.appendChild(cell)
+    }
+    canvas.appendChild(rowEl)
+  }
+}
+
+function pushDrawHistory() {
+  drawHistory.push(drawGrid.map(row => row.slice()))
+  if (drawHistory.length > 20) drawHistory.shift()
+}
+
+function paintDrawCell(row, col) {
+  if (row < 0 || row >= drawGrid.length || col < 0 || col >= drawGrid[row].length) return
+  if (drawEraseMode) {
+    drawGrid[row][col] = ' '
+  } else {
+    drawGrid[row][col] = drawCurrentSymbol
+  }
+  const canvas = document.getElementById('draw-canvas')
+  if (!canvas) return
+  const cellEl = canvas.querySelector(`[data-row="${row}"][data-col="${col}"]`)
+  if (cellEl) cellEl.textContent = drawGrid[row][col]
+}
+
+function initDrawMode() {
+  drawGrid = artToGrid($editArt.value)
+  drawHistory = []
+  drawEraseMode = false
+  drawIsPainting = false
+  renderDrawPalette()
+
+  // Replace canvas node to shed any stale event listeners from a previous open
+  const oldCanvas = document.getElementById('draw-canvas')
+  if (!oldCanvas) return
+  const freshCanvas = oldCanvas.cloneNode(false)
+  oldCanvas.parentNode.replaceChild(freshCanvas, oldCanvas)
+
+  // Render cells into the fresh node
+  renderDrawCanvas()
+
+  freshCanvas.addEventListener('pointerdown', e => {
+    const target = e.target
+    if (!target.classList.contains('draw-cell')) return
+    pushDrawHistory()
+    drawIsPainting = true
+    const row = parseInt(target.dataset.row, 10)
+    const col = parseInt(target.dataset.col, 10)
+    paintDrawCell(row, col)
+    freshCanvas.setPointerCapture(e.pointerId)
+    e.preventDefault()
+  })
+
+  freshCanvas.addEventListener('pointermove', e => {
+    if (!drawIsPainting) return
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    if (!el || !el.classList.contains('draw-cell')) return
+    const row = parseInt(el.dataset.row, 10)
+    const col = parseInt(el.dataset.col, 10)
+    if (!isNaN(row) && !isNaN(col)) paintDrawCell(row, col)
+    e.preventDefault()
+  })
+
+  const stopPainting = () => { drawIsPainting = false }
+  document.addEventListener('pointerup', stopPainting)
+  document.addEventListener('pointercancel', stopPainting)
+}
+
+// ── Draw mode toggle ──────────────────────────────────────────────────────────
+function setupDrawModeToggle() {
+  const textBtn = document.getElementById('edit-text-mode-btn')
+  const drawBtn = document.getElementById('edit-draw-mode-btn')
+  const drawContainer = document.getElementById('draw-canvas-container')
+  if (!textBtn || !drawBtn || !drawContainer) return
+
+  textBtn.onclick = () => {
+    // Sync textarea from current draw grid if draw mode was active
+    if (drawGrid.length > 0) $editArt.value = gridToArt(drawGrid)
+    const artDiv = $editArt.closest('div')
+    if (artDiv) artDiv.style.display = ''
+    drawContainer.style.display = 'none'
+    textBtn.classList.add('active')
+    drawBtn.classList.remove('active')
+    updateEditAudit()
+  }
+
+  drawBtn.onclick = () => {
+    const artDiv = $editArt.closest('div')
+    if (artDiv) artDiv.style.display = 'none'
+    drawContainer.style.display = ''
+    textBtn.classList.remove('active')
+    drawBtn.classList.add('active')
+    initDrawMode()
+  }
+}
+setupDrawModeToggle()
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function initApp() {
