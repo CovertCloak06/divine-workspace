@@ -30,7 +30,7 @@ const TAGS = [
   'gothic', 'memes', 'sayings', 'minimalist', 'nsfw',
 ];
 const WOS_MAX_WIDTH = 27;
-const DEV_FALLBACK_PASSWORD = '0022';
+const DEV_FALLBACK_PASSWORD = 'dev';
 
 const DRAW_PALETTE = [
   // hearts

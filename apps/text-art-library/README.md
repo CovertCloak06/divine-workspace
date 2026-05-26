@@ -4,7 +4,7 @@ Curated text art for one Whiteout Survival alliance. Tap, copy, paste into chat.
 
 ## Local preview
 
-This app runs **in this preview** without any backend — it falls back to `localStorage` when the Netlify Functions aren't reachable. The dev fallback password is `0022`.
+This app runs **in this preview** without any backend — it falls back to `localStorage` when the Netlify Functions aren't reachable. The dev fallback password is set via the `EDITOR_PASSWORD` environment variable in Netlify.
 
 To open the live preview, just view `index.html`.
 
