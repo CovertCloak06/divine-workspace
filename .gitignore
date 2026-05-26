@@ -235,3 +235,4 @@ AGENTS.override.md
 .claude/settings.local.json
 CLAUDE.local.md
 .aider*
+.netlify/

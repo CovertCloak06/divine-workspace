@@ -1,8 +1,10 @@
 {
-  "name": "text-art-library",
+  "name": "frostline-text-art-library",
   "version": "1.0.0",
   "private": true,
+  "description": "Frostline — curated text art for Whiteout Survival alliance chat.",
+  "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^10.7.8"
+    "@netlify/blobs": "^8.0.0"
   }
 }

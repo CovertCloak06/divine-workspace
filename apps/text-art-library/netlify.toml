@@ -1,13 +1,7 @@
 [build]
+  command = "echo 'static site, no build needed'"
   publish = "."
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.sentry-cdn.com; connect-src 'self' https://*.ingest.us.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com"
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"

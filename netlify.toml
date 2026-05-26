@@ -1,0 +1,7 @@
+[build]
+  command = "cd apps/text-art-library && npm install"
+  publish = "apps/text-art-library"
+  functions = "apps/text-art-library/netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
