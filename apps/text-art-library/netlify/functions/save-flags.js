@@ -1,48 +1,62 @@
-import { getStore } from '@netlify/blobs'
+// Frostline — POST /save-flags
+// No auth (anyone can flag — the editor sees the global flag list).
+// Body: { id, action: 'toggle' | 'note', note?: string }
+//   toggle: creates flag/{id} if absent, deletes it if present.
+//   note:   updates flag/{id} note text without changing its existence.
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-}
+import { getStore } from '@netlify/blobs';
 
-// Each flag stored as its own key: flag/{id} → note text.
-// Returns a delta { id, flagged, note } instead of the full flags list
-// so the server only does 2 Blob ops per save (read + write/delete) rather
-// than N+1, which was causing rate limit hits and intermittent 500s.
 export const handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' }
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: 'Method not allowed' }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  let body;
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return { statusCode: 400, body: JSON.stringify({ error: 'Bad JSON' }) }; }
+
+  const { id, action, note } = body;
+  if (!id || typeof id !== 'string' || id.length > 200) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing or invalid id' }) };
+  }
+  if (action !== 'toggle' && action !== 'note') {
+    return { statusCode: 400, body: JSON.stringify({ error: "action must be 'toggle' or 'note'" }) };
+  }
 
   try {
-    const { id, action = 'toggle', note = '' } = JSON.parse(event.body)
-    if (!id || typeof id !== 'string') return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'id required' }) }
+    const store = getStore('frostline');
+    const key = `flag/${id}`;
 
-    const store = getStore('frostline')
-    const key = `flag/${id}`
-    const existing = await store.get(key)
-
-    let flagged, finalNote
-
-    if (action === 'note') {
-      await store.set(key, note)
-      flagged = true
-      finalNote = note
-    } else {
-      if (existing !== null) {
-        await store.delete(key)
-        flagged = false
-        finalNote = ''
+    if (action === 'toggle') {
+      const existing = await store.get(key);
+      if (existing === null) {
+        await store.set(key, '');
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ok: true, flagged: true, note: '' }),
+        };
       } else {
-        await store.set(key, note)
-        flagged = true
-        finalNote = note
+        await store.delete(key);
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ok: true, flagged: false }),
+        };
       }
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ id, flagged, note: finalNote }) }
+    // action === 'note'
+    await store.set(key, String(note || ''));
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, flagged: true, note: String(note || '') }),
+    };
   } catch (err) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) }
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Blob op failed', detail: String(err) }),
+    };
   }
-}
+};

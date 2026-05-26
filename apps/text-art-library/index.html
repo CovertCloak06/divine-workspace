@@ -1,136 +1,463 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Frostline · Text Art Library</title>
-<script
-  src="https://js.sentry-cdn.com/fba278ff873cc085e61605613d505c18.min.js"
-  crossorigin="anonymous"
-></script>
-<script>
-  Sentry.onLoad(function() {
-    Sentry.init({
-      dsn: "https://fba278ff873cc085e61605613d505c18@o4509789486710784.ingest.us.sentry.io/4511452288581632",
-      tracesSampleRate: 0.1,
-    });
-  });
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css" />
-<link rel="stylesheet" href="draw-mode.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Frostline — Text art for Whiteout Survival</title>
+  <meta name="description" content="Curated text art for Whiteout Survival alliance chat. Tap, copy, paste.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Sentry (per handoff spec) -->
+  <script
+    src="https://js.sentry-cdn.com/fba278ff873cc085e61605613d505c18.min.js"
+    crossorigin="anonymous"></script>
+  <script>
+    if (window.Sentry && Sentry.onLoad) {
+      Sentry.onLoad(function () {
+        Sentry.init({
+          dsn: "https://fba278ff873cc085e61605613d505c18@o4509789486710784.ingest.us.sentry.io/4511452288581632",
+          tracesSampleRate: 0.1,
+        });
+      });
+    }
+  </script>
 </head>
 <body>
 
-<header>
-  <h1><span id="snowflake-trigger" title=""><svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 100 100" style="vertical-align:middle;margin-right:2px"><g fill="#4a9fd4" transform="translate(50,50)"><ellipse rx="8" ry="42" transform="rotate(0)"/><ellipse rx="8" ry="42" transform="rotate(60)"/><ellipse rx="8" ry="42" transform="rotate(120)"/><circle r="10"/></g></svg></span> Frostline</h1>
-  <p class="subtitle">
-    Hand-curated text art for Whiteout Survival chat &amp; other proportional-font
-    apps. Tap any piece to copy &mdash; paste anywhere, it'll render right.
-  </p>
-  <div class="share-bar" id="share-bar" title="Click to copy link">
-    <span class="share-icon">🔗</span>
-    <span class="share-url">frostline-art.netlify.app</span>
-    <span class="share-label" id="share-label">Copy link</span>
-  </div>
-  <button class="lock-btn" id="lock-btn" title="Editor login">🔒</button>
-</header>
-
-<div class="modal-backdrop" id="auth-modal" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-head">
-      <h2 class="modal-title">Editor Login</h2>
-      <button class="modal-close" id="auth-modal-close" aria-label="Close">✕</button>
-    </div>
-    <div class="auth-form">
-      <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" />
-      <div class="auth-error" id="auth-error"></div>
-      <button class="auth-submit" id="auth-submit">Unlock</button>
-    </div>
-  </div>
-</div>
-
-<div class="controls">
-  <div class="search-row">
-    <input type="text" class="search" id="search" placeholder="Search art…" />
-  </div>
-  <div class="tags-wrap">
-    <button class="tags-arrow left" id="tags-left" aria-label="Scroll left">&#8249;</button>
-    <div class="tags" id="tags"></div>
-    <button class="tags-arrow right" id="tags-right" aria-label="Scroll right">&#8250;</button>
-  </div>
-</div>
-
-<main id="grid"></main>
-
-<div class="export-bar">
-  <button class="export-btn" id="export-btn" disabled>⬇ Download updated art.js</button>
-</div>
-
-<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true">
-  <div class="modal" id="modal-content">
-    <div class="modal-head">
-      <h2 class="modal-title" id="modal-title"></h2>
-      <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-preview" id="modal-preview-wrap"><pre id="modal-preview"></pre></div>
-    <div class="modal-meta">
-      <span id="modal-size"></span>
-      <div class="modal-tags" id="modal-tags"></div>
-    </div>
-    <button class="modal-copy" id="modal-copy">📋 Copy to Clipboard</button>
-  </div>
-</div>
-
-<div class="modal-backdrop" id="edit-modal" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="modal-head">
-      <h2 class="modal-title" id="edit-modal-title">Edit Piece</h2>
-      <button class="modal-close" id="edit-modal-close" aria-label="Close">✕</button>
-    </div>
-    <div class="edit-mode-toggle">
-      <button class="edit-mode-btn active" id="edit-text-mode-btn">✎ Text Mode</button>
-      <button class="edit-mode-btn" id="edit-draw-mode-btn">✏ Draw Mode</button>
-    </div>
-    <div class="edit-form">
-      <div>
-        <label for="edit-title">Title</label>
-        <input id="edit-title" type="text" />
+  <header class="header">
+    <div class="header-inner">
+      <div class="title-row">
+        <button class="snowflake-btn" id="snowflake" aria-label="Frostline emblem">
+          <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="-50 -50 100 100" style="vertical-align:middle;margin-right:2px">
+            <g fill="#4a9fd4">
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" />
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(60)" />
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(120)" />
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(180)" />
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(240)" />
+              <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(300)" />
+            </g>
+          </svg>
+        </button>
+        <h1 class="title">Frostline</h1>
       </div>
-      <div>
-        <label for="edit-tags">Tags (comma-separated)</label>
-        <input id="edit-tags" type="text" placeholder="e.g. love, kawaii, animals" />
+      <p class="subtitle">Curated text art for Whiteout Survival chat</p>
+      <button class="share-bar" id="share-bar" type="button">
+        <span>🔗</span>
+        <span class="url">frostline-art.netlify.app</span>
+        <span class="cta">Copy link</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="controls">
+    <svg class="snow-drift" xmlns="http://www.w3.org/2000/svg" width="260" height="30" viewBox="0 0 260 30" preserveAspectRatio="none" aria-hidden="true">
+      <!--
+        Continuous snow profile, one closed path. Top edge flat (y=0).
+        Bottom edge curves: chunky on the left, dips and rises through
+        humps, then a long smooth S-curve fading to nothing on the right —
+        no straight runs or hard angles anywhere on the bottom.
+      -->
+      <path class="snow-profile" fill="#ffffff" d="
+        M 0 0
+        L 0 14
+        C 6 18, 14 19, 22 17
+        C 30 15, 36 9, 44 9
+        C 52 9, 58 16, 66 17
+        C 74 18, 80 26, 90 25
+        C 100 24, 106 14, 114 13
+        C 122 12, 128 22, 138 22
+        C 148 22, 154 9, 162 8
+        C 170 7, 176 14, 184 14
+        C 192 14, 196 8, 204 7
+        C 212 6, 218 13, 226 13
+        C 233 13, 238 7, 244 6
+        C 250 5, 254 3, 258 3
+        L 260 3
+        L 260 0
+        Z
+      "/>
+    </svg>
+    <div class="controls-inner">
+      <div class="search-row">
+        <input class="search-input" id="search" type="text" placeholder="Search art…" autocomplete="off">
       </div>
-      <div id="edit-art-wrap">
-        <label for="edit-art">Art</label>
-        <textarea id="edit-art" spellcheck="false"></textarea>
-        <div id="edit-audit" class="edit-audit"></div>
+      <div class="tag-strip-wrap">
+        <button class="strip-arrow strip-arrow-left" id="strip-left" aria-label="Scroll tags left">
+          <svg viewBox="0 0 40 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill="#ffffff" stroke="#1f5993" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+                  d="M 5 16 L 17 4 L 17 11 L 36 11 L 36 21 L 17 21 L 17 28 Z"/>
+          </svg>
+        </button>
+        <div class="tag-strip" id="tag-strip"></div>
+        <button class="strip-arrow strip-arrow-right" id="strip-right" aria-label="Scroll tags right">
+          <svg viewBox="0 0 40 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill="#ffffff" stroke="#1f5993" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+                  d="M 35 16 L 23 4 L 23 11 L 4 11 L 4 21 L 23 21 L 23 28 Z"/>
+          </svg>
+        </button>
       </div>
-      <div id="draw-canvas-container" style="display:none">
-        <div class="draw-toolbar">
-          <div class="draw-palette" id="draw-palette"></div>
-          <div class="draw-tools">
-            <button class="draw-tool-btn" id="draw-undo-btn" title="Undo">↩ Undo</button>
-            <button class="draw-tool-btn" id="draw-eraser-btn" title="Eraser">⌫ Eraser</button>
+    </div>
+  </nav>
+
+  <div class="add-row">
+    <button class="btn-add" id="btn-add">+ Add New Art</button>
+  </div>
+
+  <main class="grid" id="grid">
+    <div class="grid-empty">Loading…</div>
+  </main>
+
+  <div class="export-bar">
+    <button class="btn-export" id="btn-export" disabled>⬇ Download updated art.js</button>
+  </div>
+
+  <footer class="footer">
+    Frostline · Submit your own art
+  </footer>
+
+  <!-- Lightbox -->
+  <div class="modal-overlay" id="lightbox">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lb-title">
+      <div class="modal-head">
+        <h3 id="lb-title">Title</h3>
+        <button class="modal-close" id="lb-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
+              <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/>
+              <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="wos-preview"><pre id="lb-pre"></pre></div>
+        <div class="modal-meta">
+          <span class="dim" id="lb-dim">0 × 0</span>
+          <div class="pills" id="lb-pills"></div>
+        </div>
+        <button class="modal-copy" id="lb-copy">📋 Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth modal -->
+  <div class="modal-overlay" id="auth">
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <div class="modal-head">
+        <h3 id="auth-title">Editor unlock</h3>
+        <button class="modal-close" id="auth-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
+              <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/>
+              <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+      <div class="auth-body">
+        <p>One password. No accounts. Closing the tab logs out.</p>
+        <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="off">
+        <p class="auth-error" id="auth-error"></p>
+        <button class="auth-unlock" id="auth-submit">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit / add modal -->
+  <div class="modal-overlay" id="edit">
+    <div class="modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div class="modal-head">
+        <h3 id="edit-title">Add new art</h3>
+        <button class="modal-close" id="edit-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
+              <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/>
+              <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="text">✎ Text Mode</button>
+        <button class="tab" data-tab="sketch">✏ Sketch Mode</button>
+      </div>
+      <div class="modal-body">
+        <div class="tab-panel active" data-panel="text">
+          <div class="field">
+            <label for="edit-title-input">Title</label>
+            <input id="edit-title-input" type="text" placeholder="Heart (small)">
+          </div>
+          <div class="field">
+            <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
+            <input id="edit-tags-input" type="text" placeholder="love, symbols">
+          </div>
+          <div class="field">
+            <label for="edit-art-input">Art</label>
+            <div class="text-tools" style="display:flex;gap:8px;margin-bottom:6px;">
+              <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the textarea with a 27×12 grid of blank cells so you can position your cursor anywhere">＋ Blank canvas</button>
+            </div>
+            <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
+          </div>
+          <div class="field">
+            <label>WoS Audit</label>
+            <div class="audit" id="edit-audit"></div>
           </div>
         </div>
-        <div class="draw-canvas" id="draw-canvas"></div>
+        <div class="tab-panel" data-panel="sketch">
+          <div class="field">
+            <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
+            <div class="favorites-bar" id="favorites-bar"></div>
+          </div>
+          <div class="field">
+            <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
+            <div class="char-palette" id="char-palette"></div>
+          </div>
+          <div class="field">
+            <label>Sketch <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap or drag on any character to replace it with the active brush</span></label>
+            <div class="sketch-bar">
+              <span class="size-label">Brush:</span>
+              <span class="sketch-active-char" id="sketch-active-char">❤</span>
+              <button class="tool-btn" id="sketch-undo" title="Undo last edit (Ctrl+Z)">↶ Undo</button>
+              <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank canvas</button>
+              <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
+            </div>
+            <div class="sketch-view" id="sketch-view"></div>
+          </div>
+        </div>
       </div>
-      <div class="edit-actions">
-        <button id="edit-cancel">Cancel</button>
-        <button class="save" id="edit-save">Save</button>
+      <div class="modal-foot">
+        <button class="btn-ghost" id="edit-cancel">Cancel</button>
+        <button class="btn-primary" id="edit-save">Save</button>
       </div>
     </div>
   </div>
-</div>
 
-<footer>
-  Frostline &middot; <a href="https://github.com/CovertCloak06/divine-workspace/issues/new?title=New+art+submission" target="_blank">Submit your own art</a>
-</footer>
+  <script src="art.js"></script>
+  <script src="app.js"></script>
 
-<script src="art.js"></script>
-<script src="app.js"></script>
+  <!-- ============ Tweaks panel (React + Babel) ============ -->
+  <div id="tweaks-mount"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" data-presets="react">
+  const FROSTLINE_TWEAKS = /*EDITMODE-BEGIN*/{
+    "mood": "arctic",
+    "chunkiness": 57,
+    "snow": 95,
+    "snowPosition": -1,
+    "snowFlatness": 31,
+    "snowSeed": 974565212
+  }/*EDITMODE-END*/;
+
+  // Three sanctioned palettes — Arctic (default cold), Frostfire (war-time
+  // warmth), Aurora (purple/green nightscape).
+  const FROSTLINE_MOODS = {
+    arctic: {
+      '--bar-grad-top': '#6cb0e6', '--bar-grad-mid': '#4a93d3', '--bar-grad-bot': '#2d72b8',
+      '--bar-edge':     '#20578d',
+      '--btn-grad-top': '#79bef0', '--btn-grad-mid': '#4ea4dc', '--btn-grad-bot': '#2e7ec0',
+      '--btn-edge':     '#1f5993',
+      '--accent':       '#4a9fd4', '--accent-press': '#3a8fc4',
+    },
+    frostfire: {
+      '--bar-grad-top': '#f4b266', '--bar-grad-mid': '#e88a3a', '--bar-grad-bot': '#c25c1f',
+      '--bar-edge':     '#7a3a0a',
+      '--btn-grad-top': '#ffb155', '--btn-grad-mid': '#e87420', '--btn-grad-bot': '#b04e0d',
+      '--btn-edge':     '#6e2f06',
+      '--accent':       '#e87420', '--accent-press': '#c25e15',
+    },
+    aurora: {
+      '--bar-grad-top': '#7eddb4', '--bar-grad-mid': '#5fa3c9', '--bar-grad-bot': '#7c5db8',
+      '--bar-edge':     '#3a2766',
+      '--btn-grad-top': '#9eecd3', '--btn-grad-mid': '#7d8fcd', '--btn-grad-bot': '#6f4eb0',
+      '--btn-edge':     '#2f1f6a',
+      '--accent':       '#7c5db8', '--accent-press': '#5f48a0',
+    },
+  };
+
+  function applyMood(name) {
+    const m = FROSTLINE_MOODS[name] || FROSTLINE_MOODS.arctic;
+    const root = document.documentElement;
+    for (const [k, v] of Object.entries(m)) root.style.setProperty(k, v);
+  }
+
+  function applyChunkiness(val) {
+    // 0 = sharp, sober, minimal · 100 = bouncy, deep-shadowed game UI
+    const radius = (4 + (val / 100) * 14).toFixed(1);                     // 4 → 18
+    const iconRadius = (3 + (val / 100) * 10).toFixed(1);                 // 3 → 13
+    const tagRadius = val < 30 ? (4 + (val / 100) * 24).toFixed(0) : 999; // sharp at low, pill at high
+    const shadowDrop = ((val / 100) * 5).toFixed(2);                      // 0 → 5px button drop
+    const shadowSoft = (4 + (val / 100) * 10).toFixed(1);                 // 4 → 14
+    const insetBot = ((val / 100) * 3).toFixed(2);                        // 0 → 3 inset bottom
+    const stickerOff = (0.5 + (val / 100) * 1.0).toFixed(2);              // 0.5 → 1.5 outline offset
+    const stickerBlur = (1 + (val / 100) * 5).toFixed(1);                 // 1 → 6 outline glow
+    const barShadow = (1 + (val / 100) * 2).toFixed(1);                   // 1 → 3 inset bar shadow
+
+    let s = document.getElementById('frostline-tweaks-chunk');
+    if (!s) {
+      s = document.createElement('style');
+      s.id = 'frostline-tweaks-chunk';
+      document.head.appendChild(s);
+    }
+    s.textContent = `
+      .btn-add, .btn-export, .copy-btn, .modal-copy, .auth-unlock, .btn-primary,
+      .share-bar {
+        border-radius: ${radius}px !important;
+        box-shadow:
+          inset 0 1px 0 var(--btn-highlight),
+          inset 0 -${insetBot}px 0 rgba(0,0,0,0.18),
+          0 ${shadowDrop}px 0 rgba(0,0,0,0.18),
+          0 ${(parseFloat(shadowDrop)+1).toFixed(1)}px ${shadowSoft}px rgba(0,0,0,0.22) !important;
+      }
+      .icon-btn, .modal-close, .strip-arrow .palette-btn, .fav-slot.filled {
+        border-radius: ${iconRadius}px !important;
+      }
+      .tag { border-radius: ${tagRadius === 999 ? '999px' : tagRadius + 'px'} !important; }
+      .title, .card-title, .modal-head h3,
+      .btn-add, .btn-export, .copy-btn, .modal-copy, .auth-unlock, .btn-primary,
+      .tag {
+        text-shadow:
+          -${stickerOff}px 0 0 var(--btn-edge),
+          ${stickerOff}px 0 0 var(--btn-edge),
+          0 -${stickerOff}px 0 var(--btn-edge),
+          0 ${stickerOff}px 0 var(--btn-edge),
+          0 ${(parseFloat(stickerOff)*1.5).toFixed(2)}px 0 var(--btn-edge),
+          0 ${(parseFloat(stickerOff)*2).toFixed(2)}px ${stickerBlur}px rgba(0, 30, 80, 0.35) !important;
+      }
+      .tag:not(.active) { text-shadow: none !important; color: var(--ink-card) !important; }
+      .header, .controls {
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.35),
+          inset 0 -${barShadow}px 0 rgba(0,0,0,0.12) !important;
+      }
+    `;
+  }
+
+  function applySnow(val) {
+    const sd = document.querySelector('.snow-drift');
+    if (!sd) return;
+    sd.style.opacity = (val / 100);
+    sd.style.transformOrigin = 'top left';
+    sd.style.transition = 'opacity 280ms ease, transform 280ms ease, top 200ms ease';
+  }
+  function applySnowPosition(px) {
+    const sd = document.querySelector('.snow-drift');
+    if (!sd) return;
+    sd.style.top = px + 'px';
+  }
+  function applySnowFlatness(val) {
+    // Squish the snow profile vertically. The path itself is curvy at every
+    // height — the top stays at y=0 (flat against the bar), and the bottom
+    // shrinks toward it as flatness increases.
+    const profile = document.querySelector('.snow-profile');
+    if (!profile) return;
+    const f = val / 100;
+    const scaleY = (1 - 0.85 * f).toFixed(3);
+    profile.setAttribute('transform', `scale(1, ${scaleY})`);
+  }
+
+  function applySnowProfile(seed) {
+    // Seeded RNG (mulberry32) — same seed = same shape, so the rolled snow
+    // ships with the deploy.
+    let s = (seed | 0) || 1;
+    const rng = () => {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const rand = (lo, hi) => lo + rng() * (hi - lo);
+
+    const width = 260;
+    const step = 13;
+    const minDepth = 4;
+    const maxDepth = 26;
+
+    const pts = [];
+    for (let x = 0; x <= width; x += step) {
+      // Taper depth as we approach the right edge so the snow fades into the bar.
+      const tail = Math.max(0, (x - (width - 60)) / 60); // 0 until x>200, then 0→1
+      const cap = maxDepth - tail * (maxDepth - 3);
+      pts.push({ x, d: rand(minDepth, cap) });
+    }
+    pts.push({ x: width, d: 2 });
+
+    // Catmull–Rom → cubic Bezier so the curve stays smooth and never 90°.
+    let d = `M 0 0 L 0 ${pts[0].d.toFixed(1)} `;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.d + (p2.d - p0.d) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.d - (p3.d - p1.d) / 6;
+      d += `C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.d.toFixed(1)} `;
+    }
+    d += `L ${width} 0 Z`;
+
+    const profile = document.querySelector('.snow-profile');
+    if (profile) profile.setAttribute('d', d);
+  }
+
+  function TweaksApp() {
+    const [t, setTweak] = useTweaks(FROSTLINE_TWEAKS);
+    React.useEffect(() => { applyMood(t.mood); }, [t.mood]);
+    React.useEffect(() => { applyChunkiness(t.chunkiness); }, [t.chunkiness]);
+    React.useEffect(() => { applySnow(t.snow); }, [t.snow]);
+    React.useEffect(() => { applySnowPosition(t.snowPosition); }, [t.snowPosition]);
+    React.useEffect(() => { applySnowProfile(t.snowSeed); applySnowFlatness(t.snowFlatness); }, [t.snowSeed, t.snowFlatness]);
+    const reroll = () => setTweak('snowSeed', Math.floor(Math.random() * 1e9));
+    return (
+      <TweaksPanel title="Frostline">
+        <TweakSection label="Mood" />
+        <TweakRadio
+          label="Palette"
+          value={t.mood}
+          options={['arctic', 'frostfire', 'aurora']}
+          onChange={(v) => setTweak('mood', v)}
+        />
+        <TweakSection label="Feel" />
+        <TweakSlider
+          label="Chunkiness"
+          value={t.chunkiness}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('chunkiness', v)}
+        />
+        <TweakSection label="Snow" />
+        <TweakSlider
+          label="Amount"
+          value={t.snow}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('snow', v)}
+        />
+        <TweakSlider
+          label="Vertical position"
+          value={t.snowPosition}
+          min={-30} max={20} unit="px"
+          onChange={(v) => setTweak('snowPosition', v)}
+        />
+        <TweakSlider
+          label="Flatness"
+          value={t.snowFlatness}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('snowFlatness', v)}
+        />
+        <TweakButton label="❄ Re-roll shape" onClick={reroll} />
+      </TweaksPanel>
+    );
+  }
+
+  const __tweaksRoot = ReactDOM.createRoot(document.getElementById('tweaks-mount'));
+  __tweaksRoot.render(<TweaksApp />);
+  </script>
 </body>
 </html>
