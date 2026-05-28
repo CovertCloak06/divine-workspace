@@ -1,7 +1,14 @@
+# npm install is required so the functions can bundle @netlify/blobs AND so
+# Netlify provisions the Blobs runtime context (without it: 500s with
+# MissingBlobsEnvironmentError). This file is the build base (see root
+# netlify.toml `base`); keep it consistent with the root config.
 [build]
-  command = "echo 'static site, no build needed'"
+  command = "npm install"
   publish = "."
   functions = "netlify/functions"
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "EDITOR_PASSWORD"
 
 [functions]
   node_bundler = "esbuild"
