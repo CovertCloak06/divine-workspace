@@ -1,0 +1,13 @@
+# Cloudflare Pages config for Frostline.
+# Functions live in functions/api/. KV binding "FROSTLINE_KV" must be set up
+# in the Cloudflare dashboard or via wrangler before first deploy.
+name = "frostline-art"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "."
+
+# Create the KV namespace once:
+#   npx wrangler kv namespace create FROSTLINE_KV
+# Then paste the resulting id below and uncomment:
+# [[kv_namespaces]]
+# binding = "FROSTLINE_KV"
+# id      = "PASTE_NAMESPACE_ID_HERE"

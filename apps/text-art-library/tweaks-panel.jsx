@@ -488,6 +488,9 @@ function TweakColor({ label, value, options, onChange }) {
   // which returns the primitive undefined (no .toLowerCase).
   const key = (o) => String(JSON.stringify(o)).toLowerCase();
   const cur = key(value);
+  // Find single-string options that match value (case-insensitive) so the
+  // native picker reflects the current value for free-form picks too.
+  const isSingleString = typeof value === 'string';
   return (
     <TweakRow label={label}>
       <div className="twk-chips" role="radiogroup">
@@ -511,6 +514,22 @@ function TweakColor({ label, value, options, onChange }) {
             </button>
           );
         })}
+        {isSingleString && (
+          <label className="twk-chip twk-chip-picker"
+                 style={{
+                   background: 'conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                   cursor: 'pointer',
+                   position: 'relative',
+                 }}
+                 title="Custom color">
+            <input type="color" value={value || '#000000'}
+                   onChange={(e) => onChange(e.target.value)}
+                   style={{
+                     position: 'absolute', inset: 0, opacity: 0,
+                     width: '100%', height: '100%', cursor: 'pointer',
+                   }} />
+          </label>
+        )}
       </div>
     </TweakRow>
   );

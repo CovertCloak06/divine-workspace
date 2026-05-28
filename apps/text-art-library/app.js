@@ -29,8 +29,9 @@ const TAGS = [
   'decorative', 'celebration', 'symbols', 'aesthetic', 'kawaii',
   'gothic', 'memes', 'sayings', 'minimalist', 'nsfw',
 ];
-const WOS_MAX_WIDTH = 27;
-const DEV_FALLBACK_PASSWORD = 'dev';
+const WOS_MAX_WIDTH = 27;       // soft warn (⚠) — wide chars may clip
+const WOS_HARD_LIMIT = 58;      // hard warn (⛔) — likely to break in chat
+const DEV_FALLBACK_PASSWORD = '0022';
 
 const DRAW_PALETTE = [
   // hearts
@@ -107,6 +108,16 @@ const els = {
   authPassword: $('auth-password'),
   authError: $('auth-error'),
   authSubmit: $('auth-submit'),
+  authRemember: $('auth-remember'),
+  btnLock: $('btn-lock'),
+  hamburger: $('hamburger'),
+  drawer: $('themes-drawer'),
+  drawerScrim: $('drawer-scrim'),
+  drawerClose: $('drawer-close'),
+  drawerList: $('drawer-list'),
+  activeThemeRow: $('active-theme-row'),
+  activeThemeChip: $('active-theme-chip'),
+  activeThemeLabel: $('active-theme-label'),
 
   edit: $('edit'),
   editTitle: $('edit-title'),
@@ -124,6 +135,7 @@ const els = {
   sketchView: $('sketch-view'),
   sketchActiveChar: $('sketch-active-char'),
   sketchUndo: $('sketch-undo'),
+  sketchEraser: $('sketch-eraser'),
   sketchFill: $('sketch-fill'),
   sketchClear: $('sketch-clear'),
 };
@@ -174,6 +186,21 @@ function auditArt(text) {
       msg: 'Contains regular spaces — auto-converted on save. Copy from the gallery, not the text editor, to get the WoS-safe version.',
     });
   }
+  // Width audit — two thresholds.
+  const lines = text.split('\n');
+  let maxW = 0;
+  for (const l of lines) maxW = Math.max(maxW, graphemeCount(l));
+  if (maxW > WOS_HARD_LIMIT) {
+    issues.push({
+      level: 'error',
+      msg: `Line width ${maxW} exceeds WoS hard limit ${WOS_HARD_LIMIT} — will break in chat. Shorten lines.`,
+    });
+  } else if (maxW > WOS_MAX_WIDTH) {
+    issues.push({
+      level: 'warn',
+      msg: `Line width ${maxW} exceeds WoS soft limit ${WOS_MAX_WIDTH} — may clip with wide characters.`,
+    });
+  }
   const unsafe = new Set();
   for (const g of graphemes(text)) {
     for (const ch of g) {
@@ -203,10 +230,25 @@ function debounce(fn, wait) {
 }
 
 /* ============ 03  API layer ============ */
-// Single source of truth: the full library lives in Netlify Blobs (the
-// `library` key, written by save-art). localStorage is only a last-known-good
-// CACHE — never a competing store — so an unreachable backend shows your real
-// library instead of silently falling back to the bundled seed.
+// Resolve function URL prefix once at boot. Tries Netlify Functions first,
+// falls back to Cloudflare Pages Functions at /api/*.
+let fnPrefix = null;
+async function getFnPrefix() {
+  if (fnPrefix !== null) return fnPrefix;
+  try {
+    const r = await fetch('/.netlify/functions/get-art', { method: 'GET' });
+    if (r.status !== 404 && r.status < 500) { fnPrefix = '/.netlify/functions'; return fnPrefix; }
+  } catch { /* ignore */ }
+  fnPrefix = '/api';
+  return fnPrefix;
+}
+async function fnUrl(name) {
+  const prefix = await getFnPrefix();
+  return `${prefix}/${name}`;
+}
+
+// localStorage is a last-known-good CACHE only (never a competing store), so an
+// unreachable backend shows your real library instead of the bundled seed.
 const CACHE_KEY = 'frostline:cache:v2';
 const LEGACY_KEY = 'frostline:art';
 
@@ -227,30 +269,25 @@ function readCache() {
 }
 
 function writeCache(library, deletedIds) {
-  const payload = (lib) => JSON.stringify({ library: lib, deletedIds, ts: Date.now() });
-  try {
-    localStorage.setItem(CACHE_KEY, payload(library));
-  } catch {
-    // Quota hit (snapshots are large). Strip the PNGs — they regenerate from
-    // `art` on load — and keep the text, which is what must never be lost.
-    try {
-      const lean = library.map((p) => { const { snapshot, ...rest } = p; return rest; });
-      localStorage.setItem(CACHE_KEY, payload(lean));
-    } catch { /* give up silently — server is still source of truth */ }
-  }
+  const payload = JSON.stringify({ library, deletedIds, ts: Date.now() });
+  try { localStorage.setItem(CACHE_KEY, payload); }
+  catch { /* quota hit (large art) — server stays source of truth */ }
 }
 
 const API = {
+  // Returns the raw server payload: { library?, art?, deletedIds? } when online,
+  // { empty: true } on 404, or { offline: true } when unreachable. resolveLibrary
+  // decides what becomes authoritative (server > legacy-migrate > cache > bundle).
   async getArt() {
     try {
-      const res = await fetch('/.netlify/functions/get-art', { cache: 'no-store' });
-      if (res.ok) return await res.json();   // { library?, art?, deletedIds? }
+      const res = await fetch(await fnUrl('get-art'), { cache: 'no-store' });
+      if (res.ok) return await res.json();
       if (res.status === 404) return { empty: true };
     } catch { /* offline / unreachable */ }
     return { offline: true };
   },
   async _post(payload, password) {
-    const res = await fetch('/.netlify/functions/save-art', {
+    const res = await fetch(await fnUrl('save-art'), {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + password, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -276,7 +313,7 @@ const API = {
   },
   async getFlags() {
     try {
-      const res = await fetch('/.netlify/functions/get-flags');
+      const res = await fetch(await fnUrl('get-flags'));
       if (res.ok) return (await res.json()).flags || {};
     } catch { /* fall through */ }
     const stored = localStorage.getItem('frostline:flags');
@@ -284,7 +321,7 @@ const API = {
   },
   async saveFlag(id, action, note) {
     try {
-      const res = await fetch('/.netlify/functions/save-flags', {
+      const res = await fetch(await fnUrl('save-flags'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action, note: note || '' }),
@@ -305,7 +342,7 @@ const API = {
   },
   async authenticate(password) {
     try {
-      const res = await fetch('/.netlify/functions/auth', {
+      const res = await fetch(await fnUrl('auth'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
@@ -322,11 +359,61 @@ const API = {
   },
 };
 
+/* ============ 03.5  Session + persistent auth ============ */
+// All client-only — no secrets leave the browser. The password is held in
+// localStorage so the user can refresh / leave & return without re-entering
+// it. Use the "Lock editor" button to drop it.
+const SESSION_KEY = 'frostline:session';      // { query, activeTag, scrollY, lightboxId }
+const REMEMBER_KEY = 'frostline:remember';    // password string when "stay unlocked" is on
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+const _saveSession = () => {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      query: state.query || '',
+      activeTag: state.activeTag || 'all',
+      scrollY: Math.round(window.scrollY || 0),
+      lightboxId: (els.lightbox && els.lightbox.classList.contains('open'))
+        ? (els.lightbox.dataset.openId || null)
+        : null,
+    }));
+  } catch { /* quota etc. — ignore */ }
+};
+const saveSession = debounce(_saveSession, 250);
+// Persist immediately when the user leaves the page — debounce may not flush.
+window.addEventListener('pagehide', _saveSession);
+window.addEventListener('beforeunload', _saveSession);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') _saveSession();
+});
+window.addEventListener('scroll', saveSession, { passive: true });
+
+function showToast(msg, ms = 2200) {
+  let t = document.getElementById('session-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'session-toast';
+    t.className = 'session-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  // force reflow so the transition replays on repeat toasts
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
 /* ============ 04  State + boot ============ */
 const state = {
   bundled: [],           // copy of ART (seed/backup only — never overrides runtime)
-  library: [],           // authoritative full list (from Blobs `library`)
-  deletedIds: new Set(), // tombstones — stop future bundle adds from resurrecting deletes
+  library: [],           // authoritative full list (from Netlify Blobs)
+  deletedIds: new Set(), // tombstones — stop bundle adds from resurrecting deletes
   flags: {},             // { pieceId: noteText }
   merged: [],            // computed display list
   activeTag: 'all',
@@ -338,8 +425,41 @@ const state = {
 
 async function boot() {
   state.bundled = (window.ART || []).slice();
+
+  // --- Restore session state before first render so the tag strip / search
+  //     box reflect where the user left off.
+  const sess = loadSession();
+  if (sess.query) {
+    state.query = sess.query;
+    els.search.value = sess.query;
+  }
+  if (sess.activeTag && (TAGS.includes(sess.activeTag) || sess.activeTag === '__flagged')) {
+    state.activeTag = sess.activeTag;
+  }
+
   buildTagStrip();
   renderEmpty('Loading…');
+
+  // --- Auto-unlock if the user previously chose "stay unlocked". We don't
+  //     await this — boot can render the gallery while auth happens.
+  const remembered = (() => {
+    try { return localStorage.getItem(REMEMBER_KEY); } catch { return null; }
+  })();
+  if (remembered) {
+    API.authenticate(remembered).then((r) => {
+      if (r.ok) {
+        state.editor = true;
+        state.password = remembered;
+        document.body.classList.add('editor');
+        els.btnExport.disabled = false;
+        render();
+        showToast('Editor mode restored');
+      } else {
+        // password no longer valid — drop it silently
+        try { localStorage.removeItem(REMEMBER_KEY); } catch {}
+      }
+    }).catch(() => { /* offline / 404 — try again next load */ });
+  }
 
   const [artData, flags] = await Promise.all([API.getArt(), API.getFlags()]);
   state.flags = flags || {};
@@ -347,14 +467,26 @@ async function boot() {
   state.booted = true;
   recomputeMerged();
   render();
+
+  // --- Restore scroll position + reopen the lightbox the user was viewing.
+  if (typeof sess.scrollY === 'number' && sess.scrollY > 0) {
+    // Two RAFs: one for layout, one for the grid's per-card fitPreview pass.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo(0, sess.scrollY);
+    }));
+  }
+  if (sess.lightboxId) {
+    const piece = state.merged.find((p) => p.id === sess.lightboxId);
+    if (piece) openLightbox(piece);
+  }
 }
 
 function bundleSeed() {
   return state.bundled.map((p) => ({ ...p }));
 }
 
-// One-time merge used when migrating OLD server/cache data (user pieces +
-// deletedIds layered over the bundle) into the new flat library.
+// One-time merge when migrating legacy data (user pieces + deletedIds layered
+// over the bundle) into the flat library.
 function migrateMerge(bundled, userPieces, deletedSet) {
   const out = [];
   const userById = new Map((userPieces || []).map((p) => [p.id, p]));
@@ -371,8 +503,9 @@ function migrateMerge(bundled, userPieces, deletedSet) {
   return out;
 }
 
-// Decide the authoritative library from (in priority order) the server's
-// `library`, an OLD server payload to migrate, the local cache, or the bundle.
+// Decide the authoritative library, in priority order: the server's flat
+// `library`, an OLD server payload to migrate, the local cache, then the bundle.
+// The bundle can only ADD genuinely-new ids — it never overrides or resurrects.
 function resolveLibrary(data) {
   let library = null;
   let deletedIds = [];
@@ -426,13 +559,12 @@ function recomputeMerged() {
   state.merged = state.library.filter((p) => !state.deletedIds.has(p.id));
 }
 
-// Cache the current library locally (last-known-good for offline loads).
 function cacheNow() {
   writeCache(state.library, [...state.deletedIds]);
 }
 
-// Pull the authoritative library from the shared store so this device's view
-// converges with edits made on other devices/users. Safe to call any time.
+// Pull the authoritative library from the shared store so this device converges
+// with edits made elsewhere. Safe to call any time after boot.
 let _refreshing = false;
 async function refresh() {
   if (!state.booted || _refreshing) return;
@@ -449,12 +581,6 @@ async function refresh() {
   }
 }
 
-// Refresh when this device regains focus — picks up the other person's edits.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refresh();
-});
-window.addEventListener('focus', refresh);
-
 /* ============ 05  Rendering ============ */
 function buildTagStrip() {
   els.tagStrip.innerHTML = '';
@@ -467,7 +593,46 @@ function buildTagStrip() {
     b.addEventListener('click', () => setActiveTag(tag === state.activeTag ? 'all' : tag));
     els.tagStrip.appendChild(b);
   }
+  buildDrawerList();
   syncFlaggedTab();
+  syncActiveThemeChip();
+}
+
+/* Themes drawer — replaces the inline tag strip. Same labels, same handler,
+   different surface: a slide-in panel triggered by the hamburger button. */
+function buildDrawerList() {
+  if (!els.drawerList) return;
+  els.drawerList.innerHTML = '';
+  for (const tag of TAGS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'drawer-item';
+    b.textContent = tag;
+    b.dataset.tag = tag;
+    b.setAttribute('role', 'listitem');
+    if (tag === state.activeTag) b.classList.add('active');
+    b.addEventListener('click', () => {
+      const next = tag === state.activeTag ? 'all' : tag;
+      setActiveTag(next);
+      closeDrawer();
+    });
+    els.drawerList.appendChild(b);
+  }
+}
+
+function syncActiveThemeChip() {
+  if (!els.activeThemeRow) return;
+  const t = state.activeTag;
+  const isDefault = !t || t === 'all';
+  if (isDefault) {
+    els.activeThemeRow.hidden = true;
+    return;
+  }
+  els.activeThemeRow.hidden = false;
+  const flagged = t === '__flagged';
+  els.activeThemeChip.classList.toggle('flagged', flagged);
+  const flagCount = Object.keys(state.flags || {}).length;
+  els.activeThemeLabel.textContent = flagged ? `flagged (${flagCount})` : t;
 }
 
 function syncFlaggedTab() {
@@ -490,6 +655,30 @@ function syncFlaggedTab() {
     existing.remove();
     if (state.activeTag === '__flagged') state.activeTag = 'all';
   }
+
+  // Mirror into the drawer (editor-only entry)
+  if (els.drawerList) {
+    let drawerFlagged = els.drawerList.querySelector('.drawer-item.flagged-tab');
+    if (shouldShow) {
+      if (!drawerFlagged) {
+        drawerFlagged = document.createElement('button');
+        drawerFlagged.type = 'button';
+        drawerFlagged.className = 'drawer-item flagged-tab';
+        drawerFlagged.dataset.tag = '__flagged';
+        drawerFlagged.setAttribute('role', 'listitem');
+        drawerFlagged.addEventListener('click', () => {
+          setActiveTag(state.activeTag === '__flagged' ? 'all' : '__flagged');
+          closeDrawer();
+        });
+        els.drawerList.appendChild(drawerFlagged);
+      }
+      drawerFlagged.textContent = `flagged (${flagCount})`;
+      drawerFlagged.classList.toggle('active', state.activeTag === '__flagged');
+    } else if (drawerFlagged) {
+      drawerFlagged.remove();
+    }
+  }
+  syncActiveThemeChip();
 }
 
 function setActiveTag(tag) {
@@ -497,7 +686,14 @@ function setActiveTag(tag) {
   for (const b of els.tagStrip.querySelectorAll('.tag')) {
     b.classList.toggle('active', b.dataset.tag === tag);
   }
+  if (els.drawerList) {
+    for (const b of els.drawerList.querySelectorAll('.drawer-item')) {
+      b.classList.toggle('active', b.dataset.tag === tag);
+    }
+  }
+  syncActiveThemeChip();
   render();
+  saveSession();
   setTimeout(updateStripArrows, 0);
 }
 
@@ -552,11 +748,18 @@ function renderCard(p) {
   const width = p.width ?? measure(p.art).width;
   const height = p.height ?? measure(p.art).height;
   const overWide = width > WOS_MAX_WIDTH;
+  const hardWide = width > WOS_HARD_LIMIT;
 
-  if (overWide) {
+  if (hardWide) {
+    const warn = document.createElement('span');
+    warn.className = 'card-warn hard';
+    warn.title = `Width ${width} exceeds WoS hard limit ${WOS_HARD_LIMIT} — will break in chat`;
+    warn.textContent = '⛔';
+    head.appendChild(warn);
+  } else if (overWide) {
     const warn = document.createElement('span');
     warn.className = 'card-warn';
-    warn.title = 'Width exceeds WoS 27-char limit — may clip in chat';
+    warn.title = `Width ${width} exceeds WoS soft limit ${WOS_MAX_WIDTH} — may clip in chat`;
     warn.textContent = '⚠';
     head.appendChild(warn);
   }
@@ -580,36 +783,16 @@ function renderCard(p) {
   }
   card.appendChild(head);
 
-  // preview — a PNG snapshot of the art (display only; never the copy source)
+  // preview
   const prev = document.createElement('div');
   prev.className = 'preview';
-  const showImg = (url) => {
-    prev.innerHTML = '';
-    const img = document.createElement('img');
-    img.className = 'preview-img';
-    img.src = url;
-    img.alt = p.title || 'art';
-    img.draggable = false;
-    prev.appendChild(img);
-  };
-  if (p.snapshot) {
-    prev.classList.add('has-img');
-    showImg(p.snapshot);
-  } else {
-    // Legacy piece without a stored snapshot: render the text now, then
-    // generate a snapshot in the background and swap it in (cached on the piece).
-    const pre = document.createElement('pre');
-    pre.textContent = p.art || '';
-    prev.appendChild(pre);
-    requestAnimationFrame(() => fitPreview(prev, pre));
-    artToSnapshot(p.art).then((url) => {
-      if (!url) return;
-      p.snapshot = url;        // cache in-memory; persists when the piece is next saved
-      prev.classList.add('has-img');
-      showImg(url);
-    }).catch(() => { /* keep the text fallback */ });
-  }
+  const pre = document.createElement('pre');
+  pre.textContent = p.art || '';
+  prev.appendChild(pre);
   card.appendChild(prev);
+
+  // scale to fit after layout
+  requestAnimationFrame(() => fitPreview(prev, pre));
 
   // chips
   if (p.tags && p.tags.length) {
@@ -706,58 +889,57 @@ function fitPreview(container, pre) {
   }
 }
 
-/* ============ 05b  Snapshot — PNG of the art for card faces ============ */
-// The card shows a *picture* of the art so it can never drift from the popup.
-// The text itself (p.art) is always stored separately and is what Copy uses —
-// the snapshot is display-only. Rendered to match the WoS lightbox preview.
-const SNAP = {
-  font: '"Noto Sans JP", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-  fontPx: 24, lineH: 1.25, pad: 18,
-  bg: '#0f2033',   // matches --bg-wos (the lightbox preview tray)
-  fg: '#d8e8f8',   // matches --ink-wos
-};
-let _snapCanvas = null;
-let _fontsReady = false;
-async function ensureFonts() {
-  if (_fontsReady) return;
-  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch { /* ignore */ }
-  _fontsReady = true;
-}
-async function artToSnapshot(art) {
-  if (!art) return '';
-  await ensureFonts();
-  const lines = String(art).split('\n');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const canvas = _snapCanvas || (_snapCanvas = document.createElement('canvas'));
-  const ctx = canvas.getContext('2d');
-  const font = `${SNAP.fontPx}px ${SNAP.font}`;
-  const lineHeightPx = SNAP.fontPx * SNAP.lineH;
-  ctx.font = font;
-  let maxW = 0;
-  for (const ln of lines) maxW = Math.max(maxW, ctx.measureText(ln).width);
-  const wCss = Math.ceil(maxW) + SNAP.pad * 2;
-  const hCss = Math.ceil(lines.length * lineHeightPx) + SNAP.pad * 2;
-  canvas.width = Math.max(1, Math.round(wCss * dpr));
-  canvas.height = Math.max(1, Math.round(hCss * dpr));
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = SNAP.bg;
-  ctx.fillRect(0, 0, wCss, hCss);
-  ctx.font = font;            // re-set: resizing the canvas clears context state
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = SNAP.fg;
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], SNAP.pad, SNAP.pad + i * lineHeightPx);
-  }
-  return canvas.toDataURL('image/png');
-}
-
 /* ============ 06  Filtering + search ============ */
 els.search.addEventListener('input', () => {
   state.query = els.search.value;
   render();
+  saveSession();
 });
 els.stripLeft.addEventListener('click', () => els.tagStrip.scrollBy({ left: -160, behavior: 'smooth' }));
 els.stripRight.addEventListener('click', () => els.tagStrip.scrollBy({ left: 160, behavior: 'smooth' }));
+
+/* Drawer (hamburger menu) — open/close + outside-click + escape */
+function openDrawer() {
+  if (!els.drawer) return;
+  els.drawer.hidden = false;
+  els.drawerScrim.hidden = false;
+  // next frame so the transition actually animates
+  requestAnimationFrame(() => {
+    els.drawer.classList.add('open');
+    els.drawerScrim.classList.add('open');
+  });
+  els.drawer.setAttribute('aria-hidden', 'false');
+  els.hamburger.setAttribute('aria-expanded', 'true');
+}
+function closeDrawer() {
+  if (!els.drawer) return;
+  els.drawer.classList.remove('open');
+  els.drawerScrim.classList.remove('open');
+  els.drawer.setAttribute('aria-hidden', 'true');
+  els.hamburger.setAttribute('aria-expanded', 'false');
+  // Hide after transition so it's removed from the a11y tree
+  setTimeout(() => {
+    if (!els.drawer.classList.contains('open')) {
+      els.drawer.hidden = true;
+      els.drawerScrim.hidden = true;
+    }
+  }, 280);
+}
+if (els.hamburger) {
+  els.hamburger.addEventListener('click', () => {
+    const open = els.hamburger.getAttribute('aria-expanded') === 'true';
+    if (open) closeDrawer(); else openDrawer();
+  });
+}
+if (els.drawerClose) els.drawerClose.addEventListener('click', closeDrawer);
+if (els.drawerScrim) els.drawerScrim.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && els.drawer && els.drawer.classList.contains('open')) closeDrawer();
+});
+// Active-theme chip — tap to clear the filter back to "all"
+if (els.activeThemeChip) {
+  els.activeThemeChip.addEventListener('click', () => setActiveTag('all'));
+}
 
 function updateStripArrows() {
   const el = els.tagStrip;
@@ -775,11 +957,14 @@ setTimeout(updateStripArrows, 500);
 
 /* ============ 07  Lightbox ============ */
 function openLightbox(p) {
+  els.lightbox.dataset.openId = p.id;
   els.lbTitle.textContent = p.title || 'Untitled';
-  const lines = (p.art || '').split('\n');
-  const html = lines.map((l) => {
+  const lbLines = (p.art || '').split('\n');
+  const html = lbLines.map((l) => {
     const w = graphemeCount(l);
-    const cls = w > WOS_MAX_WIDTH ? 'ov' : '';
+    let cls = '';
+    if (w > WOS_HARD_LIMIT) cls = 'ov-hard';
+    else if (w > WOS_MAX_WIDTH) cls = 'ov';
     return cls
       ? `<span class="${cls}">${escapeHtml(l)}</span>`
       : escapeHtml(l);
@@ -800,6 +985,7 @@ function openLightbox(p) {
   // fit preview to modal width
   requestAnimationFrame(() => fitWosPreview(els.lbPre));
   els.lightbox.classList.add('open');
+  saveSession();
 }
 function fitWosPreview(pre) {
   pre.style.transform = '';
@@ -813,7 +999,11 @@ function fitWosPreview(pre) {
   const scale = Math.min(1, cw / pw);
   if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
-function closeLightbox() { els.lightbox.classList.remove('open'); }
+function closeLightbox() {
+  els.lightbox.classList.remove('open');
+  delete els.lightbox.dataset.openId;
+  saveSession();
+}
 els.lbClose.addEventListener('click', closeLightbox);
 els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) closeLightbox(); });
 
@@ -879,6 +1069,14 @@ els.snowflake.addEventListener('click', () => {
 function openAuth() {
   els.authError.textContent = '';
   els.authPassword.value = '';
+  // Default the checkbox to ON — most users will want to stay unlocked, and
+  // the lock button makes signing out a single tap.
+  if (els.authRemember) {
+    const remembered = (() => {
+      try { return !!localStorage.getItem(REMEMBER_KEY); } catch { return false; }
+    })();
+    els.authRemember.checked = remembered || true;
+  }
   els.auth.classList.add('open');
   setTimeout(() => els.authPassword.focus(), 50);
 }
@@ -902,14 +1100,37 @@ async function submitAuth() {
     state.password = pw;
     document.body.classList.add('editor');
     els.btnExport.disabled = false;
+    // Persist the password if the user opted in.
+    const remember = !!(els.authRemember && els.authRemember.checked);
+    try {
+      if (remember) localStorage.setItem(REMEMBER_KEY, pw);
+      else localStorage.removeItem(REMEMBER_KEY);
+    } catch { /* ignore quota errors */ }
     closeAuth();
     render();
-    // Re-pull as an editor: this also migrates any legacy aggregate data into
-    // per-piece records (and won't drop the old user pieces).
-    refresh();
   } else {
     els.authError.textContent = r.error || 'Wrong password';
   }
+}
+
+// Lock editor — drops the remembered password and returns to read-only mode
+// without a page reload, so session state (scroll, search, etc.) is kept.
+function lockEditor() {
+  state.editor = false;
+  state.password = null;
+  document.body.classList.remove('editor');
+  els.btnExport.disabled = true;
+  try { localStorage.removeItem(REMEMBER_KEY); } catch {}
+  // Re-render so per-card edit/delete buttons + flagged tab disappear.
+  if (state.activeTag === '__flagged') state.activeTag = 'all';
+  render();
+  showToast('Editor locked');
+}
+if (els.btnLock) {
+  els.btnLock.addEventListener('click', () => {
+    if (!state.editor) return;
+    lockEditor();
+  });
 }
 
 /* ============ 11  Add/Edit modal ============ */
@@ -925,7 +1146,7 @@ function openAdd() {
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
-  setMode('text');
+  setTab('text');
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
@@ -938,12 +1159,16 @@ function openEdit(p) {
   els.editTagsInput.value = (p.tags || []).join(', ');
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
-  setMode('text');
+  setTab('text');
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
 }
-function closeEdit() { els.edit.classList.remove('open'); }
+function closeEdit() {
+  els.edit.classList.remove('open');
+  document.documentElement.classList.remove('sketch-locked');
+  document.body.classList.remove('sketch-locked');
+}
 els.editClose.addEventListener('click', closeEdit);
 els.editCancel.addEventListener('click', closeEdit);
 els.edit.addEventListener('click', (e) => {
@@ -951,31 +1176,9 @@ els.edit.addEventListener('click', (e) => {
 });
 els.btnAdd.addEventListener('click', openAdd);
 
-// Mode toggle (Type ⟷ Draw) — one editing surface, switched in place.
-let editMode = 'text';
-function setMode(name) {
-  editMode = name === 'draw' ? 'draw' : 'text';
-  const tgl = $('mode-toggle');
-  if (tgl) {
-    tgl.classList.toggle('is-draw', editMode === 'draw');
-    for (const b of tgl.querySelectorAll('.mode-opt')) {
-      const on = b.dataset.mode === editMode;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
-  }
-  for (const s of document.querySelectorAll('.edit-surface')) {
-    s.hidden = s.dataset.surface !== editMode;
-  }
-  if (editMode === 'draw') { ensureBlankCanvas(); renderSketch(); }
-}
-{
-  const tgl = $('mode-toggle');
-  if (tgl) {
-    for (const b of tgl.querySelectorAll('.mode-opt')) {
-      b.addEventListener('click', () => setMode(b.dataset.mode));
-    }
-  }
+// Tabs (Text Mode / Sketch Mode)
+for (const t of document.querySelectorAll('.tab')) {
+  t.addEventListener('click', () => setTab(t.dataset.tab));
 }
 function ensureBlankCanvas() {
   // Make sure the textarea has a paintable 27×12 NBSP grid for sketch mode.
@@ -987,6 +1190,22 @@ function ensureBlankCanvas() {
   lastEditSnapshot = els.editArtInput.value;
   resetEditHistory(els.editArtInput.value);
   runAudit();
+}
+
+function setTab(name) {
+  for (const t of document.querySelectorAll('.tab')) {
+    t.classList.toggle('active', t.dataset.tab === name);
+  }
+  for (const p of document.querySelectorAll('.tab-panel')) {
+    p.classList.toggle('active', p.dataset.panel === name);
+  }
+  const lock = (name === 'sketch');
+  document.documentElement.classList.toggle('sketch-locked', lock);
+  document.body.classList.toggle('sketch-locked', lock);
+  if (name === 'sketch') {
+    ensureBlankCanvas();
+    renderSketch(true);
+  }
 }
 
 const runAudit = () => {
@@ -1034,10 +1253,13 @@ function insertAtCursor(ch) {
 
 /* ============ 12.5  Sketch view ============ */
 let activeBrush = '❤';
+let eraserOn = false;
 const editHistory = [];      // stack of prior art strings
 const EDIT_HISTORY_MAX = 40;
 let editHistorySuspend = false;
 let lastEditSnapshot = '';
+let strokeStartSnapshot = null; // captured at pointerdown / touchstart
+let lastTouchAt = 0;            // ms timestamp of most recent touch event
 
 function pushEditHistory() {
   if (editHistorySuspend) return;
@@ -1052,7 +1274,6 @@ function resetEditHistory(v) {
   lastEditSnapshot = v || '';
 }
 function undoEdit() {
-  // editHistory[last] is the current value; pop it and apply the one before.
   if (editHistory.length < 2) return;
   editHistory.pop();
   const prev = editHistory[editHistory.length - 1];
@@ -1060,17 +1281,38 @@ function undoEdit() {
   els.editArtInput.value = prev;
   lastEditSnapshot = prev;
   editHistorySuspend = false;
-  renderSketch();
+  renderSketch(true);
   runAudit();
 }
 
 function setActiveBrush(ch) {
   activeBrush = ch;
   if (els.sketchActiveChar) els.sketchActiveChar.textContent = ch;
+  // Highlight the matching palette button so the user can see what's selected.
+  if (els.charPalette) {
+    for (const b of els.charPalette.querySelectorAll('.palette-btn')) {
+      b.classList.toggle('brush-active', b.dataset.char === ch);
+    }
+  }
+  if (els.favoritesBar) {
+    for (const b of els.favoritesBar.querySelectorAll('.fav-slot')) {
+      b.classList.toggle('brush-active', b.textContent === ch);
+    }
+  }
 }
 
-function renderSketch() {
+function setEraser(on) {
+  eraserOn = !!on;
+  if (els.sketchEraser) els.sketchEraser.classList.toggle('active', eraserOn);
+  if (els.sketchActiveChar) {
+    els.sketchActiveChar.classList.toggle('eraser', eraserOn);
+    els.sketchActiveChar.textContent = eraserOn ? '⌫' : activeBrush;
+  }
+}
+
+function renderSketch(force) {
   if (!els.sketchView) return;
+  if (!force && !isSketchMode()) return;
   const text = els.editArtInput.value;
   els.sketchView.innerHTML = '';
   if (!text) {
@@ -1080,22 +1322,25 @@ function renderSketch() {
     els.sketchView.appendChild(hint);
     return;
   }
+  // Cap canvas at WoS limits so there's no dead space outside chat-safe bounds.
+  //   width  → max(27, actual) capped at 58 (hard limit)
+  //   height → max(12, actual) capped at 24 (twice WoS height; anything beyond is degenerate)
   const lines = text.split('\n');
-  // For consistent painting, pad every line out to at least the widest line's
-  // width with NBSP cells. Empty rows become full rows of paintable cells.
-  const widest = Math.max(27, ...lines.map((l) => graphemeCount(l)));
-  for (let y = 0; y < lines.length; y++) {
+  let actualWidest = 0;
+  for (const l of lines) actualWidest = Math.max(actualWidest, graphemeCount(l));
+  const widest = Math.min(WOS_HARD_LIMIT, Math.max(WOS_MAX_WIDTH, actualWidest));
+  const tallest = Math.min(24, Math.max(12, lines.length));
+  for (let y = 0; y < tallest; y++) {
     const lineEl = document.createElement('div');
     lineEl.className = 'sketch-line';
-    const gs = graphemes(lines[y]);
-    // pad with NBSPs to the widest line so the row is fully paintable
+    const gs = y < lines.length ? graphemes(lines[y]) : [];
     while (gs.length < widest) gs.push('\u00A0');
-    for (let x = 0; x < gs.length; x++) {
+    for (let x = 0; x < widest; x++) {
       const span = document.createElement('span');
       span.className = 'sketch-char';
-      span.textContent = gs[x] === '\u00A0' ? '\u00A0' : gs[x];
-      // mark visually-empty cells so they still show a faint hover target
-      if (gs[x] === '\u00A0' || gs[x] === ' ') span.classList.add('sketch-empty-cell');
+      const g = gs[x];
+      span.textContent = (g === undefined || g === '\u00A0' || g === ' ') ? '\u00A0' : g;
+      if (g === undefined || g === '\u00A0' || g === ' ') span.classList.add('sketch-empty-cell');
       span.dataset.y = y;
       span.dataset.x = x;
       lineEl.appendChild(span);
@@ -1105,60 +1350,105 @@ function renderSketch() {
 }
 
 function replaceCharAt(y, x) {
-  pushEditHistory();
+  // Note: this does NOT push history per-call. History is pushed once at
+  // stroke start (pointerdown / touchstart) so a drag = one undo, not many.
   const text = els.editArtInput.value;
   const lines = text.split('\n');
-  // Pad missing rows with NBSP so the user can paint into "off-canvas" rows.
   while (y >= lines.length) lines.push('');
   if (x < 0) return;
   const gs = graphemes(lines[y]);
-  // Pad the row with NBSP up to x so the new char doesn't fall through.
   while (gs.length < x) gs.push('\u00A0');
+  const newCh = eraserOn ? '\u00A0' : activeBrush;
   if (x < gs.length) {
-    if (gs[x] === activeBrush) return;
-    gs[x] = activeBrush;
+    if (gs[x] === newCh) return;
+    gs[x] = newCh;
   } else {
-    gs.push(activeBrush);
+    gs.push(newCh);
   }
   lines[y] = gs.join('');
+  editHistorySuspend = true; // avoid the input listener pushing history
   els.editArtInput.value = lines.join('\n');
+  editHistorySuspend = false;
   lastEditSnapshot = els.editArtInput.value;
-  renderSketch();
+
+  // Mutate just the touched span in place — no full DOM rebuild.
+  const lineEl = els.sketchView.children[y];
+  if (lineEl) {
+    let span = lineEl.children[x];
+    if (!span) {
+      // pad missing spans in this line
+      while (lineEl.children.length <= x) {
+        const s = document.createElement('span');
+        s.className = 'sketch-char sketch-empty-cell';
+        s.textContent = '\u00A0';
+        s.dataset.y = y;
+        s.dataset.x = lineEl.children.length;
+        lineEl.appendChild(s);
+      }
+      span = lineEl.children[x];
+    }
+    if (newCh === '\u00A0' || newCh === ' ') {
+      span.textContent = '\u00A0';
+      span.classList.add('sketch-empty-cell');
+    } else {
+      span.textContent = newCh;
+      span.classList.remove('sketch-empty-cell');
+    }
+  }
   runAudit();
+}
+
+function startStroke() {
+  // Snapshot value once at the start of a drag so a whole drag = one undo.
+  strokeStartSnapshot = els.editArtInput.value;
+  pushEditHistory();
+}
+function endStroke() {
+  sketchPainting = false;
+  strokeStartSnapshot = null;
 }
 
 let sketchPainting = false;
 els.sketchView.addEventListener('pointerdown', (e) => {
+  // If a touch event fired within the last 400ms, this pointerdown is the
+  // synthetic one Safari generates after the touch — ignore it.
+  if (Date.now() - lastTouchAt < 400) return;
   const target = document.elementFromPoint(e.clientX, e.clientY);
   const t = target && target.closest && target.closest('.sketch-char');
   if (!t) return;
   sketchPainting = true;
+  startStroke();
   replaceCharAt(+t.dataset.y, +t.dataset.x);
   e.preventDefault();
 });
 els.sketchView.addEventListener('pointermove', (e) => {
   if (!sketchPainting) return;
+  if (Date.now() - lastTouchAt < 400) return;
   const target = document.elementFromPoint(e.clientX, e.clientY);
   const t = target && target.closest && target.closest('.sketch-char');
   if (!t) return;
   replaceCharAt(+t.dataset.y, +t.dataset.x);
   e.preventDefault();
 });
-window.addEventListener('pointerup', () => { sketchPainting = false; });
-window.addEventListener('pointercancel', () => { sketchPainting = false; });
-// touch-event fallback for iOS Safari — pointer events sometimes don't reach
-// fast-tap targets when scroll containers swallow the gesture.
+window.addEventListener('pointerup', endStroke);
+window.addEventListener('pointercancel', endStroke);
+
+// Touch fallback for iOS — fires before pointer events, so we mark the time
+// and the pointer handlers skip the synthetic follow-up.
 els.sketchView.addEventListener('touchstart', (e) => {
+  lastTouchAt = Date.now();
   const t = e.touches[0];
   if (!t) return;
   const target = document.elementFromPoint(t.clientX, t.clientY);
   const cell = target && target.closest && target.closest('.sketch-char');
   if (!cell) return;
   sketchPainting = true;
+  startStroke();
   replaceCharAt(+cell.dataset.y, +cell.dataset.x);
   e.preventDefault();
 }, { passive: false });
 els.sketchView.addEventListener('touchmove', (e) => {
+  lastTouchAt = Date.now();
   if (!sketchPainting) return;
   const t = e.touches[0];
   if (!t) return;
@@ -1168,7 +1458,8 @@ els.sketchView.addEventListener('touchmove', (e) => {
   replaceCharAt(+cell.dataset.y, +cell.dataset.x);
   e.preventDefault();
 }, { passive: false });
-els.sketchView.addEventListener('touchend', () => { sketchPainting = false; });
+els.sketchView.addEventListener('touchend', endStroke);
+els.sketchView.addEventListener('touchcancel', endStroke);
 
 els.sketchFill.addEventListener('click', () => {
   pushEditHistory();
@@ -1176,7 +1467,7 @@ els.sketchFill.addEventListener('click', () => {
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   lastEditSnapshot = els.editArtInput.value;
-  renderSketch();
+  renderSketch(true);
   runAudit();
 });
 els.sketchClear.addEventListener('click', () => {
@@ -1185,15 +1476,15 @@ els.sketchClear.addEventListener('click', () => {
   pushEditHistory();
   els.editArtInput.value = '';
   lastEditSnapshot = '';
-  renderSketch();
+  renderSketch(true);
   runAudit();
 });
 els.sketchUndo.addEventListener('click', undoEdit);
+if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
 
 els.editArtInput.addEventListener('input', () => {
   // user typed/pasted directly — push a history snapshot of the value BEFORE
-  // this change. We mimic this by snapshotting on every focus and after a
-  // 600ms idle window.
+  // this change.
   if (!editHistorySuspend) {
     if (lastEditSnapshot !== els.editArtInput.value) {
       editHistory.push(lastEditSnapshot);
@@ -1201,7 +1492,8 @@ els.editArtInput.addEventListener('input', () => {
       lastEditSnapshot = els.editArtInput.value;
     }
   }
-  renderSketch();
+  // Only re-render sketch view when it's actually visible.
+  if (isSketchMode()) renderSketch();
 });
 
 const textBlankBtn = document.getElementById('text-blank-canvas');
@@ -1304,7 +1596,8 @@ function attachLongPress(el, { onTap, onLong }) {
 }
 
 function isSketchMode() {
-  return editMode === 'draw';
+  const tab = document.querySelector('.tab.active');
+  return tab && tab.dataset.tab === 'sketch';
 }
 
 function handlePaletteSelection(ch) {
@@ -1347,7 +1640,7 @@ function buildFavoritesBar() {
         onLong: () => removeFavorite(ch),
       });
     } else {
-      slot.textContent = '+';
+      slot.textContent = '';
       slot.disabled = true;
       slot.title = 'Empty — long-press a palette character to add';
     }
@@ -1372,29 +1665,29 @@ els.editSave.addEventListener('click', async () => {
   art = spacesToNbsp(art);
   const { width, height } = measure(art);
 
-  els.editSave.disabled = true;
-  els.editSave.textContent = 'Saving…';
-
-  // Freeze a picture of exactly what this art renders to (display only).
-  let snapshot = '';
-  try { snapshot = await artToSnapshot(art); } catch { /* card falls back to text */ }
-
   let piece;
   if (editing) {
-    piece = { ...editing, title, tags, art, width, height, snapshot };
+    piece = { ...editing, title, tags, art, width, height };
   } else {
-    piece = { id: newId(), title, tags, art, width, height, wosVerified: false, snapshot };
+    piece = {
+      id: newId(),
+      title, tags, art, width, height,
+      wosVerified: false,
+    };
   }
 
+  // Flat library is authoritative: replace the piece by id, or append if new.
   const prevLib = state.library;
   const prevDel = new Set(state.deletedIds);
   const next = state.library.slice();
-  const idx = next.findIndex((p) => p.id === piece.id);
-  if (idx >= 0) next[idx] = piece;
+  const existingIdx = next.findIndex((p) => p.id === piece.id);
+  if (existingIdx >= 0) next[existingIdx] = piece;
   else next.push(piece);
   state.library = next;
   state.deletedIds.delete(piece.id); // editing un-deletes
 
+  els.editSave.disabled = true;
+  els.editSave.textContent = 'Saving…';
   const r = await API.savePiece(piece, state.password);
   els.editSave.disabled = false;
   els.editSave.textContent = 'Save';
@@ -1412,7 +1705,7 @@ els.editSave.addEventListener('click', async () => {
   if (r.local) {
     alert('Saved on this device, but the server was unreachable — it won’t sync to other devices until you’re back online and save again.');
   } else {
-    refresh(); // pull in anything the other device changed
+    refresh(); // pull in anything another device changed
   }
 });
 
@@ -1462,12 +1755,13 @@ async function toggleFlag(p, card, box, flag, note) {
 }
 
 async function toggleVerified(p) {
-  const idx = state.library.findIndex((u) => u.id === p.id);
-  if (idx < 0) return;
   const prevLib = state.library;
   const next = state.library.slice();
-  const updated = { ...next[idx], wosVerified: !next[idx].wosVerified };
-  next[idx] = updated;
+  const idx = next.findIndex((u) => u.id === p.id);
+  const base = idx >= 0 ? next[idx] : p;
+  const updated = { ...base, wosVerified: !base.wosVerified };
+  if (idx >= 0) next[idx] = updated;
+  else next.push(updated);
   state.library = next;
 
   const r = await API.savePiece(updated, state.password);

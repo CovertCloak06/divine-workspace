@@ -10,6 +10,439 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="style.css">
+  <style id="hamburger-themes-ui">
+    /* Respect the [hidden] attribute even when our display:flex rules win cascade */
+    [hidden] { display: none !important; }
+
+    /* === Hamburger button (top-left of header) === */
+    .header { position: relative; }
+    .hamburger-btn {
+      position: absolute;
+      left: 14px;
+      top: 16px;
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      z-index: 5;
+    }
+    .hamburger-btn:focus,
+    .hamburger-btn:focus-visible { outline: none; }
+    .hamburger-bars {
+      position: relative;
+      display: inline-block;
+      width: 24px;
+      height: 18px;
+    }
+    .hamburger-bars span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 2px;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(31, 89, 147, 0.9);
+      transition: transform 220ms ease, opacity 160ms ease, top 220ms ease;
+    }
+    .hamburger-bars span:nth-child(1) { top: 0; }
+    .hamburger-bars span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+    .hamburger-bars span:nth-child(3) { top: calc(100% - 3px); }
+    .hamburger-btn[aria-expanded="true"] .hamburger-bars span:nth-child(1) {
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+    }
+    .hamburger-btn[aria-expanded="true"] .hamburger-bars span:nth-child(2) { opacity: 0; }
+    .hamburger-btn[aria-expanded="true"] .hamburger-bars span:nth-child(3) {
+      top: 50%;
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    /* === Drawer === */
+    .drawer-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+      z-index: 180;
+    }
+    .drawer-scrim.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .themes-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(320px, 86vw);
+      background: linear-gradient(180deg, #0d1a2e 0%, #162540 100%);
+      color: #fff;
+      box-shadow: 6px 0 24px rgba(0, 0, 0, 0.4);
+      transform: translateX(-100%);
+      transition: transform 260ms cubic-bezier(0.3, 0.7, 0.3, 1);
+      z-index: 190;
+      display: flex;
+      flex-direction: column;
+      will-change: transform;
+    }
+    .themes-drawer.open { transform: translateX(0); }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid rgba(123, 169, 220, 0.18);
+    }
+    .drawer-head h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .drawer-close {
+      background: transparent;
+      border: 0;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 26px;
+      line-height: 1;
+      padding: 0 4px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .drawer-close:hover { color: #fff; }
+    .drawer-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    /* Each drawer entry: full-width box, matches the Add Art button color */
+    .drawer-item {
+      display: block;
+      width: 100%;
+      background: linear-gradient(180deg, var(--btn-grad-top, #79bef0) 0%, var(--btn-grad-mid, #4ea4dc) 55%, var(--btn-grad-bot, #2e7ec0) 100%);
+      color: #fff;
+      border: 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+      padding: 16px 20px;
+      border-radius: 0;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      text-align: left;
+      cursor: pointer;
+      transition: filter 120ms;
+      text-shadow:
+        -1px 0 0 var(--btn-edge, #1f5993),
+        1px 0 0 var(--btn-edge, #1f5993),
+        0 -1px 0 var(--btn-edge, #1f5993),
+        0 1px 0 var(--btn-edge, #1f5993),
+        0 2px 3px rgba(0, 0, 0, 0.35);
+    }
+    .drawer-item:hover { filter: brightness(1.08); }
+    .drawer-item:active { filter: brightness(0.92); }
+    .drawer-item.active {
+      background: #0f88a8;
+      color: #ffffff;
+      text-shadow: none;
+    }
+    .drawer-item.flagged-tab {
+      background: #c95c5c;
+      color: #fff;
+    }
+    .drawer-item.flagged-tab.active {
+      background: #f7d0d0;
+      color: #5a1a1a;
+    }
+
+    /* === Active-theme box (shows current filter under search bar) === */
+    /* When the active-theme row is showing, collapse the spacing so the box
+       sits flush against the bottom edge of the controls container. */
+    .controls:has(.active-theme-row:not([hidden])) { padding-bottom: 0 !important; }
+    .controls:has(.active-theme-row:not([hidden])) .search-row { margin-bottom: 0 !important; }
+    .active-theme-row {
+      display: flex;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+    }
+    .active-theme-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #0f88a8;
+      color: #d0d6dc;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+      border: 0;
+      cursor: pointer;
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.15),
+        0 2px 0 rgba(0, 0, 0, 0.2);
+    }
+    .active-theme-chip.flagged {
+      background: #c9544a;
+      color: #ffffff;
+    }
+  </style>
+  <style id="persistence-ui">
+    /* Remember-me checkbox in the unlock modal */
+    .auth-remember {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      margin: 4px 0 6px;
+      border-radius: 12px;
+      background: rgba(13, 26, 46, 0.45);
+      border: 1px solid rgba(123, 169, 220, 0.25);
+      cursor: pointer;
+      user-select: none;
+    }
+    .auth-remember:hover { border-color: rgba(123, 169, 220, 0.55); }
+    .auth-remember input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--accent, #4a9fd4);
+      cursor: pointer;
+    }
+    .auth-remember-text { display: flex; flex-direction: column; gap: 2px; line-height: 1.35; }
+    .auth-remember-text strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink, #fff);
+    }
+    .auth-remember-text em {
+      font-style: normal;
+      font-size: 12px;
+      color: var(--ink-dim, rgba(255,255,255,0.65));
+    }
+    /* Lock button — discreet icon, sits in the export bar */
+    body.editor .export-bar { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .btn-lock {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.35);
+      border: 0;
+      padding: 4px 6px;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+      opacity: 0.7;
+      transition: opacity 120ms, color 120ms;
+    }
+    .btn-lock:hover,
+    .btn-lock:focus-visible {
+      opacity: 1;
+      color: rgba(255, 255, 255, 0.85);
+      outline: none;
+    }
+    /* Toast for "auto-unlocked" feedback */
+    .session-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 20px);
+      background: rgba(13, 26, 46, 0.92);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(123, 169, 220, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms, transform 200ms;
+    }
+    .session-toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
+  <style id="tweaks-static">
+    /* ============ Tweakable visual extras ============ */
+    body.fx-icicles .card { padding-top: calc(var(--tw-icicles-h, 18px) + 6px); }
+    body.fx-icicles .card::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: 0;
+      right: 0;
+      height: var(--tw-icicles-h, 18px);
+      pointer-events: none;
+      background-image: var(--tw-icicles, none);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      filter: drop-shadow(0 2px 1px rgba(0, 40, 90, 0.3));
+      z-index: 1;
+    }
+    /* Card snow piles on top (snow drift on every card) */
+    body.fx-card-snow .card { padding-top: 22px; }
+    body.fx-card-snow .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path fill='%23ffffff' d='M0,0 L200,0 L200,14 C188,10 180,12 170,11 C155,9 142,13 128,11 C115,9 100,12 86,10 C72,8 58,12 44,10 C30,8 16,13 0,11 Z'/></svg>");
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      filter: drop-shadow(0 2px 2px rgba(0, 30, 80, 0.3));
+      z-index: 2;
+    }
+    /* Frosty inner edge */
+    body.fx-card-frosty .card {
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+        inset 0 0 18px rgba(200, 224, 255, 0.4),
+        0 0 var(--tw-card-glow, 0px) rgba(74, 159, 212, var(--tw-card-glow-a, 0));
+    }
+    /* Animated aurora card background */
+    body.fx-card-aurora .card {
+      background: linear-gradient(120deg, var(--bg-card), #5fa3c9, #7c5db8, var(--bg-card));
+      background-size: 300% 300%;
+      animation: tw-aurora 12s ease infinite;
+    }
+    @keyframes tw-aurora {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* Card breathing */
+    body.fx-card-breath .card { animation: tw-breath 5s ease-in-out infinite; }
+    @keyframes tw-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012); } }
+    /* Sparkles overlay */
+    body.fx-sparkles::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px),
+        radial-gradient(circle, rgba(180,220,255,0.7) 1.5px, transparent 3px);
+      background-size: 320px 200px, 480px 320px;
+      background-position: 40px 80px, 200px 240px;
+      opacity: var(--tw-sparkle-amount, 0.6);
+      animation: tw-sparkle 4.5s ease-in-out infinite;
+    }
+    @keyframes tw-sparkle {
+      0%, 100% { opacity: calc(var(--tw-sparkle-amount, 0.6) * 0.4); }
+      50%      { opacity: var(--tw-sparkle-amount, 0.6); }
+    }
+    /* Card border styles */
+    body.fx-border-dashed .card { border-style: dashed !important; }
+    body.fx-border-double .card { border-style: double !important; border-width: 4px !important; }
+    body.fx-border-none .card   { border: 0 !important; }
+    /* Card and bar shape overrides */
+    .card { box-shadow: 0 0 var(--tw-card-glow, 0px) rgba(74, 159, 212, var(--tw-card-glow-a, 0)); }
+    .card:hover {
+      box-shadow: 0 4px 18px rgba(74, 159, 212, 0.35),
+                  0 0 var(--tw-card-glow, 0px) rgba(74, 159, 212, var(--tw-card-glow-a, 0));
+    }
+    body.fx-frost .card {
+      backdrop-filter: blur(var(--tw-card-frost, 4px));
+      -webkit-backdrop-filter: blur(var(--tw-card-frost, 4px));
+    }
+    body.fx-snowfall::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      background-image:
+        radial-gradient(circle, #fff 1px, transparent 2px),
+        radial-gradient(circle, #fff 1.2px, transparent 2.5px),
+        radial-gradient(circle, #fff 0.8px, transparent 1.8px);
+      background-size: 80px 80px, 140px 140px, 220px 220px;
+      background-position: 0 0, 30px 60px, 80px 120px;
+      opacity: var(--tw-snow-amount, 0.4);
+      animation: snowfall 12s linear infinite;
+    }
+    @keyframes snowfall {
+      from { background-position: 0 0, 30px 60px, 80px 120px; }
+      to   { background-position: 0 600px, 30px 660px, 80px 720px; }
+    }
+    body.fx-shape-sharp .card,
+    body.fx-shape-sharp .btn-primary,
+    body.fx-shape-sharp .copy-btn,
+    body.fx-shape-sharp .modal,
+    body.fx-shape-sharp .modal-copy,
+    body.fx-shape-sharp .auth-unlock,
+    body.fx-shape-sharp .search-input,
+    body.fx-shape-sharp .btn-add,
+    body.fx-shape-sharp .btn-export { border-radius: 3px !important; }
+    body.fx-shape-pill .card,
+    body.fx-shape-pill .modal { border-radius: 28px !important; }
+    body.fx-font-fredoka { font-family: 'Fredoka', 'Nunito', sans-serif !important; }
+    body.fx-font-inter   { font-family: 'Inter', system-ui, sans-serif !important; }
+    body.fx-font-system  { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; }
+    /* Master button-shape override (batch) */
+    body.btn-shape-sharp .btn-add,
+    body.btn-shape-sharp .btn-export,
+    body.btn-shape-sharp .copy-btn,
+    body.btn-shape-sharp .modal-copy,
+    body.btn-shape-sharp .auth-unlock,
+    body.btn-shape-sharp .btn-primary,
+    body.btn-shape-sharp .tool-btn,
+    body.btn-shape-sharp .tag,
+    body.btn-shape-sharp .strip-arrow,
+    body.btn-shape-sharp .palette-btn,
+    body.btn-shape-sharp .fav-slot,
+    body.btn-shape-sharp .icon-btn,
+    body.btn-shape-sharp .modal-close { border-radius: 3px !important; }
+    body.btn-shape-round .btn-add,
+    body.btn-shape-round .btn-export,
+    body.btn-shape-round .copy-btn,
+    body.btn-shape-round .modal-copy,
+    body.btn-shape-round .auth-unlock,
+    body.btn-shape-round .btn-primary,
+    body.btn-shape-round .tool-btn,
+    body.btn-shape-round .tag,
+    body.btn-shape-round .strip-arrow,
+    body.btn-shape-round .palette-btn,
+    body.btn-shape-round .fav-slot,
+    body.btn-shape-round .icon-btn,
+    body.btn-shape-round .modal-close { border-radius: 10px !important; }
+    body.btn-shape-pill .btn-add,
+    body.btn-shape-pill .btn-export,
+    body.btn-shape-pill .copy-btn,
+    body.btn-shape-pill .modal-copy,
+    body.btn-shape-pill .auth-unlock,
+    body.btn-shape-pill .btn-primary,
+    body.btn-shape-pill .tool-btn,
+    body.btn-shape-pill .tag,
+    body.btn-shape-pill .strip-arrow,
+    body.btn-shape-pill .palette-btn,
+    body.btn-shape-pill .fav-slot,
+    body.btn-shape-pill .icon-btn,
+    body.btn-shape-pill .modal-close { border-radius: 999px !important; }
+  </style>
 
   <!-- Sentry (per handoff spec) -->
   <script
@@ -26,9 +459,26 @@
     }
   </script>
 </head>
-<body>
+<body style="background-color: rgb(48, 77, 72)">
+
+  <!-- Themes drawer (hamburger menu) -->
+  <div class="drawer-scrim" id="drawer-scrim" hidden></div>
+  <aside class="themes-drawer" id="themes-drawer" hidden aria-hidden="true" aria-label="Themes">
+    <div class="drawer-head">
+      <h2>Themes</h2>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close themes menu">×</button>
+    </div>
+    <nav class="drawer-list" id="drawer-list" role="list"></nav>
+  </aside>
 
   <header class="header">
+    <button class="hamburger-btn" id="hamburger" type="button" aria-label="Open themes menu" aria-expanded="false" aria-controls="themes-drawer">
+      <span class="hamburger-bars" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    </button>
     <div class="header-inner">
       <div class="title-row">
         <button class="snowflake-btn" id="snowflake" aria-label="Frostline emblem">
@@ -54,7 +504,7 @@
     </div>
   </header>
 
-  <nav class="controls">
+  <nav class="controls" style="border-style: none; border-color: rgb(163, 229, 248); color: rgb(29, 118, 209)">
     <svg class="snow-drift" xmlns="http://www.w3.org/2000/svg" width="260" height="30" viewBox="0 0 260 30" preserveAspectRatio="none" aria-hidden="true">
       <!--
         Continuous snow profile, one closed path. Top edge flat (y=0).
@@ -82,11 +532,16 @@
         Z
       "/>
     </svg>
-    <div class="controls-inner">
-      <div class="search-row">
-        <input class="search-input" id="search" type="text" placeholder="Search art…" autocomplete="off">
+    <div class="controls-inner" style="font-weight: 700; font-family: Fredoka">
+      <div class="search-row" style="color: rgb(191, 236, 206)">
+        <input class="search-input" id="search" type="text" placeholder="Search art…" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
       </div>
-      <div class="tag-strip-wrap">
+      <div class="active-theme-row" id="active-theme-row" hidden>
+        <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
+          <span class="active-theme-label" id="active-theme-label">all</span>
+        </button>
+      </div>
+      <div class="tag-strip-wrap" id="tag-strip-wrap" hidden style="border-color: rgb(68, 130, 226)">
         <button class="strip-arrow strip-arrow-left" id="strip-left" aria-label="Scroll tags left">
           <svg viewBox="0 0 40 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path fill="#ffffff" stroke="#1f5993" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
@@ -104,16 +559,17 @@
     </div>
   </nav>
 
-  <div class="add-row">
-    <button class="btn-add" id="btn-add">+ Add New Art</button>
+  <div class="add-row" style="color: rgb(115, 168, 137)">
+    <button class="btn-add" id="btn-add" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
   </div>
 
-  <main class="grid" id="grid">
+  <main class="grid" id="grid" style="border-color: rgb(58, 41, 86)">
     <div class="grid-empty">Loading…</div>
   </main>
 
   <div class="export-bar">
     <button class="btn-export" id="btn-export" disabled>⬇ Download updated art.js</button>
+    <button class="btn-lock" id="btn-lock" type="button" title="Lock editor (sign out)" aria-label="Lock editor">🔒</button>
   </div>
 
   <footer class="footer">
@@ -123,7 +579,7 @@
   <!-- Lightbox -->
   <div class="modal-overlay" id="lightbox">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lb-title">
-      <div class="modal-head">
+      <div class="modal-head" style="border-color: rgb(49, 53, 60)">
         <h3 id="lb-title">Title</h3>
         <button class="modal-close" id="lb-close" aria-label="Close">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -136,7 +592,7 @@
       </div>
       <div class="modal-body">
         <div class="wos-preview"><pre id="lb-pre"></pre></div>
-        <div class="modal-meta">
+        <div class="modal-meta" style="color: rgb(172, 179, 186)">
           <span class="dim" id="lb-dim">0 × 0</span>
           <div class="pills" id="lb-pills"></div>
         </div>
@@ -160,8 +616,15 @@
         </button>
       </div>
       <div class="auth-body">
-        <p>One password. No accounts. Closing the tab logs out.</p>
+        <p id="auth-blurb">One password. No accounts.</p>
         <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="off">
+        <label class="auth-remember" for="auth-remember">
+          <input type="checkbox" id="auth-remember">
+          <span class="auth-remember-text">
+            <strong>Stay unlocked on this device</strong>
+            <em>Skip the password next time. Use the lock button to sign out.</em>
+          </span>
+        </label>
         <p class="auth-error" id="auth-error"></p>
         <button class="auth-unlock" id="auth-submit">Unlock</button>
       </div>
@@ -182,54 +645,53 @@
           </svg>
         </button>
       </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="text">✎ Text Mode</button>
+        <button class="tab" data-tab="sketch">✏ Sketch Mode</button>
+      </div>
       <div class="modal-body">
-        <div class="field">
-          <label for="edit-title-input">Title</label>
-          <input id="edit-title-input" type="text" placeholder="Heart (small)">
-        </div>
-        <div class="field">
-          <label for="edit-tags-input">Tags <span class="hint-inline">— comma-separated</span></label>
-          <input id="edit-tags-input" type="text" placeholder="love, symbols">
-        </div>
-
-        <div class="mode-row">
-          <span class="field-label">Art</span>
-          <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Editing mode">
-            <span class="mode-thumb" aria-hidden="true"></span>
-            <button type="button" class="mode-opt active" data-mode="text" aria-pressed="true">✎ Type</button>
-            <button type="button" class="mode-opt" data-mode="draw" aria-pressed="false">✏ Draw</button>
+        <div class="tab-panel active" data-panel="text">
+          <div class="field">
+            <label for="edit-title-input">Title</label>
+            <input id="edit-title-input" type="text" placeholder="Heart (small)">
+          </div>
+          <div class="field">
+            <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
+            <input id="edit-tags-input" type="text" placeholder="love, symbols">
+          </div>
+          <div class="field">
+            <label for="edit-art-input">Art</label>
+            <div class="text-tools" style="display:flex;gap:8px;margin-bottom:6px;">
+              <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the textarea with a 27×12 grid of blank cells so you can position your cursor anywhere">＋ Blank canvas</button>
+            </div>
+            <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
+          </div>
+          <div class="field">
+            <label>WoS Audit</label>
+            <div class="audit" id="edit-audit"></div>
           </div>
         </div>
-
-        <div class="sketch-bar">
-          <span class="brush-chip" title="Active brush — tap a palette character to change it">
-            <span class="size-label">Brush</span>
-            <span class="sketch-active-char" id="sketch-active-char">❤</span>
-          </span>
-          <button type="button" class="tool-btn tool-btn--undo" id="sketch-undo" title="Undo last edit (Ctrl+Z)">↶ Undo</button>
-          <button type="button" class="tool-btn tool-btn--new" id="sketch-fill" title="Start a fresh 27×12 blank canvas">＋ New Canvas</button>
-          <button type="button" class="tool-btn tool-btn--clear" id="sketch-clear" title="Clear the canvas">🗑 Clear</button>
-        </div>
-
-        <div class="edit-surface" data-surface="text">
-          <textarea id="edit-art-input" placeholder="Type or paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
-        </div>
-        <div class="edit-surface" data-surface="draw" hidden>
-          <div class="sketch-view" id="sketch-view"></div>
-        </div>
-
-        <div class="field">
-          <label>Favorites <span class="hint-inline">— long-press a palette char to add · long-press a favorite to remove</span></label>
-          <div class="favorites-bar" id="favorites-bar"></div>
-        </div>
-        <div class="field">
-          <label>Character palette <span class="hint-inline">— tap to set the brush · also inserts at the cursor in Type mode</span></label>
-          <div class="char-palette" id="char-palette"></div>
-        </div>
-
-        <div class="field">
-          <label>WoS Audit</label>
-          <div class="audit" id="edit-audit"></div>
+        <div class="tab-panel" data-panel="sketch">
+          <div class="field">
+            <label>Sketch <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap or drag on any character to replace it with the active brush</span></label>
+            <div class="sketch-bar">
+              <span class="size-label">Brush:</span>
+              <span class="sketch-active-char" id="sketch-active-char">❤</span>
+              <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells (NBSP)">⌫ Erase</button>
+              <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
+              <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank canvas</button>
+              <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
+            </div>
+            <div class="sketch-view" id="sketch-view"></div>
+          </div>
+          <div class="field">
+            <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
+            <div class="favorites-bar" id="favorites-bar"></div>
+          </div>
+          <div class="field">
+            <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
+            <div class="char-palette" id="char-palette"></div>
+          </div>
         </div>
       </div>
       <div class="modal-foot">
@@ -251,15 +713,46 @@
   <script type="text/babel" data-presets="react">
   const FROSTLINE_TWEAKS = /*EDITMODE-BEGIN*/{
     "mood": "arctic",
-    "chunkiness": 57,
-    "snow": 95,
-    "snowPosition": -1,
-    "snowFlatness": 31,
-    "snowSeed": 974565212
+    "accentColor": "#115555",
+    "bgColor": "#394856",
+    "bgCardColor": "#173e4f",
+    "titleBarColor": "#122b28",
+    "searchBarColor": "#1b3e50",
+    "chunkiness": 4,
+    "font": "fredoka",
+    "fontSize": 18,
+    "tracking": 8,
+    "cardShape": "soft",
+    "cardRadius": 21,
+    "cardBorder": "double",
+    "cardGlow": 35,
+    "cardFrost": 13,
+    "cardFrosty": false,
+    "cardAurora": false,
+    "cardBreath": false,
+    "cardSnow": false,
+    "icicles": false,
+    "iciclesLength": 35,
+    "iciclesDensity": 68,
+    "iciclesSeed": 451466157,
+    "sparkles": false,
+    "sparklesAmount": 60,
+    "snow": 100,
+    "snowPosition": 0,
+    "snowFlatness": 23,
+    "snowSeed": 42508873,
+    "snowfall": true,
+    "snowfallAmount": 27,
+    "cardBorderColor": "#7eb3ec",
+    "cardTextColor": "#888c94",
+    "cardHeader": true,
+    "cardHeaderBg": "#a8b2c2",
+    "cardHeaderText": "#c3c6cb",
+    "cardHeaderStyle": "divider",
+    "buttonShape": "round"
   }/*EDITMODE-END*/;
 
-  // Three sanctioned palettes — Arctic (default cold), Frostfire (war-time
-  // warmth), Aurora (purple/green nightscape).
+  // Four sanctioned palettes — Arctic (cold), Frostfire (warm), Aurora (purple), Monochrome (grey).
   const FROSTLINE_MOODS = {
     arctic: {
       '--bar-grad-top': '#6cb0e6', '--bar-grad-mid': '#4a93d3', '--bar-grad-bot': '#2d72b8',
@@ -281,6 +774,13 @@
       '--btn-grad-top': '#9eecd3', '--btn-grad-mid': '#7d8fcd', '--btn-grad-bot': '#6f4eb0',
       '--btn-edge':     '#2f1f6a',
       '--accent':       '#7c5db8', '--accent-press': '#5f48a0',
+    },
+    monochrome: {
+      '--bar-grad-top': '#b8bcc4', '--bar-grad-mid': '#888c94', '--bar-grad-bot': '#5a5e66',
+      '--bar-edge':     '#3a3d44',
+      '--btn-grad-top': '#c8ccd4', '--btn-grad-mid': '#94989f', '--btn-grad-bot': '#5e6168',
+      '--btn-edge':     '#3a3d44',
+      '--accent':       '#888c94', '--accent-press': '#5a5e66',
     },
   };
 
@@ -410,31 +910,435 @@
     if (profile) profile.setAttribute('d', d);
   }
 
+  function applyFont(name) {
+    document.body.classList.remove('fx-font-fredoka', 'fx-font-inter', 'fx-font-system');
+    if (name === 'fredoka' && !document.querySelector('#fredoka-font')) {
+      const l = document.createElement('link');
+      l.id = 'fredoka-font'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;700&display=swap';
+      document.head.appendChild(l);
+    }
+    if (name === 'inter' && !document.querySelector('#inter-font')) {
+      const l = document.createElement('link');
+      l.id = 'inter-font'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap';
+      document.head.appendChild(l);
+    }
+    if (name && name !== 'nunito') document.body.classList.add('fx-font-' + name);
+  }
+  function applyCardShape(shape, radius) {
+    document.body.classList.remove('fx-shape-sharp', 'fx-shape-pill');
+    if (shape === 'sharp') document.body.classList.add('fx-shape-sharp');
+    else if (shape === 'pill') document.body.classList.add('fx-shape-pill');
+    document.documentElement.style.setProperty('--card-radius', radius + 'px');
+    let s = document.getElementById('frostline-tweaks-shape');
+    if (!s) {
+      s = document.createElement('style');
+      s.id = 'frostline-tweaks-shape';
+      document.head.appendChild(s);
+    }
+    s.textContent = (shape === 'soft')
+      ? `.card { border-radius: ${radius}px !important; }`
+      : '';
+  }
+  function applyCardGlow(amount) {
+    const px = (amount / 100) * 40;
+    const alpha = (amount / 100) * 0.7;
+    document.documentElement.style.setProperty('--tw-card-glow', px.toFixed(1) + 'px');
+    document.documentElement.style.setProperty('--tw-card-glow-a', alpha.toFixed(3));
+  }
+  function applyCardFrost(amount) {
+    document.documentElement.style.setProperty('--tw-card-frost', amount + 'px');
+    document.body.classList.toggle('fx-frost', amount > 0);
+  }
+  function applyIcicles(on, length, density, seed) {
+    if (!on) { document.body.classList.remove('fx-icicles'); return; }
+    document.body.classList.add('fx-icicles');
+    // Seeded RNG (mulberry32) — same seed = same icicle pattern.
+    let s = (seed | 0) || 42;
+    const rng = () => {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const baseLen = 5 + (length / 100) * 22;            // 5–27px
+    const count = 8 + Math.round((density / 100) * 26); // 8–34
+    const W = 280;
+    const slot = W / count;
+    const parts = [];
+    parts.push(`<rect x='0' y='0' width='${W}' height='1.5' fill='%23ffffff'/>`);
+    for (let i = 0; i < count; i++) {
+      const x = slot * (i + 0.5) + (rng() - 0.5) * slot * 0.5;
+      const len = baseLen * (0.35 + rng() * 0.65);
+      const w = 1.4 + rng() * 1.8;
+      // Teardrop: top flush wide, narrowing to a sharp point at bottom.
+      parts.push(
+        `<path d='M${(x-w).toFixed(1)},0 ` +
+        `Q${(x-w*0.6).toFixed(1)},${(len*0.45).toFixed(1)} ${x.toFixed(1)},${len.toFixed(1)} ` +
+        `Q${(x+w*0.6).toFixed(1)},${(len*0.45).toFixed(1)} ${(x+w).toFixed(1)},0 Z' fill='%23ffffff'/>`
+      );
+    }
+    const maxH = baseLen + 2;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${W} ${maxH.toFixed(0)}' preserveAspectRatio='none'>${parts.join('')}</svg>`;
+    document.documentElement.style.setProperty('--tw-icicles', `url("data:image/svg+xml;utf8,${svg}")`);
+    document.documentElement.style.setProperty('--tw-icicles-h', maxH.toFixed(0) + 'px');
+  }
+  function applyFontSize(px) {
+    const ratio = px / 16;
+    let s = document.getElementById('frostline-tweaks-fontsize');
+    if (!s) { s = document.createElement('style'); s.id = 'frostline-tweaks-fontsize'; document.head.appendChild(s); }
+    s.textContent = `
+      body { font-size: ${px}px; }
+      .card-title { font-size: ${(15 * ratio).toFixed(1)}px; }
+      .copy-btn { font-size: ${(13 * ratio).toFixed(1)}px; }
+      .btn-add, .btn-export { font-size: ${(14 * ratio).toFixed(1)}px; }
+      .tag, .strip-arrow { font-size: ${(13 * ratio).toFixed(1)}px; }
+      .title { font-size: clamp(${(24*ratio).toFixed(0)}px, ${(4*ratio).toFixed(2)}vw, ${(42*ratio).toFixed(0)}px); }
+      .subtitle { font-size: ${(14 * ratio).toFixed(1)}px; }
+      .chip { font-size: ${(11 * ratio).toFixed(1)}px; }
+      .badge { font-size: ${(11 * ratio).toFixed(1)}px; }
+      .modal-head h3 { font-size: ${(18 * ratio).toFixed(1)}px; }
+    `;
+  }
+  function applyTracking(px) {
+    let s = document.getElementById('frostline-tweaks-tracking');
+    if (!s) { s = document.createElement('style'); s.id = 'frostline-tweaks-tracking'; document.head.appendChild(s); }
+    s.textContent = `body, .title, .card-title, button, .tag { letter-spacing: ${(px / 100).toFixed(3)}em; }`;
+  }
+  function shade(hex, percent) {
+    const m = (hex || '').replace('#', '');
+    if (m.length !== 6) return hex;
+    let r = parseInt(m.slice(0, 2), 16);
+    let g = parseInt(m.slice(2, 4), 16);
+    let b = parseInt(m.slice(4, 6), 16);
+    const f = (1 + percent / 100);
+    r = Math.max(0, Math.min(255, Math.round(r * f)));
+    g = Math.max(0, Math.min(255, Math.round(g * f)));
+    b = Math.max(0, Math.min(255, Math.round(b * f)));
+    return '#' + [r, g, b].map(n => n.toString(16).padStart(2, '0')).join('');
+  }
+  function applyColorOverrides(accent, bg, bgCard) {
+    const root = document.documentElement.style;
+    if (accent) {
+      root.setProperty('--accent', accent);
+      root.setProperty('--accent-press', shade(accent, -12));
+      // Flow the accent into the chunky game-button + bar gradients so the
+      // whole UI re-themes when the user picks a new accent.
+      root.setProperty('--btn-grad-top', shade(accent, 28));
+      root.setProperty('--btn-grad-mid', accent);
+      root.setProperty('--btn-grad-bot', shade(accent, -22));
+      root.setProperty('--btn-edge',     shade(accent, -45));
+      root.setProperty('--bar-grad-top', shade(accent, 22));
+      root.setProperty('--bar-grad-mid', shade(accent, -5));
+      root.setProperty('--bar-grad-bot', shade(accent, -22));
+      root.setProperty('--bar-edge',     shade(accent, -45));
+    }
+    if (bg) root.setProperty('--bg', bg);
+    if (bgCard) root.setProperty('--bg-card', bgCard);
+  }
+  function applyCardBorder(style) {
+    document.body.classList.remove('fx-border-dashed', 'fx-border-double', 'fx-border-none');
+    if (style && style !== 'solid') document.body.classList.add('fx-border-' + style);
+  }
+  function applyCardFrosty(on) { document.body.classList.toggle('fx-card-frosty', !!on); }
+  function applyCardAurora(on) { document.body.classList.toggle('fx-card-aurora', !!on); }
+  function applyCardBreath(on) { document.body.classList.toggle('fx-card-breath', !!on); }
+  function applyCardSnow(on)   { document.body.classList.toggle('fx-card-snow', !!on); }
+  function applySparkles(on, amount) {
+    document.body.classList.toggle('fx-sparkles', !!on);
+    document.documentElement.style.setProperty('--tw-sparkle-amount', (amount / 100).toFixed(2));
+  }
+  function applyButtonShape(shape) {
+    document.body.classList.remove('btn-shape-sharp', 'btn-shape-round', 'btn-shape-pill');
+    if (shape && shape !== 'auto') document.body.classList.add('btn-shape-' + shape);
+  }
+  function applyCardBorderColor(color) {
+    let s = document.getElementById('frostline-tweaks-cardborder');
+    if (!s) { s = document.createElement('style'); s.id = 'frostline-tweaks-cardborder'; document.head.appendChild(s); }
+    s.textContent = color ? `.card { border-color: ${color} !important; }` : '';
+  }
+  function applyCardTextColor(color) {
+    let s = document.getElementById('frostline-tweaks-cardtext');
+    if (!s) { s = document.createElement('style'); s.id = 'frostline-tweaks-cardtext'; document.head.appendChild(s); }
+    s.textContent = color
+      ? `.card, .card-title, .chip, .card-size { color: ${color} !important; }`
+      : '';
+  }
+  function applyCardHeader(on, bg, text, style) {
+    let s = document.getElementById('frostline-tweaks-cardheader');
+    if (!s) { s = document.createElement('style'); s.id = 'frostline-tweaks-cardheader'; document.head.appendChild(s); }
+    if (!on) { s.textContent = ''; return; }
+    const bgVal = bg || 'rgba(255,255,255,0.12)';
+    const txtVal = text || 'currentColor';
+    let rule;
+    if (style === 'gradient') {
+      rule = `background: linear-gradient(180deg, ${bgVal}, transparent) !important; padding: 8px 10px !important;`;
+    } else if (style === 'divider') {
+      rule = `background: transparent !important; border-bottom: 2px solid ${bgVal} !important; padding-bottom: 8px !important;`;
+    } else if (style === 'sticker') {
+      rule = `background: ${bgVal} !important; border-radius: 8px !important; padding: 6px 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.2) !important;`;
+    } else {
+      rule = `background: ${bgVal} !important; padding: 8px 10px !important; border-radius: 6px !important;`;
+    }
+    s.textContent = `
+      .card-head { ${rule} margin: -4px -4px 10px -4px; }
+      .card-head .card-title, .card-head .card-size, .card-head .card-warn { color: ${txtVal} !important; }
+    `;
+  }
+  function applySnowfall(on, amount) {
+    document.body.classList.toggle('fx-snowfall', !!on);
+    document.documentElement.style.setProperty('--tw-snow-amount', (amount / 100).toFixed(2));
+  }
+  function shadeColor(hex, percent) {
+    const m = hex.replace('#', '');
+    let r = parseInt(m.slice(0, 2), 16);
+    let g = parseInt(m.slice(2, 4), 16);
+    let b = parseInt(m.slice(4, 6), 16);
+    const f = (1 + percent / 100);
+    r = Math.max(0, Math.min(255, Math.round(r * f)));
+    g = Math.max(0, Math.min(255, Math.round(g * f)));
+    b = Math.max(0, Math.min(255, Math.round(b * f)));
+    return '#' + [r, g, b].map(n => n.toString(16).padStart(2, '0')).join('');
+  }
+  function applyTitleBarColor(hex) {
+    let s = document.getElementById('frostline-tweaks-titlebar');
+    if (!s) {
+      s = document.createElement('style');
+      s.id = 'frostline-tweaks-titlebar';
+      document.head.appendChild(s);
+    }
+    if (!hex) { s.textContent = ''; return; }
+    const top = shadeColor(hex, 5);
+    s.textContent = `.header { background: linear-gradient(180deg, ${top} 0%, ${hex} 100%) !important; }`;
+  }
+  function applySearchBarColor(hex) {
+    let s = document.getElementById('frostline-tweaks-searchbar');
+    if (!s) {
+      s = document.createElement('style');
+      s.id = 'frostline-tweaks-searchbar';
+      document.head.appendChild(s);
+    }
+    if (!hex) { s.textContent = ''; return; }
+    const top = shadeColor(hex, 20);
+    const bot = shadeColor(hex, -20);
+    s.textContent = `.controls { background: linear-gradient(180deg, ${top} 0%, ${hex} 55%, ${bot} 100%) !important; }`;
+  }
+
   function TweaksApp() {
     const [t, setTweak] = useTweaks(FROSTLINE_TWEAKS);
-    React.useEffect(() => { applyMood(t.mood); }, [t.mood]);
+    React.useEffect(() => { applyMood(t.mood); applyColorOverrides(t.accentColor, t.bgColor, t.bgCardColor); }, [t.mood, t.accentColor, t.bgColor, t.bgCardColor]);
     React.useEffect(() => { applyChunkiness(t.chunkiness); }, [t.chunkiness]);
     React.useEffect(() => { applySnow(t.snow); }, [t.snow]);
     React.useEffect(() => { applySnowPosition(t.snowPosition); }, [t.snowPosition]);
     React.useEffect(() => { applySnowProfile(t.snowSeed); applySnowFlatness(t.snowFlatness); }, [t.snowSeed, t.snowFlatness]);
+    React.useEffect(() => { applyFont(t.font); }, [t.font]);
+    React.useEffect(() => { applyFontSize(t.fontSize || 16); }, [t.fontSize]);
+    React.useEffect(() => { applyTracking(t.tracking || 0); }, [t.tracking]);
+    React.useEffect(() => { applyCardShape(t.cardShape, t.cardRadius); }, [t.cardShape, t.cardRadius]);
+    React.useEffect(() => { applyCardBorder(t.cardBorder || 'solid'); }, [t.cardBorder]);
+    React.useEffect(() => { applyButtonShape(t.buttonShape || 'auto'); }, [t.buttonShape]);
+    React.useEffect(() => { applyCardGlow(t.cardGlow); }, [t.cardGlow]);
+    React.useEffect(() => { applyCardFrost(t.cardFrost); }, [t.cardFrost]);
+    React.useEffect(() => { applyCardFrosty(t.cardFrosty); }, [t.cardFrosty]);
+    React.useEffect(() => { applyCardAurora(t.cardAurora); }, [t.cardAurora]);
+    React.useEffect(() => { applyCardBreath(t.cardBreath); }, [t.cardBreath]);
+    React.useEffect(() => { applyCardSnow(t.cardSnow); }, [t.cardSnow]);
+    React.useEffect(() => { applyCardBorderColor(t.cardBorderColor); }, [t.cardBorderColor]);
+    React.useEffect(() => { applyCardTextColor(t.cardTextColor); }, [t.cardTextColor]);
+    React.useEffect(() => { applyCardHeader(t.cardHeader, t.cardHeaderBg, t.cardHeaderText, t.cardHeaderStyle); }, [t.cardHeader, t.cardHeaderBg, t.cardHeaderText, t.cardHeaderStyle]);
+    React.useEffect(() => { applyIcicles(t.icicles, t.iciclesLength || 50, t.iciclesDensity || 50, t.iciclesSeed || 42); }, [t.icicles, t.iciclesLength, t.iciclesDensity, t.iciclesSeed]);
+    React.useEffect(() => { applySparkles(t.sparkles, t.sparklesAmount || 60); }, [t.sparkles, t.sparklesAmount]);
+    React.useEffect(() => { applySnowfall(t.snowfall, t.snowfallAmount); }, [t.snowfall, t.snowfallAmount]);
+    React.useEffect(() => { applyTitleBarColor(t.titleBarColor); }, [t.titleBarColor]);
+    React.useEffect(() => { applySearchBarColor(t.searchBarColor); }, [t.searchBarColor, t.mood]);
     const reroll = () => setTweak('snowSeed', Math.floor(Math.random() * 1e9));
+    const rerollIcicles = () => setTweak('iciclesSeed', Math.floor(Math.random() * 1e9));
+
+    // Curated wide swatch palettes — 12+ options each.
+    const BG_COLORS       = ['#0d1a2e','#1a0f2e','#2e1a0d','#1a1a1a','#162540','#3a2766','#0f2033','#1f3a2f','#3a1f1f','#2a1a3a','#c8dff5','#f5e8c8','#e8f5c8','#f5c8d8'];
+    const CARD_BG_COLORS  = [
+      '#c8dff5','#d8c8f5','#f5d8c8','#d0d0d0','#e8f0ff','#fff5e0','#e0ffe0','#ffe0e8',
+      '#e8f5d8','#f0e8d8','#f5e8f0','#e0f0f5','#f8f8f8','#fff7e8',
+      '#babec7','#888c94','#9bb8dc','#a89bc8','#dcb89b','#7a8fa8',
+      '#5fa3c9','#7c5db8','#4a9fd4','#e87420','#6e8a6e','#a8967a',
+      '#0d1a2e','#162540','#1a0f2e','#2e1a0d','#1a1a1a','#0f2033','#1f3a2f','#3a1f1f','#2a1a3a','#3a2766',
+    ];
+    const ACCENT_COLORS   = ['#4a9fd4','#7c5db8','#e87420','#888888','#dc4a9f','#4adc8a','#dccc4a','#dc4a4a','#4adcdc','#a04adc','#4a6adc','#dc6a4a'];
+    const BAR_COLORS      = ['#0d1a2e','#162540','#1a0f2e','#2e1a0d','#1a1a1a','#3a2766','#4a93d3','#5fa3c9','#888c94','#2d72b8','#e88a3a','#7c5db8','#4adc8a','#dc4a9f'];
+    const TEXT_COLORS     = ['#ffffff','#1a2a44','#e8e8e8','#2a4a6a','#d8e8f8','#1a1a1a','#888c94','#14123c'];
+    const BORDER_COLORS   = ['#9bb8dc','#b89bdc','#dcb89b','#999999','#4a9fd4','#7c5db8','#e87420','#2d72b8','#ffffff','#000000','#14123c','#a0d880'];
+
     return (
       <TweaksPanel title="Frostline">
-        <TweakSection label="Mood" />
+        <TweakSection label="Palette" />
         <TweakRadio
-          label="Palette"
+          label="Mood"
           value={t.mood}
-          options={['arctic', 'frostfire', 'aurora']}
+          options={['arctic', 'frostfire', 'aurora', 'monochrome']}
           onChange={(v) => setTweak('mood', v)}
         />
-        <TweakSection label="Feel" />
+        <TweakColor
+          label="Accent"
+          value={t.accentColor || '#4a9fd4'}
+          options={ACCENT_COLORS}
+          onChange={(v) => setTweak('accentColor', v)}
+        />
+        <TweakColor
+          label="Page background"
+          value={t.bgColor || '#0d1a2e'}
+          options={BG_COLORS}
+          onChange={(v) => setTweak('bgColor', v)}
+        />
+
+        <TweakSection label="Type" />
+        <TweakRadio
+          label="Font"
+          value={t.font}
+          options={['nunito', 'fredoka', 'inter', 'system']}
+          onChange={(v) => setTweak('font', v)}
+        />
+        <TweakSlider
+          label="Size"
+          value={t.fontSize || 16}
+          min={12} max={22} unit="px"
+          onChange={(v) => setTweak('fontSize', v)}
+        />
+        <TweakSlider
+          label="Tracking"
+          value={t.tracking || 0}
+          min={-3} max={8}
+          onChange={(v) => setTweak('tracking', v)}
+        />
+
+        <TweakSection label="Bars" />
+        <TweakColor
+          label="Title bar"
+          value={t.titleBarColor}
+          options={BAR_COLORS}
+          onChange={(v) => setTweak('titleBarColor', v)}
+        />
+        <TweakColor
+          label="Search bar"
+          value={t.searchBarColor || '#4a93d3'}
+          options={BAR_COLORS}
+          onChange={(v) => setTweak('searchBarColor', v)}
+        />
+
+        <TweakSection label="Cards" />
+        <TweakRadio
+          label="Shape"
+          value={t.cardShape}
+          options={['sharp', 'soft', 'pill']}
+          onChange={(v) => setTweak('cardShape', v)}
+        />
+        <TweakSlider
+          label="Corner radius"
+          value={t.cardRadius}
+          min={0} max={40} unit="px"
+          onChange={(v) => setTweak('cardRadius', v)}
+        />
+        <TweakRadio
+          label="Border style"
+          value={t.cardBorder || 'solid'}
+          options={['solid', 'dashed', 'double', 'none']}
+          onChange={(v) => setTweak('cardBorder', v)}
+        />
+        <TweakColor
+          label="Card background"
+          value={t.bgCardColor || '#c8dff5'}
+          options={CARD_BG_COLORS}
+          onChange={(v) => setTweak('bgCardColor', v)}
+        />
+        <TweakColor
+          label="Card border"
+          value={t.cardBorderColor || '#9bb8dc'}
+          options={BORDER_COLORS}
+          onChange={(v) => setTweak('cardBorderColor', v)}
+        />
+        <TweakColor
+          label="Card text"
+          value={t.cardTextColor || '#1a2a44'}
+          options={TEXT_COLORS}
+          onChange={(v) => setTweak('cardTextColor', v)}
+        />
+
+        <TweakSection label="Card header" />
+        <TweakToggle
+          label="Enable header bar"
+          value={!!t.cardHeader}
+          onChange={(v) => setTweak('cardHeader', v)}
+        />
+        <TweakRadio
+          label="Header style"
+          value={t.cardHeaderStyle || 'flat'}
+          options={['flat', 'gradient', 'divider', 'sticker']}
+          onChange={(v) => setTweak('cardHeaderStyle', v)}
+        />
+        <TweakColor
+          label="Header bg"
+          value={t.cardHeaderBg || '#162540'}
+          options={CARD_BG_COLORS}
+          onChange={(v) => setTweak('cardHeaderBg', v)}
+        />
+        <TweakColor
+          label="Header text"
+          value={t.cardHeaderText || '#ffffff'}
+          options={TEXT_COLORS}
+          onChange={(v) => setTweak('cardHeaderText', v)}
+        />
+        <TweakSlider
+          label="Glow"
+          value={t.cardGlow}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('cardGlow', v)}
+        />
+        <TweakSlider
+          label="Frost blur"
+          value={t.cardFrost}
+          min={0} max={20} unit="px"
+          onChange={(v) => setTweak('cardFrost', v)}
+        />
+        <TweakToggle label="Frosty edge" value={!!t.cardFrosty} onChange={(v) => setTweak('cardFrosty', v)} />
+        <TweakToggle label="Aurora background" value={!!t.cardAurora} onChange={(v) => setTweak('cardAurora', v)} />
+        <TweakToggle label="Breathing" value={!!t.cardBreath} onChange={(v) => setTweak('cardBreath', v)} />
+        <TweakToggle label="Card snow" value={!!t.cardSnow} onChange={(v) => setTweak('cardSnow', v)} />
+
+        <TweakSection label="Buttons" />
+        <TweakRadio
+          label="Shape (all buttons)"
+          value={t.buttonShape || 'auto'}
+          options={['auto', 'sharp', 'round', 'pill']}
+          onChange={(v) => setTweak('buttonShape', v)}
+        />
         <TweakSlider
           label="Chunkiness"
           value={t.chunkiness}
           min={0} max={100} unit="%"
           onChange={(v) => setTweak('chunkiness', v)}
         />
-        <TweakSection label="Snow" />
+
+        <TweakSection label="Icicles" />
+        <TweakToggle
+          label="Enable"
+          value={!!t.icicles}
+          onChange={(v) => setTweak('icicles', v)}
+        />
+        <TweakSlider
+          label="Length"
+          value={t.iciclesLength || 50}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('iciclesLength', v)}
+        />
+        <TweakSlider
+          label="Density"
+          value={t.iciclesDensity || 50}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('iciclesDensity', v)}
+        />
+        <TweakButton label="❄ Re-roll icicles" onClick={rerollIcicles} />
+
+        <TweakSection label="Snow on search bar" />
         <TweakSlider
           label="Amount"
           value={t.snow}
@@ -454,6 +1358,32 @@
           onChange={(v) => setTweak('snowFlatness', v)}
         />
         <TweakButton label="❄ Re-roll shape" onClick={reroll} />
+
+        <TweakSection label="Falling snow overlay" />
+        <TweakToggle
+          label="Enable"
+          value={t.snowfall}
+          onChange={(v) => setTweak('snowfall', v)}
+        />
+        <TweakSlider
+          label="Density"
+          value={t.snowfallAmount}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('snowfallAmount', v)}
+        />
+
+        <TweakSection label="Sparkles overlay" />
+        <TweakToggle
+          label="Enable"
+          value={!!t.sparkles}
+          onChange={(v) => setTweak('sparkles', v)}
+        />
+        <TweakSlider
+          label="Amount"
+          value={t.sparklesAmount || 60}
+          min={0} max={100} unit="%"
+          onChange={(v) => setTweak('sparklesAmount', v)}
+        />
       </TweaksPanel>
     );
   }

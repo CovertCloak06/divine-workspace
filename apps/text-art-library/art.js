@@ -248,6 +248,188 @@ It's totally an ice cream truck!`,
     tags: ['animals', 'kawaii', 'memes'],
     art: ' (\\   (\\\n (  ~_• )\n  (っ*︻▇〓*︻┻┳* ─── 💥💥\n  /　    )        / \\\n( /￣∪       /     \\',
   },
+
+  /* ============================================================
+     Batch 2 — variety pack (added later)
+     Mix of decorative, gothic, sayings, banners, celebration,
+     minimalist, kawaii. Emoji-heavy + CJK-safe box-drawing.
+     ============================================================ */
+
+  {
+    id: 'crown',
+    title: 'Crown',
+    tags: ['symbols', 'decorative', 'celebration'],
+    art: '　　👑　　\n　♛♛♛　\n♛♛♛♛♛\n━━━━━━━',
+  },
+  {
+    id: 'christmas-tree',
+    title: 'Christmas tree',
+    tags: ['celebration', 'nature', 'decorative'],
+    art: '　　　★　　　\n　　🎄🎄　　\n　🎄🎄🎄🎄　\n🎄🎄🎄🎄🎄🎄\n　　　▌▌　　',
+  },
+  {
+    id: 'table-flip',
+    title: 'Table flip',
+    tags: ['memes', 'sayings'],
+    art: '(╯°□°)╯︵ ┻━┻',
+  },
+  {
+    id: 'shrug',
+    title: 'Shrug',
+    tags: ['memes', 'sayings'],
+    art: '¯\\_(ツ)_/¯',
+  },
+  {
+    id: 'lenny',
+    title: 'Lenny face',
+    tags: ['memes'],
+    art: '( ͡° ͜ʖ ͡°)',
+  },
+  {
+    id: 'skull-row',
+    title: 'Skulls',
+    tags: ['gothic', 'symbols'],
+    art: '💀💀💀💀💀💀💀',
+  },
+  {
+    id: 'skull-portrait',
+    title: 'Skull portrait',
+    tags: ['gothic', 'symbols'],
+    art: '　💀💀💀💀💀　\n💀💀💀💀💀💀💀\n💀⚫💀💀⚫💀\n💀💀⚪⚪💀💀\n　💀💀💀💀💀　',
+  },
+  {
+    id: 'bat-row',
+    title: 'Bats',
+    tags: ['gothic', 'animals'],
+    art: '🦇　🦇　🦇　🦇',
+  },
+  {
+    id: 'coffin',
+    title: 'Coffin',
+    tags: ['gothic'],
+    art: '╭─────╮\n│ R I P │\n│ ✟ │\n│     │\n│     │\n╰─────╯',
+  },
+  {
+    id: 'birthday-cake',
+    title: 'Birthday cake',
+    tags: ['celebration', 'sayings'],
+    art: '　🕯🕯🕯🕯🕯　\n🎂🎂🎂🎂🎂🎂🎂\n🎂🎂🎂🎂🎂🎂🎂\n🎉 HAPPY BIRTHDAY 🎉',
+  },
+  {
+    id: 'bear-hug',
+    title: 'Bear hug',
+    tags: ['animals', 'kawaii', 'love'],
+    art: 'ʕ•ᴥ•ʔ 💕 ʕ•ᴥ•ʔ',
+  },
+  {
+    id: 'sleepy-cat',
+    title: 'Sleepy cat',
+    tags: ['animals', 'kawaii', 'sayings'],
+    art: '　zzZ\n( =^.^=)\n　 ʚïɞ',
+  },
+  {
+    id: 'welcome-banner',
+    title: 'Welcome banner',
+    tags: ['banners', 'sayings'],
+    art: '═══════════════════\n　　✦ WELCOME ✦\n═══════════════════',
+  },
+  {
+    id: 'good-morning',
+    title: 'Good morning',
+    tags: ['sayings', 'celebration'],
+    art: '☀️ GOOD MORNING ☀️',
+  },
+  {
+    id: 'good-night',
+    title: 'Good night',
+    tags: ['sayings', 'aesthetic'],
+    art: '🌙 ✦ GOOD NIGHT ✦ 🌙',
+  },
+  {
+    id: 'gg-banner',
+    title: 'GG',
+    tags: ['sayings', 'banners', 'celebration'],
+    art: '━━━━━━━━━━━━\n　🎮 G G ! 🎮\n━━━━━━━━━━━━',
+  },
+  {
+    id: 'trophy-winner',
+    title: 'Trophy winner',
+    tags: ['celebration', 'banners'],
+    art: '　🏆🏆🏆　\n🏆 WINNER 🏆\n　🏆🏆🏆　',
+  },
+  {
+    id: 'moon-stars',
+    title: 'Moon & stars',
+    tags: ['aesthetic', 'nature', 'decorative'],
+    art: '✦ ⋆ 🌙 ⋆ ✦',
+  },
+  {
+    id: 'fish-row',
+    title: 'Fish row',
+    tags: ['animals', 'minimalist'],
+    art: '🐟　🐠　🐡　🐟　🐠',
+  },
+  {
+    id: 'wave-line',
+    title: 'Wave line',
+    tags: ['minimalist', 'decorative', 'aesthetic'],
+    art: '～ ～ ～ ～ ～ ～ ～',
+  },
+  {
+    id: 'flower-fence',
+    title: 'Flower fence',
+    tags: ['borders', 'nature', 'decorative'],
+    art: '✿━━━━━━━━━━━━━✿\n　alliance garden\n✿━━━━━━━━━━━━━✿',
+  },
+  {
+    id: 'mountains',
+    title: 'Mountains',
+    tags: ['nature', 'minimalist', 'aesthetic'],
+    art: '　▲　　▲▲　　▲　\n　△　△△△　△　\n━━━━━━━━━━━━━',
+  },
+  {
+    id: 'arrow-up',
+    title: 'Arrow up (rally)',
+    tags: ['symbols', 'minimalist', 'celebration'],
+    art: '　　▲　　\n　▲▲▲　\n▲▲▲▲▲\n　　▌　　\n　　▌　　',
+  },
+  {
+    id: 'confetti',
+    title: 'Confetti',
+    tags: ['celebration', 'decorative'],
+    art: '🎊 🎉 ✨ 🎉 🎊',
+  },
+  {
+    id: 'thanks-banner',
+    title: 'Thanks!',
+    tags: ['sayings', 'banners'],
+    art: '╔══════════════╗\n║　THANK YOU!　║\n╚══════════════╝',
+  },
+  {
+    id: 'ghost-row',
+    title: 'Ghosts',
+    tags: ['gothic', 'kawaii'],
+    art: '👻　👻　👻　👻',
+  },
+  {
+    id: 'dots-divider',
+    title: 'Dot divider',
+    tags: ['borders', 'minimalist'],
+    art: '・　・　・　・　・　・　・',
+  },
+  {
+    id: 'butterfly-row',
+    title: 'Butterflies',
+    tags: ['nature', 'animals', 'aesthetic'],
+    art: '🦋　✿　🦋　✿　🦋',
+  },
+  {
+    id: 'big-heart',
+    title: 'Heart (big red)',
+    tags: ['love', 'symbols'],
+    width: 13, height: 7,
+    art: '　❤❤❤　❤❤❤　\n❤❤❤❤❤❤❤❤❤\n❤❤❤❤❤❤❤❤❤\n❤❤❤❤❤❤❤❤❤\n　❤❤❤❤❤❤❤　\n　　❤❤❤❤❤　　\n　　　❤❤❤　　　',
+  },
 ];
 
 if (typeof window !== 'undefined') window.ART = ART;

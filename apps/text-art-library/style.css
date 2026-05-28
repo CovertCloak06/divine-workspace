@@ -2,9 +2,9 @@
 
 :root {
   /* INVERTED palette: page = light ice blue, cards/chrome = dark navy. */
-  --bg: #c8dff5;            /* page background — light ice blue */
+  --bg: #8297AB;            /* page background — muted slate blue */
   --bg-elev: #162540;       /* modals + raised surfaces (dark) */
-  --bg-card: #0d1a2e;       /* CARDS — dark navy */
+  --bg-card: #BABEC7;       /* CARDS — light grey-blue */
   --bg-chrome: #0d1a2e;     /* (legacy — not used for header anymore) */
   --bg-preview: #c8f0a0;    /* art preview tray inside cards (lime) */
   --bg-wos: #0f2033;        /* WoS lightbox preview */
@@ -87,6 +87,9 @@ input, textarea { font-family: inherit; }
   padding: 0;
   cursor: pointer;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
   transition: transform 200ms ease;
 }
 .snowflake-btn:focus,
@@ -337,7 +340,7 @@ body.editor .add-row { display: block; }
   padding: 14px 14px 32px;
   position: relative;
   cursor: zoom-in;
-  color: var(--ink);
+  color: var(--ink-card);
   transition: border-color 160ms, transform 160ms, box-shadow 160ms;
 }
 .card:hover {
@@ -356,15 +359,15 @@ body.editor .add-row { display: block; }
   flex: 1;
   font-size: 15px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--ink-card);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
 .card-size {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink);
+  background: rgba(26, 42, 68, 0.12);
+  color: var(--ink-card);
   border-radius: 999px;
   font-family: 'JetBrains Mono', ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-size: 12px;
@@ -391,6 +394,11 @@ body.editor .add-row { display: block; }
   font-weight: 700;
   flex-shrink: 0;
 }
+.card-warn.hard {
+  background: rgba(248, 113, 113, 0.22);
+  color: #b91c1c;
+  border-color: rgba(248, 113, 113, 0.5);
+}
 .card-actions {
   display: none;
   gap: 4px;
@@ -401,8 +409,8 @@ body.editor .card-actions { display: flex; }
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink);
+  background: rgba(26, 42, 68, 0.12);
+  color: var(--ink-card);
   border: 0;
   cursor: pointer;
   font-size: 13px;
@@ -444,8 +452,8 @@ body.editor .card-actions { display: flex; }
   margin-bottom: 10px;
 }
 .chip {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink-dim);
+  background: rgba(26, 42, 68, 0.1);
+  color: var(--ink-card-soft);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
@@ -488,8 +496,14 @@ body.editor .card-actions { display: flex; }
   cursor: pointer;
   transition: background 120ms, color 120ms;
 }
+/* User direct-edit override — copy button without chunky border */
+.copy-btn { border-width: 0 !important; }
 .copy-btn:hover { background: var(--accent-press); }
 .copy-btn.copied { background: var(--good); color: var(--ink-card); }
+
+/* User direct-edit override — auth modal head border */
+.auth-modal .modal-head { border-bottom-color: #1e2c42 !important; }
+
 
 .wos-badge {
   position: absolute;
@@ -507,7 +521,7 @@ body.editor .card-actions { display: flex; }
 }
 body.editor .wos-badge { cursor: pointer; }
 .wos-badge.verified {
-  background: var(--verified);
+  background: #0f88a8;
   color: var(--ink-card);
 }
 .wos-badge.unverified {
@@ -524,14 +538,14 @@ body.editor .wos-badge { cursor: pointer; }
   gap: 6px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--ink-dim);
+  color: #14123c;
   cursor: pointer;
   user-select: none;
 }
 .flag-corner .box {
   width: 14px;
   height: 14px;
-  border: 1.5px solid var(--ink-dim);
+  border: 1.5px solid #14123c;
   border-radius: 3px;
   display: inline-flex;
   align-items: center;
@@ -539,7 +553,7 @@ body.editor .wos-badge { cursor: pointer; }
   font-size: 10px;
   line-height: 1;
 }
-.card.flagged .flag-corner { color: var(--ink-dim); }
+.card.flagged .flag-corner { color: #14123c; }
 .card.flagged .flag-corner .box {
   border: 0;
   width: auto;
@@ -883,6 +897,60 @@ body.editor .export-bar { display: block; }
 
 /* preview overflow highlight in modal */
 .wos-preview pre .ov { background: rgba(248, 113, 113, 0.22); }
+.wos-preview pre .ov-hard { background: rgba(248, 113, 113, 0.45); color: #fff; }
+
+/* ============ Sketch mode scroll lock ============ */
+html.sketch-locked,
+body.sketch-locked {
+  overflow: hidden !important;
+  height: 100vh;
+}
+body.sketch-locked .modal-overlay { padding: 10px; align-items: stretch; }
+body.sketch-locked .modal {
+  height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
+}
+body.sketch-locked .modal-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 14px;
+}
+body.sketch-locked .tab-panel[data-panel="sketch"] {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+body.sketch-locked .tab-panel[data-panel="sketch"] > .field {
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+}
+body.sketch-locked .tab-panel[data-panel="sketch"] > .field:last-child {
+  flex: 1 1 0;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+body.sketch-locked .tab-panel[data-panel="sketch"] > .field:last-child > label {
+  flex: 0 0 auto;
+}
+body.sketch-locked .char-palette {
+  flex: 1 1 0;
+  min-height: 80px;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+body.sketch-locked .sketch-view {
+  max-height: 32vh;
+}
 
 /* =====================================================================
    Character palette + favorites (replaces old draw-mode grid).
@@ -973,6 +1041,24 @@ body.editor .export-bar { display: block; }
   color: var(--accent);
   line-height: 1;
 }
+.palette-btn.brush-active,
+.fav-slot.brush-active {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+  background: rgba(74, 159, 212, 0.18);
+  box-shadow: 0 0 8px rgba(74, 159, 212, 0.4);
+}
+
+.tool-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.sketch-active-char.eraser {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: var(--bad);
+  color: var(--bad);
+}
 
 /* Sketch view — click/drag on rendered chars to replace them with the active brush */
 .sketch-bar {
@@ -1021,15 +1107,17 @@ body.editor .export-bar { display: block; }
   padding: 2px 0;
   cursor: crosshair;
   border-radius: 2px;
+  background: transparent;
+  outline: none;
 }
 .sketch-char:hover,
 .sketch-char:active {
-  background: rgba(74, 159, 212, 0.3);
-  outline: 1px solid rgba(74, 159, 212, 0.6);
+  background: rgba(74, 159, 212, 0.18);
+  outline: none;
 }
 .sketch-empty-cell {
-  background: rgba(255, 255, 255, 0.35);
-  outline: 1px dashed rgba(160, 216, 128, 0.5);
+  background: transparent;
+  outline: none;
   color: transparent;
 }
 .sketch-hint {
@@ -1278,18 +1366,13 @@ body.editor .export-bar { display: block; }
     0 3px 4px rgba(0, 30, 80, 0.3);
 }
 
-/* Card titles: white text on dark navy card — apply sticker outline */
+/* Card titles: dark text on the light card surface, no sticker outline */
 .card-title {
   font-family: 'Fredoka', 'Nunito', sans-serif;
   font-weight: 700;
   letter-spacing: 0.005em;
-  color: #ffffff;
-  text-shadow:
-    -1px 0 0 #1f5993,
-    1px 0 0 #1f5993,
-    0 -1px 0 #1f5993,
-    0 1px 0 #1f5993,
-    0 2px 4px rgba(0, 30, 80, 0.3);
+  color: var(--ink-card);
+  text-shadow: none;
 }
 
 /* Modal heading: white sticker */
@@ -1326,170 +1409,143 @@ body.editor .export-bar { display: block; }
 .chip { font-weight: 700; }
 
 /* =====================================================================
-   Editor: Type/Draw toggle, shared tool buttons, snapshot card images.
+   CONSISTENT THEMING — every modal matches the main screen
    ===================================================================== */
-.hint-inline {
-  color: var(--ink-dim);
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
+.modal-overlay {
+  background: rgba(7, 11, 24, 0.92) !important;
 }
-.field-label {
-  color: var(--ink-dim);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.modal,
+.auth-modal,
+.edit-modal {
+  background: var(--bg-elev) !important;
+  border-color: var(--accent) !important;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
 }
-
-/* Type ⟷ Draw toggle — one editing surface, switched in place */
-.mode-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 4px 0 12px;
-}
-.mode-toggle {
-  position: relative;
-  display: inline-flex;
-  background: linear-gradient(180deg, #0c1828, #122740);
-  border: 2px solid var(--btn-edge);
-  border-radius: 999px;
-  padding: 3px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
-  user-select: none;
-  -webkit-user-select: none;
-}
-.mode-opt {
-  position: relative;
-  z-index: 1;
-  border: 0;
+.auth-body,
+.modal-body {
   background: transparent;
-  color: var(--ink-dim);
-  font-family: 'Fredoka', 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 8px 18px;
-  min-width: 74px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: color 160ms;
+  color: var(--ink);
 }
-.mode-opt.active {
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 30, 80, 0.4);
-}
-.mode-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  bottom: 3px;
-  width: calc(50% - 3px);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--btn-grad-top) 0%, var(--btn-grad-mid) 55%, var(--btn-grad-bot) 100%);
-  box-shadow: inset 0 1px 0 var(--btn-highlight), 0 2px 5px rgba(0, 0, 0, 0.3);
-  transition: transform 220ms cubic-bezier(0.4, 1.3, 0.5, 1);
-}
-.mode-toggle.is-draw .mode-thumb { transform: translateX(100%); }
-
-/* Active-brush indicator chip */
-.brush-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(13, 26, 46, 0.55);
-  border: 1px solid rgba(155, 184, 220, 0.2);
-  border-radius: 12px;
-  padding: 4px 6px 4px 12px;
-}
-.brush-chip .size-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.auth-body p,
+.modal-body .field label {
   color: var(--ink-dim);
 }
-
-/* Shared tool buttons (Undo / New Canvas / Clear) — chunky + colour-coded */
-.tool-btn {
-  --tb-top: #79bef0;
-  --tb-mid: #4ea4dc;
-  --tb-bot: #2e7ec0;
-  --tb-edge: #1f5993;
-  -webkit-appearance: none;
-  appearance: none;
-  border: 2px solid var(--tb-edge);
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--tb-top) 0%, var(--tb-mid) 55%, var(--tb-bot) 100%);
-  color: #fff;
+.auth-input,
+.field input,
+.field textarea {
+  background: rgba(13, 26, 46, 0.65) !important;
+  border-color: rgba(155, 184, 220, 0.3) !important;
+  color: var(--ink) !important;
+  font-family: 'Fredoka', 'Nunito', sans-serif !important;
+}
+.auth-input:focus,
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent) !important;
+}
+.field textarea {
+  background: var(--bg-preview) !important;
+  color: var(--ink-card) !important;
+}
+.modal-head h3 {
   font-family: 'Fredoka', 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.01em;
-  padding: 9px 15px;
+  color: var(--ink);
+}
+.modal-foot {
+  background: transparent;
+  border-top-color: rgba(155, 184, 220, 0.12);
+}
+.audit {
+  background: rgba(13, 26, 46, 0.65);
+}
+
+/* =====================================================================
+   WoS TAB STYLE — mid-blue pills with white text; active = ice-blue + dark text
+   Applied to: .tabs > .tab (editor modal), .tag (category filter chips),
+   .tag.flagged-tab (the editor's flagged filter)
+   ===================================================================== */
+:root {
+  --wos-tab-bg:        #0f88a8;
+  --wos-tab-bg-hover:  #1299bd;
+  --wos-tab-text:      #ffffff;
+  --wos-tab-active-bg: #d4e8f5;
+  --wos-tab-active-text: #1a2a44;
+}
+
+/* Editor modal tabs */
+.tabs {
+  display: flex !important;
+  gap: 8px !important;
+  padding: 12px 22px !important;
+  border-bottom: 0 !important;
+  background: transparent;
+}
+.tab {
+  flex: 1;
+  background: var(--wos-tab-bg) !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  color: var(--wos-tab-text) !important;
+  font-family: 'Fredoka', 'Nunito', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 11px 14px !important;
   cursor: pointer;
-  white-space: nowrap;
-  text-shadow:
-    -1px 0 0 var(--tb-edge), 1px 0 0 var(--tb-edge),
-    0 -1px 0 var(--tb-edge), 0 1px 0 var(--tb-edge),
-    0 2px 4px rgba(0, 30, 80, 0.35);
+  text-align: center;
+  transition: background 120ms, color 120ms, transform 80ms;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
     inset 0 -3px 0 rgba(0, 0, 0, 0.18),
-    0 3px 0 rgba(0, 0, 0, 0.18),
-    0 4px 9px rgba(0, 0, 0, 0.22);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 120ms ease;
+    0 2px 0 rgba(0, 0, 0, 0.18),
+    0 3px 6px rgba(0, 0, 0, 0.2);
 }
-.tool-btn:hover { filter: brightness(1.08); }
-.tool-btn:active {
-  transform: translateY(2px);
+.tab:hover { background: var(--wos-tab-bg-hover) !important; }
+.tab.active {
+  background: var(--wos-tab-active-bg) !important;
+  color: var(--wos-tab-active-text) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
-    0 1px 0 rgba(0, 0, 0, 0.15);
+    inset 0 2px 4px rgba(0, 0, 0, 0.12),
+    0 1px 0 rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+  border-bottom: 0 !important;
 }
-.tool-btn--undo  { --tb-top: #9a8cf0; --tb-mid: #6f5be0; --tb-bot: #5039c0; --tb-edge: #34237a; }
-.tool-btn--new   { --tb-top: #8fe6a6; --tb-mid: #45c46a; --tb-bot: #2a9a4e; --tb-edge: #1c6b35; }
-.tool-btn--clear { --tb-top: #ff9d9d; --tb-mid: #ec5e5e; --tb-bot: #c63a3a; --tb-edge: #8a2424; margin-left: auto; }
 
-/* Editing surfaces (swapped by the toggle) */
-.edit-surface { margin-bottom: 14px; }
-.edit-surface[hidden] { display: none; }
-.edit-surface textarea {
-  width: 100%;
-  background: var(--bg-preview);
-  border: 2px solid var(--border-preview);
-  border-radius: 10px;
-  padding: 11px 14px;
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.15;
-  min-height: 200px;
-  resize: vertical;
-  white-space: pre;
-  color: var(--ink-card);
-  outline: none;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.06);
+/* Category filter chips */
+.tag {
+  background: var(--wos-tab-bg) !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  color: var(--wos-tab-text) !important;
+  font-family: 'Fredoka', 'Nunito', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 9px 16px !important;
+  text-shadow: none !important;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
+    0 2px 0 rgba(0, 0, 0, 0.18),
+    0 3px 6px rgba(0, 0, 0, 0.2);
+  transition: background 120ms, color 120ms, transform 80ms;
 }
-.edit-surface textarea:focus {
-  border-color: #6cb52f;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.08), 0 0 0 3px rgba(160, 216, 128, 0.4);
+.tag:hover { background: var(--wos-tab-bg-hover) !important; }
+.tag.active {
+  background: var(--wos-tab-active-bg) !important;
+  color: var(--wos-tab-active-text) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.12),
+    0 1px 0 rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
 }
-.edit-surface textarea::placeholder { color: var(--ink-card-soft); opacity: 0.55; }
 
-/* Card face = PNG snapshot of the art (display only; Copy still uses real text) */
-.preview.has-img {
-  padding: 6px;
-  background: var(--bg-wos);
-  border-color: rgba(74, 159, 212, 0.35);
+/* Flagged-tab variant (editor-only) keeps red accent but same shape */
+.tag.flagged-tab {
+  background: #c95c5c !important;
+  color: #ffffff !important;
 }
-.preview-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 6px;
-  user-select: none;
-  -webkit-user-select: none;
+.tag.flagged-tab.active {
+  background: #f7d0d0 !important;
+  color: #5a1a1a !important;
 }
+
+/* Honor batch button-shape override on these too — pill/round/sharp tweaks
+   already cover .tab and .tag via the existing fx-shape rules. */
 
