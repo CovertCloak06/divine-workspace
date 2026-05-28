@@ -6,7 +6,7 @@
 //   { deleteId: "<id>" }          delete a single piece (writes a tombstone)
 //   { pieces: [...], deletedIds } bulk write (used once for seed/migration)
 
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +22,7 @@ const json = (statusCode, obj) => ({
 });
 
 export const handler = async (event) => {
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 

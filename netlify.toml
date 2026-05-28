@@ -1,12 +1,7 @@
-# base points the build at the app dir so Netlify detects @netlify/blobs in its
-# package.json and provisions the Blobs runtime context for the functions.
-# Building from the repo root does NOT do this, which yields
-# MissingBlobsEnvironmentError at runtime (get-art/save-art/flags all 500).
 [build]
-  base = "apps/text-art-library"
-  command = "npm install"
-  publish = "."
-  functions = "netlify/functions"
+  command = "cd apps/text-art-library && npm install"
+  publish = "apps/text-art-library"
+  functions = "apps/text-art-library/netlify/functions"
 
 [build.environment]
   # EDITOR_PASSWORD is a low-value editor gate read only from process.env (never

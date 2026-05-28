@@ -1,9 +1,10 @@
 // Frostline — GET /get-flags
 // Returns { flags: { [pieceId]: noteText } } across all flag/* blobs.
 
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 
-export const handler = async () => {
+export const handler = async (event) => {
+  connectLambda(event);
   try {
     const store = getStore('frostline');
     const { blobs } = await store.list({ prefix: 'flag/' });

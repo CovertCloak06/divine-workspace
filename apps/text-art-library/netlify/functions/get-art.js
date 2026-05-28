@@ -6,7 +6,7 @@
 // If no per-piece records exist yet, falls back to the LEGACY aggregate keys
 // (art / deletedIds) so the client can migrate them once. 404 when truly empty.
 
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +15,7 @@ const CORS = {
 };
 
 export const handler = async (event) => {
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS };
   }

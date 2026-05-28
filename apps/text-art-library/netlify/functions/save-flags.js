@@ -4,9 +4,10 @@
 //   toggle: creates flag/{id} if absent, deletes it if present.
 //   note:   updates flag/{id} note text without changing its existence.
 
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 
 export const handler = async (event) => {
+  connectLambda(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
