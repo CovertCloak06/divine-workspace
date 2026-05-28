@@ -203,35 +203,76 @@ function debounce(fn, wait) {
 }
 
 /* ============ 03  API layer ============ */
+// Single source of truth: the full library lives in Netlify Blobs (the
+// `library` key, written by save-art). localStorage is only a last-known-good
+// CACHE — never a competing store — so an unreachable backend shows your real
+// library instead of silently falling back to the bundled seed.
+const CACHE_KEY = 'frostline:cache:v2';
+const LEGACY_KEY = 'frostline:art';
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  // Migration path: the old fallback stored only user pieces + deletedIds.
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if (raw) {
+      const o = JSON.parse(raw);
+      return { legacy: true, art: o.art || [], deletedIds: o.deletedIds || [] };
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function writeCache(library, deletedIds) {
+  const payload = (lib) => JSON.stringify({ library: lib, deletedIds, ts: Date.now() });
+  try {
+    localStorage.setItem(CACHE_KEY, payload(library));
+  } catch {
+    // Quota hit (snapshots are large). Strip the PNGs — they regenerate from
+    // `art` on load — and keep the text, which is what must never be lost.
+    try {
+      const lean = library.map((p) => { const { snapshot, ...rest } = p; return rest; });
+      localStorage.setItem(CACHE_KEY, payload(lean));
+    } catch { /* give up silently — server is still source of truth */ }
+  }
+}
+
 const API = {
   async getArt() {
     try {
-      const res = await fetch('/.netlify/functions/get-art');
-      if (res.ok) return await res.json();
-      if (res.status === 404) return { art: [], deletedIds: [] };
-    } catch { /* fall through */ }
-    const stored = localStorage.getItem('frostline:art');
-    return stored ? JSON.parse(stored) : { art: [], deletedIds: [] };
+      const res = await fetch('/.netlify/functions/get-art', { cache: 'no-store' });
+      if (res.ok) return await res.json();   // { library?, art?, deletedIds? }
+      if (res.status === 404) return { empty: true };
+    } catch { /* offline / unreachable */ }
+    return { offline: true };
   },
-  async saveArt(art, deletedIds, password) {
-    try {
-      const res = await fetch('/.netlify/functions/save-art', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + password,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ art, deletedIds }),
-      });
-      if (res.ok) return { ok: true };
-      const err = await res.json().catch(() => ({}));
-      // If the function isn't deployed, fall through to local
-      if (res.status === 404) throw new Error('not deployed');
-      return { ok: false, error: err.error || `HTTP ${res.status}`, status: res.status };
-    } catch {
-      localStorage.setItem('frostline:art', JSON.stringify({ art, deletedIds }));
-      return { ok: true, fallback: true };
-    }
+  async _post(payload, password) {
+    const res = await fetch('/.netlify/functions/save-art', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + password, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return { ok: true };
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 404) throw new Error('not deployed');
+    return { ok: false, error: err.error || `HTTP ${res.status}`, status: res.status };
+  },
+  // Per-piece writes: two devices saving different pieces never overwrite each
+  // other (only the same piece edited at once is last-write-wins).
+  async savePiece(piece, password) {
+    try { return await this._post({ piece }, password); }
+    catch { return { ok: true, local: true }; }
+  },
+  async deletePiece(id, password) {
+    try { return await this._post({ deleteId: id }, password); }
+    catch { return { ok: true, local: true }; }
+  },
+  async savePieces(pieces, deletedIds, password) {
+    try { return await this._post({ pieces, deletedIds }, password); }
+    catch { return { ok: true, local: true }; }
   },
   async getFlags() {
     try {
@@ -283,15 +324,16 @@ const API = {
 
 /* ============ 04  State + boot ============ */
 const state = {
-  bundled: [],           // copy of ART
-  userPieces: [],        // from Blob
-  deletedIds: new Set(),
+  bundled: [],           // copy of ART (seed/backup only — never overrides runtime)
+  library: [],           // authoritative full list (from Blobs `library`)
+  deletedIds: new Set(), // tombstones — stop future bundle adds from resurrecting deletes
   flags: {},             // { pieceId: noteText }
   merged: [],            // computed display list
   activeTag: 'all',
   query: '',
   editor: false,
   password: null,
+  booted: false,
 };
 
 async function boot() {
@@ -300,35 +342,118 @@ async function boot() {
   renderEmpty('Loading…');
 
   const [artData, flags] = await Promise.all([API.getArt(), API.getFlags()]);
-  state.userPieces = (artData.art || []).slice();
-  state.deletedIds = new Set(artData.deletedIds || []);
   state.flags = flags || {};
+  resolveLibrary(artData);
+  state.booted = true;
   recomputeMerged();
   render();
 }
 
-function recomputeMerged() {
+function bundleSeed() {
+  return state.bundled.map((p) => ({ ...p }));
+}
+
+// One-time merge used when migrating OLD server/cache data (user pieces +
+// deletedIds layered over the bundle) into the new flat library.
+function migrateMerge(bundled, userPieces, deletedSet) {
   const out = [];
-  const userById = new Map(state.userPieces.map((p) => [p.id, p]));
-  // 1. bundled, filtered by deletedIds, with verified state overlaid
-  for (const p of state.bundled) {
-    if (state.deletedIds.has(p.id)) continue;
+  const userById = new Map((userPieces || []).map((p) => [p.id, p]));
+  for (const p of bundled) {
+    if (deletedSet.has(p.id)) continue;
     const overlay = userById.get(p.id);
-    if (overlay) {
-      // user override for a bundled ID (e.g. edited)
-      out.push({ ...p, ...overlay });
-      userById.delete(p.id);
-    } else {
-      out.push({ ...p });
-    }
+    if (overlay) { out.push({ ...p, ...overlay }); userById.delete(p.id); }
+    else out.push({ ...p });
   }
-  // 2. remaining user pieces
   for (const p of userById.values()) {
-    if (state.deletedIds.has(p.id)) continue;
+    if (deletedSet.has(p.id)) continue;
     out.push({ ...p });
   }
-  state.merged = out;
+  return out;
 }
+
+// Decide the authoritative library from (in priority order) the server's
+// `library`, an OLD server payload to migrate, the local cache, or the bundle.
+function resolveLibrary(data) {
+  let library = null;
+  let deletedIds = [];
+  let needsPersist = false;
+
+  if (data && Array.isArray(data.library)) {
+    library = data.library.map((p) => ({ ...p }));
+    deletedIds = data.deletedIds || [];
+  } else if (data && !data.offline && (Array.isArray(data.art) || Array.isArray(data.deletedIds))) {
+    deletedIds = data.deletedIds || [];
+    library = migrateMerge(state.bundled, data.art || [], new Set(deletedIds));
+    needsPersist = true; // fold legacy server format into the new library
+  } else {
+    // offline / empty / 404 → cache, then bundle seed. Never the bare bundle
+    // if we have a cached real library.
+    const cache = readCache();
+    if (cache && Array.isArray(cache.library)) {
+      library = cache.library.map((p) => ({ ...p }));
+      deletedIds = cache.deletedIds || [];
+    } else if (cache && cache.legacy) {
+      deletedIds = cache.deletedIds || [];
+      library = migrateMerge(state.bundled, cache.art || [], new Set(deletedIds));
+    } else {
+      library = bundleSeed();
+    }
+  }
+
+  state.deletedIds = new Set(deletedIds);
+
+  // Fold in genuinely-new bundled pieces (curated art added in a later deploy)
+  // without resurrecting anything the editor deleted.
+  const known = new Set(library.map((p) => p.id));
+  for (const p of state.bundled) {
+    if (!known.has(p.id) && !state.deletedIds.has(p.id)) {
+      library.push({ ...p });
+      needsPersist = true;
+    }
+  }
+
+  state.library = library;
+  writeCache(state.library, [...state.deletedIds]);
+
+  // Persist migrations / new-bundle fold-ins, but only with write access.
+  if (needsPersist && state.editor && state.password) {
+    API.savePieces(state.library, [...state.deletedIds], state.password);
+  }
+}
+
+function recomputeMerged() {
+  // The library is authoritative; the tombstone filter is belt-and-suspenders.
+  state.merged = state.library.filter((p) => !state.deletedIds.has(p.id));
+}
+
+// Cache the current library locally (last-known-good for offline loads).
+function cacheNow() {
+  writeCache(state.library, [...state.deletedIds]);
+}
+
+// Pull the authoritative library from the shared store so this device's view
+// converges with edits made on other devices/users. Safe to call any time.
+let _refreshing = false;
+async function refresh() {
+  if (!state.booted || _refreshing) return;
+  _refreshing = true;
+  try {
+    const data = await API.getArt();
+    if (data && (Array.isArray(data.library) || Array.isArray(data.art))) {
+      resolveLibrary(data);
+      recomputeMerged();
+      render();
+    }
+  } finally {
+    _refreshing = false;
+  }
+}
+
+// Refresh when this device regains focus — picks up the other person's edits.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refresh();
+});
+window.addEventListener('focus', refresh);
 
 /* ============ 05  Rendering ============ */
 function buildTagStrip() {
@@ -455,16 +580,36 @@ function renderCard(p) {
   }
   card.appendChild(head);
 
-  // preview
+  // preview — a PNG snapshot of the art (display only; never the copy source)
   const prev = document.createElement('div');
   prev.className = 'preview';
-  const pre = document.createElement('pre');
-  pre.textContent = p.art || '';
-  prev.appendChild(pre);
+  const showImg = (url) => {
+    prev.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'preview-img';
+    img.src = url;
+    img.alt = p.title || 'art';
+    img.draggable = false;
+    prev.appendChild(img);
+  };
+  if (p.snapshot) {
+    prev.classList.add('has-img');
+    showImg(p.snapshot);
+  } else {
+    // Legacy piece without a stored snapshot: render the text now, then
+    // generate a snapshot in the background and swap it in (cached on the piece).
+    const pre = document.createElement('pre');
+    pre.textContent = p.art || '';
+    prev.appendChild(pre);
+    requestAnimationFrame(() => fitPreview(prev, pre));
+    artToSnapshot(p.art).then((url) => {
+      if (!url) return;
+      p.snapshot = url;        // cache in-memory; persists when the piece is next saved
+      prev.classList.add('has-img');
+      showImg(url);
+    }).catch(() => { /* keep the text fallback */ });
+  }
   card.appendChild(prev);
-
-  // scale to fit after layout
-  requestAnimationFrame(() => fitPreview(prev, pre));
 
   // chips
   if (p.tags && p.tags.length) {
@@ -559,6 +704,51 @@ function fitPreview(container, pre) {
     // transform: scale() crunches subpixels and visibly drifts alignment.
     pre.style.fontSize = (base * scale).toFixed(2) + 'px';
   }
+}
+
+/* ============ 05b  Snapshot — PNG of the art for card faces ============ */
+// The card shows a *picture* of the art so it can never drift from the popup.
+// The text itself (p.art) is always stored separately and is what Copy uses —
+// the snapshot is display-only. Rendered to match the WoS lightbox preview.
+const SNAP = {
+  font: '"Noto Sans JP", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  fontPx: 24, lineH: 1.25, pad: 18,
+  bg: '#0f2033',   // matches --bg-wos (the lightbox preview tray)
+  fg: '#d8e8f8',   // matches --ink-wos
+};
+let _snapCanvas = null;
+let _fontsReady = false;
+async function ensureFonts() {
+  if (_fontsReady) return;
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch { /* ignore */ }
+  _fontsReady = true;
+}
+async function artToSnapshot(art) {
+  if (!art) return '';
+  await ensureFonts();
+  const lines = String(art).split('\n');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = _snapCanvas || (_snapCanvas = document.createElement('canvas'));
+  const ctx = canvas.getContext('2d');
+  const font = `${SNAP.fontPx}px ${SNAP.font}`;
+  const lineHeightPx = SNAP.fontPx * SNAP.lineH;
+  ctx.font = font;
+  let maxW = 0;
+  for (const ln of lines) maxW = Math.max(maxW, ctx.measureText(ln).width);
+  const wCss = Math.ceil(maxW) + SNAP.pad * 2;
+  const hCss = Math.ceil(lines.length * lineHeightPx) + SNAP.pad * 2;
+  canvas.width = Math.max(1, Math.round(wCss * dpr));
+  canvas.height = Math.max(1, Math.round(hCss * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = SNAP.bg;
+  ctx.fillRect(0, 0, wCss, hCss);
+  ctx.font = font;            // re-set: resizing the canvas clears context state
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = SNAP.fg;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], SNAP.pad, SNAP.pad + i * lineHeightPx);
+  }
+  return canvas.toDataURL('image/png');
 }
 
 /* ============ 06  Filtering + search ============ */
@@ -714,6 +904,9 @@ async function submitAuth() {
     els.btnExport.disabled = false;
     closeAuth();
     render();
+    // Re-pull as an editor: this also migrates any legacy aggregate data into
+    // per-piece records (and won't drop the old user pieces).
+    refresh();
   } else {
     els.authError.textContent = r.error || 'Wrong password';
   }
@@ -732,7 +925,7 @@ function openAdd() {
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
-  setTab('text');
+  setMode('text');
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
@@ -745,7 +938,7 @@ function openEdit(p) {
   els.editTagsInput.value = (p.tags || []).join(', ');
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
-  setTab('text');
+  setMode('text');
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
@@ -758,9 +951,31 @@ els.edit.addEventListener('click', (e) => {
 });
 els.btnAdd.addEventListener('click', openAdd);
 
-// Tabs (Text Mode / Sketch Mode)
-for (const t of document.querySelectorAll('.tab')) {
-  t.addEventListener('click', () => setTab(t.dataset.tab));
+// Mode toggle (Type ⟷ Draw) — one editing surface, switched in place.
+let editMode = 'text';
+function setMode(name) {
+  editMode = name === 'draw' ? 'draw' : 'text';
+  const tgl = $('mode-toggle');
+  if (tgl) {
+    tgl.classList.toggle('is-draw', editMode === 'draw');
+    for (const b of tgl.querySelectorAll('.mode-opt')) {
+      const on = b.dataset.mode === editMode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  for (const s of document.querySelectorAll('.edit-surface')) {
+    s.hidden = s.dataset.surface !== editMode;
+  }
+  if (editMode === 'draw') { ensureBlankCanvas(); renderSketch(); }
+}
+{
+  const tgl = $('mode-toggle');
+  if (tgl) {
+    for (const b of tgl.querySelectorAll('.mode-opt')) {
+      b.addEventListener('click', () => setMode(b.dataset.mode));
+    }
+  }
 }
 function ensureBlankCanvas() {
   // Make sure the textarea has a paintable 27×12 NBSP grid for sketch mode.
@@ -772,20 +987,6 @@ function ensureBlankCanvas() {
   lastEditSnapshot = els.editArtInput.value;
   resetEditHistory(els.editArtInput.value);
   runAudit();
-}
-
-function setTab(name) {
-  for (const t of document.querySelectorAll('.tab')) {
-    t.classList.toggle('active', t.dataset.tab === name);
-  }
-  for (const p of document.querySelectorAll('.tab-panel')) {
-    p.classList.toggle('active', p.dataset.panel === name);
-  }
-  if (name === 'sketch') {
-    // Auto-prepare a blank canvas so the user can immediately tap anywhere.
-    ensureBlankCanvas();
-    renderSketch();
-  }
 }
 
 const runAudit = () => {
@@ -1103,8 +1304,7 @@ function attachLongPress(el, { onTap, onLong }) {
 }
 
 function isSketchMode() {
-  const tab = document.querySelector('.tab.active');
-  return tab && tab.dataset.tab === 'sketch';
+  return editMode === 'draw';
 }
 
 function handlePaletteSelection(ch) {
@@ -1172,61 +1372,69 @@ els.editSave.addEventListener('click', async () => {
   art = spacesToNbsp(art);
   const { width, height } = measure(art);
 
-  let piece;
-  if (editing) {
-    piece = { ...editing, title, tags, art, width, height };
-  } else {
-    piece = {
-      id: newId(),
-      title, tags, art, width, height,
-      wosVerified: false,
-    };
-  }
-
-  // Build the new user-pieces array:
-  // - if editing a bundled piece, store the override in userPieces (overlay merges in recompute)
-  // - if editing an existing user piece, replace
-  // - if adding new, append
-  const existingIdx = state.userPieces.findIndex((p) => p.id === piece.id);
-  const next = state.userPieces.slice();
-  if (existingIdx >= 0) next[existingIdx] = piece;
-  else next.push(piece);
-
   els.editSave.disabled = true;
   els.editSave.textContent = 'Saving…';
-  const r = await API.saveArt(next, [...state.deletedIds], state.password);
+
+  // Freeze a picture of exactly what this art renders to (display only).
+  let snapshot = '';
+  try { snapshot = await artToSnapshot(art); } catch { /* card falls back to text */ }
+
+  let piece;
+  if (editing) {
+    piece = { ...editing, title, tags, art, width, height, snapshot };
+  } else {
+    piece = { id: newId(), title, tags, art, width, height, wosVerified: false, snapshot };
+  }
+
+  const prevLib = state.library;
+  const prevDel = new Set(state.deletedIds);
+  const next = state.library.slice();
+  const idx = next.findIndex((p) => p.id === piece.id);
+  if (idx >= 0) next[idx] = piece;
+  else next.push(piece);
+  state.library = next;
+  state.deletedIds.delete(piece.id); // editing un-deletes
+
+  const r = await API.savePiece(piece, state.password);
   els.editSave.disabled = false;
   els.editSave.textContent = 'Save';
 
   if (!r.ok) {
+    state.library = prevLib;
+    state.deletedIds = prevDel;
     alert('Save failed: ' + (r.error || 'unknown'));
     return;
   }
-  state.userPieces = next;
+  cacheNow();
   recomputeMerged();
   closeEdit();
   render();
+  if (r.local) {
+    alert('Saved on this device, but the server was unreachable — it won’t sync to other devices until you’re back online and save again.');
+  } else {
+    refresh(); // pull in anything the other device changed
+  }
 });
 
 async function deletePiece(p) {
   if (!confirm(`Delete "${p.title}"?`)) return;
-  const prevUser = state.userPieces.slice();
+  const prevLib = state.library;
   const prevDel = new Set(state.deletedIds);
 
-  // remove from userPieces if present
-  state.userPieces = state.userPieces.filter((u) => u.id !== p.id);
-  // and add ID to deletedIds (handles both bundled and user)
-  state.deletedIds.add(p.id);
+  state.library = state.library.filter((u) => u.id !== p.id);
+  state.deletedIds.add(p.id); // tombstone so a redeploy can't bring it back
 
-  const r = await API.saveArt(state.userPieces, [...state.deletedIds], state.password);
+  const r = await API.deletePiece(p.id, state.password);
   if (!r.ok) {
-    state.userPieces = prevUser;
+    state.library = prevLib;
     state.deletedIds = prevDel;
     alert('Delete failed: ' + (r.error || 'unknown'));
     return;
   }
+  cacheNow();
   recomputeMerged();
   render();
+  if (!r.local) refresh();
 }
 
 async function toggleFlag(p, card, box, flag, note) {
@@ -1254,25 +1462,21 @@ async function toggleFlag(p, card, box, flag, note) {
 }
 
 async function toggleVerified(p) {
-  // Overlay this in userPieces (the Blob wins on merge).
-  const idx = state.userPieces.findIndex((u) => u.id === p.id);
-  const next = state.userPieces.slice();
-  const updated = {
-    ...(idx >= 0 ? next[idx] : p),
-    id: p.id,
-    title: p.title, tags: p.tags, art: p.art,
-    width: p.width, height: p.height,
-    wosVerified: !p.wosVerified,
-  };
-  if (idx >= 0) next[idx] = updated;
-  else next.push(updated);
+  const idx = state.library.findIndex((u) => u.id === p.id);
+  if (idx < 0) return;
+  const prevLib = state.library;
+  const next = state.library.slice();
+  const updated = { ...next[idx], wosVerified: !next[idx].wosVerified };
+  next[idx] = updated;
+  state.library = next;
 
-  const r = await API.saveArt(next, [...state.deletedIds], state.password);
+  const r = await API.savePiece(updated, state.password);
   if (!r.ok) {
+    state.library = prevLib;
     alert('Save failed: ' + (r.error || 'unknown'));
     return;
   }
-  state.userPieces = next;
+  cacheNow();
   recomputeMerged();
   render();
 }

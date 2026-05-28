@@ -182,52 +182,54 @@
           </svg>
         </button>
       </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="text">✎ Text Mode</button>
-        <button class="tab" data-tab="sketch">✏ Sketch Mode</button>
-      </div>
       <div class="modal-body">
-        <div class="tab-panel active" data-panel="text">
-          <div class="field">
-            <label for="edit-title-input">Title</label>
-            <input id="edit-title-input" type="text" placeholder="Heart (small)">
-          </div>
-          <div class="field">
-            <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
-            <input id="edit-tags-input" type="text" placeholder="love, symbols">
-          </div>
-          <div class="field">
-            <label for="edit-art-input">Art</label>
-            <div class="text-tools" style="display:flex;gap:8px;margin-bottom:6px;">
-              <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the textarea with a 27×12 grid of blank cells so you can position your cursor anywhere">＋ Blank canvas</button>
-            </div>
-            <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
-          </div>
-          <div class="field">
-            <label>WoS Audit</label>
-            <div class="audit" id="edit-audit"></div>
+        <div class="field">
+          <label for="edit-title-input">Title</label>
+          <input id="edit-title-input" type="text" placeholder="Heart (small)">
+        </div>
+        <div class="field">
+          <label for="edit-tags-input">Tags <span class="hint-inline">— comma-separated</span></label>
+          <input id="edit-tags-input" type="text" placeholder="love, symbols">
+        </div>
+
+        <div class="mode-row">
+          <span class="field-label">Art</span>
+          <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Editing mode">
+            <span class="mode-thumb" aria-hidden="true"></span>
+            <button type="button" class="mode-opt active" data-mode="text" aria-pressed="true">✎ Type</button>
+            <button type="button" class="mode-opt" data-mode="draw" aria-pressed="false">✏ Draw</button>
           </div>
         </div>
-        <div class="tab-panel" data-panel="sketch">
-          <div class="field">
-            <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
-            <div class="favorites-bar" id="favorites-bar"></div>
-          </div>
-          <div class="field">
-            <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
-            <div class="char-palette" id="char-palette"></div>
-          </div>
-          <div class="field">
-            <label>Sketch <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap or drag on any character to replace it with the active brush</span></label>
-            <div class="sketch-bar">
-              <span class="size-label">Brush:</span>
-              <span class="sketch-active-char" id="sketch-active-char">❤</span>
-              <button class="tool-btn" id="sketch-undo" title="Undo last edit (Ctrl+Z)">↶ Undo</button>
-              <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank canvas</button>
-              <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
-            </div>
-            <div class="sketch-view" id="sketch-view"></div>
-          </div>
+
+        <div class="sketch-bar">
+          <span class="brush-chip" title="Active brush — tap a palette character to change it">
+            <span class="size-label">Brush</span>
+            <span class="sketch-active-char" id="sketch-active-char">❤</span>
+          </span>
+          <button type="button" class="tool-btn tool-btn--undo" id="sketch-undo" title="Undo last edit (Ctrl+Z)">↶ Undo</button>
+          <button type="button" class="tool-btn tool-btn--new" id="sketch-fill" title="Start a fresh 27×12 blank canvas">＋ New Canvas</button>
+          <button type="button" class="tool-btn tool-btn--clear" id="sketch-clear" title="Clear the canvas">🗑 Clear</button>
+        </div>
+
+        <div class="edit-surface" data-surface="text">
+          <textarea id="edit-art-input" placeholder="Type or paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
+        </div>
+        <div class="edit-surface" data-surface="draw" hidden>
+          <div class="sketch-view" id="sketch-view"></div>
+        </div>
+
+        <div class="field">
+          <label>Favorites <span class="hint-inline">— long-press a palette char to add · long-press a favorite to remove</span></label>
+          <div class="favorites-bar" id="favorites-bar"></div>
+        </div>
+        <div class="field">
+          <label>Character palette <span class="hint-inline">— tap to set the brush · also inserts at the cursor in Type mode</span></label>
+          <div class="char-palette" id="char-palette"></div>
+        </div>
+
+        <div class="field">
+          <label>WoS Audit</label>
+          <div class="audit" id="edit-audit"></div>
         </div>
       </div>
       <div class="modal-foot">
