@@ -33,42 +33,6 @@ const WOS_MAX_WIDTH = 27;       // soft warn (⚠) — wide chars may clip
 const WOS_HARD_LIMIT = 58;      // hard warn (⛔) — likely to break in chat
 const DEV_FALLBACK_PASSWORD = '0022';
 
-const DRAW_PALETTE = [
-  // hearts
-  '❤','💛','💚','💙','💜','💖','💓','♥',
-  // stars & sparkles
-  '⭐','★','✦','✧','✨','☆',
-  // snow & flowers
-  '❄','🌸','🌼','🌿','🌹','🌺','✿','❀','✾',
-  // shapes solid
-  '◆','●','■','▪','◼','▲','▼','▶','◀',
-  // shapes outline
-  '◇','○','□','▫','◻',
-  // emoji squares
-  '◾','◽','🟥','🟧','🟨','🟩','🟦','🟪',
-  // box-drawing thick
-  '━','┃','┏','┓','┗','┛','┣','┫','┳','┻','╋',
-  // box-drawing thin
-  '─','│','┌','┐','└','┘','┬','┴','┼',
-  // rounded corners
-  '╭','╮','╰','╯',
-  // double-line
-  '═','║','╔','╗','╚','╝',
-  // diagonals
-  '╱','╲',
-  // blocks / shading
-  '█','▇','▒','░','▔','▏','▂','▃',
-  // food / flair
-  '🍪','🍭','🍺','🎂','🎀',
-  // fire / motion
-  '🔥','💥','💨','⚡',
-  // misc emoji
-  '👀','🚨','⭕','🐾',
-  // cat-face / katakana parts
-  '∧','ω','ノ','つ','づ','⊂','⊃','・','。',
-  // ideographic space (fills cells without showing a visible glyph)
-  '　',
-];
 
 // WoS-safe Unicode ranges, per handoff.
 const SAFE_RANGES = [
@@ -1612,21 +1576,42 @@ function handlePaletteSelection(ch) {
   if (!isSketchMode()) insertAtCursor(ch);
 }
 
+// A leading combining mark (e.g. a bare mouth/nose piece) has nothing to attach
+// to inside a button, so show it on a dotted circle (◌). The inserted value is
+// still the raw mark — only the on-screen label gets the placeholder base.
+function paletteLabel(ch) {
+  return /^\p{M}/u.test(ch) ? '◌' + ch : ch;
+}
+
 function buildPalette() {
   els.charPalette.innerHTML = '';
   const favs = new Set(loadFavorites());
-  for (const ch of DRAW_PALETTE) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'palette-btn' + (favs.has(ch) ? ' favorited' : '');
-    b.textContent = ch;
-    b.dataset.char = ch;
-    b.title = ch;
-    attachLongPress(b, {
-      onTap: () => handlePaletteSelection(ch),
-      onLong: () => toggleFavorite(ch),
-    });
-    els.charPalette.appendChild(b);
+  for (const group of PALETTE_GROUPS) {
+    const section = document.createElement('div');
+    section.className = 'palette-group';
+
+    const heading = document.createElement('div');
+    heading.className = 'palette-group-label';
+    heading.textContent = group.label;
+    section.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'palette-grid' + (group.wide ? ' wide' : '');
+    for (const ch of group.chars) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'palette-btn' + (favs.has(ch) ? ' favorited' : '');
+      b.textContent = paletteLabel(ch);
+      b.dataset.char = ch;
+      b.title = ch;
+      attachLongPress(b, {
+        onTap: () => handlePaletteSelection(ch),
+        onLong: () => toggleFavorite(ch),
+      });
+      grid.appendChild(b);
+    }
+    section.appendChild(grid);
+    els.charPalette.appendChild(section);
   }
 }
 
@@ -1639,7 +1624,7 @@ function buildFavoritesBar() {
     slot.type = 'button';
     slot.className = 'fav-slot' + (ch ? ' filled' : ' empty');
     if (ch) {
-      slot.textContent = ch;
+      slot.textContent = paletteLabel(ch);
       attachLongPress(slot, {
         onTap: () => handlePaletteSelection(ch),
         onLong: () => removeFavorite(ch),

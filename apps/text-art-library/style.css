@@ -1635,3 +1635,48 @@ body.editor .export-bar { display: block; }
 /* Honor batch button-shape override on these too — pill/round/sharp tweaks
    already cover .tab and .tag via the existing fx-shape rules. */
 
+
+/* =====================================================================
+   Grouped character palette (labeled categories: Eyes, Hands, Cheeks, …).
+   Overrides the earlier flat .char-palette grid: the container is now a
+   vertical stack of .palette-group sections, each with its own grid.
+   ===================================================================== */
+.char-palette { display: block; max-height: 340px; }
+.palette-group { margin-bottom: 8px; }
+.palette-group-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-elev);
+  color: var(--ink-dim);
+  font-family: "Fredoka", "Nunito", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 2px 4px;
+  margin: 0 0 2px;
+}
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+}
+/* Wide groups (whole kaomoji / multi-line banners) size buttons to content. */
+.palette-grid.wide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.palette-grid.wide .palette-btn {
+  aspect-ratio: auto;
+  width: auto;
+  min-width: 2.2em;
+  min-height: 2.2em;
+  height: auto;
+  padding: 3px 8px;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: pre;
+  text-align: center;
+}
