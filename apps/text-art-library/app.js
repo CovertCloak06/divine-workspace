@@ -548,13 +548,26 @@ function resolveLibrary(data) {
     }
   }
 
-  state.deletedIds = new Set(deletedIds);
+  // Tombstones are STICKY: union the server's list with any we already hold in
+  // memory. Netlify Blobs list() is eventually consistent, so the refresh() we
+  // fire right after a delete usually reads a stale list that doesn't yet show
+  // the tombstone (or still shows the piece). Without this union the bundle-seed
+  // fold-in below would resurrect the just-deleted piece — the "disappears then
+  // reappears" bug. A full page reload starts from an empty set and re-reads the
+  // (by then consistent) server state, so this never permanently hides anything.
+  const tomb = new Set(deletedIds);
+  if (state.deletedIds) for (const id of state.deletedIds) tomb.add(id);
+  state.deletedIds = tomb;
+
+  // The piece-list may also lag our delete — drop anything tombstoned so a stale
+  // server read can't leave the deleted piece sitting in the library.
+  library = library.filter((p) => !tomb.has(p.id));
 
   // Fold in genuinely-new bundled pieces (curated art added in a later deploy)
   // without resurrecting anything the editor deleted.
   const known = new Set(library.map((p) => p.id));
   for (const p of state.bundled) {
-    if (!known.has(p.id) && !state.deletedIds.has(p.id)) {
+    if (!known.has(p.id) && !tomb.has(p.id)) {
       library.push({ ...p });
       needsPersist = true;
     }

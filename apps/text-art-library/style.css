@@ -47,6 +47,16 @@
   --wos-cols: 17.5;            /* bubble width: 17 full-width chars per line, like WoS (18 wraps) */
   --wos-bubble: #c5ffc5;       /* sampled WoS chat bubble background */
   --wos-ink: #1a6614;          /* sampled WoS chat text (bold dark green) */
+
+  /* The single art font stack — applied to EVERY art surface (card, lightbox,
+     editor canvas, sketch grid) so they render identically. Mirrors the Android
+     system stack WoS itself uses (Roboto + Noto), but loaded as webfonts so the
+     render is the same on every device, not just Android. Covers all 8 scripts
+     the library uses: Latin/Greek/Cyrillic (Roboto), extended-Latin/IPA/phonetic
+     (Noto Sans), kana/CJK/full-width/box-drawing/blocks/geometric (Noto Sans CJK
+     JP), Korean (KR), Tibetan, and stray symbols (Symbols 2). Emoji are left to
+     the device on purpose — that matches what WoS shows in-game. */
+  --art-font: 'Roboto', 'Noto Sans', 'Noto Sans CJK JP', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Tibetan', 'Noto Sans Symbols 2', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -439,7 +449,7 @@ body.editor .card-actions { display: flex; }
      (■≈0.68em, M≈0.88em, full-width=1em). Lines wrap mid-run at the ~17-full-width
      bubble, exactly like the game. NO letter-spacing and NO forced full-width
      (WoS keeps ■ and other ambiguous glyphs narrow via Roboto). */
-  font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif;
+  font-family: var(--art-font);
   font-weight: 700;
   letter-spacing: normal;
   word-spacing: normal;
@@ -840,7 +850,7 @@ body.editor .export-bar { display: block; }
 .field textarea::placeholder { color: var(--ink-card-soft); opacity: 0.55; }
 .field textarea {
   background: var(--bg-preview);
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--art-font);
   font-size: 16px;
   line-height: var(--art-line-height);
   min-height: 200px;
@@ -854,7 +864,7 @@ body.editor .export-bar { display: block; }
    as the game, so typing here behaves exactly like typing in WoS chat. ID +
    !important overrides the global Fredoka/theme rules later in this file. */
 #edit-art-input {
-  font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif !important;
+  font-family: var(--art-font) !important;
   font-weight: 700;
   letter-spacing: normal;
   word-spacing: normal;
@@ -1142,10 +1152,16 @@ body.sketch-locked .sketch-view {
   min-height: 220px;
   max-height: 480px;
   overflow: auto;
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Same font/weight/spacing/ink as the card renderer so what you paint is what
+     the card shows. Cells are a fixed 1em (the full-width unit WoS art is built
+     on), so full-width glyphs line up exactly; the live preview below stays the
+     source of truth for proportional wrapping. */
+  font-family: var(--art-font);
+  font-weight: 700;
   font-size: 18px;
-  line-height: 1.25;
-  color: var(--ink-card);
+  line-height: var(--art-line-height);
+  color: var(--wos-ink);
+  background: var(--wos-bubble);
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -1153,12 +1169,12 @@ body.sketch-locked .sketch-view {
 }
 .sketch-line {
   white-space: pre;
-  min-height: 1.25em;
+  min-height: calc(var(--art-line-height) * 1em);
 }
 .sketch-char {
   display: inline-block;
-  min-width: 0.6em;
-  padding: 2px 0;
+  width: 1em;
+  text-align: center;
   cursor: crosshair;
   border-radius: 2px;
   background: transparent;
