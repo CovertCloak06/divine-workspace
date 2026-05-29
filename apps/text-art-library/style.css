@@ -1183,8 +1183,11 @@ body.editor .export-bar { display: block; }
 }
 .sketch-char {
   display: inline-block;
-  width: 1em;
-  text-align: center;
+  /* Natural glyph width, left-aligned — box-drawing/blocks tile edge-to-edge
+     exactly like the card render instead of floating centered in padded cells.
+     Hit-testing uses each span's stored x index, not pixel width, so painting
+     is unaffected. */
+  text-align: left;
   cursor: crosshair;
   border-radius: 2px;
   background: transparent;
@@ -1196,6 +1199,9 @@ body.editor .export-bar { display: block; }
   outline: none;
 }
 .sketch-empty-cell {
+  /* blanks stay a comfortable tap target without widening real glyphs, so the
+     tiling stays WYSIWYG with the card */
+  min-width: 0.55em;
   background: transparent;
   outline: none;
   color: transparent;
