@@ -2,7 +2,7 @@
 
 :root {
   /* INVERTED palette: page = light ice blue, cards/chrome = dark navy. */
-  --bg: #8297AB;            /* page background — muted slate blue */
+  --bg: #394856;            /* page bg — Design System 7 dark default; matches the saved theme so the page doesn't flash light→dark before the tweaks engine loads */
   --bg-elev: #162540;       /* modals + raised surfaces (dark) */
   --bg-card: #BABEC7;       /* CARDS — light grey-blue */
   --bg-chrome: #0d1a2e;     /* (legacy — not used for header anymore) */
@@ -39,6 +39,10 @@
   --warn-bg: rgba(255, 207, 107, 0.15);
   --warn-ink: #ffcf6b;
   --warn-ink-card: #b86500;
+
+  /* One line-height for ALL art surfaces (card, lightbox, editor preview) so
+     identical art aligns identically everywhere. */
+  --art-line-height: 1.1;
 }
 
 * { box-sizing: border-box; }
@@ -422,6 +426,31 @@ body.editor .card-actions { display: flex; }
 .icon-btn:hover { background: var(--accent); color: #fff; }
 .icon-btn.danger:hover { background: var(--bad); color: #fff; }
 
+/* Canonical art render — shared by the card, the lightbox, and the editor
+   live preview so the same string lays out identically in all three. */
+.art-render {
+  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: var(--art-line-height);
+  white-space: pre;
+  text-align: left;
+  font-variant-east-asian: full-width;
+  display: inline-block;
+  margin: 0;
+}
+
+/* Editor live preview tray — taller than a card preview, scrolls if needed. */
+.preview.edit-preview-tray {
+  min-height: 120px;
+  max-height: 300px;
+  overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+#edit-preview {
+  font-size: 16px;
+  color: var(--ink-card);
+}
+
 .preview {
   background: var(--bg-preview);
   border: 1px solid var(--border-preview);
@@ -435,14 +464,8 @@ body.editor .card-actions { display: flex; }
   overflow: hidden;
 }
 .preview pre {
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
-  line-height: 1.05;
-  margin: 0;
   color: var(--ink-card);
-  text-align: left;
-  display: inline-block;
-  font-variant-east-asian: full-width;
 }
 
 .chips {
@@ -662,14 +685,8 @@ body.editor .export-bar { display: block; }
   overflow: hidden;
 }
 .wos-preview pre {
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 20px;
-  line-height: 1.1;
-  margin: 0;
   color: var(--ink-card);
-  text-align: left;
-  display: inline-block;
-  font-variant-east-asian: full-width;
 }
 .wos-preview pre .overflow {
   background: rgba(248, 113, 113, 0.22);
@@ -808,10 +825,11 @@ body.editor .export-bar { display: block; }
   background: var(--bg-preview);
   font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
-  line-height: 1.15;
+  line-height: var(--art-line-height);
   min-height: 200px;
   resize: vertical;
   white-space: pre;
+  font-variant-east-asian: full-width;
   color: var(--ink-card);
 }
 

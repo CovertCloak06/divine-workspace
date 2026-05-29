@@ -125,6 +125,7 @@ const els = {
   editTitleInput: $('edit-title-input'),
   editTagsInput: $('edit-tags-input'),
   editArtInput: $('edit-art-input'),
+  editPreview: $('edit-preview'),
   editAudit: $('edit-audit'),
   editCancel: $('edit-cancel'),
   editSave: $('edit-save'),
@@ -787,12 +788,13 @@ function renderCard(p) {
   const prev = document.createElement('div');
   prev.className = 'preview';
   const pre = document.createElement('pre');
+  pre.className = 'art-render';
   pre.textContent = p.art || '';
   prev.appendChild(pre);
   card.appendChild(prev);
 
   // scale to fit after layout
-  requestAnimationFrame(() => fitPreview(prev, pre));
+  requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
 
   // chips
   if (p.tags && p.tags.length) {
@@ -869,24 +871,25 @@ function renderCard(p) {
   return card;
 }
 
-function fitPreview(container, pre) {
-  // Reset to base size and clear any prior transform.
+// One renderer for ALL art surfaces (card, lightbox, editor preview). Uniform
+// font-size scaling — never transform: scale(), which crunches subpixels and
+// visibly drifts alignment. Combined with the shared .art-render class, the
+// same art aligns identically in every surface.
+function fitArt(container, pre, base, { height = false } = {}) {
   pre.style.transform = '';
-  pre.style.fontSize = '';
-  const base = 14; // base font size in px (matches .preview pre default)
   pre.style.fontSize = base + 'px';
-  const cw = container.clientWidth - 24;
-  const ch = container.clientHeight - 24;
+  const cs = getComputedStyle(container);
+  const cw = container.clientWidth - (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight));
   const pw = pre.scrollWidth;
-  const ph = pre.scrollHeight;
-  if (pw <= 0 || ph <= 0) return;
-  const scale = Math.min(1, cw / pw, ch / ph);
-  if (scale < 1) {
-    // Adjust the actual font-size rather than CSS-transforming the rendered
-    // glyphs — proportional fonts re-render cleanly at smaller sizes, whereas
-    // transform: scale() crunches subpixels and visibly drifts alignment.
-    pre.style.fontSize = (base * scale).toFixed(2) + 'px';
+  if (pw <= 0 || cw <= 0) return;
+  let scale = cw / pw;
+  if (height) {
+    const ch = container.clientHeight - (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom));
+    const ph = pre.scrollHeight;
+    if (ch > 0 && ph > 0) scale = Math.min(scale, ch / ph);
   }
+  scale = Math.min(1, scale);
+  if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
 
 /* ============ 06  Filtering + search ============ */
@@ -983,21 +986,9 @@ function openLightbox(p) {
   els.lbCopy.textContent = '📋 Copy to Clipboard';
   els.lbCopy.onclick = () => copyArt(p.art, els.lbCopy, true);
   // fit preview to modal width
-  requestAnimationFrame(() => fitWosPreview(els.lbPre));
+  requestAnimationFrame(() => fitArt(els.lbPre.parentElement, els.lbPre, 20));
   els.lightbox.classList.add('open');
   saveSession();
-}
-function fitWosPreview(pre) {
-  pre.style.transform = '';
-  pre.style.fontSize = '';
-  const base = 20; // base font size in px (matches .wos-preview pre default)
-  pre.style.fontSize = base + 'px';
-  const parent = pre.parentElement;
-  const cw = parent.clientWidth - 8;
-  const pw = pre.scrollWidth;
-  if (pw <= 0) return;
-  const scale = Math.min(1, cw / pw);
-  if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
 function closeLightbox() {
   els.lightbox.classList.remove('open');
@@ -1210,6 +1201,10 @@ function setTab(name) {
 
 const runAudit = () => {
   const text = els.editArtInput.value;
+  if (els.editPreview) {
+    els.editPreview.textContent = text;
+    requestAnimationFrame(() => fitArt(els.editPreview.parentElement, els.editPreview, 16));
+  }
   const issues = auditArt(text);
   if (!issues.length) {
     els.editAudit.innerHTML = '';
