@@ -40,9 +40,13 @@
   --warn-ink: #ffcf6b;
   --warn-ink-card: #b86500;
 
-  /* One line-height for ALL art surfaces (card, lightbox, editor preview) so
-     identical art aligns identically everywhere. */
-  --art-line-height: 1.1;
+  /* WoS chat rendering — calibrated from in-game screenshots so every art
+     surface (card, lightbox, editor canvas) renders EXACTLY like Whiteout
+     Survival chat. */
+  --art-line-height: 1.25;     /* WoS chat line spacing */
+  --wos-cols: 17;              /* full-width chars per line before the bubble wraps */
+  --wos-bubble: #c5ffc5;       /* sampled WoS chat bubble background */
+  --wos-ink: #2f722f;          /* sampled WoS chat text (dark green) */
 }
 
 * { box-sizing: border-box; }
@@ -429,20 +433,25 @@ body.editor .card-actions { display: flex; }
 /* Canonical art render — shared by the card, the lightbox, and the editor
    live preview so the same string lays out identically in all three. */
 .art-render {
-  /* Render art EXACTLY like the editor textarea (which users see as correct):
-     the inherited UI font — NOT Noto Sans JP — and crucially letter-spacing:normal.
-     The body "tracking" tweak sets letter-spacing on the page; a <pre> inherits it
-     (adding ~1.44px between every glyph → misaligned art) but a <textarea> resets
-     it, which is exactly why the card drifted from the editor. */
-  font-family: inherit;
-  font-weight: 600;
+  /* WoS-EXACT renderer. Whiteout Survival chat renders with the Android system
+     stack — Roboto (Latin + narrow symbols like ■) plus Noto Sans CJK for
+     full-width glyphs — verified by matching WoS's measured glyph widths
+     (■≈0.68em, M≈0.88em, full-width=1em). Lines wrap mid-run at the ~17-full-width
+     bubble, exactly like the game. NO letter-spacing and NO forced full-width
+     (WoS keeps ■ and other ambiguous glyphs narrow via Roboto). */
+  font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif;
+  font-weight: 400;
   letter-spacing: normal;
-  text-rendering: optimizeSpeed;
+  word-spacing: normal;
   line-height: var(--art-line-height);
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   text-align: left;
-  font-variant-east-asian: full-width;
+  font-variant-east-asian: normal;
+  font-feature-settings: normal;
+  color: var(--wos-ink);
   display: inline-block;
+  max-width: calc(var(--wos-cols, 17) * 1em);
   margin: 0;
 }
 
@@ -456,11 +465,11 @@ body.editor .card-actions { display: flex; }
 }
 #edit-preview {
   font-size: 16px;
-  color: var(--ink-card);
+  color: var(--wos-ink);
 }
 
 .preview {
-  background: var(--bg-preview);
+  background: var(--wos-bubble);
   border: 1px solid var(--border-preview);
   border-radius: 8px;
   min-height: 90px;
@@ -473,7 +482,7 @@ body.editor .card-actions { display: flex; }
 }
 .preview pre {
   font-size: 14px;
-  color: var(--ink-card);
+  color: var(--wos-ink);
 }
 
 .chips {
@@ -685,7 +694,7 @@ body.editor .export-bar { display: block; }
 
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {
-  background: var(--bg-preview);
+  background: var(--wos-bubble);
   border: 1px solid var(--border-preview);
   border-radius: 8px;
   padding: 28px;
@@ -694,7 +703,7 @@ body.editor .export-bar { display: block; }
 }
 .wos-preview pre {
   font-size: 20px;
-  color: var(--ink-card);
+  color: var(--wos-ink);
 }
 .wos-preview pre .overflow {
   background: rgba(248, 113, 113, 0.22);
@@ -839,6 +848,25 @@ body.editor .export-bar { display: block; }
   white-space: pre;
   font-variant-east-asian: full-width;
   color: var(--ink-card);
+}
+
+/* The art input IS a live WoS chat canvas — same font, width, wrap, and colors
+   as the game, so typing here behaves exactly like typing in WoS chat. ID +
+   !important overrides the global Fredoka/theme rules later in this file. */
+#edit-art-input {
+  font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif !important;
+  font-weight: 400;
+  letter-spacing: normal;
+  word-spacing: normal;
+  line-height: var(--art-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-variant-east-asian: normal;
+  font-feature-settings: normal;
+  background: var(--wos-bubble) !important;
+  color: var(--wos-ink) !important;
+  width: calc(var(--wos-cols, 17) * 1em + 32px);
+  max-width: 100%;
 }
 
 /* audit */

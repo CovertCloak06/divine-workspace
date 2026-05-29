@@ -162,6 +162,26 @@ function measure(art) {
   return { width, height: lines.length };
 }
 
+// Does this art wrap inside the WoS chat bubble? WoS uses a proportional font,
+// so a character count can't predict wrapping \u2014 we measure the REAL render in a
+// hidden .art-render element (same font/width/wrap as the game).
+let _wrapMeasure = null;
+function wrapsInWoS(art) {
+  if (!art) return false;
+  if (!_wrapMeasure) {
+    _wrapMeasure = document.createElement('div');
+    _wrapMeasure.className = 'art-render';
+    _wrapMeasure.setAttribute('aria-hidden', 'true');
+    _wrapMeasure.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;font-size:16px;';
+    document.body.appendChild(_wrapMeasure);
+  }
+  _wrapMeasure.style.fontSize = '16px';
+  _wrapMeasure.textContent = art;
+  const lh = parseFloat(getComputedStyle(_wrapMeasure).lineHeight) || 20;
+  const srcRows = art.split('\n').length;
+  return _wrapMeasure.scrollHeight > Math.ceil(srcRows * lh) + 1;
+}
+
 function spacesToNbsp(s) {
   return s.replace(/ /g, '\u00A0');
 }
@@ -187,19 +207,13 @@ function auditArt(text) {
       msg: 'Contains regular spaces — auto-converted on save. Copy from the gallery, not the text editor, to get the WoS-safe version.',
     });
   }
-  // Width audit — two thresholds.
-  const lines = text.split('\n');
-  let maxW = 0;
-  for (const l of lines) maxW = Math.max(maxW, graphemeCount(l));
-  if (maxW > WOS_HARD_LIMIT) {
-    issues.push({
-      level: 'error',
-      msg: `Line width ${maxW} exceeds WoS hard limit ${WOS_HARD_LIMIT} — will break in chat. Shorten lines.`,
-    });
-  } else if (maxW > WOS_MAX_WIDTH) {
+  // Width audit — does it ACTUALLY wrap in WoS's bubble? WoS is proportional,
+  // so a raw character count is meaningless (e.g. a 42-char line of narrow glyphs
+  // fits fine). We measure the real render instead.
+  if (wrapsInWoS(text)) {
     issues.push({
       level: 'warn',
-      msg: `Line width ${maxW} exceeds WoS soft limit ${WOS_MAX_WIDTH} — may clip with wide characters.`,
+      msg: 'A line is too wide and wraps in the WoS chat bubble. Shorten it until the preview shows no wrapping.',
     });
   }
   const unsafe = new Set();
@@ -746,24 +760,14 @@ function renderCard(p) {
   title.textContent = p.title || 'Untitled';
   head.appendChild(title);
 
-  const width = p.width ?? measure(p.art).width;
-  const height = p.height ?? measure(p.art).height;
-  const overWide = width > WOS_MAX_WIDTH;
-  const hardWide = width > WOS_HARD_LIMIT;
-
-  if (hardWide) {
-    const warn = document.createElement('span');
-    warn.className = 'card-warn hard';
-    warn.title = `Width ${width} exceeds WoS hard limit ${WOS_HARD_LIMIT} — will break in chat`;
-    warn.textContent = '⛔';
-    head.appendChild(warn);
-  } else if (overWide) {
-    const warn = document.createElement('span');
-    warn.className = 'card-warn';
-    warn.title = `Width ${width} exceeds WoS soft limit ${WOS_MAX_WIDTH} — may clip in chat`;
-    warn.textContent = '⚠';
-    head.appendChild(warn);
-  }
+  // Width warning is decided after layout (in the fit pass below) from the ACTUAL
+  // render — WoS is proportional, so a character count can't predict wrapping.
+  const warn = document.createElement('span');
+  warn.className = 'card-warn';
+  warn.textContent = '⚠';
+  warn.title = 'Too wide — wraps in the WoS chat bubble';
+  warn.style.display = 'none';
+  head.appendChild(warn);
 
   if (state.editor) {
     const actions = document.createElement('div');
@@ -793,8 +797,14 @@ function renderCard(p) {
   prev.appendChild(pre);
   card.appendChild(prev);
 
-  // scale to fit after layout
-  requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
+  // scale to fit after layout, then flag the card if the real render wrapped
+  requestAnimationFrame(() => {
+    fitArt(prev, pre, 14, { height: true });
+    const srcRows = (p.art || '').split('\n').length;
+    const lh = parseFloat(getComputedStyle(pre).lineHeight) || 1;
+    const rows = Math.round(pre.scrollHeight / lh);
+    warn.style.display = rows > srcRows ? '' : 'none';
+  });
 
   // chips
   if (p.tags && p.tags.length) {
@@ -962,17 +972,9 @@ setTimeout(updateStripArrows, 500);
 function openLightbox(p) {
   els.lightbox.dataset.openId = p.id;
   els.lbTitle.textContent = p.title || 'Untitled';
-  const lbLines = (p.art || '').split('\n');
-  const html = lbLines.map((l) => {
-    const w = graphemeCount(l);
-    let cls = '';
-    if (w > WOS_HARD_LIMIT) cls = 'ov-hard';
-    else if (w > WOS_MAX_WIDTH) cls = 'ov';
-    return cls
-      ? `<span class="${cls}">${escapeHtml(l)}</span>`
-      : escapeHtml(l);
-  }).join('\n');
-  els.lbPre.innerHTML = html;
+  // WoS is proportional; show the art exactly as the bubble renders it (it will
+  // visibly wrap if a line is too wide) rather than guessing from char counts.
+  els.lbPre.textContent = p.art || '';
   const m = measure(p.art);
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
   els.lbPills.innerHTML = '';
