@@ -1326,7 +1326,11 @@ function replaceCharAt(y, x) {
   if (x < 0) return;
   const gs = graphemes(lines[y]);
   while (gs.length < x) gs.push('\u00A0');
-  const newCh = eraserOn ? '\u00A0' : activeBrush;
+  // Paint exactly ONE grapheme into the cell. A multi-character brush (a whole
+  // kaomoji face, a bracket pair, an eye like "\u25DC\u25DD") would otherwise drop several
+  // characters into one slot and shove the rest of the row to the right \u2014 the
+  // user wants a stroke to replace the cell it lands on, not insert into it.
+  const newCh = eraserOn ? '\u00A0' : (graphemes(activeBrush)[0] || '\u00A0');
   if (x < gs.length) {
     if (gs[x] === newCh) return;
     gs[x] = newCh;
@@ -1448,6 +1452,8 @@ els.sketchClear.addEventListener('click', () => {
   runAudit();
 });
 els.sketchUndo.addEventListener('click', undoEdit);
+const textUndoBtn = document.getElementById('text-undo');
+if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
 
 els.editArtInput.addEventListener('input', () => {

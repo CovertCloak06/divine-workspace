@@ -753,11 +753,54 @@ body.editor .export-bar { display: block; }
 
 /* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
    replaces the textarea in place. */
-#sketch-bar, #sketch-view, .field.draw-only { display: none; }
-#edit.drawing #sketch-bar { display: flex; }
-#edit.drawing #sketch-view { display: block; }
-#edit.drawing .field.draw-only { display: block; }
+.draw-workspace.draw-only { display: none; }
+/* Shown as a flex COLUMN in draw mode. Declaring display here (high specificity)
+   so it isn't overridden back to block by this very selector. */
+#edit.drawing .draw-workspace.draw-only { display: flex; flex-direction: column; min-height: 0; }
 #edit.drawing #edit-art-input { display: none; }
+/* The text-mode Undo button only makes sense in text mode (draw mode has its
+   own Undo in the canvas toolbar). */
+.text-only { display: inline-flex; }
+#edit.drawing .text-only { display: none; }
+
+/* Draw mode locks the modal to the viewport and lays the body out as a flex
+   column: title, tags and the canvas stay put while ONLY the palette scrolls,
+   so the canvas is always in view while picking characters. Every flex ancestor
+   of the scrolling palette needs min-height:0 or it grows to full content
+   height instead of scrolling. */
+#edit.drawing .modal { height: calc(100vh - 40px); }
+#edit.drawing .modal-body { display: flex; flex-direction: column; overflow: hidden; }
+#edit.drawing .modal-body > .field { flex: 0 0 auto; }
+#edit.drawing .draw-workspace { flex: 1 1 auto; }
+.canvas-dock { background: var(--bg-elev); margin-bottom: 6px; }
+/* The dock stays at content height (never shrinks below the canvas, which would
+   make the canvas overflow and overlap the palette). Canvas is compact so the
+   palette still gets real room on a phone; tall art scrolls within the canvas. */
+#edit.drawing .canvas-dock { flex: 0 0 auto; }
+#edit.drawing .sketch-view { max-height: 16vh; min-height: 84px; }
+#edit.drawing .field label { margin-bottom: 3px; }
+#edit.drawing .draw-workspace > .field { margin-bottom: 6px; }
+/* Reclaim non-essential chrome while painting: the verbose label help-text and
+   the (advisory) WoS audit aren't needed mid-draw, so hide them to give the
+   canvas + palette the height. They're back the moment you leave draw mode. */
+#edit.drawing .field label span { display: none; }
+#edit.drawing .audit-field { display: none; }
+/* favorites keeps its natural height; the palette field fills the rest and is
+   the only thing that scrolls. */
+#edit.drawing .draw-workspace > .field:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+#edit.drawing .draw-workspace > .field:last-child > label { flex: 0 0 auto; }
+#edit.drawing .char-palette {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {
@@ -1153,13 +1196,16 @@ body.editor .export-bar { display: block; }
   border: 2px solid var(--border-preview);
   border-radius: 10px;
   padding: 14px;
-  min-height: 220px;
-  max-height: 480px;
+  /* Shrink-wrap to the grid so there's no dead, un-paintable green to the right
+     of the art; cap height so the pinned canvas stays compact and leaves room
+     for the palette to scroll beneath it. */
+  width: fit-content;
+  max-width: 100%;
+  min-height: 120px;
+  max-height: 38vh;
   overflow: auto;
   /* Same font/weight/spacing/ink as the card renderer so what you paint is what
-     the card shows. Cells are a fixed 1em (the full-width unit WoS art is built
-     on), so full-width glyphs line up exactly; the live preview below stays the
-     source of truth for proportional wrapping. */
+     the card shows. */
   font-family: var(--art-font);
   font-weight: 700;
   font-size: 18px;
@@ -1193,9 +1239,12 @@ body.editor .export-bar { display: block; }
   outline: none;
 }
 .sketch-empty-cell {
-  /* blanks stay a comfortable tap target without widening real glyphs, so the
-     tiling stays WYSIWYG with the card */
-  min-width: 0.55em;
+  /* Empty cells are a fixed full-width box (1em) — the unit WoS art is built on.
+     Painting a full-width glyph over an empty cell then doesn't change the cell
+     width, so the rest of the row doesn't get pushed sideways. */
+  display: inline-block;
+  width: 1em;
+  text-align: center;
   background: transparent;
   outline: none;
   color: transparent;

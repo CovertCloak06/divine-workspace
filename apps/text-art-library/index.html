@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos6">
+  <link rel="stylesheet" href="style.css?v=wos8">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -659,6 +659,7 @@
             <label for="edit-art-input">Art</label>
             <div class="art-tools">
               <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the canvas with a 27×12 grid of blank cells so you can position anywhere">＋ Blank canvas</button>
+              <button type="button" class="tool-btn text-only" id="text-undo" title="Undo last change (Ctrl+Z)">↶ Undo</button>
               <button type="button" class="draw-toggle" id="draw-toggle" role="switch" aria-checked="false" title="Draw mode — tap or drag on the canvas to paint characters">
                 <span class="draw-switch"><span class="draw-knob"></span></span>
                 <span class="draw-toggle-text">✏ Draw</span>
@@ -666,29 +667,32 @@
             </div>
           </div>
           <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
-          <div class="sketch-bar draw-only" id="sketch-bar">
-            <span class="size-label">Brush:</span>
-            <span class="sketch-active-char" id="sketch-active-char">❤</span>
-            <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells (NBSP)">⌫ Erase</button>
-            <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
-            <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank</button>
-            <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
+        </div>
+        <!-- Draw workspace: the canvas dock is pinned (sticky) at the top of this
+             wrapper while the favorites + palette inside it scroll, so the canvas
+             stays visible the whole time you're picking characters. -->
+        <div class="draw-workspace draw-only">
+          <div class="canvas-dock">
+            <div class="sketch-bar" id="sketch-bar">
+              <span class="size-label">Brush:</span>
+              <span class="sketch-active-char" id="sketch-active-char">❤</span>
+              <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells (NBSP)">⌫ Erase</button>
+              <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
+              <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank</button>
+              <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
+            </div>
+            <div class="sketch-view" id="sketch-view"></div>
           </div>
-          <div class="sketch-view draw-only" id="sketch-view"></div>
+          <div class="field">
+            <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
+            <div class="favorites-bar" id="favorites-bar"></div>
+          </div>
+          <div class="field">
+            <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
+            <div class="char-palette" id="char-palette"></div>
+          </div>
         </div>
-        <div class="field draw-only">
-          <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
-          <div class="favorites-bar" id="favorites-bar"></div>
-        </div>
-        <div class="field draw-only">
-          <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
-          <div class="char-palette" id="char-palette"></div>
-        </div>
-        <div class="field">
-          <label>Preview <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— exactly how this art appears on its card</span></label>
-          <div class="preview edit-preview-tray"><pre class="art-render" id="edit-preview"></pre></div>
-        </div>
-        <div class="field">
+        <div class="field audit-field">
           <label>WoS Audit</label>
           <div class="audit" id="edit-audit"></div>
         </div>
@@ -702,7 +706,7 @@
 
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos6"></script>
+  <script src="app.js?v=wos8"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
