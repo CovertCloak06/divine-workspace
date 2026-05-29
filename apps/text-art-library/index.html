@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos2">
+  <link rel="stylesheet" href="style.css?v=wos3">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -645,57 +645,52 @@
           </svg>
         </button>
       </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="text">✎ Text Mode</button>
-        <button class="tab" data-tab="sketch">✏ Sketch Mode</button>
-      </div>
       <div class="modal-body">
-        <div class="tab-panel active" data-panel="text">
-          <div class="field">
-            <label for="edit-title-input">Title</label>
-            <input id="edit-title-input" type="text" placeholder="Heart (small)">
-          </div>
-          <div class="field">
-            <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
-            <input id="edit-tags-input" type="text" placeholder="love, symbols">
-          </div>
-          <div class="field">
-            <label for="edit-art-input">Art</label>
-            <div class="text-tools" style="display:flex;gap:8px;margin-bottom:6px;">
-              <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the textarea with a 27×12 grid of blank cells so you can position your cursor anywhere">＋ Blank canvas</button>
-            </div>
-            <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
-          </div>
-          <div class="field">
-            <label>Preview <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— exactly how this art appears on its card</span></label>
-            <div class="preview edit-preview-tray"><pre class="art-render" id="edit-preview"></pre></div>
-          </div>
-          <div class="field">
-            <label>WoS Audit</label>
-            <div class="audit" id="edit-audit"></div>
-          </div>
+        <div class="field">
+          <label for="edit-title-input">Title</label>
+          <input id="edit-title-input" type="text" placeholder="Heart (small)">
         </div>
-        <div class="tab-panel" data-panel="sketch">
-          <div class="field">
-            <label>Sketch <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap or drag on any character to replace it with the active brush</span></label>
-            <div class="sketch-bar">
-              <span class="size-label">Brush:</span>
-              <span class="sketch-active-char" id="sketch-active-char">❤</span>
-              <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells (NBSP)">⌫ Erase</button>
-              <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
-              <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank canvas</button>
-              <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
+        <div class="field">
+          <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
+          <input id="edit-tags-input" type="text" placeholder="love, symbols">
+        </div>
+        <div class="field">
+          <div class="art-label-row">
+            <label for="edit-art-input">Art</label>
+            <div class="art-tools">
+              <button type="button" class="tool-btn" id="text-blank-canvas" title="Fill the canvas with a 27×12 grid of blank cells so you can position anywhere">＋ Blank canvas</button>
+              <button type="button" class="draw-toggle" id="draw-toggle" role="switch" aria-checked="false" title="Draw mode — tap or drag on the canvas to paint characters">
+                <span class="draw-switch"><span class="draw-knob"></span></span>
+                <span class="draw-toggle-text">✏ Draw</span>
+              </button>
             </div>
-            <div class="sketch-view" id="sketch-view"></div>
           </div>
-          <div class="field">
-            <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
-            <div class="favorites-bar" id="favorites-bar"></div>
+          <textarea id="edit-art-input" placeholder="Paste your art here, or tap characters from the palette below…" spellcheck="false"></textarea>
+          <div class="sketch-bar draw-only" id="sketch-bar">
+            <span class="size-label">Brush:</span>
+            <span class="sketch-active-char" id="sketch-active-char">❤</span>
+            <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells (NBSP)">⌫ Erase</button>
+            <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
+            <button class="tool-btn" id="sketch-fill" title="Fill 27×12 blank canvas with NBSP">＋ Blank</button>
+            <button class="tool-btn" id="sketch-clear" style="margin-left:auto">Clear</button>
           </div>
-          <div class="field">
-            <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
-            <div class="char-palette" id="char-palette"></div>
-          </div>
+          <div class="sketch-view draw-only" id="sketch-view"></div>
+        </div>
+        <div class="field draw-only">
+          <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
+          <div class="favorites-bar" id="favorites-bar"></div>
+        </div>
+        <div class="field draw-only">
+          <label>Character palette <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— tap to set brush + insert at cursor</span></label>
+          <div class="char-palette" id="char-palette"></div>
+        </div>
+        <div class="field">
+          <label>Preview <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— exactly how this art appears on its card</span></label>
+          <div class="preview edit-preview-tray"><pre class="art-render" id="edit-preview"></pre></div>
+        </div>
+        <div class="field">
+          <label>WoS Audit</label>
+          <div class="audit" id="edit-audit"></div>
         </div>
       </div>
       <div class="modal-foot">
@@ -706,7 +701,7 @@
   </div>
 
   <script src="art.js?v=ds7r2"></script>
-  <script src="app.js?v=wos2"></script>
+  <script src="app.js?v=wos3"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

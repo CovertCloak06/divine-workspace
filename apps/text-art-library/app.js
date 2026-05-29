@@ -1152,7 +1152,7 @@ function openAdd() {
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
-  setTab('text');
+  toggleDraw(false);
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
@@ -1165,15 +1165,14 @@ function openEdit(p) {
   els.editTagsInput.value = (p.tags || []).join(', ');
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
-  setTab('text');
+  toggleDraw(false);
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
 }
 function closeEdit() {
   els.edit.classList.remove('open');
-  document.documentElement.classList.remove('sketch-locked');
-  document.body.classList.remove('sketch-locked');
+  els.edit.classList.remove('drawing');
 }
 els.editClose.addEventListener('click', closeEdit);
 els.editCancel.addEventListener('click', closeEdit);
@@ -1182,10 +1181,9 @@ els.edit.addEventListener('click', (e) => {
 });
 els.btnAdd.addEventListener('click', openAdd);
 
-// Tabs (Text Mode / Sketch Mode)
-for (const t of document.querySelectorAll('.tab')) {
-  t.addEventListener('click', () => setTab(t.dataset.tab));
-}
+// Draw toggle — flips the canvas between type and paint without leaving the view
+const drawToggleBtn = document.getElementById('draw-toggle');
+if (drawToggleBtn) drawToggleBtn.addEventListener('click', () => toggleDraw(!isSketchMode()));
 function ensureBlankCanvas() {
   // Make sure the textarea has a paintable 27×12 NBSP grid for sketch mode.
   // Called when entering Sketch mode with an empty textarea.
@@ -1198,17 +1196,15 @@ function ensureBlankCanvas() {
   runAudit();
 }
 
-function setTab(name) {
-  for (const t of document.querySelectorAll('.tab')) {
-    t.classList.toggle('active', t.dataset.tab === name);
+function toggleDraw(on) {
+  const drawing = !!on;
+  els.edit.classList.toggle('drawing', drawing);
+  const btn = document.getElementById('draw-toggle');
+  if (btn) {
+    btn.classList.toggle('active', drawing);
+    btn.setAttribute('aria-checked', drawing ? 'true' : 'false');
   }
-  for (const p of document.querySelectorAll('.tab-panel')) {
-    p.classList.toggle('active', p.dataset.panel === name);
-  }
-  const lock = (name === 'sketch');
-  document.documentElement.classList.toggle('sketch-locked', lock);
-  document.body.classList.toggle('sketch-locked', lock);
-  if (name === 'sketch') {
+  if (drawing) {
     ensureBlankCanvas();
     renderSketch(true);
   }
@@ -1606,8 +1602,7 @@ function attachLongPress(el, { onTap, onLong }) {
 }
 
 function isSketchMode() {
-  const tab = document.querySelector('.tab.active');
-  return tab && tab.dataset.tab === 'sketch';
+  return els.edit.classList.contains('drawing');
 }
 
 function handlePaletteSelection(ch) {

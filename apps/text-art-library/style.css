@@ -700,7 +700,70 @@ body.editor .export-bar { display: block; }
 .modal-body {
   padding: 18px 22px 22px;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
+
+/* ============ Draw-mode toggle (replaces the old Text/Sketch tabs) ============
+   Draw is an on/off switch layered onto the SAME editing view — title, preview
+   and audit stay put; flipping it on just turns the canvas paintable and reveals
+   the brush tools. No separate page. */
+.art-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.art-tools { display: flex; gap: 8px; align-items: center; }
+.draw-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(138, 168, 200, 0.14);
+  border: 1px solid rgba(138, 168, 200, 0.3);
+  border-radius: 999px;
+  padding: 5px 12px 5px 6px;
+  cursor: pointer;
+  color: var(--ink-dim);
+  font-weight: 700;
+  font-size: 13px;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.draw-switch {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(155, 184, 220, 0.4);
+  position: relative;
+  flex: 0 0 auto;
+  transition: background .15s;
+}
+.draw-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .15s;
+}
+.draw-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.draw-toggle.active .draw-switch { background: rgba(255, 255, 255, 0.55); }
+.draw-toggle.active .draw-knob { transform: translateX(16px); }
+
+/* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
+   replaces the textarea in place. */
+#sketch-bar, #sketch-view, .field.draw-only { display: none; }
+#edit.drawing #sketch-bar { display: flex; }
+#edit.drawing #sketch-view { display: block; }
+#edit.drawing .field.draw-only { display: block; }
+#edit.drawing #edit-art-input { display: none; }
 
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {
@@ -962,59 +1025,6 @@ body.editor .export-bar { display: block; }
 /* preview overflow highlight in modal */
 .wos-preview pre .ov { background: rgba(248, 113, 113, 0.22); }
 .wos-preview pre .ov-hard { background: rgba(248, 113, 113, 0.45); color: #fff; }
-
-/* ============ Sketch mode scroll lock ============ */
-html.sketch-locked,
-body.sketch-locked {
-  overflow: hidden !important;
-  height: 100vh;
-}
-body.sketch-locked .modal-overlay { padding: 10px; align-items: stretch; }
-body.sketch-locked .modal {
-  height: calc(100vh - 20px);
-  max-height: calc(100vh - 20px);
-}
-body.sketch-locked .modal-body {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 14px;
-}
-body.sketch-locked .tab-panel[data-panel="sketch"] {
-  display: flex !important;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-body.sketch-locked .tab-panel[data-panel="sketch"] > .field {
-  flex: 0 0 auto;
-  margin-bottom: 10px;
-}
-body.sketch-locked .tab-panel[data-panel="sketch"] > .field:last-child {
-  flex: 1 1 0;
-  min-height: 80px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  margin-bottom: 0;
-}
-body.sketch-locked .tab-panel[data-panel="sketch"] > .field:last-child > label {
-  flex: 0 0 auto;
-}
-body.sketch-locked .char-palette {
-  flex: 1 1 0;
-  min-height: 80px;
-  max-height: none !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-body.sketch-locked .sketch-view {
-  max-height: 32vh;
-}
 
 /* =====================================================================
    Character palette + favorites (replaces old draw-mode grid).
