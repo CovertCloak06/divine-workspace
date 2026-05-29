@@ -429,7 +429,15 @@ body.editor .card-actions { display: flex; }
 /* Canonical art render — shared by the card, the lightbox, and the editor
    live preview so the same string lays out identically in all three. */
 .art-render {
-  font-family: 'Noto Sans JP', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Render art EXACTLY like the editor textarea (which users see as correct):
+     the inherited UI font — NOT Noto Sans JP — and crucially letter-spacing:normal.
+     The body "tracking" tweak sets letter-spacing on the page; a <pre> inherits it
+     (adding ~1.44px between every glyph → misaligned art) but a <textarea> resets
+     it, which is exactly why the card drifted from the editor. */
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-rendering: optimizeSpeed;
   line-height: var(--art-line-height);
   white-space: pre;
   text-align: left;
