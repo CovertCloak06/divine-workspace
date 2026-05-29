@@ -43,10 +43,10 @@
   /* WoS chat rendering — calibrated from in-game screenshots so every art
      surface (card, lightbox, editor canvas) renders EXACTLY like Whiteout
      Survival chat. */
-  --art-line-height: 1.25;     /* WoS chat line spacing */
-  --wos-cols: 17;              /* full-width chars per line before the bubble wraps */
+  --art-line-height: 1.3;      /* WoS chat line spacing (measured: line pitch ÷ font ≈ 1.27-1.3) */
+  --wos-cols: 17.5;            /* bubble width: 17 full-width chars per line, like WoS (18 wraps) */
   --wos-bubble: #c5ffc5;       /* sampled WoS chat bubble background */
-  --wos-ink: #2f722f;          /* sampled WoS chat text (dark green) */
+  --wos-ink: #1a6614;          /* sampled WoS chat text (bold dark green) */
 }
 
 * { box-sizing: border-box; }
@@ -440,7 +440,7 @@ body.editor .card-actions { display: flex; }
      bubble, exactly like the game. NO letter-spacing and NO forced full-width
      (WoS keeps ■ and other ambiguous glyphs narrow via Roboto). */
   font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: normal;
   word-spacing: normal;
   line-height: var(--art-line-height);
@@ -855,7 +855,7 @@ body.editor .export-bar { display: block; }
    !important overrides the global Fredoka/theme rules later in this file. */
 #edit-art-input {
   font-family: 'Roboto', 'Noto Sans CJK JP', 'Noto Sans JP', system-ui, sans-serif !important;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: normal;
   word-spacing: normal;
   line-height: var(--art-line-height);
