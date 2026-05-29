@@ -236,3 +236,6 @@ AGENTS.override.md
 CLAUDE.local.md
 .aider*
 .netlify/
+
+# Netlify MCP deploy artifacts (the CLI zips the repo into the root on each deploy)
+deploy-*.zip
