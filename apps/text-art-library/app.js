@@ -1020,13 +1020,11 @@ els.shareBar.addEventListener('click', async () => {
 });
 
 /* ============ 10  Auth (7-tap unlock) ============ */
+// The emblem gives NO visual feedback on tap (no spin, no cursor change) so it
+// doesn't read as a button — a casual user can't tell the admin editor exists.
+// Seven taps within 3s silently opens the password prompt.
 let tapTimes = [];
 els.snowflake.addEventListener('click', () => {
-  els.snowflake.classList.remove('spin');
-  // force reflow to restart animation
-  void els.snowflake.offsetWidth;
-  els.snowflake.classList.add('spin');
-
   const now = Date.now();
   tapTimes = tapTimes.filter((t) => now - t < 3000);
   tapTimes.push(now);

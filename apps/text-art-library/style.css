@@ -103,22 +103,16 @@ input, textarea { font-family: inherit; }
   background: transparent;
   border: 0;
   padding: 0;
-  cursor: pointer;
+  /* No pointer cursor and no tap animation: the emblem must not look or behave
+     like a button, so the hidden admin unlock stays undiscoverable. */
+  cursor: default;
   outline: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   user-select: none;
-  transition: transform 200ms ease;
 }
 .snowflake-btn:focus,
 .snowflake-btn:focus-visible { outline: none; }
-.snowflake-btn.spin {
-  animation: snowflake-spin 600ms ease-out;
-}
-@keyframes snowflake-spin {
-  0%   { transform: rotate(0); }
-  100% { transform: rotate(360deg); }
-}
 .title {
   font-size: clamp(28px, 4.4vw, 42px);
   font-weight: 700;
