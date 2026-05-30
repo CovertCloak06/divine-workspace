@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos15">
+  <link rel="stylesheet" href="style.css?v=wos16">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -458,8 +458,141 @@
       });
     }
   </script>
+  <!-- Theme values: single source of truth. The host rewrites this EDITMODE
+       block on save; both the pre-paint script and the React tweaks app read it. -->
+  <script>
+  window.FROSTLINE_TWEAKS = /*EDITMODE-BEGIN*/{
+    "mood": "arctic",
+    "accentColor": "#115555",
+    "bgColor": "#394856",
+    "bgCardColor": "#173e4f",
+    "titleBarColor": "#122b28",
+    "searchBarColor": "#1b3e50",
+    "chunkiness": 4,
+    "font": "fredoka",
+    "fontSize": 18,
+    "tracking": 8,
+    "cardShape": "soft",
+    "cardRadius": 21,
+    "cardBorder": "double",
+    "cardGlow": 35,
+    "cardFrost": 13,
+    "cardFrosty": false,
+    "cardAurora": false,
+    "cardBreath": false,
+    "cardSnow": false,
+    "icicles": false,
+    "iciclesLength": 35,
+    "iciclesDensity": 68,
+    "iciclesSeed": 451466157,
+    "sparkles": false,
+    "sparklesAmount": 60,
+    "snow": 100,
+    "snowPosition": 0,
+    "snowFlatness": 23,
+    "snowSeed": 42508873,
+    "snowfall": true,
+    "snowfallAmount": 27,
+    "cardBorderColor": "#7eb3ec",
+    "cardTextColor": "#888c94",
+    "cardHeader": true,
+    "cardHeaderBg": "#a8b2c2",
+    "cardHeaderText": "#c3c6cb",
+    "cardHeaderStyle": "divider",
+    "buttonShape": "round"
+  }/*EDITMODE-END*/;
+  </script>
 </head>
 <body style="background-color: #394856">
+  <script>
+  /* ===== Anti-FOUC: paint the saved theme on frame 1 (no React/Babel wait) =====
+     Uses the same transforms as the React applyX functions below; values come
+     from window.FROSTLINE_TWEAKS so there is one source of truth. */
+  (function () {
+    var t = window.FROSTLINE_TWEAKS || {};
+    var root = document.documentElement.style;
+    function shade(hex, p) {
+      var s = (hex || '').replace('#', '');
+      if (s.length !== 6) return hex;
+      var r = parseInt(s.slice(0,2),16), g = parseInt(s.slice(2,4),16), b = parseInt(s.slice(4,6),16);
+      var f = 1 + p/100;
+      r = Math.max(0, Math.min(255, Math.round(r*f)));
+      g = Math.max(0, Math.min(255, Math.round(g*f)));
+      b = Math.max(0, Math.min(255, Math.round(b*f)));
+      return '#' + [r,g,b].map(function(n){ return n.toString(16).padStart(2,'0'); }).join('');
+    }
+    var MOODS = {
+    arctic: {
+      '--bar-grad-top': '#6cb0e6', '--bar-grad-mid': '#4a93d3', '--bar-grad-bot': '#2d72b8',
+      '--bar-edge':     '#20578d',
+      '--btn-grad-top': '#79bef0', '--btn-grad-mid': '#4ea4dc', '--btn-grad-bot': '#2e7ec0',
+      '--btn-edge':     '#1f5993',
+      '--accent':       '#4a9fd4', '--accent-press': '#3a8fc4',
+    },
+    frostfire: {
+      '--bar-grad-top': '#f4b266', '--bar-grad-mid': '#e88a3a', '--bar-grad-bot': '#c25c1f',
+      '--bar-edge':     '#7a3a0a',
+      '--btn-grad-top': '#ffb155', '--btn-grad-mid': '#e87420', '--btn-grad-bot': '#b04e0d',
+      '--btn-edge':     '#6e2f06',
+      '--accent':       '#e87420', '--accent-press': '#c25e15',
+    },
+    aurora: {
+      '--bar-grad-top': '#7eddb4', '--bar-grad-mid': '#5fa3c9', '--bar-grad-bot': '#7c5db8',
+      '--bar-edge':     '#3a2766',
+      '--btn-grad-top': '#9eecd3', '--btn-grad-mid': '#7d8fcd', '--btn-grad-bot': '#6f4eb0',
+      '--btn-edge':     '#2f1f6a',
+      '--accent':       '#7c5db8', '--accent-press': '#5f48a0',
+    },
+    monochrome: {
+      '--bar-grad-top': '#b8bcc4', '--bar-grad-mid': '#888c94', '--bar-grad-bot': '#5a5e66',
+      '--bar-edge':     '#3a3d44',
+      '--btn-grad-top': '#c8ccd4', '--btn-grad-mid': '#94989f', '--btn-grad-bot': '#5e6168',
+      '--btn-edge':     '#3a3d44',
+      '--accent':       '#888c94', '--accent-press': '#5a5e66',
+    },
+  };
+    var mood = MOODS[t.mood] || MOODS.arctic;
+    for (var k in mood) root.setProperty(k, mood[k]);
+    if (t.accentColor) {
+      var a = t.accentColor;
+      root.setProperty('--accent', a);
+      root.setProperty('--accent-press', shade(a,-12));
+      root.setProperty('--btn-grad-top', shade(a,28));
+      root.setProperty('--btn-grad-mid', a);
+      root.setProperty('--btn-grad-bot', shade(a,-22));
+      root.setProperty('--btn-edge',     shade(a,-45));
+      root.setProperty('--bar-grad-top', shade(a,22));
+      root.setProperty('--bar-grad-mid', shade(a,-5));
+      root.setProperty('--bar-grad-bot', shade(a,-22));
+      root.setProperty('--bar-edge',     shade(a,-45));
+    }
+    if (t.bgColor) root.setProperty('--bg', t.bgColor);
+    if (t.bgCardColor) root.setProperty('--bg-card', t.bgCardColor);
+    if (t.cardRadius != null) root.setProperty('--card-radius', t.cardRadius + 'px');
+    function inject(id, css) {
+      var s = document.createElement('style'); s.id = id; s.textContent = css;
+      document.head.appendChild(s);
+    }
+    if (t.titleBarColor) {
+      inject('frostline-tweaks-titlebar',
+        '.header{background:linear-gradient(180deg,' + shade(t.titleBarColor,5) + ' 0%,' + t.titleBarColor + ' 100%)!important;}');
+    }
+    if (t.searchBarColor) {
+      inject('frostline-tweaks-searchbar',
+        '.controls{background:linear-gradient(180deg,' + shade(t.searchBarColor,20) + ' 0%,' + t.searchBarColor + ' 55%,' + shade(t.searchBarColor,-20) + ' 100%)!important;}');
+    }
+    var body = document.body; // exists: this script is the first body child
+    if (body) {
+      if (t.font && t.font !== 'nunito') body.classList.add('fx-font-' + t.font);
+      if (t.cardShape === 'sharp') body.classList.add('fx-shape-sharp');
+      else if (t.cardShape === 'pill') body.classList.add('fx-shape-pill');
+      if (t.cardBorder && t.cardBorder !== 'solid') body.classList.add('fx-border-' + t.cardBorder);
+      if (t.buttonShape && t.buttonShape !== 'auto') body.classList.add('btn-shape-' + t.buttonShape);
+      // Match the body inline bg to the saved page color so it can't flash.
+      if (t.bgColor) body.style.backgroundColor = t.bgColor;
+    }
+  })();
+  </script>
 
   <!-- Themes drawer (hamburger menu) -->
   <div class="drawer-scrim" id="drawer-scrim" hidden></div>
@@ -719,7 +852,7 @@
 
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos15"></script>
+  <script src="app.js?v=wos16"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
@@ -728,46 +861,7 @@
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
   <script type="text/babel" src="tweaks-panel.jsx?v=ds7r2"></script>
   <script type="text/babel" data-presets="react">
-  const FROSTLINE_TWEAKS = /*EDITMODE-BEGIN*/{
-    "mood": "arctic",
-    "accentColor": "#115555",
-    "bgColor": "#394856",
-    "bgCardColor": "#173e4f",
-    "titleBarColor": "#122b28",
-    "searchBarColor": "#1b3e50",
-    "chunkiness": 4,
-    "font": "fredoka",
-    "fontSize": 18,
-    "tracking": 8,
-    "cardShape": "soft",
-    "cardRadius": 21,
-    "cardBorder": "double",
-    "cardGlow": 35,
-    "cardFrost": 13,
-    "cardFrosty": false,
-    "cardAurora": false,
-    "cardBreath": false,
-    "cardSnow": false,
-    "icicles": false,
-    "iciclesLength": 35,
-    "iciclesDensity": 68,
-    "iciclesSeed": 451466157,
-    "sparkles": false,
-    "sparklesAmount": 60,
-    "snow": 100,
-    "snowPosition": 0,
-    "snowFlatness": 23,
-    "snowSeed": 42508873,
-    "snowfall": true,
-    "snowfallAmount": 27,
-    "cardBorderColor": "#7eb3ec",
-    "cardTextColor": "#888c94",
-    "cardHeader": true,
-    "cardHeaderBg": "#a8b2c2",
-    "cardHeaderText": "#c3c6cb",
-    "cardHeaderStyle": "divider",
-    "buttonShape": "round"
-  }/*EDITMODE-END*/;
+  const FROSTLINE_TWEAKS = window.FROSTLINE_TWEAKS;
 
   // Four sanctioned palettes — Arctic (cold), Frostfire (warm), Aurora (purple), Monochrome (grey).
   const FROSTLINE_MOODS = {
