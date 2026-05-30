@@ -1109,18 +1109,18 @@ function openAdd() {
   els.editTitle.textContent = 'Add new art';
   els.editTitleInput.value = '';
   els.editTagsInput.value = '';
+  closeSaveSheet();
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
-  toggleDraw(false);
+  toggleDraw(true); // new art opens straight into the draw canvas (primary feature)
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
   // After the modal is open, see if a draft is waiting for this target.
   tryRestoreDraft();
-  setTimeout(() => els.editTitleInput.focus(), 50);
 }
 function openEdit(p) {
   editing = p;
@@ -1128,6 +1128,7 @@ function openEdit(p) {
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
   els.editArtInput.value = p.art || '';
+  closeSaveSheet();
   resetEditHistory(p.art || '');
   toggleDraw(false);
   runAudit();
@@ -1138,6 +1139,8 @@ function openEdit(p) {
 function closeEdit() {
   els.edit.classList.remove('open');
   els.edit.classList.remove('drawing');
+  const sheet = document.getElementById('save-sheet');
+  if (sheet) sheet.classList.remove('open');
 }
 els.editClose.addEventListener('click', () => closeEdit());
 els.editCancel.addEventListener('click', () => closeEdit());
@@ -1266,6 +1269,8 @@ function toggleDraw(on) {
     btn.classList.toggle('active', drawing);
     btn.setAttribute('aria-checked', drawing ? 'true' : 'false');
   }
+  const txt = document.getElementById('draw-toggle-text');
+  if (txt) txt.textContent = drawing ? '✏ Draw' : '⌨ Type';
   if (drawing) {
     ensureBlankCanvas();
     renderSketch(true);
@@ -1533,7 +1538,9 @@ els.sketchView.addEventListener('touchmove', (e) => {
 els.sketchView.addEventListener('touchend', endStroke);
 els.sketchView.addEventListener('touchcancel', endStroke);
 
-els.sketchFill.addEventListener('click', () => {
+// Consolidated "Clear": reset to a FRESH blank 27\u00D712 grid so there's always a
+// paintable surface (replaces the old separate Blank + Clear buttons).
+function fillBlankGrid() {
   pushEditHistory();
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
@@ -1541,15 +1548,11 @@ els.sketchFill.addEventListener('click', () => {
   lastEditSnapshot = els.editArtInput.value;
   renderSketch(true);
   runAudit();
-});
-els.sketchClear.addEventListener('click', () => {
-  if (!els.editArtInput.value) return;
-  if (!confirm('Clear all art?')) return;
-  pushEditHistory();
-  els.editArtInput.value = '';
-  lastEditSnapshot = '';
-  renderSketch(true);
-  runAudit();
+  if (typeof debouncedAutosave === 'function') debouncedAutosave();
+}
+if (els.sketchClear) els.sketchClear.addEventListener('click', () => {
+  if (!confirm('Clear the canvas and start over with a fresh blank grid?')) return;
+  fillBlankGrid();
 });
 els.sketchUndo.addEventListener('click', undoEdit);
 const textUndoBtn = document.getElementById('text-undo');
