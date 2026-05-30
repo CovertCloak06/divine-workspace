@@ -1434,12 +1434,17 @@ function replaceCharAt(y, x) {
   // kaomoji face, a bracket pair, an eye like "\u25DC\u25DD") would otherwise drop several
   // characters into one slot and shove the rest of the row to the right \u2014 the
   // user wants a stroke to replace the cell it lands on, not insert into it.
-  const newCh = eraserOn ? '\u00A0' : (graphemes(activeBrush)[0] || '\u00A0');
-  if (x < gs.length) {
-    if (gs[x] === newCh) return;
-    gs[x] = newCh;
-  } else {
-    gs.push(newCh);
+  // Stamp the FULL brush across consecutive cells. The brush may be a single
+  // char or a multi-char face/kaomoji; EVERY grapheme must land so faces print
+  // whole instead of just their first character. The eraser is one blank cell.
+  const brush = eraserOn ? ['\u00A0'] : graphemes(activeBrush);
+  if (!brush.length) return;
+  // Cheap no-op guard when repainting the same single char (keeps drags light).
+  if (brush.length === 1 && x < gs.length && gs[x] === brush[0]) return;
+  for (let i = 0; i < brush.length; i++) {
+    const col = x + i;
+    while (gs.length <= col) gs.push('\u00A0');
+    gs[col] = brush[i];
   }
   lines[y] = gs.join('');
   editHistorySuspend = true; // avoid the input listener pushing history
@@ -1447,95 +1452,237 @@ function replaceCharAt(y, x) {
   editHistorySuspend = false;
   lastEditSnapshot = els.editArtInput.value;
 
-  // Mutate just the touched span in place — no full DOM rebuild.
-  const lineEl = els.sketchView.children[y];
-  if (lineEl) {
-    let span = lineEl.children[x];
-    if (!span) {
-      // pad missing spans in this line
-      while (lineEl.children.length <= x) {
-        const s = document.createElement('span');
-        s.className = 'sketch-char sketch-empty-cell';
-        s.textContent = '\u00A0';
-        s.dataset.y = y;
-        s.dataset.x = lineEl.children.length;
-        lineEl.appendChild(s);
+  // Single-char brush -> mutate just the touched span (fast path for drags).
+  // Multi-char brush -> re-render so every stamped cell refreshes.
+  if (brush.length === 1) {
+    const lineEl = els.sketchView.children[y];
+    if (lineEl) {
+      let span = lineEl.children[x];
+      if (!span) {
+        while (lineEl.children.length <= x) {
+          const s = document.createElement('span');
+          s.className = 'sketch-char sketch-empty-cell';
+          s.textContent = '\u00A0';
+          s.dataset.y = y;
+          s.dataset.x = lineEl.children.length;
+          lineEl.appendChild(s);
+        }
+        span = lineEl.children[x];
       }
-      span = lineEl.children[x];
+      const nc = brush[0];
+      if (nc === '\u00A0' || nc === ' ') {
+        span.textContent = '\u00A0';
+        span.classList.add('sketch-empty-cell');
+      } else {
+        span.textContent = nc;
+        span.classList.remove('sketch-empty-cell');
+      }
     }
-    if (newCh === '\u00A0' || newCh === ' ') {
-      span.textContent = '\u00A0';
-      span.classList.add('sketch-empty-cell');
-    } else {
-      span.textContent = newCh;
-      span.classList.remove('sketch-empty-cell');
-    }
+  } else {
+    renderSketch(true);
   }
   runAudit();
 }
 
 function startStroke() {
-  // Snapshot value once at the start of a drag so a whole drag = one undo.
+  // Snapshot value once at the start of a paint drag so a whole drag = one undo.
   strokeStartSnapshot = els.editArtInput.value;
   pushEditHistory();
 }
 function endStroke() {
-  sketchPainting = false;
+  paintActive = false;
   strokeStartSnapshot = null;
 }
 
-let sketchPainting = false;
+/* ---- Canvas gestures: tap/drag to paint, long-press to grab & move ----
+ * One unified model so the gestures never fight:
+ *   quick tap           -> paint one cell with the active brush
+ *   drag                -> paint a stroke
+ *   long-press (~450ms) -> GRAB the character under the finger, drag it, and
+ *                          release to DROP it in a new cell (origin left blank,
+ *                          so it MOVES rather than copies).
+ * Painting is deferred until we know it is not a long-press, so grabbing a
+ * character never paints over it first. */
+let paintActive = false;
+let gesturePending = null;   // {y,x,clientX,clientY} captured at down
+let grabState = null;        // {ch, fromY, fromX} while a character is held
+let grabGhostEl = null;      // floating chip that follows the finger
+let grabHoldTimer = null;
+const GRAB_HOLD_MS = 450;
+
+function cellFromPoint(cx, cy) {
+  const target = document.elementFromPoint(cx, cy);
+  return target && target.closest ? target.closest('.sketch-char') : null;
+}
+function cellAt(y, x) {
+  const lineEl = els.sketchView.children[y];
+  return lineEl ? lineEl.children[x] : null;
+}
+function cellContent(y, x) {
+  const lines = els.editArtInput.value.split('\n');
+  if (y < 0 || y >= lines.length) return '\u00A0';
+  const gs = graphemes(lines[y]);
+  return (x >= 0 && x < gs.length) ? gs[x] : '\u00A0';
+}
+function isBlankCell(ch) {
+  return ch === undefined || ch === '' || ch === '\u00A0' || ch === ' ';
+}
+
+// Write a single grapheme into one cell (model + DOM in place). Used by grab/move.
+function writeCell(y, x, ch) {
+  if (x < 0 || y < 0) return;
+  const lines = els.editArtInput.value.split('\n');
+  while (y >= lines.length) lines.push('');
+  const gs = graphemes(lines[y]);
+  while (gs.length <= x) gs.push('\u00A0');
+  gs[x] = ch;
+  lines[y] = gs.join('');
+  editHistorySuspend = true;
+  els.editArtInput.value = lines.join('\n');
+  editHistorySuspend = false;
+  lastEditSnapshot = els.editArtInput.value;
+  const span = cellAt(y, x);
+  if (span) {
+    if (isBlankCell(ch)) { span.textContent = '\u00A0'; span.classList.add('sketch-empty-cell'); }
+    else { span.textContent = ch; span.classList.remove('sketch-empty-cell'); }
+  }
+  runAudit();
+}
+
+function clearDropTarget() {
+  const prev = els.sketchView.querySelector('.drop-target');
+  if (prev) prev.classList.remove('drop-target');
+}
+function setDropTarget(cell) {
+  clearDropTarget();
+  if (cell) cell.classList.add('drop-target');
+}
+function moveGhost(cx, cy) {
+  if (grabGhostEl) { grabGhostEl.style.left = cx + 'px'; grabGhostEl.style.top = cy + 'px'; }
+}
+function endGrab() {
+  if (grabGhostEl) { grabGhostEl.remove(); grabGhostEl = null; }
+  clearDropTarget();
+  els.sketchView.classList.remove('grabbing');
+  grabState = null;
+}
+
+function gestureDown(cx, cy, cell) {
+  if (!cell) return;
+  gesturePending = { y: +cell.dataset.y, x: +cell.dataset.x, clientX: cx, clientY: cy };
+  clearTimeout(grabHoldTimer);
+  grabHoldTimer = setTimeout(() => {
+    if (!gesturePending) return;
+    const ch = cellContent(gesturePending.y, gesturePending.x);
+    if (isBlankCell(ch)) return; // nothing to grab; fall back to paint on release
+    pushEditHistory();           // whole move = one undo
+    grabState = { ch: ch, fromY: gesturePending.y, fromX: gesturePending.x };
+    els.sketchView.classList.add('grabbing');
+    writeCell(grabState.fromY, grabState.fromX, '\u00A0'); // lift from origin
+    grabGhostEl = document.createElement('div');
+    grabGhostEl.className = 'grab-ghost';
+    grabGhostEl.textContent = ch;
+    document.body.appendChild(grabGhostEl);
+    moveGhost(gesturePending.clientX, gesturePending.clientY);
+    setDropTarget(cellAt(grabState.fromY, grabState.fromX));
+    gesturePending = null;
+    paintActive = false;
+  }, GRAB_HOLD_MS);
+}
+
+function gestureMove(cx, cy) {
+  if (grabState) {
+    moveGhost(cx, cy);
+    setDropTarget(cellFromPoint(cx, cy));
+    return;
+  }
+  const cell = cellFromPoint(cx, cy);
+  if (gesturePending) {
+    // Moved off the origin cell before the hold fired => paint drag.
+    if (cell && (+cell.dataset.y !== gesturePending.y || +cell.dataset.x !== gesturePending.x)) {
+      clearTimeout(grabHoldTimer);
+      startStroke();
+      replaceCharAt(gesturePending.y, gesturePending.x);
+      paintActive = true;
+      gesturePending = null;
+      replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+    }
+    return;
+  }
+  if (paintActive && cell) replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+}
+
+function gestureUp(cx, cy) {
+  clearTimeout(grabHoldTimer);
+  if (grabState) {
+    const cell = cellFromPoint(cx, cy);
+    const ty = cell ? +cell.dataset.y : grabState.fromY;
+    const tx = cell ? +cell.dataset.x : grabState.fromX;
+    writeCell(ty, tx, grabState.ch); // drop (or return to origin if off-canvas)
+    // Record the post-move state so the whole grab undoes in ONE step (the
+    // pre-move snapshot was pushed at grab start in gestureDown).
+    pushEditHistory();
+    endGrab();
+    return;
+  }
+  if (gesturePending) {
+    startStroke();
+    replaceCharAt(gesturePending.y, gesturePending.x);
+    endStroke();
+    gesturePending = null;
+    return;
+  }
+  if (paintActive) endStroke();
+}
+
 els.sketchView.addEventListener('pointerdown', (e) => {
-  // If a touch event fired within the last 400ms, this pointerdown is the
-  // synthetic one Safari generates after the touch — ignore it.
-  if (Date.now() - lastTouchAt < 400) return;
-  const target = document.elementFromPoint(e.clientX, e.clientY);
-  const t = target && target.closest && target.closest('.sketch-char');
-  if (!t) return;
-  sketchPainting = true;
-  startStroke();
-  replaceCharAt(+t.dataset.y, +t.dataset.x);
+  if (Date.now() - lastTouchAt < 400) return; // ignore synthetic post-touch pointer
+  const cell = cellFromPoint(e.clientX, e.clientY);
+  if (!cell) return;
+  gestureDown(e.clientX, e.clientY, cell);
   e.preventDefault();
 });
 els.sketchView.addEventListener('pointermove', (e) => {
-  if (!sketchPainting) return;
   if (Date.now() - lastTouchAt < 400) return;
-  const target = document.elementFromPoint(e.clientX, e.clientY);
-  const t = target && target.closest && target.closest('.sketch-char');
-  if (!t) return;
-  replaceCharAt(+t.dataset.y, +t.dataset.x);
+  if (!gesturePending && !paintActive && !grabState) return;
+  gestureMove(e.clientX, e.clientY);
   e.preventDefault();
 });
-window.addEventListener('pointerup', endStroke);
-window.addEventListener('pointercancel', endStroke);
+window.addEventListener('pointerup', (e) => {
+  if (gesturePending || paintActive || grabState) gestureUp(e.clientX, e.clientY);
+});
+window.addEventListener('pointercancel', () => {
+  clearTimeout(grabHoldTimer);
+  if (grabState) { writeCell(grabState.fromY, grabState.fromX, grabState.ch); endGrab(); }
+  gesturePending = null; paintActive = false;
+});
 
-// Touch fallback for iOS — fires before pointer events, so we mark the time
-// and the pointer handlers skip the synthetic follow-up.
+// Touch fallbacks (fire before pointer events; mark time so pointer skips dupes).
 els.sketchView.addEventListener('touchstart', (e) => {
   lastTouchAt = Date.now();
-  const t = e.touches[0];
-  if (!t) return;
-  const target = document.elementFromPoint(t.clientX, t.clientY);
-  const cell = target && target.closest && target.closest('.sketch-char');
+  const t = e.touches[0]; if (!t) return;
+  const cell = cellFromPoint(t.clientX, t.clientY);
   if (!cell) return;
-  sketchPainting = true;
-  startStroke();
-  replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+  gestureDown(t.clientX, t.clientY, cell);
   e.preventDefault();
 }, { passive: false });
 els.sketchView.addEventListener('touchmove', (e) => {
   lastTouchAt = Date.now();
-  if (!sketchPainting) return;
-  const t = e.touches[0];
-  if (!t) return;
-  const target = document.elementFromPoint(t.clientX, t.clientY);
-  const cell = target && target.closest && target.closest('.sketch-char');
-  if (!cell) return;
-  replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+  const t = e.touches[0]; if (!t) return;
+  if (!gesturePending && !paintActive && !grabState) return;
+  gestureMove(t.clientX, t.clientY);
   e.preventDefault();
 }, { passive: false });
-els.sketchView.addEventListener('touchend', endStroke);
-els.sketchView.addEventListener('touchcancel', endStroke);
+els.sketchView.addEventListener('touchend', (e) => {
+  lastTouchAt = Date.now();
+  const t = e.changedTouches && e.changedTouches[0];
+  if (t) gestureUp(t.clientX, t.clientY); else gestureUp(-1, -1);
+});
+els.sketchView.addEventListener('touchcancel', () => {
+  clearTimeout(grabHoldTimer);
+  if (grabState) { writeCell(grabState.fromY, grabState.fromX, grabState.ch); endGrab(); }
+  gesturePending = null; paintActive = false;
+});
 
 // Consolidated "Clear": reset to a FRESH blank 27×12 grid so there's always a
 // paintable surface (replaces the old separate Blank + Clear buttons).

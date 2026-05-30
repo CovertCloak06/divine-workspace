@@ -917,6 +917,39 @@ body.editor .export-bar { display: block; }
 .label-dim { color: var(--ink-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
 @media (max-width: 600px) { .save-sheet { padding: 20px 16px; } }
 
+/* ===== Grab-and-move (long-press to relocate a character) ================= */
+.sketch-view, .sketch-char {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.sketch-view.grabbing { cursor: grabbing; }
+.sketch-char.drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(74, 159, 212, 0.28);
+  border-radius: 3px;
+}
+.grab-ghost {
+  position: fixed;
+  z-index: 200;
+  transform: translate(-50%, -130%);
+  pointer-events: none;
+  font-size: 26px;
+  line-height: 1;
+  padding: 4px 7px;
+  background: var(--bg-elev);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+.grab-hint {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: 4px;
+}
+
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {
   background: var(--wos-bubble);
