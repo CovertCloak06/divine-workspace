@@ -1549,13 +1549,37 @@ function writeCell(y, x, ch) {
   runAudit();
 }
 
-function clearDropTarget() {
-  const prev = els.sketchView.querySelector('.drop-target');
-  if (prev) prev.classList.remove('drop-target');
+/* Find the contiguous run of non-blank cells in row y that includes column x.
+ * This is what "the whole face / combo" means at grab time: any adjacent
+ * non-blank characters travel together. Returns null if the pressed cell is
+ * itself blank. */
+function findRun(y, x) {
+  const lines = els.editArtInput.value.split('\n');
+  if (y < 0 || y >= lines.length) return null;
+  const gs = graphemes(lines[y]);
+  if (x < 0 || x >= gs.length || isBlankCell(gs[x])) return null;
+  let start = x, end = x;
+  while (start > 0 && !isBlankCell(gs[start - 1])) start--;
+  while (end < gs.length - 1 && !isBlankCell(gs[end + 1])) end++;
+  return {
+    runChars: gs.slice(start, end + 1),
+    runStart: start,
+    runY: y,
+    pressIdx: x - start, // where in the run the finger landed
+  };
 }
-function setDropTarget(cell) {
+
+let dropHighlighted = [];
+function clearDropTarget() {
+  for (const c of dropHighlighted) c.classList.remove('drop-target');
+  dropHighlighted = [];
+}
+function highlightDropRange(y, startX, len) {
   clearDropTarget();
-  if (cell) cell.classList.add('drop-target');
+  for (let i = 0; i < len; i++) {
+    const c = cellAt(y, startX + i);
+    if (c) { c.classList.add('drop-target'); dropHighlighted.push(c); }
+  }
 }
 function moveGhost(cx, cy) {
   if (grabGhostEl) { grabGhostEl.style.left = cx + 'px'; grabGhostEl.style.top = cy + 'px'; }
@@ -1573,18 +1597,21 @@ function gestureDown(cx, cy, cell) {
   clearTimeout(grabHoldTimer);
   grabHoldTimer = setTimeout(() => {
     if (!gesturePending) return;
-    const ch = cellContent(gesturePending.y, gesturePending.x);
-    if (isBlankCell(ch)) return; // nothing to grab; fall back to paint on release
-    pushEditHistory();           // whole move = one undo
-    grabState = { ch: ch, fromY: gesturePending.y, fromX: gesturePending.x };
+    const run = findRun(gesturePending.y, gesturePending.x);
+    if (!run) return; // pressed cell is blank; fall back to paint on release
+    pushEditHistory(); // capture pre-grab state so the whole move = one undo
+    grabState = run;
     els.sketchView.classList.add('grabbing');
-    writeCell(grabState.fromY, grabState.fromX, '\u00A0'); // lift from origin
+    // Lift the ENTIRE run (one cell or many) off the canvas.
+    for (let i = 0; i < run.runChars.length; i++) {
+      writeCell(run.runY, run.runStart + i, '\u00A0');
+    }
     grabGhostEl = document.createElement('div');
     grabGhostEl.className = 'grab-ghost';
-    grabGhostEl.textContent = ch;
+    grabGhostEl.textContent = run.runChars.join('');
     document.body.appendChild(grabGhostEl);
     moveGhost(gesturePending.clientX, gesturePending.clientY);
-    setDropTarget(cellAt(grabState.fromY, grabState.fromX));
+    highlightDropRange(run.runY, run.runStart, run.runChars.length);
     gesturePending = null;
     paintActive = false;
   }, GRAB_HOLD_MS);
@@ -1593,7 +1620,10 @@ function gestureDown(cx, cy, cell) {
 function gestureMove(cx, cy) {
   if (grabState) {
     moveGhost(cx, cy);
-    setDropTarget(cellFromPoint(cx, cy));
+    const cell = cellFromPoint(cx, cy);
+    if (!cell) { clearDropTarget(); return; }
+    const newStart = (+cell.dataset.x) - grabState.pressIdx;
+    highlightDropRange(+cell.dataset.y, newStart, grabState.runChars.length);
     return;
   }
   const cell = cellFromPoint(cx, cy);
@@ -1616,12 +1646,29 @@ function gestureUp(cx, cy) {
   clearTimeout(grabHoldTimer);
   if (grabState) {
     const cell = cellFromPoint(cx, cy);
-    const ty = cell ? +cell.dataset.y : grabState.fromY;
-    const tx = cell ? +cell.dataset.x : grabState.fromX;
-    writeCell(ty, tx, grabState.ch); // drop (or return to origin if off-canvas)
-    // Record the post-move state so the whole grab undoes in ONE step (the
-    // pre-move snapshot was pushed at grab start in gestureDown).
-    pushEditHistory();
+    const run = grabState;
+    let placed = false;
+    if (cell) {
+      const ty = +cell.dataset.y;
+      const newStart = (+cell.dataset.x) - run.pressIdx;
+      const lineEl = els.sketchView.children[ty];
+      const rowWidth = lineEl ? lineEl.children.length : 0;
+      // Fit-check the whole run against the row; if it would overflow either
+      // edge, snap it back to origin instead of clipping the face in half.
+      if (newStart >= 0 && newStart + run.runChars.length <= rowWidth) {
+        for (let i = 0; i < run.runChars.length; i++) {
+          writeCell(ty, newStart + i, run.runChars[i]);
+        }
+        placed = true;
+      }
+    }
+    if (!placed) {
+      // Off-canvas or doesn't fit -> put it back where it was.
+      for (let i = 0; i < run.runChars.length; i++) {
+        writeCell(run.runY, run.runStart + i, run.runChars[i]);
+      }
+    }
+    pushEditHistory(); // post-move state -> whole grab undoes in one step
     endGrab();
     return;
   }
@@ -1653,7 +1700,12 @@ window.addEventListener('pointerup', (e) => {
 });
 window.addEventListener('pointercancel', () => {
   clearTimeout(grabHoldTimer);
-  if (grabState) { writeCell(grabState.fromY, grabState.fromX, grabState.ch); endGrab(); }
+  if (grabState) {
+    for (let i = 0; i < grabState.runChars.length; i++) {
+      writeCell(grabState.runY, grabState.runStart + i, grabState.runChars[i]);
+    }
+    endGrab();
+  }
   gesturePending = null; paintActive = false;
 });
 
@@ -1680,7 +1732,12 @@ els.sketchView.addEventListener('touchend', (e) => {
 });
 els.sketchView.addEventListener('touchcancel', () => {
   clearTimeout(grabHoldTimer);
-  if (grabState) { writeCell(grabState.fromY, grabState.fromX, grabState.ch); endGrab(); }
+  if (grabState) {
+    for (let i = 0; i < grabState.runChars.length; i++) {
+      writeCell(grabState.runY, grabState.runStart + i, grabState.runChars[i]);
+    }
+    endGrab();
+  }
   gesturePending = null; paintActive = false;
 });
 
