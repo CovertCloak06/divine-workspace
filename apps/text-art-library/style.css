@@ -754,8 +754,6 @@ body.editor .export-bar { display: block; }
 /* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
    replaces the textarea in place. */
 .draw-workspace.draw-only { display: none; }
-/* Shown as a flex COLUMN in draw mode. Declaring display here (high specificity)
-   so it isn't overridden back to block by this very selector. */
 #edit.drawing .draw-workspace.draw-only { display: flex; flex-direction: column; min-height: 0; }
 #edit.drawing #edit-art-input { display: none; }
 /* The text-mode Undo button only makes sense in text mode (draw mode has its
@@ -763,21 +761,38 @@ body.editor .export-bar { display: block; }
 .text-only { display: inline-flex; }
 #edit.drawing .text-only { display: none; }
 
-/* Draw mode locks the modal to the viewport and lays the body out as a flex
-   column: title, tags and the canvas stay put while ONLY the palette scrolls,
-   so the canvas is always in view while picking characters. Every flex ancestor
-   of the scrolling palette needs min-height:0 or it grows to full content
-   height instead of scrolling. */
+/* ===== Editor layout (BOTH modes) ===========================================
+   Title + Tags share a compact row at the top so they don't dominate the modal.
+   The modal body is always a flex column; in draw mode the workspace claims all
+   remaining space and the palette is the only thing that scrolls. */
+.field-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.field-row .field-compact { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
+.field-row .field-compact label { font-size: 10px; margin-bottom: 3px; }
+.field-row .field-compact input {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+/* Prevent pull-to-refresh + rubber-band reload: a swipe-up at the top of the
+   editor must not bubble out to the page (where it would reload the PWA and
+   wipe in-progress work). */
+.edit-modal-body { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#edit.open { overscroll-behavior: contain; touch-action: pan-y; }
+
+/* ===== Draw-mode layout ===================================================
+   Modal locks to the viewport, body is a flex column, and the workspace gets
+   all leftover height. The palette is the dominant surface — it gets every
+   pixel the canvas and favorites don't claim. */
 #edit.drawing .modal { height: calc(100vh - 40px); }
-#edit.drawing .modal-body { display: flex; flex-direction: column; overflow: hidden; }
-#edit.drawing .modal-body > .field { flex: 0 0 auto; }
-#edit.drawing .draw-workspace { flex: 1 1 auto; }
+#edit.drawing .edit-modal-body { display: flex; flex-direction: column; overflow: hidden; }
+#edit.drawing .edit-modal-body > .field,
+#edit.drawing .edit-modal-body > .field-row { flex: 0 0 auto; }
+#edit.drawing .draw-workspace { flex: 1 1 auto; min-height: 0; }
 .canvas-dock { background: var(--bg-elev); margin-bottom: 6px; }
-/* The dock stays at content height (never shrinks below the canvas, which would
-   make the canvas overflow and overlap the palette). Canvas is compact so the
-   palette still gets real room on a phone; tall art scrolls within the canvas. */
+/* The dock stays at content height so the canvas never overflows it. Canvas is
+   sized in viewport units so it scales with the phone, but is no longer the
+   centerpiece — the palette is. */
 #edit.drawing .canvas-dock { flex: 0 0 auto; }
-#edit.drawing .sketch-view { max-height: 16vh; min-height: 84px; }
+#edit.drawing .sketch-view { max-height: 22vh; min-height: 96px; }
 #edit.drawing .field label { margin-bottom: 3px; }
 #edit.drawing .draw-workspace > .field { margin-bottom: 6px; }
 /* Reclaim non-essential chrome while painting: the verbose label help-text and
@@ -785,6 +800,25 @@ body.editor .export-bar { display: block; }
    canvas + palette the height. They're back the moment you leave draw mode. */
 #edit.drawing .field label span { display: none; }
 #edit.drawing .audit-field { display: none; }
+/* Autosave indicator pinned to the bottom of the modal head. */
+.autosave-indicator {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-left: auto;
+  margin-right: 12px;
+  opacity: 0;
+  transition: opacity .25s;
+}
+.autosave-indicator.show { opacity: 1; }
+.autosave-indicator .draft-discard-btn {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 4px;
+}
 /* favorites keeps its natural height; the palette field fills the rest and is
    the only thing that scrolls. */
 #edit.drawing .draw-workspace > .field:last-child {

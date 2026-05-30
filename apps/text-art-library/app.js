@@ -1118,6 +1118,8 @@ function openAdd() {
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
+  // After the modal is open, see if a draft is waiting for this target.
+  tryRestoreDraft();
   setTimeout(() => els.editTitleInput.focus(), 50);
 }
 function openEdit(p) {
@@ -1131,13 +1133,111 @@ function openEdit(p) {
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
+  tryRestoreDraft();
 }
 function closeEdit() {
   els.edit.classList.remove('open');
   els.edit.classList.remove('drawing');
 }
-els.editClose.addEventListener('click', closeEdit);
-els.editCancel.addEventListener('click', closeEdit);
+els.editClose.addEventListener('click', () => closeEdit());
+els.editCancel.addEventListener('click', () => closeEdit());
+
+/* ===== Autosave drafts =====================================================
+ * The editor writes the in-progress piece to localStorage on every edit so a
+ * pull-to-refresh, accidental close, or device kill never loses Codi's work.
+ * Drafts are keyed by piece id (or "new" for a brand-new piece). On open, if a
+ * draft exists for the target, we silently restore it and show a small
+ * "Restored draft" indicator with a Discard action. Saving successfully or
+ * confirming a discard clears the draft.
+ */
+const DRAFT_KEY = 'frostline:drafts:v1';
+function loadDrafts() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveDrafts(d) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
+}
+function draftKey() {
+  // editing.id when editing existing, "new" when adding
+  return editing && editing.id ? `edit:${editing.id}` : 'new';
+}
+function readDraft() {
+  return loadDrafts()[draftKey()] || null;
+}
+function writeDraft() {
+  if (!els.edit.classList.contains('open')) return;
+  const d = loadDrafts();
+  d[draftKey()] = {
+    title: els.editTitleInput.value,
+    tags: els.editTagsInput.value,
+    art: els.editArtInput.value,
+    ts: Date.now(),
+  };
+  saveDrafts(d);
+  showSavedIndicator();
+}
+function clearDraft() {
+  const d = loadDrafts();
+  delete d[draftKey()];
+  saveDrafts(d);
+}
+const debouncedAutosave = debounce(writeDraft, 400);
+
+let _indicatorTimer = null;
+function showSavedIndicator() {
+  const ind = document.getElementById('autosave-indicator');
+  if (!ind) return;
+  ind.textContent = 'Draft saved';
+  ind.classList.add('show');
+  clearTimeout(_indicatorTimer);
+  _indicatorTimer = setTimeout(() => ind.classList.remove('show'), 1400);
+}
+function showRestoredIndicator() {
+  const ind = document.getElementById('autosave-indicator');
+  if (!ind) return;
+  ind.innerHTML = 'Restored draft · <button type="button" class="draft-discard-btn">Discard</button>';
+  ind.classList.add('show');
+  const btn = ind.querySelector('.draft-discard-btn');
+  if (btn) btn.addEventListener('click', () => {
+    if (!confirm('Discard the restored draft and start fresh?')) return;
+    clearDraft();
+    // re-open with the original target
+    if (editing) openEdit(editing); else openAdd();
+    ind.classList.remove('show');
+  });
+  clearTimeout(_indicatorTimer);
+  _indicatorTimer = setTimeout(() => ind.classList.remove('show'), 6000);
+}
+
+// Apply draft (if any) to the open editor; returns true if applied.
+function tryRestoreDraft() {
+  const d = readDraft();
+  if (!d) return false;
+  // Don't restore if the draft is identical to what's already loaded.
+  if (d.title === els.editTitleInput.value &&
+      d.tags === els.editTagsInput.value &&
+      d.art === els.editArtInput.value) return false;
+  els.editTitleInput.value = d.title || '';
+  els.editTagsInput.value = d.tags || '';
+  els.editArtInput.value = d.art || '';
+  resetEditHistory(d.art || '');
+  runAudit();
+  renderSketch();
+  showRestoredIndicator();
+  return true;
+}
+
+// Wire autosave to every input the editor exposes.
+['editTitleInput', 'editTagsInput', 'editArtInput'].forEach((k) => {
+  const el = els[k];
+  if (el) el.addEventListener('input', debouncedAutosave);
+});
+// Save once more on the way out (covers pagehide / visibilitychange too).
+window.addEventListener('pagehide', () => { if (els.edit.classList.contains('open')) writeDraft(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && els.edit.classList.contains('open')) writeDraft();
+});
 els.edit.addEventListener('click', (e) => {
   // Intentionally NOT closing on backdrop click — prevents accidental exit.
 });
@@ -1694,6 +1794,7 @@ els.editSave.addEventListener('click', async () => {
   }
   cacheNow();
   recomputeMerged();
+  clearDraft(); // successful save → autosaved draft is now obsolete
   closeEdit();
   render();
   if (r.local) {

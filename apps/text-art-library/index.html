@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos8">
+  <link rel="stylesheet" href="style.css?v=wos9">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -636,6 +636,7 @@
     <div class="modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
       <div class="modal-head">
         <h3 id="edit-title">Add new art</h3>
+        <span class="autosave-indicator" id="autosave-indicator" aria-live="polite"></span>
         <button class="modal-close" id="edit-close" aria-label="Close">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
@@ -645,14 +646,18 @@
           </svg>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="field">
-          <label for="edit-title-input">Title</label>
-          <input id="edit-title-input" type="text" placeholder="Heart (small)">
-        </div>
-        <div class="field">
-          <label for="edit-tags-input">Tags <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— comma-separated</span></label>
-          <input id="edit-tags-input" type="text" placeholder="love, symbols">
+      <div class="modal-body edit-modal-body">
+        <!-- Title + Tags share one compact row so the canvas + palette get the
+             height. Each field flexes equally on a phone. -->
+        <div class="field-row">
+          <div class="field field-compact">
+            <label for="edit-title-input">Title</label>
+            <input id="edit-title-input" type="text" placeholder="Heart (small)">
+          </div>
+          <div class="field field-compact">
+            <label for="edit-tags-input">Tags</label>
+            <input id="edit-tags-input" type="text" placeholder="love, symbols">
+          </div>
         </div>
         <div class="field">
           <div class="art-label-row">
@@ -706,7 +711,7 @@
 
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos8"></script>
+  <script src="app.js?v=wos9"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
