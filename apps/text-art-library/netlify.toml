@@ -5,3 +5,15 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Always revalidate HTML so a new deploy reaches users immediately (the HTML
+# references versioned ?v= assets, so it must never be served stale).
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
