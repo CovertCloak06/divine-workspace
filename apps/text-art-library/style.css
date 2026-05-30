@@ -789,21 +789,21 @@ body.editor .export-bar { display: block; }
 #edit.drawing .edit-modal-body > .field-row { flex: 0 0 auto; }
 #edit.drawing .draw-workspace { flex: 1 1 auto; min-height: 0; }
 .canvas-dock { background: var(--bg-elev); margin-bottom: 6px; }
-/* Split the work area by a FIXED RATIO instead of leftovers: the canvas dock
-   and the palette each get a guaranteed share of the space (≈45% / ≈55%) on
-   ANY screen size, so the palette never collapses to a sliver. flex-basis:0 +
-   grow weights = pure ratio; min-height:0 lets each region's inner content
-   scroll instead of forcing the region taller. */
+/* Canvas-first split: the drawing surface IS the centerpiece of this app, so
+   it gets the dominant share of the work area (≈62%). The palette still gets a
+   guaranteed, usable share (≈38%, never below 120px) and scrolls internally
+   for the rest of the 879 characters. Both have explicit floors so neither
+   collapses on a short window. flex: <grow> <shrink> <basis> = ratio with min. */
 #edit.drawing .canvas-dock {
-  flex: 5 1 0;
-  min-height: 84px;
+  flex: 8 1 240px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
 }
 #edit.drawing .sketch-bar { flex: 0 0 auto; }
 #edit.drawing .sketch-view {
-  flex: 1 1 0;          /* height comes from the dock's flex share */
-  min-height: 44px;     /* can shrink hard on tiny windows; scrolls internally */
+  flex: 1 1 0;          /* fills the dock; height comes from the dock's share */
+  min-height: 180px;    /* enough to show the full 12-row grid comfortably */
   max-height: none;     /* base keeps width:fit-content so no wasted green margin */
 }
 #edit.drawing .field label { margin-bottom: 3px; }
@@ -849,11 +849,12 @@ body.editor .export-bar { display: block; }
   cursor: pointer;
   padding: 0 4px;
 }
-/* favorites keeps its natural height; the palette gets the bigger fixed share
-   (6 vs the canvas dock's 5) so it's always the dominant, usable surface. */
+/* Palette: secondary to the canvas but always reachable and scrollable. Fixed
+   floor of 120px so it never disappears, and a smaller flex grow weight than
+   the canvas so the canvas stays the centerpiece. */
 #edit.drawing .draw-workspace > .field:last-child {
-  flex: 6 1 0;
-  min-height: 0;
+  flex: 5 1 120px;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
