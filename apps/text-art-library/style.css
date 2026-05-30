@@ -886,25 +886,17 @@ body.editor .export-bar { display: block; }
   #edit.drawing .modal-foot { padding: 8px 16px 12px; }
   /* Title h3 smaller on phone to save the vertical space for tools. */
   #edit.drawing .modal-head h3 { font-size: 16px; }
-  #edit .save-sheet { padding: 20px 16px; }
 }
 
-/* ===== Toggle-in-head + save sheet (space-reclaim redesign) ===============
-   The Type⇄Draw toggle now lives in the modal head, and Title/Tags only appear
-   in a naming sheet at save time. Together this reclaims ~100px of vertical
-   chrome in draw mode and hands it to the canvas + palette. */
+/* ===== Editor redesign: toggle-in-head + save sheet (reclaimed chrome) ===== */
 .modal-head { gap: 8px; }
-.edit-modal .modal-head h3 { margin-right: auto; }   /* push toggle+close right */
+.edit-modal .modal-head h3 { margin-right: auto; }
 .head-toggle { flex: 0 0 auto; }
 .edit-modal .autosave-indicator { margin-left: 0; }
-
 /* Draw mode hides the text-mode art field entirely — this is the reclaimed space. */
 #edit.drawing .art-field-wrap { display: none; }
-
 /* Anchor the absolutely-positioned save sheet to the editor modal. */
 .edit-modal { position: relative; }
-
-/* Save / naming sheet — covers the editor only while naming the piece. */
 .save-sheet {
   display: none;
   position: absolute;
@@ -923,6 +915,7 @@ body.editor .export-bar { display: block; }
 .save-sheet .field input { width: 100%; box-sizing: border-box; }
 .save-sheet-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
 .label-dim { color: var(--ink-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+@media (max-width: 600px) { .save-sheet { padding: 20px 16px; } }
 
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {

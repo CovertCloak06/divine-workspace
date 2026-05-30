@@ -1109,12 +1109,12 @@ function openAdd() {
   els.editTitle.textContent = 'Add new art';
   els.editTitleInput.value = '';
   els.editTagsInput.value = '';
-  closeSaveSheet();
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
+  closeSaveSheet();
   toggleDraw(true); // new art opens straight into the draw canvas (primary feature)
   runAudit();
   renderSketch();
@@ -1128,8 +1128,8 @@ function openEdit(p) {
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
   els.editArtInput.value = p.art || '';
-  closeSaveSheet();
   resetEditHistory(p.art || '');
+  closeSaveSheet();
   toggleDraw(false);
   runAudit();
   renderSketch();
@@ -1139,8 +1139,7 @@ function openEdit(p) {
 function closeEdit() {
   els.edit.classList.remove('open');
   els.edit.classList.remove('drawing');
-  const sheet = document.getElementById('save-sheet');
-  if (sheet) sheet.classList.remove('open');
+  closeSaveSheet();
 }
 els.editClose.addEventListener('click', () => closeEdit());
 els.editCancel.addEventListener('click', () => closeEdit());
@@ -1538,7 +1537,7 @@ els.sketchView.addEventListener('touchmove', (e) => {
 els.sketchView.addEventListener('touchend', endStroke);
 els.sketchView.addEventListener('touchcancel', endStroke);
 
-// Consolidated "Clear": reset to a FRESH blank 27\u00D712 grid so there's always a
+// Consolidated "Clear": reset to a FRESH blank 27×12 grid so there's always a
 // paintable surface (replaces the old separate Blank + Clear buttons).
 function fillBlankGrid() {
   pushEditHistory();
@@ -1548,8 +1547,8 @@ function fillBlankGrid() {
   lastEditSnapshot = els.editArtInput.value;
   renderSketch(true);
   runAudit();
-  if (typeof debouncedAutosave === 'function') debouncedAutosave();
 }
+if (els.sketchFill) els.sketchFill.addEventListener('click', fillBlankGrid);
 if (els.sketchClear) els.sketchClear.addEventListener('click', () => {
   if (!confirm('Clear the canvas and start over with a fresh blank grid?')) return;
   fillBlankGrid();
@@ -1750,14 +1749,27 @@ function newId() {
   return 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 }
 
-els.editSave.addEventListener('click', async () => {
+/* Two-step save: tap Save -> name the piece in the sheet -> confirm. Keeps the
+   Title/Tags fields out of the drawing view so the canvas + palette own it. */
+function openSaveSheet() {
+  if (!state.editor) return;
+  if (!els.editArtInput.value.trim()) { alert('Add some art before saving.'); return; }
+  const sheet = document.getElementById('save-sheet');
+  if (sheet) sheet.classList.add('open');
+  setTimeout(() => { if (els.editTitleInput) els.editTitleInput.focus(); }, 60);
+}
+function closeSaveSheet() {
+  const sheet = document.getElementById('save-sheet');
+  if (sheet) sheet.classList.remove('open');
+}
+async function commitSave() {
   if (!state.editor) return;
   const title = els.editTitleInput.value.trim();
   const tags = els.editTagsInput.value
     .split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
   let art = els.editArtInput.value;
-  if (!title) { alert('Title is required'); return; }
-  if (!art.trim()) { alert('Art is required'); return; }
+  if (!title) { alert('Title is required'); els.editTitleInput.focus(); return; }
+  if (!art.trim()) { alert('Art is required'); closeSaveSheet(); return; }
 
   art = spacesToNbsp(art);
   const { width, height } = measure(art);
@@ -1783,11 +1795,10 @@ els.editSave.addEventListener('click', async () => {
   state.library = next;
   state.deletedIds.delete(piece.id); // editing un-deletes
 
-  els.editSave.disabled = true;
-  els.editSave.textContent = 'Saving…';
+  const confirmBtn = document.getElementById('save-confirm');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Saving…'; }
   const r = await API.savePiece(piece, state.password);
-  els.editSave.disabled = false;
-  els.editSave.textContent = 'Save';
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Save art'; }
 
   if (!r.ok) {
     state.library = prevLib;
@@ -1798,6 +1809,7 @@ els.editSave.addEventListener('click', async () => {
   cacheNow();
   recomputeMerged();
   clearDraft(); // successful save → autosaved draft is now obsolete
+  closeSaveSheet();
   closeEdit();
   render();
   if (r.local) {
@@ -1805,7 +1817,11 @@ els.editSave.addEventListener('click', async () => {
   } else {
     refresh(); // pull in anything another device changed
   }
-});
+}
+
+els.editSave.addEventListener('click', openSaveSheet);
+document.getElementById('save-confirm')?.addEventListener('click', commitSave);
+document.getElementById('save-back')?.addEventListener('click', closeSaveSheet);
 
 async function deletePiece(p) {
   if (!confirm(`Delete "${p.title}"?`)) return;
