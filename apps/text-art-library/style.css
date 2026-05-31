@@ -1456,36 +1456,30 @@ body.editor .export-bar { display: block; }
   -webkit-user-select: none;
   touch-action: none;
   cursor: crosshair;
+  /* wos28: positioning context for the grab-move highlight overlay. */
+  position: relative;
 }
 .sketch-line {
+  /* wos28: ONE continuous text node per line — shapes identically to the
+     card's <pre class="art-render">. No per-character wrappers. */
   white-space: pre;
   min-height: calc(var(--art-line-height) * 1em);
 }
-.sketch-char {
-  /* Hit-test wrapper only — no width/height/alignment overrides. Each
-     painted character renders at its natural glyph width, exactly like
-     `.art-render` does, so the editor preview is a true preview. The
-     data-x/data-y attributes on each span carry the logical grid
-     position for paint/grab handlers; visual layout is whatever the
-     font produces, which is what WoS chat will produce too. */
-  display: inline-block;
-  cursor: crosshair;
-  border-radius: 2px;
-  background: transparent;
-  outline: none;
+/* wos28: grab-move drop highlight layer + cells (replaces per-span .drop-target) */
+.sketch-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
 }
-.sketch-char:hover,
-.sketch-char:active {
-  background: rgba(74, 159, 212, 0.18);
-  outline: none;
-}
-.sketch-empty-cell {
-  /* Empty cells render an NBSP at its natural width — the same width an
-     NBSP has in `.art-render`, so an unpainted row sits at the same
-     visual width as a painted one composed of the same chars. The grid
-     is logical (data-x/data-y), not visual; rendering mirrors the card
-     exactly. */
-  color: transparent;
+.sketch-drop {
+  position: absolute;
+  background: rgba(74, 159, 212, 0.28);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 3px;
+  pointer-events: none;
 }
 .sketch-hint {
   color: var(--ink-card-soft);
