@@ -150,6 +150,27 @@ function spacesToNbsp(s) {
   return s.replace(/ /g, '\u00A0');
 }
 
+/* Strip trailing rows that are entirely whitespace (space, tab, NBSP).
+ * Used by commitSave() before persisting \u2014 Draw mode primes the canvas
+ * as a tall NBSP grid, and rows the user never painted into would
+ * otherwise ship as a dead vertical void below the art. Returns the
+ * input unchanged if no trailing blanks are found. Does not strip
+ * leading or inner blank rows (they can carry intentional positioning)
+ * and does not trim per-row trailing whitespace (it can carry alignment
+ * padding for centered renders). */
+function trimTrailingBlankRows(s) {
+  const lines = s.split('\n');
+  const blank = (row) => {
+    for (let i = 0; i < row.length; i++) {
+      const c = row[i];
+      if (c !== ' ' && c !== '\t' && c !== '\u00A0') return false;
+    }
+    return true;
+  };
+  while (lines.length > 0 && blank(lines[lines.length - 1])) lines.pop();
+  return lines.join('\n');
+}
+
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -965,7 +986,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos23';
+const APP_VERSION = 'wos24';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2208,6 +2229,14 @@ async function commitSave() {
   if (!art.trim()) { alert('Art is required'); closeSaveSheet(); return; }
 
   art = spacesToNbsp(art);
+  // wos24: strip trailing all-blank rows before persisting. Draw mode primes
+  // the canvas as a 27×12 NBSP grid via fillBlankGrid(); if the user only
+  // paints in the top few rows, the rest of the textarea is still pure
+  // NBSP padding, which renders as a tall empty void below the art on every
+  // subsequent view. Only TRAILING rows are dropped — leading and inner
+  // blank rows can carry intentional vertical positioning, and per-row
+  // trailing whitespace can carry intentional horizontal padding.
+  art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
   let piece;
