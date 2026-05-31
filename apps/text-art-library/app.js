@@ -995,7 +995,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos30';
+const APP_VERSION = 'wos31';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2094,6 +2094,12 @@ function fillBlankGrid() {
   lastEditSnapshot = els.editArtInput.value;
   renderSketch(true);
   runAudit();
+  // wos31: persist the cleared state to the autosaved draft immediately.
+  // Setting .value programmatically does NOT fire the input event, so the
+  // debounced autosave never ran \u2014 the draft kept the PRE-clear art and
+  // restored it on reopen ("whatever I cleared comes right back"). Saving
+  // here makes the clear stick across close/reopen.
+  writeDraft();
 }
 if (els.sketchClear) els.sketchClear.addEventListener('click', () => {
   if (!confirm('Clear the canvas and start over with a fresh blank grid?')) return;
