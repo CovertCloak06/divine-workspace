@@ -623,13 +623,29 @@ function syncActiveThemeChip() {
   els.activeThemeRow.hidden = false;
   const flagged = t === '__flagged';
   els.activeThemeChip.classList.toggle('flagged', flagged);
-  const flagCount = Object.keys(state.flags || {}).length;
+  const flagCount = liveFlagCount();
   els.activeThemeLabel.textContent = flagged ? `flagged (${flagCount})` : t;
+}
+
+/* Returns the number of flags whose piece still exists in the live library.
+ * Counting Object.keys(state.flags).length is wrong because flags persist
+ * across art deletions — a piece can be removed from state.merged but its
+ * flag stays in state.flags until explicitly cleared. Using that raw count
+ * for UI labels produces a "flagged (39)" badge that doesn't match the 6
+ * cards the user actually sees in the flagged view. This helper intersects
+ * flags with the actual rendered library so the label matches reality. */
+function liveFlagCount() {
+  const flags = state.flags || {};
+  const library = state.merged || [];
+  if (library.length === 0) return 0;
+  let n = 0;
+  for (const p of library) if (p && p.id in flags) n++;
+  return n;
 }
 
 function syncFlaggedTab() {
   let existing = els.tagStrip.querySelector('.tag.flagged-tab');
-  const flagCount = Object.keys(state.flags).length;
+  const flagCount = liveFlagCount();
   const shouldShow = state.editor && flagCount > 0;
   if (shouldShow) {
     if (!existing) {
@@ -949,7 +965,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos22';
+const APP_VERSION = 'wos23';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
