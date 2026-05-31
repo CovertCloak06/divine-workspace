@@ -926,6 +926,21 @@ if (els.drawerScrim) els.drawerScrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && els.drawer && els.drawer.classList.contains('open')) closeDrawer();
 });
+/* Settings accordion — tap a section head to expand/collapse its body. Only
+   one section is open by default (Themes); future sections (Character
+   Management, Bug Feedback, Chat) will hang off the same pattern. */
+const drawerSectionsRoot = document.getElementById('drawer-sections');
+if (drawerSectionsRoot) {
+  drawerSectionsRoot.addEventListener('click', (e) => {
+    const head = e.target.closest('.drawer-section-head');
+    if (!head) return;
+    const section = head.closest('.drawer-section');
+    if (!section) return;
+    const willOpen = !section.classList.contains('is-open');
+    section.classList.toggle('is-open', willOpen);
+    head.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  });
+}
 // Active-theme chip — tap to clear the filter back to "all"
 if (els.activeThemeChip) {
   els.activeThemeChip.addEventListener('click', () => setActiveTag('all'));
@@ -1965,7 +1980,11 @@ function setupGroupLabelTracker() {
       const heading = groups[0].querySelector('.palette-group-label');
       active = heading ? heading.textContent.trim() : '';
     }
-    labelEl.textContent = active;
+    if (labelEl.textContent !== active) {
+      labelEl.classList.add('is-changing');
+      labelEl.textContent = active;
+      requestAnimationFrame(() => labelEl.classList.remove('is-changing'));
+    }
   }
   palette.addEventListener('scroll', function () {
     if (rafPending) return;

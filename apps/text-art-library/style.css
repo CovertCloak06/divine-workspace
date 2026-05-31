@@ -715,15 +715,15 @@ body.editor .export-bar { display: block; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(138, 168, 200, 0.14);
-  border: 1px solid rgba(138, 168, 200, 0.3);
-  border-radius: 999px;
-  padding: 5px 12px 5px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   cursor: pointer;
   color: var(--ink-dim);
   font-weight: 700;
   font-size: 13px;
-  transition: background .15s, border-color .15s, color .15s;
+  transition: color .15s;
 }
 .draw-switch {
   width: 34px;
@@ -745,11 +745,11 @@ body.editor .export-bar { display: block; }
   transition: transform .15s;
 }
 .draw-toggle.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
 }
-.draw-toggle.active .draw-switch { background: rgba(255, 255, 255, 0.55); }
+.draw-toggle.active .draw-switch { background: var(--accent); }
 .draw-toggle.active .draw-knob { transform: translateX(16px); }
 
 /* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
@@ -965,11 +965,14 @@ body.editor .export-bar { display: block; }
   font-weight: 700;
 }
 .palette-active-group {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink, #fff);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  transition: opacity 180ms ease;
   /* plain text: no background, no border, no rounded pill */
 }
+.palette-active-group.is-changing { opacity: 0.35; }
 /* Hide the per-group inline labels — the dynamic head is the single source. */
 .palette-group-label { display: none; }
 /* Subtle separation between groups so the visual breaks stay legible. */
