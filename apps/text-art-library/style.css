@@ -715,15 +715,15 @@ body.editor .export-bar { display: block; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(138, 168, 200, 0.14);
-  border: 1px solid rgba(138, 168, 200, 0.3);
-  border-radius: 999px;
-  padding: 5px 12px 5px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   cursor: pointer;
   color: var(--ink-dim);
   font-weight: 700;
   font-size: 13px;
-  transition: background .15s, border-color .15s, color .15s;
+  transition: color .15s;
 }
 .draw-switch {
   width: 34px;
@@ -745,11 +745,11 @@ body.editor .export-bar { display: block; }
   transition: transform .15s;
 }
 .draw-toggle.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
 }
-.draw-toggle.active .draw-switch { background: rgba(255, 255, 255, 0.55); }
+.draw-toggle.active .draw-switch { background: var(--accent); }
 .draw-toggle.active .draw-knob { transform: translateX(16px); }
 
 /* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
@@ -965,11 +965,14 @@ body.editor .export-bar { display: block; }
   font-weight: 700;
 }
 .palette-active-group {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink, #fff);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  transition: opacity 180ms ease;
   /* plain text: no background, no border, no rounded pill */
 }
+.palette-active-group.is-changing { opacity: 0.35; }
 /* Hide the per-group inline labels — the dynamic head is the single source. */
 .palette-group-label { display: none; }
 /* Subtle separation between groups so the visual breaks stay legible. */
@@ -1350,10 +1353,54 @@ body.editor .export-bar { display: block; }
   color: #fff;
   border-color: var(--accent);
 }
+/* wos27: WoS-style toolbar — strip the pill containers off the draw-mode
+   tools so they read as plain icon/text controls. Scoped under
+   `#edit.drawing .sketch-bar` so it outranks the padding/font !important
+   override on `#edit.drawing .sketch-bar .tool-btn`. */
+#edit.drawing .sketch-bar #sketch-eraser,
+#edit.drawing .sketch-bar #sketch-undo,
+#edit.drawing .sketch-bar #sketch-clear {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 4px 6px !important;
+  font-size: 14px !important;
+  color: var(--ink);
+}
+#edit.drawing .sketch-bar #sketch-undo {
+  color: #0f88a8 !important;     /* WoS badge blue; arrow-only label */
+  font-size: 20px !important;
+  line-height: 1;
+}
+#edit.drawing .sketch-bar #sketch-eraser.active {
+  color: var(--bad) !important;  /* eraser-on signalled by color, not a pill */
+}
+#edit.drawing .sketch-bar #sketch-eraser:hover,
+#edit.drawing .sketch-bar #sketch-undo:hover,
+#edit.drawing .sketch-bar #sketch-clear:hover {
+  filter: brightness(1.2);
+}
 .sketch-active-char.eraser {
   background: rgba(248, 113, 113, 0.18);
   border-color: var(--bad);
   color: var(--bad);
+}
+/* wos27: chip is now a toggle button between Canvas and Drawing mode. */
+.sketch-active-char {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.sketch-active-char.canvas-mode {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--ink-dim);
+  color: var(--ink);
+}
+.sketch-active-char.empty {
+  background: rgba(255, 255, 255, 0.06);
+  border-style: dashed;
+  border-color: var(--ink-dim);
+  color: var(--ink-dim);
 }
 
 /* Sketch view — click/drag on rendered chars to replace them with the active brush */
@@ -1389,14 +1436,22 @@ body.editor .export-bar { display: block; }
   min-height: 120px;
   max-height: 38vh;
   overflow: auto;
-  /* Same font/weight/spacing/ink as the card renderer so what you paint is what
-     the card shows. */
+  /* PERMANENT FIX (wos26): match `.art-render` byte-for-byte on every
+     property that affects glyph layout. The whole point of Draw mode is
+     "what you paint here is exactly what the card and lightbox will
+     show" — every divergence (wos22 forcing full-width, wos25 boxing
+     cells to 1em) recreated the bug it tried to fix in a different
+     form. The renderer is the source of truth; the editor mirrors it. */
   font-family: var(--art-font);
   font-weight: 700;
   font-size: 18px;
+  letter-spacing: normal;
+  word-spacing: normal;
   line-height: var(--art-line-height);
   color: var(--wos-ink);
   background: var(--wos-bubble);
+  font-variant-east-asian: normal;
+  font-feature-settings: normal;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -1407,12 +1462,13 @@ body.editor .export-bar { display: block; }
   min-height: calc(var(--art-line-height) * 1em);
 }
 .sketch-char {
+  /* Hit-test wrapper only — no width/height/alignment overrides. Each
+     painted character renders at its natural glyph width, exactly like
+     `.art-render` does, so the editor preview is a true preview. The
+     data-x/data-y attributes on each span carry the logical grid
+     position for paint/grab handlers; visual layout is whatever the
+     font produces, which is what WoS chat will produce too. */
   display: inline-block;
-  /* Natural glyph width, left-aligned — box-drawing/blocks tile edge-to-edge
-     exactly like the card render instead of floating centered in padded cells.
-     Hit-testing uses each span's stored x index, not pixel width, so painting
-     is unaffected. */
-  text-align: left;
   cursor: crosshair;
   border-radius: 2px;
   background: transparent;
@@ -1424,14 +1480,11 @@ body.editor .export-bar { display: block; }
   outline: none;
 }
 .sketch-empty-cell {
-  /* Empty cells are a fixed full-width box (1em) — the unit WoS art is built on.
-     Painting a full-width glyph over an empty cell then doesn't change the cell
-     width, so the rest of the row doesn't get pushed sideways. */
-  display: inline-block;
-  width: 1em;
-  text-align: center;
-  background: transparent;
-  outline: none;
+  /* Empty cells render an NBSP at its natural width — the same width an
+     NBSP has in `.art-render`, so an unpainted row sits at the same
+     visual width as a painted one composed of the same chars. The grid
+     is logical (data-x/data-y), not visual; rendering mirrors the card
+     exactly. */
   color: transparent;
 }
 .sketch-hint {

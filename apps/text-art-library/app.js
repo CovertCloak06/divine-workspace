@@ -150,6 +150,37 @@ function spacesToNbsp(s) {
   return s.replace(/ /g, '\u00A0');
 }
 
+/* Strip trailing rows that are entirely whitespace (space, tab, NBSP).
+ * Used by commitSave() before persisting \u2014 Draw mode primes the canvas
+ * as a tall NBSP grid, and rows the user never painted into would
+ * otherwise ship as a dead vertical void below the art. Returns the
+ * input unchanged if no trailing blanks are found. Does not strip
+ * leading or inner blank rows (they can carry intentional positioning)
+ * and does not trim per-row trailing whitespace (it can carry alignment
+ * padding for centered renders). */
+function trimTrailingBlankRows(s) {
+  const lines = s.split('\n');
+  const blank = (row) => {
+    for (let i = 0; i < row.length; i++) {
+      const c = row[i];
+      if (c !== ' ' && c !== '\t' && c !== '\u00A0') return false;
+    }
+    return true;
+  };
+  while (lines.length > 0 && blank(lines[lines.length - 1])) lines.pop();
+  return lines.join('\n');
+}
+
+/* Render-time normalizer: returns art with trailing all-blank rows
+ * stripped, so old pieces saved before the save-time trim (wos24) also
+ * display without their dead NBSP void. Both the card grid and the
+ * lightbox route through this. Editor textarea loads the raw value
+ * directly \u2014 Draw mode needs the canvas headroom, and trim happens
+ * again at save. */
+function displayArt(raw) {
+  return trimTrailingBlankRows(raw || '');
+}
+
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -623,13 +654,29 @@ function syncActiveThemeChip() {
   els.activeThemeRow.hidden = false;
   const flagged = t === '__flagged';
   els.activeThemeChip.classList.toggle('flagged', flagged);
-  const flagCount = Object.keys(state.flags || {}).length;
+  const flagCount = liveFlagCount();
   els.activeThemeLabel.textContent = flagged ? `flagged (${flagCount})` : t;
+}
+
+/* Returns the number of flags whose piece still exists in the live library.
+ * Counting Object.keys(state.flags).length is wrong because flags persist
+ * across art deletions — a piece can be removed from state.merged but its
+ * flag stays in state.flags until explicitly cleared. Using that raw count
+ * for UI labels produces a "flagged (39)" badge that doesn't match the 6
+ * cards the user actually sees in the flagged view. This helper intersects
+ * flags with the actual rendered library so the label matches reality. */
+function liveFlagCount() {
+  const flags = state.flags || {};
+  const library = state.merged || [];
+  if (library.length === 0) return 0;
+  let n = 0;
+  for (const p of library) if (p && p.id in flags) n++;
+  return n;
 }
 
 function syncFlaggedTab() {
   let existing = els.tagStrip.querySelector('.tag.flagged-tab');
-  const flagCount = Object.keys(state.flags).length;
+  const flagCount = liveFlagCount();
   const shouldShow = state.editor && flagCount > 0;
   if (shouldShow) {
     if (!existing) {
@@ -770,7 +817,7 @@ function renderCard(p) {
   prev.className = 'preview';
   const pre = document.createElement('pre');
   pre.className = 'art-render';
-  pre.textContent = p.art || '';
+  pre.textContent = displayArt(p.art);
   prev.appendChild(pre);
   card.appendChild(prev);
 
@@ -926,6 +973,124 @@ if (els.drawerScrim) els.drawerScrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && els.drawer && els.drawer.classList.contains('open')) closeDrawer();
 });
+/* Settings accordion — tap a section head to expand/collapse its body. Only
+   one section is open by default (Themes); future sections (Character
+   Management, Chat) will hang off the same pattern. */
+const drawerSectionsRoot = document.getElementById('drawer-sections');
+if (drawerSectionsRoot) {
+  drawerSectionsRoot.addEventListener('click', (e) => {
+    const head = e.target.closest('.drawer-section-head');
+    if (!head) return;
+    const section = head.closest('.drawer-section');
+    if (!section) return;
+    const willOpen = !section.classList.contains('is-open');
+    section.classList.toggle('is-open', willOpen);
+    head.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  });
+}
+
+/* === Feedback form ===========================================================
+ * Public bug-feedback form in the Settings drawer. POSTs to /api/submit-bug,
+ * which fans out to Anthropic (triage) -> Netlify Blobs (storage) -> GitHub
+ * Issue (tracking) -> Discord webhook (push to phone). Each downstream
+ * integration is optional on the server side; on the client we just render
+ * whatever the function returns.
+ */
+const APP_VERSION = 'wos27';
+
+function captureFeedbackContext() {
+  let editorState = 'locked';
+  if (typeof state !== 'undefined') {
+    if (state.editor) editorState = 'unlocked';
+  }
+  const ctx = {
+    appVersion: APP_VERSION,
+    url: location.pathname + location.search,
+    userAgent: navigator.userAgent.slice(0, 200),
+    viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio || 1 },
+    activeTag: (typeof state !== 'undefined' && state.activeTag) || null,
+    editorState,
+    drawing: !!document.getElementById('edit')?.classList.contains('drawing'),
+    timestamp: new Date().toISOString(),
+  };
+  try {
+    const theme = document.body.className.match(/\bfx-shape-(\w+)/);
+    if (theme) ctx.cardShape = theme[1];
+  } catch {}
+  return ctx;
+}
+
+function renderTriageStatus(triage, issue) {
+  if (!triage || triage.skipped || triage.error) {
+    const note = triage?.skipped
+      ? ' (AI triage not configured on this deploy)'
+      : triage?.error
+      ? ` (triage error: ${triage.error})`
+      : '';
+    return `Report sent.${note}${issue ? ` Tracked as <a href="${issue.url}" target="_blank" rel="noopener">issue #${issue.number}</a>.` : ''}`;
+  }
+  const sev = triage.severity || 'untriaged';
+  const sevClass = `sev-${sev}`;
+  const safeSummary = (triage.summary || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const safeArea = (triage.area || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  let html = `<strong>Report sent.</strong> Claude pre-read it:`;
+  html += `<div class="triage-row"><span class="sev-badge ${sevClass}">${sev}</span>${safeArea ? `<span>${safeArea}</span>` : ''}</div>`;
+  if (safeSummary) html += `<div style="margin-top:6px;">${safeSummary}</div>`;
+  if (issue) html += `<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.7);">Tracked as <a href="${issue.url}" target="_blank" rel="noopener" style="color:#9bd1ff;">issue #${issue.number}</a></div>`;
+  return html;
+}
+
+(function wireFeedbackForm() {
+  const form = document.getElementById('feedback-form');
+  if (!form) return;
+  const descEl = document.getElementById('feedback-description');
+  const reporterEl = document.getElementById('feedback-reporter');
+  const submitBtn = document.getElementById('feedback-submit');
+  const statusEl = document.getElementById('feedback-status');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const description = (descEl.value || '').trim();
+    if (!description) {
+      statusEl.className = 'feedback-status is-error';
+      statusEl.textContent = 'A short description is required.';
+      descEl.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    statusEl.className = 'feedback-status';
+    statusEl.textContent = 'Sending…';
+
+    try {
+      const url = await fnUrl('submit-bug');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description,
+          reporter: (reporterEl.value || '').trim() || null,
+          context: captureFeedbackContext(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        statusEl.className = 'feedback-status is-error';
+        statusEl.textContent = data.error || `Server returned ${res.status}.`;
+        submitBtn.disabled = false;
+        return;
+      }
+      statusEl.className = 'feedback-status is-success';
+      statusEl.innerHTML = renderTriageStatus(data.triage, data.issue);
+      descEl.value = '';
+      submitBtn.disabled = false;
+    } catch (err) {
+      statusEl.className = 'feedback-status is-error';
+      statusEl.textContent = 'Could not reach the server. Check your connection and try again.';
+      submitBtn.disabled = false;
+    }
+  });
+})();
 // Active-theme chip — tap to clear the filter back to "all"
 if (els.activeThemeChip) {
   els.activeThemeChip.addEventListener('click', () => setActiveTag('all'));
@@ -951,8 +1116,8 @@ function openLightbox(p) {
   els.lbTitle.textContent = p.title || 'Untitled';
   // WoS is proportional; show the art exactly as the bubble renders it (it will
   // visibly wrap if a line is too wide) rather than guessing from char counts.
-  els.lbPre.textContent = p.art || '';
-  const m = measure(p.art);
+  els.lbPre.textContent = displayArt(p.art);
+  const m = measure(displayArt(p.art));
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
   els.lbPills.innerHTML = '';
   for (const t of (p.tags || [])) {
@@ -1274,8 +1439,17 @@ function toggleDraw(on) {
   const txt = document.getElementById('draw-toggle-text');
   if (txt) txt.textContent = drawing ? '✏ Draw' : '⌨ Type';
   if (drawing) {
+    // wos27: every entry into Draw mode starts clean — no brush selected, in
+    // Canvas mode — so nothing gets placed until the user picks a character.
+    activeBrush = null;
+    eraserOn = false;
+    canvasMode = true;
+    if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+    if (els.charPalette) els.charPalette.querySelectorAll('.palette-btn.brush-active').forEach((b) => b.classList.remove('brush-active'));
+    if (els.favoritesBar) els.favoritesBar.querySelectorAll('.fav-slot.brush-active').forEach((b) => b.classList.remove('brush-active'));
     ensureBlankCanvas();
     renderSketch(true);
+    updateBrushChip();
   }
 }
 
@@ -1327,8 +1501,9 @@ function insertAtCursor(ch) {
 }
 
 /* ============ 12.5  Sketch view ============ */
-let activeBrush = '❤';
+let activeBrush = null;   // wos27: no default brush — user must pick one to paint
 let eraserOn = false;
+let canvasMode = true;    // wos27: true = Canvas mode (taps don't paint); false = Drawing/Input
 const editHistory = [];      // stack of prior art strings
 const EDIT_HISTORY_MAX = 40;
 let editHistorySuspend = false;
@@ -1360,9 +1535,54 @@ function undoEdit() {
   runAudit();
 }
 
+/* wos27: Canvas/Drawing mode + no-default-brush.
+ *   canvasMode true  → "Canvas mode": taps don't paint (long-press grab-move
+ *                      and scrolling still work, so you can rearrange/look
+ *                      without dropping unwanted characters).
+ *   canvasMode false → "Drawing/Input mode": taps paint activeBrush (or erase).
+ * The chip (#sketch-active-char) is the toggle button between the two. Picking
+ * a palette char selects it AND drops you into Drawing mode so you can paint
+ * right away. */
+function canPaint() {
+  return !canvasMode && (eraserOn || !!activeBrush);
+}
+
+function updateBrushChip() {
+  const chip = els.sketchActiveChar;
+  if (!chip) return;
+  chip.classList.toggle('canvas-mode', canvasMode);
+  chip.classList.toggle('eraser', !canvasMode && eraserOn);
+  chip.classList.toggle('empty', !canvasMode && !eraserOn && !activeBrush);
+  if (canvasMode) {
+    chip.textContent = '✋';
+    chip.title = 'Canvas mode — tap to switch to Drawing';
+    chip.setAttribute('aria-pressed', 'false');
+  } else if (eraserOn) {
+    chip.textContent = '⌫';
+    chip.title = 'Drawing mode (eraser) — tap to switch to Canvas';
+    chip.setAttribute('aria-pressed', 'true');
+  } else if (activeBrush) {
+    chip.textContent = activeBrush;
+    chip.title = 'Drawing mode — tap to switch to Canvas';
+    chip.setAttribute('aria-pressed', 'true');
+  } else {
+    chip.textContent = '·';
+    chip.title = 'Pick a character from the palette to draw';
+    chip.setAttribute('aria-pressed', 'true');
+  }
+}
+
+function toggleCanvasMode() {
+  canvasMode = !canvasMode;
+  updateBrushChip();
+}
+
 function setActiveBrush(ch) {
   activeBrush = ch;
-  if (els.sketchActiveChar) els.sketchActiveChar.textContent = ch;
+  eraserOn = false;     // choosing a paint char clears the eraser
+  canvasMode = false;   // ...and enters Drawing mode so you can paint immediately
+  if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+  updateBrushChip();
   // Highlight the matching palette button so the user can see what's selected.
   if (els.charPalette) {
     for (const b of els.charPalette.querySelectorAll('.palette-btn')) {
@@ -1378,11 +1598,9 @@ function setActiveBrush(ch) {
 
 function setEraser(on) {
   eraserOn = !!on;
+  if (eraserOn) canvasMode = false;   // eraser is a Drawing-mode tool
   if (els.sketchEraser) els.sketchEraser.classList.toggle('active', eraserOn);
-  if (els.sketchActiveChar) {
-    els.sketchActiveChar.classList.toggle('eraser', eraserOn);
-    els.sketchActiveChar.textContent = eraserOn ? '⌫' : activeBrush;
-  }
+  updateBrushChip();
 }
 
 function renderSketch(force) {
@@ -1667,6 +1885,9 @@ function gestureMove(cx, cy) {
     // Moved off the origin cell before the hold fired => paint drag.
     if (cell && (+cell.dataset.y !== gesturePending.y || +cell.dataset.x !== gesturePending.x)) {
       clearTimeout(grabHoldTimer);
+      // wos27: in Canvas mode (or with no brush) a drag places nothing — cancel
+      // the gesture. Long-press grab-move is armed separately and still works.
+      if (!canPaint()) { gesturePending = null; return; }
       startStroke();
       replaceCharAt(gesturePending.y, gesturePending.x);
       paintActive = true;
@@ -1716,9 +1937,13 @@ function gestureUp(cx, cy) {
     return;
   }
   if (gesturePending) {
-    startStroke();
-    replaceCharAt(gesturePending.y, gesturePending.x);
-    endStroke();
+    // wos27: a tap only paints in Drawing mode with a brush/eraser active.
+    // In Canvas mode a tap does nothing (no unwanted characters placed).
+    if (canPaint()) {
+      startStroke();
+      replaceCharAt(gesturePending.y, gesturePending.x);
+      endStroke();
+    }
     gesturePending = null;
     return;
   }
@@ -1800,6 +2025,8 @@ els.sketchUndo.addEventListener('click', undoEdit);
 const textUndoBtn = document.getElementById('text-undo');
 if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
+// wos27: the active-char chip is the Canvas/Drawing mode toggle.
+if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
 
 els.editArtInput.addEventListener('input', () => {
   // user typed/pasted directly — push a history snapshot of the value BEFORE
@@ -1965,7 +2192,11 @@ function setupGroupLabelTracker() {
       const heading = groups[0].querySelector('.palette-group-label');
       active = heading ? heading.textContent.trim() : '';
     }
-    labelEl.textContent = active;
+    if (labelEl.textContent !== active) {
+      labelEl.classList.add('is-changing');
+      labelEl.textContent = active;
+      requestAnimationFrame(() => labelEl.classList.remove('is-changing'));
+    }
   }
   palette.addEventListener('scroll', function () {
     if (rafPending) return;
@@ -1976,10 +2207,21 @@ function setupGroupLabelTracker() {
   update();
 }
 
+/* Live palette source. Starts as a deep-ish clone of the bundled
+ * PALETTE_GROUPS from palette-data.js. If the admin has saved a custom
+ * palette via the Settings -> Character Palette section, the boot loader
+ * fetches it from /get-palette and replaces this array, then rebuilds.
+ * buildPalette() reads this; never reads PALETTE_GROUPS directly. */
+let LIVE_PALETTE_GROUPS = (typeof PALETTE_GROUPS !== 'undefined' ? PALETTE_GROUPS : []).map((g) => ({
+  label: g.label,
+  wide: !!g.wide,
+  chars: Array.isArray(g.chars) ? [...g.chars] : [],
+}));
+
 function buildPalette() {
   els.charPalette.innerHTML = '';
   const favs = new Set(loadFavorites());
-  for (const group of PALETTE_GROUPS) {
+  for (const group of LIVE_PALETTE_GROUPS) {
     const section = document.createElement('div');
     section.className = 'palette-group';
 
@@ -2059,6 +2301,14 @@ async function commitSave() {
   if (!art.trim()) { alert('Art is required'); closeSaveSheet(); return; }
 
   art = spacesToNbsp(art);
+  // wos24: strip trailing all-blank rows before persisting. Draw mode primes
+  // the canvas as a 27×12 NBSP grid via fillBlankGrid(); if the user only
+  // paints in the top few rows, the rest of the textarea is still pure
+  // NBSP padding, which renders as a tall empty void below the art on every
+  // subsequent view. Only TRAILING rows are dropped — leading and inner
+  // blank rows can carry intentional vertical positioning, and per-row
+  // trailing whitespace can carry intentional horizontal padding.
+  art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
   let piece;
@@ -2215,10 +2465,463 @@ els.btnExport.addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
+/* ============ 14  Character Palette manager (admin-only) ============
+ * Lives in the Menu drawer's "Character Palette" accordion section.
+ * Section is hidden unless body.editor is set (CSS-driven).
+ *
+ * Operations:
+ *   - Tap a character to select it; the action panel under that group shows
+ *     a "Move to" group picker + a Delete button.
+ *   - Add a character: type/paste into the input at the bottom of a group's
+ *     card and hit "+" (or Enter). Accepts multi-character strings (e.g. a
+ *     full kaomoji or a bracket pair).
+ *   - Add a new group: bottom of the section. Empty groups are allowed so
+ *     you can name them first and fill later.
+ *   - Delete a group: × on the group's head, after confirm. Refuses if the
+ *     group still has characters (delete those first or move them).
+ *
+ * Every mutation rebuilds the in-app palette and triggers a debounced save
+ * to /save-palette so the next page load (anywhere) sees the change.
+ */
+let paletteMgrSelected = null; // { groupIndex, charIndex } or null
+let paletteMgrSaveTimer = null;
+const PALETTE_SAVE_DEBOUNCE_MS = 800;
+
+function paletteMgrSetStatus(text, kind) {
+  const el = document.getElementById('palette-mgr-status');
+  if (!el) return;
+  el.className = 'palette-mgr-status' + (kind ? ` is-${kind}` : '');
+  el.textContent = text;
+}
+
+async function paletteMgrSave() {
+  if (!state.editor || !state.password) return;
+  paletteMgrSetStatus('Saving…', 'saving');
+  try {
+    const url = await fnUrl('save-palette');
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.password}`,
+      },
+      body: JSON.stringify({ groups: LIVE_PALETTE_GROUPS }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      paletteMgrSetStatus(`Save failed: ${data.error || res.status}`, 'error');
+      return;
+    }
+    paletteMgrSetStatus('Saved', 'saved');
+    setTimeout(() => {
+      const el = document.getElementById('palette-mgr-status');
+      if (el && el.textContent === 'Saved') paletteMgrSetStatus('');
+    }, 1800);
+  } catch (err) {
+    paletteMgrSetStatus('Save failed: network', 'error');
+  }
+}
+
+function paletteMgrScheduleSave() {
+  if (paletteMgrSaveTimer) clearTimeout(paletteMgrSaveTimer);
+  paletteMgrSaveTimer = setTimeout(paletteMgrSave, PALETTE_SAVE_DEBOUNCE_MS);
+}
+
+function paletteMgrCommitChange() {
+  // Rebuild the in-app palette so the change shows immediately in the editor
+  buildPalette();
+  // Refresh the dynamic group label since group structure may have changed
+  if (typeof refreshGroupLabel === 'function') refreshGroupLabel();
+  // Re-render the manager UI itself
+  renderPaletteManager();
+  // Save (debounced)
+  paletteMgrScheduleSave();
+}
+
+function renderPaletteManager() {
+  const host = document.getElementById('palette-mgr-groups');
+  if (!host) return;
+  host.innerHTML = '';
+
+  LIVE_PALETTE_GROUPS.forEach((group, groupIndex) => {
+    const card = document.createElement('div');
+    card.className = 'palette-mgr-group';
+
+    const head = document.createElement('div');
+    head.className = 'palette-mgr-group-head';
+    const label = document.createElement('span');
+    label.className = 'palette-mgr-group-label';
+    label.textContent = group.label;
+    head.appendChild(label);
+    const delGroupBtn = document.createElement('button');
+    delGroupBtn.type = 'button';
+    delGroupBtn.className = 'palette-mgr-group-delete';
+    delGroupBtn.title = 'Delete this whole group';
+    delGroupBtn.textContent = '×';
+    delGroupBtn.addEventListener('click', () => {
+      if (group.chars.length > 0) {
+        if (!confirm(`Delete the "${group.label}" group and all ${group.chars.length} characters in it?`)) return;
+      } else if (!confirm(`Delete the empty "${group.label}" group?`)) return;
+      LIVE_PALETTE_GROUPS.splice(groupIndex, 1);
+      paletteMgrSelected = null;
+      paletteMgrCommitChange();
+    });
+    head.appendChild(delGroupBtn);
+    card.appendChild(head);
+
+    const chars = document.createElement('div');
+    chars.className = 'palette-mgr-chars';
+    group.chars.forEach((ch, charIndex) => {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'palette-mgr-char' + (group.wide || ch.length > 2 ? ' wide' : '');
+      tile.textContent = paletteLabel(ch);
+      tile.title = ch;
+      if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex && paletteMgrSelected.charIndex === charIndex) {
+        tile.classList.add('is-selected');
+      }
+      tile.addEventListener('click', () => {
+        if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex && paletteMgrSelected.charIndex === charIndex) {
+          paletteMgrSelected = null;
+        } else {
+          paletteMgrSelected = { groupIndex, charIndex };
+        }
+        renderPaletteManager();
+      });
+      chars.appendChild(tile);
+    });
+    card.appendChild(chars);
+
+    // Selected-char action panel — only when selection is in this group
+    if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex) {
+      const selected = group.chars[paletteMgrSelected.charIndex];
+      if (selected) {
+        const info = document.createElement('div');
+        info.className = 'palette-mgr-charinfo';
+
+        const row = document.createElement('div');
+        row.className = 'palette-mgr-charinfo-row';
+        const preview = document.createElement('span');
+        preview.className = 'palette-mgr-charinfo-preview';
+        preview.textContent = selected;
+        row.appendChild(preview);
+
+        const moveLabel = document.createElement('span');
+        moveLabel.textContent = 'Move to';
+        row.appendChild(moveLabel);
+
+        const select = document.createElement('select');
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'choose group…';
+        select.appendChild(placeholder);
+        LIVE_PALETTE_GROUPS.forEach((g, idx) => {
+          if (idx === groupIndex) return;
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = g.label;
+          select.appendChild(opt);
+        });
+        select.addEventListener('change', () => {
+          const targetIdx = parseInt(select.value, 10);
+          if (!Number.isInteger(targetIdx) || targetIdx === groupIndex) return;
+          const ch = group.chars.splice(paletteMgrSelected.charIndex, 1)[0];
+          LIVE_PALETTE_GROUPS[targetIdx].chars.push(ch);
+          paletteMgrSelected = null;
+          paletteMgrCommitChange();
+        });
+        row.appendChild(select);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'palette-mgr-btn danger';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => {
+          group.chars.splice(paletteMgrSelected.charIndex, 1);
+          paletteMgrSelected = null;
+          paletteMgrCommitChange();
+        });
+        row.appendChild(delBtn);
+
+        info.appendChild(row);
+        card.appendChild(info);
+      }
+    }
+
+    // Add-character input
+    const addRow = document.createElement('form');
+    addRow.className = 'palette-mgr-addrow';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Add character…';
+    input.maxLength = 80;
+    addRow.appendChild(input);
+    const addBtn = document.createElement('button');
+    addBtn.type = 'submit';
+    addBtn.className = 'palette-mgr-btn';
+    addBtn.textContent = '+';
+    addRow.appendChild(addBtn);
+    addRow.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = input.value;
+      if (!val || !val.length) return;
+      if (val.length > 80) {
+        paletteMgrSetStatus('Character too long (max 80 chars)', 'error');
+        return;
+      }
+      if (group.chars.includes(val)) {
+        paletteMgrSetStatus('Already in this group', 'error');
+        return;
+      }
+      group.chars.push(val);
+      input.value = '';
+      paletteMgrCommitChange();
+    });
+    card.appendChild(addRow);
+
+    host.appendChild(card);
+  });
+}
+
+(function wirePaletteManager() {
+  const form = document.getElementById('palette-mgr-newgroup');
+  if (!form) return;
+  const input = document.getElementById('palette-mgr-newgroup-input');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const label = (input.value || '').trim();
+    if (!label) return;
+    if (label.length > 60) {
+      paletteMgrSetStatus('Group name too long (max 60 chars)', 'error');
+      return;
+    }
+    if (LIVE_PALETTE_GROUPS.some((g) => g.label === label)) {
+      paletteMgrSetStatus('A group with that name already exists', 'error');
+      return;
+    }
+    LIVE_PALETTE_GROUPS.push({ label, wide: false, chars: [] });
+    input.value = '';
+    paletteMgrCommitChange();
+  });
+})();
+
+async function loadCustomPalette() {
+  try {
+    const url = await fnUrl('get-palette');
+    const res = await fetch(url);
+    if (res.status === 404) return; // no custom palette yet
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.groups)) return;
+    // Sanitize incoming data — only keep well-formed groups/chars
+    const clean = [];
+    for (const g of data.groups) {
+      if (!g || typeof g.label !== 'string' || !Array.isArray(g.chars)) continue;
+      clean.push({
+        label: g.label,
+        wide: !!g.wide,
+        chars: g.chars.filter((c) => typeof c === 'string' && c.length > 0 && c.length <= 80),
+      });
+    }
+    if (clean.length === 0) return;
+    LIVE_PALETTE_GROUPS = clean;
+    buildPalette();
+    if (typeof refreshGroupLabel === 'function') refreshGroupLabel();
+    renderPaletteManager();
+  } catch {
+    // network/parse error — silently fall back to default palette
+  }
+}
+
+/* ============ Site Text manager (wos21) ===================================
+ * Lets the admin edit the chrome text — site title, tagline, share-bar URL
+ * label, add-button label, search placeholder, footer — from the drawer.
+ * Mirrors the palette-manager pattern: debounced autosave on change, status
+ * line shows Saving… → Saved, falls back silently if the network is down.
+ *
+ * Data flow:
+ *   - Defaults live in index.html (the literal text in each [data-st] node)
+ *   - On boot: capture defaults, then apply localStorage cache (already done
+ *     by the pre-paint script in index.html), then fetch from get-site-text
+ *     and apply any newer customizations.
+ *   - On admin edit: write to DOM live → cache to localStorage → debounced
+ *     POST to save-site-text.
+ *
+ * Keys are validated server-side in save-site-text.js; we additionally
+ * trim and reject empty values client-side so the form can't accidentally
+ * clear the page chrome to whitespace.
+ */
+const SITE_TEXT_CACHE_KEY = 'frostline:siteText:v1';
+const SITE_TEXT_SAVE_DEBOUNCE_MS = 500;
+const SITE_TEXT_KEYS = [
+  'siteTitle',
+  'tagline',
+  'shareUrlLabel',
+  'addButtonLabel',
+  'searchPlaceholder',
+  'footerText',
+];
+
+const SITE_TEXT_DEFAULTS = {};
+let siteTextSaveTimer = null;
+
+function siteTextCaptureDefaults() {
+  // Run before any custom text is applied so we always know the originals.
+  // Note: by the time this runs, the pre-paint script in index.html may
+  // have already replaced [data-st] textContent with cached values. To
+  // avoid recording cache values as "defaults", we use the cached values
+  // ONLY if no cache exists; otherwise capture is a no-op.
+  if (Object.keys(SITE_TEXT_DEFAULTS).length > 0) return;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(SITE_TEXT_CACHE_KEY) || 'null'); } catch {}
+  document.querySelectorAll('[data-st]').forEach((el) => {
+    const key = el.getAttribute('data-st');
+    const attr = el.getAttribute('data-st-attr');
+    const current = attr ? el.getAttribute(attr) : el.textContent;
+    if (cached && typeof cached[key] === 'string') {
+      // Pre-paint script already swapped this in; we don't know the
+      // original. Falling back to current is fine — the only thing
+      // defaults are used for is the "Reset to defaults" button, and
+      // a reset on a cached page still produces a sensible value
+      // (whatever the cached one was) until the next deploy.
+      SITE_TEXT_DEFAULTS[key] = current || '';
+    } else {
+      SITE_TEXT_DEFAULTS[key] = (current || '').trim();
+    }
+  });
+}
+
+function siteTextApply(text) {
+  if (!text || typeof text !== 'object') return;
+  document.querySelectorAll('[data-st]').forEach((el) => {
+    const key = el.getAttribute('data-st');
+    const val = text[key];
+    if (typeof val !== 'string' || val.length === 0) return;
+    const attr = el.getAttribute('data-st-attr');
+    if (attr) el.setAttribute(attr, val);
+    else el.textContent = val;
+  });
+}
+
+function siteTextSetStatus(msg, kind) {
+  const el = document.getElementById('site-text-status');
+  if (!el) return;
+  el.className = 'site-text-status' + (kind ? ` is-${kind}` : '');
+  el.textContent = msg;
+}
+
+function siteTextReadForm() {
+  const out = {};
+  SITE_TEXT_KEYS.forEach((key) => {
+    const input = document.querySelector(`[data-st-field="${key}"]`);
+    if (!input) return;
+    const v = (input.value || '').trim();
+    if (v.length > 0) out[key] = v;
+  });
+  return out;
+}
+
+function siteTextFillForm(text) {
+  SITE_TEXT_KEYS.forEach((key) => {
+    const input = document.querySelector(`[data-st-field="${key}"]`);
+    if (!input) return;
+    const val = (text && typeof text[key] === 'string') ? text[key] : (SITE_TEXT_DEFAULTS[key] || '');
+    input.value = val;
+  });
+}
+
+async function siteTextSave() {
+  if (!state.editor || !state.password) return;
+  const text = siteTextReadForm();
+  siteTextSetStatus('Saving…', 'saving');
+  try {
+    const url = await fnUrl('save-site-text');
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.password}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      siteTextSetStatus(`Save failed: ${data.error || res.status}`, 'error');
+      return;
+    }
+    try { localStorage.setItem(SITE_TEXT_CACHE_KEY, JSON.stringify(text)); } catch {}
+    siteTextSetStatus('Saved', 'saved');
+    setTimeout(() => {
+      const el = document.getElementById('site-text-status');
+      if (el && el.textContent === 'Saved') siteTextSetStatus('');
+    }, 1800);
+  } catch {
+    siteTextSetStatus('Save failed: network', 'error');
+  }
+}
+
+function siteTextScheduleSave() {
+  if (siteTextSaveTimer) clearTimeout(siteTextSaveTimer);
+  siteTextSaveTimer = setTimeout(siteTextSave, SITE_TEXT_SAVE_DEBOUNCE_MS);
+}
+
+function setupSiteTextEditor() {
+  const form = document.getElementById('site-text-form');
+  if (!form) return;
+  // Live-apply each keystroke to the DOM so the admin sees the change
+  // immediately (same UX as the palette manager), then schedule a save.
+  form.addEventListener('input', (e) => {
+    const input = e.target.closest('[data-st-field]');
+    if (!input) return;
+    const key = input.getAttribute('data-st-field');
+    const partial = {};
+    const v = (input.value || '').trim();
+    partial[key] = v.length > 0 ? v : (SITE_TEXT_DEFAULTS[key] || '');
+    siteTextApply(partial);
+    siteTextScheduleSave();
+  });
+  const resetBtn = document.getElementById('site-text-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Reset all site text to defaults?')) return;
+      siteTextFillForm({});
+      siteTextApply(SITE_TEXT_DEFAULTS);
+      try { localStorage.removeItem(SITE_TEXT_CACHE_KEY); } catch {}
+      siteTextScheduleSave();
+    });
+  }
+}
+
+async function loadCustomSiteText() {
+  try {
+    const url = await fnUrl('get-site-text');
+    const res = await fetch(url);
+    if (res.status === 404) {
+      // No custom text saved — pre-fill the form with defaults so the
+      // admin sees what's currently displayed.
+      siteTextFillForm({});
+      return;
+    }
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data.text || typeof data.text !== 'object') return;
+    siteTextApply(data.text);
+    siteTextFillForm(data.text);
+    try { localStorage.setItem(SITE_TEXT_CACHE_KEY, JSON.stringify(data.text)); } catch {}
+  } catch {
+    // network/parse error — leave the in-HTML defaults alone
+  }
+}
+
 /* ============ 15  Init ============ */
 buildPalette();
 buildFavoritesBar();
 setupGroupLabelTracker();
+renderPaletteManager();
+loadCustomPalette();
+siteTextCaptureDefaults();
+setupSiteTextEditor();
+loadCustomSiteText();
 boot().catch((err) => {
   console.error('boot failed', err);
   renderEmpty('Failed to load. Refresh to try again.');

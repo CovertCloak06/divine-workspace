@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos17">
+  <link rel="stylesheet" href="style.css?v=wos27">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -103,6 +103,12 @@
       padding: 18px 18px 12px;
       border-bottom: 1px solid rgba(123, 169, 220, 0.18);
     }
+    .drawer-head-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drawer-snowflake { flex: 0 0 auto; }
     .drawer-head h2 {
       margin: 0;
       font-size: 18px;
@@ -121,13 +127,58 @@
       font-family: inherit;
     }
     .drawer-close:hover { color: #fff; }
-    .drawer-list {
+    .drawer-sections {
       flex: 1;
       overflow-y: auto;
       padding: 0;
       display: flex;
       flex-direction: column;
+    }
+    .drawer-section { display: flex; flex-direction: column; }
+    .drawer-section + .drawer-section {
+      border-top: 1px solid rgba(123, 169, 220, 0.18);
+    }
+    .drawer-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: rgba(13, 26, 46, 0.55);
+      color: #cfe1f5;
+      border: 0;
+      padding: 14px 20px;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 120ms, color 120ms;
+    }
+    .drawer-section-head:hover { background: rgba(13, 26, 46, 0.75); color: #fff; }
+    .drawer-section-caret {
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(-45deg);
+      transition: transform 180ms ease;
+      margin-right: 2px;
+    }
+    .drawer-section.is-open .drawer-section-caret { transform: rotate(45deg); }
+    .drawer-section-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 220ms ease;
+    }
+    .drawer-section.is-open .drawer-section-body {
+      max-height: 2000px;
+    }
+    .drawer-list {
+      display: flex;
+      flex-direction: column;
       gap: 0;
+      padding: 0;
     }
     /* Each drawer entry: full-width box, matches the Add Art button color */
     .drawer-item {
@@ -168,6 +219,367 @@
       background: #f7d0d0;
       color: #5a1a1a;
     }
+
+    /* === Character Palette manager (drawer accordion section, editor-only) === */
+    .drawer-section.editor-only { display: none; }
+    body.editor .drawer-section.editor-only { display: flex; }
+    .palette-manager {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 14px 16px 18px;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+    }
+    .palette-mgr-status {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      min-height: 14px;
+    }
+    .palette-mgr-status.is-saving { color: #b8d8f0; }
+    .palette-mgr-status.is-saved { color: #9ed99e; }
+    .palette-mgr-status.is-error { color: #ffb4b4; }
+    .palette-mgr-groups { display: flex; flex-direction: column; gap: 10px; }
+    .palette-mgr-group {
+      background: rgba(13, 26, 46, 0.45);
+      border: 1px solid rgba(123, 169, 220, 0.18);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .palette-mgr-group-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+    .palette-mgr-group-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.92);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .palette-mgr-group-delete {
+      background: transparent;
+      border: 0;
+      color: rgba(255, 180, 180, 0.6);
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px 6px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .palette-mgr-group-delete:hover {
+      color: #ffb4b4;
+      background: rgba(255, 100, 100, 0.12);
+    }
+    .palette-mgr-chars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .palette-mgr-char {
+      position: relative;
+      background: rgba(74, 159, 212, 0.18);
+      border: 1px solid rgba(123, 169, 220, 0.3);
+      border-radius: 6px;
+      padding: 4px 6px;
+      min-width: 34px;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      color: #fff;
+      transition: background 120ms;
+    }
+    .palette-mgr-char.wide {
+      min-width: 70px;
+      font-size: 13px;
+      padding: 4px 8px;
+    }
+    .palette-mgr-char:hover {
+      background: rgba(74, 159, 212, 0.35);
+    }
+    .palette-mgr-char.is-selected {
+      background: rgba(255, 215, 100, 0.25);
+      border-color: rgba(255, 215, 100, 0.65);
+    }
+    .palette-mgr-charinfo {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      background: rgba(74, 159, 212, 0.1);
+      border: 1px solid rgba(74, 159, 212, 0.25);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .palette-mgr-charinfo.hidden { display: none; }
+    .palette-mgr-charinfo-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .palette-mgr-charinfo-preview {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .palette-mgr-charinfo select {
+      background: rgba(13, 26, 46, 0.7);
+      border: 1px solid rgba(123, 169, 220, 0.4);
+      border-radius: 6px;
+      color: #fff;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      max-width: 100%;
+    }
+    .palette-mgr-addrow {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .palette-mgr-addrow input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(13, 26, 46, 0.55);
+      border: 1px solid rgba(123, 169, 220, 0.25);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+    }
+    .palette-mgr-addrow input:focus {
+      outline: 0;
+      border-color: rgba(123, 169, 220, 0.6);
+    }
+    .palette-mgr-btn {
+      background: rgba(123, 169, 220, 0.25);
+      border: 1px solid rgba(123, 169, 220, 0.4);
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 120ms;
+      flex: 0 0 auto;
+    }
+    .palette-mgr-btn:hover { background: rgba(123, 169, 220, 0.4); }
+    .palette-mgr-btn:active { background: rgba(123, 169, 220, 0.55); }
+    .palette-mgr-btn.primary {
+      background: linear-gradient(180deg, #79bef0 0%, #4ea4dc 55%, #2e7ec0 100%);
+      border-color: transparent;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+    .palette-mgr-btn.primary:hover { filter: brightness(1.08); }
+    .palette-mgr-btn.danger {
+      background: rgba(201, 92, 92, 0.25);
+      border-color: rgba(201, 92, 92, 0.5);
+    }
+    .palette-mgr-btn.danger:hover { background: rgba(201, 92, 92, 0.45); }
+    .palette-mgr-newgroup {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+      padding-top: 6px;
+      border-top: 1px solid rgba(123, 169, 220, 0.15);
+    }
+    .palette-mgr-newgroup input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(13, 26, 46, 0.55);
+      border: 1px solid rgba(123, 169, 220, 0.25);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #fff;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-size: 13px;
+    }
+    .palette-mgr-newgroup input:focus {
+      outline: 0;
+      border-color: rgba(123, 169, 220, 0.6);
+    }
+
+    /* === Feedback form (drawer accordion section) === */
+    .feedback-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+    }
+    .feedback-field { display: flex; flex-direction: column; gap: 4px; }
+    .feedback-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: rgba(255, 255, 255, 0.78);
+      text-transform: uppercase;
+    }
+    .feedback-hint {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    .feedback-form input[type="text"],
+    .feedback-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(13, 26, 46, 0.55);
+      border: 1px solid rgba(123, 169, 220, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.4;
+      resize: vertical;
+      min-height: 0;
+    }
+    .feedback-form textarea { min-height: 96px; }
+    .feedback-form input[type="text"]:focus,
+    .feedback-form textarea:focus {
+      outline: 0;
+      border-color: rgba(123, 169, 220, 0.7);
+      background: rgba(13, 26, 46, 0.75);
+    }
+    .feedback-submit {
+      align-self: flex-start;
+      background: linear-gradient(180deg, #79bef0 0%, #4ea4dc 55%, #2e7ec0 100%);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: filter 120ms;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+    .feedback-submit:hover:not(:disabled) { filter: brightness(1.08); }
+    .feedback-submit:active:not(:disabled) { filter: brightness(0.92); }
+    .feedback-submit:disabled { opacity: 0.6; cursor: default; }
+    .feedback-status {
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.85);
+      min-height: 0;
+    }
+    .feedback-status:empty { display: none; }
+    .feedback-status.is-error { color: #ffb4b4; }
+    .feedback-status.is-success {
+      background: rgba(74, 159, 212, 0.12);
+      border: 1px solid rgba(74, 159, 212, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .feedback-status .triage-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+    .feedback-status .sev-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .feedback-status .sev-P1 { background: #c95c5c; color: #fff; }
+    .feedback-status .sev-P2 { background: #d68a3c; color: #fff; }
+    .feedback-status .sev-P3 { background: #c9a534; color: #2a2008; }
+    .feedback-status .sev-cosmetic { background: #5b8fc0; color: #fff; }
+    .feedback-status .sev-untriaged { background: #6b7480; color: #fff; }
+
+    /* === Site Text manager (drawer accordion section, editor-only) === */
+    .site-text-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 16px 18px;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+    }
+    .site-text-status {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      min-height: 14px;
+    }
+    .site-text-status.is-saving { color: #b8d8f0; }
+    .site-text-status.is-saved { color: #9ed99e; }
+    .site-text-status.is-error { color: #ffb4b4; }
+    .site-text-field { display: flex; flex-direction: column; gap: 4px; }
+    .site-text-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: rgba(255, 255, 255, 0.78);
+      text-transform: uppercase;
+    }
+    .site-text-form input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(13, 26, 46, 0.55);
+      border: 1px solid rgba(123, 169, 220, 0.3);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .site-text-form input[type="text"]:focus {
+      outline: 0;
+      border-color: rgba(123, 169, 220, 0.7);
+      background: rgba(13, 26, 46, 0.75);
+    }
+    .site-text-actions {
+      display: flex;
+      gap: 6px;
+      padding-top: 4px;
+    }
+    .site-text-btn {
+      background: rgba(123, 169, 220, 0.25);
+      border: 1px solid rgba(123, 169, 220, 0.4);
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 120ms;
+    }
+    .site-text-btn:hover { background: rgba(123, 169, 220, 0.4); }
+    .site-text-btn.danger {
+      background: rgba(201, 92, 92, 0.2);
+      border-color: rgba(201, 92, 92, 0.45);
+    }
+    .site-text-btn.danger:hover { background: rgba(201, 92, 92, 0.4); }
 
     /* === Active-theme box (shows current filter under search bar) === */
     /* When the active-theme row is showing, collapse the spacing so the box
@@ -594,18 +1006,114 @@
   })();
   </script>
 
-  <!-- Themes drawer (hamburger menu) -->
+  <!-- Menu drawer (hamburger menu) -->
   <div class="drawer-scrim" id="drawer-scrim" hidden></div>
-  <aside class="themes-drawer" id="themes-drawer" hidden aria-hidden="true" aria-label="Themes">
+  <aside class="themes-drawer" id="themes-drawer" hidden aria-hidden="true" aria-label="Menu">
     <div class="drawer-head">
-      <h2>Themes</h2>
-      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close themes menu">×</button>
+      <span class="drawer-head-title">
+        <svg class="drawer-snowflake" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-50 -50 100 100" aria-hidden="true">
+          <g fill="#4a9fd4">
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" />
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(60)" />
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(120)" />
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(180)" />
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(240)" />
+            <polygon points="0,-46 13,-22 0,-7 -13,-22" transform="rotate(300)" />
+          </g>
+        </svg>
+        <h2>Menu</h2>
+      </span>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close menu">×</button>
     </div>
-    <nav class="drawer-list" id="drawer-list" role="list"></nav>
+    <div class="drawer-sections" id="drawer-sections">
+      <section class="drawer-section is-open" data-section="themes">
+        <button class="drawer-section-head" type="button" aria-expanded="true" aria-controls="drawer-section-themes">
+          <span class="drawer-section-title">Themes</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-themes">
+          <nav class="drawer-list" id="drawer-list" role="list"></nav>
+        </div>
+      </section>
+      <section class="drawer-section editor-only" data-section="palette">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-palette">
+          <span class="drawer-section-title">Character Palette</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-palette">
+          <div class="palette-manager" id="palette-manager">
+            <div class="palette-mgr-status" id="palette-mgr-status" role="status" aria-live="polite"></div>
+            <div class="palette-mgr-groups" id="palette-mgr-groups"></div>
+            <form class="palette-mgr-newgroup" id="palette-mgr-newgroup">
+              <input type="text" id="palette-mgr-newgroup-input" maxlength="60" placeholder="New group name (e.g. Cats)" autocomplete="off">
+              <button type="submit" class="palette-mgr-btn primary">+ Add group</button>
+            </form>
+          </div>
+        </div>
+      </section>
+      <section class="drawer-section editor-only" data-section="site-text">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-site-text">
+          <span class="drawer-section-title">Site Text</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-site-text">
+          <form class="site-text-form" id="site-text-form" novalidate>
+            <div class="site-text-status" id="site-text-status" role="status" aria-live="polite"></div>
+            <label class="site-text-field">
+              <span class="site-text-label">Site title</span>
+              <input type="text" id="st-siteTitle" data-st-field="siteTitle" maxlength="40" autocomplete="off">
+            </label>
+            <label class="site-text-field">
+              <span class="site-text-label">Tagline</span>
+              <input type="text" id="st-tagline" data-st-field="tagline" maxlength="140" autocomplete="off">
+            </label>
+            <label class="site-text-field">
+              <span class="site-text-label">Share-bar URL label</span>
+              <input type="text" id="st-shareUrlLabel" data-st-field="shareUrlLabel" maxlength="80" autocomplete="off">
+            </label>
+            <label class="site-text-field">
+              <span class="site-text-label">Add button label</span>
+              <input type="text" id="st-addButtonLabel" data-st-field="addButtonLabel" maxlength="30" autocomplete="off">
+            </label>
+            <label class="site-text-field">
+              <span class="site-text-label">Search placeholder</span>
+              <input type="text" id="st-searchPlaceholder" data-st-field="searchPlaceholder" maxlength="50" autocomplete="off">
+            </label>
+            <label class="site-text-field">
+              <span class="site-text-label">Footer</span>
+              <input type="text" id="st-footerText" data-st-field="footerText" maxlength="150" autocomplete="off">
+            </label>
+            <div class="site-text-actions">
+              <button type="button" class="site-text-btn danger" id="site-text-reset">Reset to defaults</button>
+            </div>
+          </form>
+        </div>
+      </section>
+      <section class="drawer-section" data-section="feedback">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-feedback">
+          <span class="drawer-section-title">Send Feedback</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-feedback">
+          <form class="feedback-form" id="feedback-form" novalidate>
+            <label class="feedback-field">
+              <span class="feedback-label">Name <span class="feedback-hint">(optional)</span></span>
+              <input type="text" id="feedback-reporter" maxlength="80" autocomplete="off" placeholder="Anonymous">
+            </label>
+            <label class="feedback-field">
+              <span class="feedback-label">What went wrong?</span>
+              <textarea id="feedback-description" rows="4" maxlength="4000" required placeholder="The Save button stays grayed out after I draw a heart…"></textarea>
+            </label>
+            <button type="submit" class="feedback-submit" id="feedback-submit">Send report</button>
+            <div class="feedback-status" id="feedback-status" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
+    </div>
   </aside>
 
   <header class="header">
-    <button class="hamburger-btn" id="hamburger" type="button" aria-label="Open themes menu" aria-expanded="false" aria-controls="themes-drawer">
+    <button class="hamburger-btn" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="themes-drawer">
       <span class="hamburger-bars" aria-hidden="true">
         <span></span>
         <span></span>
@@ -626,12 +1134,12 @@
             </g>
           </svg>
         </button>
-        <h1 class="title">Frostline</h1>
+        <h1 class="title" data-st="siteTitle">Frostline</h1>
       </div>
-      <p class="subtitle">Curated text art for Whiteout Survival chat</p>
+      <p class="subtitle" data-st="tagline">Curated text art for Whiteout Survival chat</p>
       <button class="share-bar" id="share-bar" type="button">
         <span>🔗</span>
-        <span class="url">frostline-art.netlify.app</span>
+        <span class="url" data-st="shareUrlLabel">frostline-art.netlify.app</span>
         <span class="cta">Copy link</span>
       </button>
     </div>
@@ -667,7 +1175,7 @@
     </svg>
     <div class="controls-inner" style="font-weight: 700; font-family: Fredoka">
       <div class="search-row" style="color: rgb(191, 236, 206)">
-        <input class="search-input" id="search" type="text" placeholder="Search art…" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
+        <input class="search-input" id="search" type="text" placeholder="Search art…" data-st-attr="placeholder" data-st="searchPlaceholder" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
       </div>
       <div class="active-theme-row" id="active-theme-row" hidden>
         <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
@@ -693,7 +1201,7 @@
   </nav>
 
   <div class="add-row" style="color: rgb(115, 168, 137)">
-    <button class="btn-add" id="btn-add" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
+    <button class="btn-add" id="btn-add" data-st="addButtonLabel" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
   </div>
 
   <main class="grid" id="grid" style="border-color: rgb(58, 41, 86)">
@@ -705,7 +1213,7 @@
     <button class="btn-lock" id="btn-lock" type="button" title="Lock editor (sign out)" aria-label="Lock editor">🔒</button>
   </div>
 
-  <footer class="footer">
+  <footer class="footer" data-st="footerText">
     Frostline · Submit your own art
   </footer>
 
@@ -801,9 +1309,9 @@
         <div class="draw-workspace draw-only">
           <div class="canvas-dock">
             <div class="sketch-bar" id="sketch-bar">
-              <span class="sketch-active-char" id="sketch-active-char">❤</span>
+              <button type="button" class="sketch-active-char canvas-mode" id="sketch-active-char" aria-pressed="false" title="Canvas mode — tap to switch to Drawing">✋</button>
               <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells">⌫ Erase</button>
-              <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)">↶ Undo</button>
+              <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)" aria-label="Undo">↶</button>
               <button class="tool-btn" id="sketch-clear" title="Start over with a fresh blank grid" style="margin-left:auto">🗑 Clear</button>
             </div>
             <div class="sketch-view" id="sketch-view"></div>
@@ -853,9 +1361,29 @@
     </div>
   </div>
 
+  <!-- Anti-FOUC for custom site text (wos21). Runs right after the body
+       elements with [data-st] have been parsed, before app.js fires. If
+       the admin has saved custom chrome text, the cached values land in
+       the DOM during the same task as parsing — no visible swap. -->
+  <script>
+  (function () {
+    try {
+      var cached = JSON.parse(localStorage.getItem('frostline:siteText:v1') || 'null');
+      if (!cached || typeof cached !== 'object') return;
+      document.querySelectorAll('[data-st]').forEach(function (el) {
+        var key = el.getAttribute('data-st');
+        var val = cached[key];
+        if (typeof val !== 'string' || val.length === 0) return;
+        var attr = el.getAttribute('data-st-attr');
+        if (attr) el.setAttribute(attr, val);
+        else el.textContent = val;
+      });
+    } catch (e) { /* ignore */ }
+  })();
+  </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos17"></script>
+  <script src="app.js?v=wos27"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

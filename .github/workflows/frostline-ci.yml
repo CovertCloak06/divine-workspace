@@ -1,0 +1,59 @@
+name: CI — Frostline
+
+# Lightweight CI for the Frostline text-art app. Runs on every push and PR
+# that touches the app. The syntax check is a HARD gate — a JS syntax error
+# is precisely what breaks the Netlify build, so we catch it here before it
+# ever reaches a deploy preview. Biome lint runs as INFORMATIONAL for now
+# (the existing code has pre-existing style findings); once those are cleaned
+# up, drop `continue-on-error` on the lint step to promote it to a hard gate.
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'apps/text-art-library/**'
+      - '.github/workflows/frostline-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/text-art-library/**'
+      - '.github/workflows/frostline-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Syntax + lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # HARD GATE — fail the job on any JS syntax error.
+      - name: JS syntax check (node --check)
+        working-directory: apps/text-art-library
+        run: |
+          set -uo pipefail
+          fail=0
+          while IFS= read -r f; do
+            if node --check "$f"; then
+              echo "ok    $f"
+            else
+              echo "ERROR $f"
+              fail=1
+            fi
+          done < <(find . -name '*.js' -not -path '*/node_modules/*')
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::One or more JS files have syntax errors."
+            exit 1
+          fi
+
+      # INFORMATIONAL — surfaces Biome findings in the log without blocking.
+      - name: Biome lint (informational)
+        continue-on-error: true
+        run: npx --yes @biomejs/biome@1.9.4 check apps/text-art-library --config-path packages/shared-config
