@@ -1392,52 +1392,39 @@ body.editor .export-bar { display: block; }
   min-height: 120px;
   max-height: 38vh;
   overflow: auto;
-  /* Same font/weight/spacing/ink as the card renderer so what you paint is what
-     the card shows. */
+  /* PERMANENT FIX (wos26): match `.art-render` byte-for-byte on every
+     property that affects glyph layout. The whole point of Draw mode is
+     "what you paint here is exactly what the card and lightbox will
+     show" — every divergence (wos22 forcing full-width, wos25 boxing
+     cells to 1em) recreated the bug it tried to fix in a different
+     form. The renderer is the source of truth; the editor mirrors it. */
   font-family: var(--art-font);
   font-weight: 700;
   font-size: 18px;
+  letter-spacing: normal;
+  word-spacing: normal;
   line-height: var(--art-line-height);
   color: var(--wos-ink);
   background: var(--wos-bubble);
+  font-variant-east-asian: normal;
+  font-feature-settings: normal;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
   cursor: crosshair;
-  /* CRITICAL (wos22): force full-width rendering as a belt-and-suspenders
-     hint for fonts that ship full-width Latin variants. The real guarantee
-     of cell uniformity is `.sketch-char { width: 1em }` below — this just
-     helps narrow glyphs visually fill their slot when the font supports it. */
-  font-variant-east-asian: full-width;
-  font-feature-settings: "fwid";
 }
 .sketch-line {
   white-space: pre;
   min-height: calc(var(--art-line-height) * 1em);
 }
 .sketch-char {
+  /* Hit-test wrapper only — no width/height/alignment overrides. Each
+     painted character renders at its natural glyph width, exactly like
+     `.art-render` does, so the editor preview is a true preview. The
+     data-x/data-y attributes on each span carry the logical grid
+     position for paint/grab handlers; visual layout is whatever the
+     font produces, which is what WoS chat will produce too. */
   display: inline-block;
-  /* HARD-FIX (wos22 + wos25): every grid cell is exactly 1em × 1em (with
-     the natural line-height inside) regardless of glyph. Width alone wasn't
-     enough — color emoji (🍪, 🍕) render at the OS's default emoji size
-     ignoring font-size, so they were ~1.5em tall and stretched their entire
-     row vertically, drifting any subsequent column out of alignment. Locking
-     both axes plus clipping anything that overflows guarantees the canvas
-     looks like a real grid. Single-line line-height keeps glyphs anchored
-     to the cell top so emoji don't push neighbors down.
-       - width / height — uniform 1em × 1em-line cell, every glyph occupies the same slot
-       - line-height: 1 — single-line anchor; line spacing comes from .sketch-line
-       - text-align: center — center the glyph in its slot regardless of natural width
-       - vertical-align: top — painted + empty cells share a baseline
-       - overflow: hidden — clip an oversize glyph so it can't push neighbors
-       - font-size: inherit — make sure emoji size scales with the canvas */
-  width: 1em;
-  height: calc(var(--art-line-height, 1.45) * 1em);
-  line-height: 1;
-  font-size: inherit;
-  text-align: center;
-  vertical-align: top;
-  overflow: hidden;
   cursor: crosshair;
   border-radius: 2px;
   background: transparent;
@@ -1449,10 +1436,11 @@ body.editor .export-bar { display: block; }
   outline: none;
 }
 .sketch-empty-cell {
-  /* Empty cells inherit width:1em from .sketch-char above. Keeping the
-     transparent-color treatment so the NBSP placeholder isn't visible. */
-  background: transparent;
-  outline: none;
+  /* Empty cells render an NBSP at its natural width — the same width an
+     NBSP has in `.art-render`, so an unpainted row sits at the same
+     visual width as a painted one composed of the same chars. The grid
+     is logical (data-x/data-y), not visual; rendering mirrors the card
+     exactly. */
   color: transparent;
 }
 .sketch-hint {
