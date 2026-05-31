@@ -88,6 +88,7 @@ const els = {
   editClose: $('edit-close'),
   editTitleInput: $('edit-title-input'),
   editTagsInput: $('edit-tags-input'),
+  editDraftInput: $('edit-draft-input'),
   editArtInput: $('edit-art-input'),
   editPreview: $('edit-preview'),
   editAudit: $('edit-audit'),
@@ -102,7 +103,7 @@ const els = {
   sketchUndo: $('sketch-undo'),
   sketchEraser: $('sketch-eraser'),
   sketchClear: $('sketch-clear'),
-  sketchGrabOne: $('sketch-grab-one'),
+  sketchSelect: $('sketch-select'),
 };
 
 /* ============ 02  Utilities ============ */
@@ -720,6 +721,58 @@ function syncFlaggedTab() {
   syncActiveThemeChip();
 }
 
+/* wos35: admin-only "Drafts" tab. Mirror of syncFlaggedTab but for in-progress
+ * art. Counts non-deleted pieces with .draft truthy. */
+function liveDraftCount() {
+  const library = state.merged || [];
+  let n = 0;
+  for (const p of library) if (p && p.draft) n++;
+  return n;
+}
+function syncDraftsTab() {
+  if (!els.tagStrip) return;
+  let existing = els.tagStrip.querySelector('.tag.drafts-tab');
+  const count = liveDraftCount();
+  const shouldShow = state.editor && count > 0;
+  if (shouldShow) {
+    if (!existing) {
+      existing = document.createElement('button');
+      existing.className = 'tag drafts-tab';
+      existing.dataset.tag = '__drafts';
+      existing.addEventListener('click', () =>
+        setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts'),
+      );
+      els.tagStrip.appendChild(existing);
+    }
+    existing.textContent = `drafts (${count})`;
+    existing.classList.toggle('active', state.activeTag === '__drafts');
+  } else if (existing) {
+    existing.remove();
+    if (state.activeTag === '__drafts') state.activeTag = 'all';
+  }
+  if (els.drawerList) {
+    let drawerDrafts = els.drawerList.querySelector('.drawer-item.drafts-tab');
+    if (shouldShow) {
+      if (!drawerDrafts) {
+        drawerDrafts = document.createElement('button');
+        drawerDrafts.type = 'button';
+        drawerDrafts.className = 'drawer-item drafts-tab';
+        drawerDrafts.dataset.tag = '__drafts';
+        drawerDrafts.setAttribute('role', 'listitem');
+        drawerDrafts.addEventListener('click', () => {
+          setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts');
+          closeDrawer();
+        });
+        els.drawerList.appendChild(drawerDrafts);
+      }
+      drawerDrafts.textContent = `drafts (${count})`;
+      drawerDrafts.classList.toggle('active', state.activeTag === '__drafts');
+    } else if (drawerDrafts) {
+      drawerDrafts.remove();
+    }
+  }
+}
+
 function setActiveTag(tag) {
   state.activeTag = tag;
   for (const b of els.tagStrip.querySelectorAll('.tag')) {
@@ -742,10 +795,21 @@ function renderEmpty(msg) {
 
 function filtered() {
   let list = state.merged;
-  if (state.activeTag === '__flagged') {
-    list = list.filter((p) => p.id in state.flags);
-  } else if (state.activeTag !== 'all') {
-    list = list.filter((p) => Array.isArray(p.tags) && p.tags.includes(state.activeTag));
+  // wos35: drafts are private WIPs — never shown to non-admins, hidden by
+  // default in admin view too. Visible only in the admin-only "__drafts" tab.
+  if (state.activeTag === '__drafts') {
+    if (!state.editor) {
+      list = [];               // public has no access to the drafts view
+    } else {
+      list = list.filter((p) => p && p.draft);
+    }
+  } else {
+    list = list.filter((p) => p && !p.draft);
+    if (state.activeTag === '__flagged') {
+      list = list.filter((p) => p.id in state.flags);
+    } else if (state.activeTag !== 'all') {
+      list = list.filter((p) => Array.isArray(p.tags) && p.tags.includes(state.activeTag));
+    }
   }
   const q = state.query.trim().toLowerCase();
   if (q) {
@@ -759,6 +823,7 @@ function filtered() {
 
 function render() {
   syncFlaggedTab();
+  syncDraftsTab();
   const list = filtered();
   if (!list.length) {
     renderEmpty(state.query || state.activeTag !== 'all'
@@ -782,6 +847,12 @@ function renderCard(p) {
   const title = document.createElement('div');
   title.className = 'card-title';
   title.textContent = p.title || 'Untitled';
+  if (p.draft) {
+    const draftPill = document.createElement('span');
+    draftPill.className = 'draft-pill';
+    draftPill.textContent = 'DRAFT';
+    title.appendChild(draftPill);
+  }
   head.appendChild(title);
 
   // Width warning is decided after layout (in the fit pass below) from the ACTUAL
@@ -864,17 +935,14 @@ function renderCard(p) {
   note.addEventListener('click', (e) => e.stopPropagation());
   card.appendChild(note);
 
-  // copy
-  const copy = document.createElement('button');
-  copy.className = 'copy-btn';
-  copy.textContent = '📋 Copy';
-  copy.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyArt(p.art, copy);
-  });
-  card.appendChild(copy);
+  // wos35: footer is one flex row anchored at the bottom of the card. Before,
+  // Copy was in normal flow while WoS + flag were position:absolute, so the
+  // gap between Copy and the bottom row varied with chip count / flag state
+  // (the "random spacing" the user noticed).
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
 
-  // wos badge
+  // wos badge (left)
   const wos = document.createElement('span');
   wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
   wos.textContent = p.wosVerified ? '✅ WoS' : '? WoS';
@@ -883,9 +951,19 @@ function renderCard(p) {
     e.stopPropagation();
     toggleVerified(p);
   });
-  card.appendChild(wos);
+  footer.appendChild(wos);
 
-  // flag corner
+  // copy (center)
+  const copy = document.createElement('button');
+  copy.className = 'copy-btn';
+  copy.textContent = '📋 Copy';
+  copy.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyArt(p.art, copy);
+  });
+  footer.appendChild(copy);
+
+  // flag corner (right)
   const flag = document.createElement('span');
   flag.className = 'flag-corner';
   const box = document.createElement('span');
@@ -897,7 +975,9 @@ function renderCard(p) {
     e.stopPropagation();
     toggleFlag(p, card, box, flag, note);
   });
-  card.appendChild(flag);
+  footer.appendChild(flag);
+
+  card.appendChild(footer);
 
   // open lightbox on card body click
   card.addEventListener('click', () => openLightbox(p));
@@ -996,7 +1076,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos34';
+const APP_VERSION = 'wos36';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1274,6 +1354,9 @@ function openAdd() {
   els.editTitle.textContent = 'Add new art';
   els.editTitleInput.value = '';
   els.editTagsInput.value = '';
+  // wos35: new art defaults to Draft so the library only shows finished work
+  // by default. Admin can untick to publish straight away.
+  if (els.editDraftInput) els.editDraftInput.checked = true;
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
@@ -1295,6 +1378,7 @@ function openEdit(p) {
   els.editTitle.textContent = 'Edit art';
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
+  if (els.editDraftInput) els.editDraftInput.checked = !!p.draft;
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
   closeSaveSheet();
@@ -1464,6 +1548,9 @@ function resetBrushState() {
   activeBrush = null;
   eraserOn = false;
   canvasMode = true;
+  selectMode = false;     // wos36: leave Select mode on a fresh open
+  clearSelection();
+  if (els.sketchSelect) updateSelectChip();
   if (els.sketchEraser) els.sketchEraser.classList.remove('active');
   if (els.charPalette) els.charPalette.querySelectorAll('.palette-btn.brush-active').forEach((b) => b.classList.remove('brush-active'));
   if (els.favoritesBar) els.favoritesBar.querySelectorAll('.fav-slot.brush-active').forEach((b) => b.classList.remove('brush-active'));
@@ -1682,6 +1769,8 @@ function renderSketch(force) {
     els.sketchView.appendChild(buildLineEl(y, lines[y]));
   }
   ensureOverlay();
+  // wos36: the overlay was just rebuilt empty — restore selection highlight.
+  if (selectMode && selection.size) renderSelectionHighlight();
 }
 
 function replaceCharAt(y, x) {
@@ -1837,31 +1926,22 @@ function writeCell(y, x, ch) {
   runAudit();
 }
 
-/* wos34: One-cell grab mode. When ON, long-press grabs just the pressed cell,
- * not the connected shape — useful when neighbors keep coming along. */
-let grabOneOnly = false;
+/* wos36: precise SELECTION mode. selectMode ON => taps/box-drags build a set
+ * of exactly the cells the user wants; long-press a selected cell drags ONLY
+ * those. Gives full control so you never drag "half a gun" attached to a cat. */
+let selectMode = false;
+let selection = new Set();   // "y,x" keys of currently-selected cells
+let marqueeActive = false;   // true while dragging a selection box
 
 /* Find the connected 2D shape of non-blank cells that includes the pressed
- * cell. wos34: changed from 8-way (orthogonal + diagonal) to 4-way (orthogonal
- * only) — diagonal neighbors were getting dragged along with the cat unless
- * the user wanted them. The whole shape still travels for genuine connections
- * (a row of chars, a stacked face); only chars that ONLY touch by a corner
- * are now left behind. For finer control, the "🤏 One" toolbar toggle grabs
- * exactly one cell. Returns null if the pressed cell is itself blank. */
+ * cell — 4-way (orthogonal only) so corner-touching neighbors are left behind.
+ * Used by the quick long-press grab when NOT in Select mode. Returns null if
+ * the pressed cell is itself blank. */
 function findShape(startY, startX) {
   const lines = els.editArtInput.value.split('\n');
   if (startY < 0 || startY >= lines.length) return null;
   const lineGS = lines.map(graphemes);
   if (startX < 0 || startX >= lineGS[startY].length || isBlankCell(lineGS[startY][startX])) return null;
-  // One-cell grab: just return the pressed cell, skip flood-fill.
-  if (grabOneOnly) {
-    const ch = lineGS[startY][startX];
-    return {
-      cells: [{ y: startY, x: startX, ch }],
-      minY: startY, maxY: startY, minX: startX, maxX: startX,
-      pressDY: 0, pressDX: 0,
-    };
-  }
   const visited = new Set();
   const cells = [];
   const stack = [[startY, startX]];
@@ -1896,32 +1976,124 @@ function findShape(startY, startX) {
 function clearDropTarget() {
   if (overlayEl) overlayEl.innerHTML = '';
 }
+// Draw one overlay box over grid cell (ny,nx) with the given class. Shared by
+// the drop-target preview, the selection highlight, and the marquee preview.
+function overlayCellBox(ny, nx, cls) {
+  if (!overlayEl) return;
+  const view = els.sketchView;
+  if (ny < 0 || ny >= gridH || nx < 0 || nx >= gridW) return;
+  const lineEl = view.children[ny];
+  if (!lineEl || !lineEl.classList || !lineEl.classList.contains('sketch-line')) return;
+  const cells = measureLineCells(lineEl);
+  if (nx >= cells.length) return;
+  const cell = cells[nx];
+  const viewRect = view.getBoundingClientRect();
+  const lineRect = lineEl.getBoundingClientRect();
+  const sl = view.scrollLeft, st = view.scrollTop;
+  const box = document.createElement('div');
+  box.className = cls;
+  box.style.left = ((lineRect.left - viewRect.left) + sl + cell.left) + 'px';
+  box.style.top = ((lineRect.top - viewRect.top) + st) + 'px';
+  box.style.width = Math.max(2, cell.right - cell.left) + 'px';
+  box.style.height = lineRect.height + 'px';
+  overlayEl.appendChild(box);
+}
 function highlightDropShape(shape, releaseY, releaseX) {
   clearDropTarget();
   if (!overlayEl) return;
-  const view = els.sketchView;
-  const viewRect = view.getBoundingClientRect();
-  const sl = view.scrollLeft, st = view.scrollTop;
   const newMinY = releaseY - shape.pressDY;
   const newMinX = releaseX - shape.pressDX;
   for (const c of shape.cells) {
-    const ny = newMinY + (c.y - shape.minY);
-    const nx = newMinX + (c.x - shape.minX);
-    if (ny < 0 || ny >= gridH || nx < 0 || nx >= gridW) continue;
-    const lineEl = view.children[ny];
-    if (!lineEl || !lineEl.classList || !lineEl.classList.contains('sketch-line')) continue;
-    const cells = measureLineCells(lineEl);
-    if (nx >= cells.length) continue;
-    const cell = cells[nx];
-    const lineRect = lineEl.getBoundingClientRect();
-    const box = document.createElement('div');
-    box.className = 'sketch-drop';
-    box.style.left = ((lineRect.left - viewRect.left) + sl + cell.left) + 'px';
-    box.style.top = ((lineRect.top - viewRect.top) + st) + 'px';
-    box.style.width = Math.max(2, cell.right - cell.left) + 'px';
-    box.style.height = lineRect.height + 'px';
-    overlayEl.appendChild(box);
+    overlayCellBox(newMinY + (c.y - shape.minY), newMinX + (c.x - shape.minX), 'sketch-drop');
   }
+}
+
+/* ---- wos36 selection helpers ---- */
+function clearSelection() {
+  selection.clear();
+  marqueeActive = false;
+  if (overlayEl) overlayEl.innerHTML = '';
+}
+// Re-draw the persistent highlight for every selected cell.
+function renderSelectionHighlight() {
+  if (!overlayEl) return;
+  overlayEl.innerHTML = '';
+  if (!selectMode) return;
+  for (const key of selection) {
+    const [y, x] = key.split(',').map(Number);
+    overlayCellBox(y, x, 'sketch-selected');
+  }
+}
+// While dragging a box: show the current selection plus a preview of the
+// non-blank cells the box currently covers.
+function renderMarquee(aY, aX, bY, bX) {
+  if (!overlayEl) return;
+  overlayEl.innerHTML = '';
+  for (const key of selection) {
+    const [y, x] = key.split(',').map(Number);
+    overlayCellBox(y, x, 'sketch-selected');
+  }
+  const y0 = Math.min(aY, bY), y1 = Math.max(aY, bY);
+  const x0 = Math.min(aX, bX), x1 = Math.max(aX, bX);
+  const lineGS = els.editArtInput.value.split('\n').map(graphemes);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (lineGS[y] && x < lineGS[y].length && !isBlankCell(lineGS[y][x])) {
+        overlayCellBox(y, x, 'sketch-marquee');
+      }
+    }
+  }
+}
+// Add every non-blank cell inside the box to the selection (additive).
+function commitMarquee(aY, aX, bY, bX) {
+  const y0 = Math.min(aY, bY), y1 = Math.max(aY, bY);
+  const x0 = Math.min(aX, bX), x1 = Math.max(aX, bX);
+  const lineGS = els.editArtInput.value.split('\n').map(graphemes);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (lineGS[y] && x < lineGS[y].length && !isBlankCell(lineGS[y][x])) selection.add(y + ',' + x);
+    }
+  }
+}
+// Build a movable shape object from the current selection, pressed at (py,px).
+function shapeFromSelection(py, px) {
+  const lineGS = els.editArtInput.value.split('\n').map(graphemes);
+  const cells = [];
+  let minY = Infinity, maxY = -Infinity, minX = Infinity, maxX = -Infinity;
+  for (const key of selection) {
+    const [y, x] = key.split(',').map(Number);
+    const ch = (lineGS[y] && x < lineGS[y].length) ? lineGS[y][x] : ' ';
+    cells.push({ y, x, ch });
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+  }
+  if (!cells.length) return null;
+  return { cells, minY, maxY, minX, maxX, pressDY: py - minY, pressDX: px - minX };
+}
+// Lift a shape off the canvas and start the ghost drag (shared by quick-grab
+// and selection-move).
+function beginShapeDrag(shape, pressY, pressX, clientX, clientY) {
+  pushEditHistory();
+  grabState = shape;
+  els.sketchView.classList.add('grabbing');
+  for (const c of shape.cells) writeCell(c.y, c.x, ' ');
+  grabGhostEl = document.createElement('div');
+  const multi = (shape.maxY > shape.minY) || (shape.maxX > shape.minX);
+  grabGhostEl.className = 'grab-ghost' + (multi ? ' multi' : '');
+  grabGhostEl.textContent = buildGhostText(shape);
+  document.body.appendChild(grabGhostEl);
+  moveGhost(clientX, clientY);
+  highlightDropShape(shape, pressY, pressX);
+  gesturePending = null;
+  paintActive = false;
+}
+function updateSelectChip() {
+  if (!els.sketchSelect) return;
+  els.sketchSelect.classList.toggle('active', selectMode);
+  els.sketchSelect.setAttribute('aria-pressed', selectMode ? 'true' : 'false');
+  els.sketchSelect.textContent = (selectMode && selection.size)
+    ? `⬚ Select (${selection.size})`
+    : '⬚ Select';
 }
 /* Render the shape into a single (multi-line if needed) string for the ghost. */
 function buildGhostText(shape) {
@@ -1946,24 +2118,25 @@ function gestureDown(cx, cy, cell) {
   if (!cell) return;
   gesturePending = { y: cell.y, x: cell.x, clientX: cx, clientY: cy };
   clearTimeout(grabHoldTimer);
+  if (selectMode) {
+    // In Select mode, only a press on an ALREADY-selected cell arms a move
+    // (long-press). Pressing elsewhere becomes a tap-toggle or a box drag,
+    // handled in gestureMove / gestureUp. No painting happens in this mode.
+    if (selection.has(cell.y + ',' + cell.x)) {
+      grabHoldTimer = setTimeout(() => {
+        if (!gesturePending) return;
+        const shape = shapeFromSelection(gesturePending.y, gesturePending.x);
+        if (!shape) return;
+        beginShapeDrag(shape, gesturePending.y, gesturePending.x, gesturePending.clientX, gesturePending.clientY);
+      }, GRAB_HOLD_MS);
+    }
+    return;
+  }
   grabHoldTimer = setTimeout(() => {
     if (!gesturePending) return;
     const shape = findShape(gesturePending.y, gesturePending.x);
     if (!shape) return; // pressed cell is blank; fall back to paint on release
-    pushEditHistory(); // capture pre-grab state so the whole move = one undo
-    grabState = shape;
-    els.sketchView.classList.add('grabbing');
-    // Lift the entire shape (every connected cell) off the canvas.
-    for (const c of shape.cells) writeCell(c.y, c.x, '\u00A0');
-    grabGhostEl = document.createElement('div');
-    const multi = (shape.maxY > shape.minY) || (shape.maxX > shape.minX);
-    grabGhostEl.className = 'grab-ghost' + (multi ? ' multi' : '');
-    grabGhostEl.textContent = buildGhostText(shape);
-    document.body.appendChild(grabGhostEl);
-    moveGhost(gesturePending.clientX, gesturePending.clientY);
-    highlightDropShape(shape, gesturePending.y, gesturePending.x);
-    gesturePending = null;
-    paintActive = false;
+    beginShapeDrag(shape, gesturePending.y, gesturePending.x, gesturePending.clientX, gesturePending.clientY);
   }, GRAB_HOLD_MS);
 }
 
@@ -1973,6 +2146,15 @@ function gestureMove(cx, cy) {
     const cell = cellFromPoint(cx, cy);
     if (!cell) { clearDropTarget(); return; }
     highlightDropShape(grabState, cell.y, cell.x);
+    return;
+  }
+  if (selectMode && gesturePending) {
+    const cell = cellFromPoint(cx, cy);
+    if (cell && (cell.y !== gesturePending.y || cell.x !== gesturePending.x)) {
+      clearTimeout(grabHoldTimer);   // a drag = box-select, not a move
+      marqueeActive = true;
+      renderMarquee(gesturePending.y, gesturePending.x, cell.y, cell.x);
+    }
     return;
   }
   const cell = cellFromPoint(cx, cy);
@@ -2021,6 +2203,13 @@ function gestureUp(cx, cy) {
           writeCell(ny, nx, c.ch);
         }
         placed = true;
+        // wos36: if this was a selection move, re-key the selection to the
+        // cells' new positions so they stay highlighted at the drop site.
+        if (selectMode) {
+          const ns = new Set();
+          for (const c of shape.cells) ns.add((newMinY + (c.y - shape.minY)) + ',' + (newMinX + (c.x - shape.minX)));
+          selection = ns;
+        }
       }
     }
     if (!placed) {
@@ -2028,6 +2217,23 @@ function gestureUp(cx, cy) {
     }
     pushEditHistory();
     endGrab();
+    if (selectMode) { renderSelectionHighlight(); updateSelectChip(); }
+    return;
+  }
+  if (selectMode && gesturePending) {
+    const cell = cellFromPoint(cx, cy);
+    if (marqueeActive) {
+      commitMarquee(gesturePending.y, gesturePending.x, (cell || gesturePending).y, (cell || gesturePending).x);
+      marqueeActive = false;
+    } else {
+      // a tap: toggle the single pressed cell (only non-blank cells select)
+      const key = gesturePending.y + ',' + gesturePending.x;
+      if (selection.has(key)) selection.delete(key);
+      else if (!isBlankCell(cellContent(gesturePending.y, gesturePending.x))) selection.add(key);
+    }
+    gesturePending = null;
+    renderSelectionHighlight();
+    updateSelectChip();
     return;
   }
   if (gesturePending) {
@@ -2107,6 +2313,8 @@ function fillBlankGrid() {
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   lastEditSnapshot = els.editArtInput.value;
+  clearSelection();          // wos36: nothing left to keep selected
+  if (els.sketchSelect) updateSelectChip();
   renderSketch(true);
   runAudit();
   // wos31: persist the cleared state to the autosaved draft immediately.
@@ -2124,10 +2332,17 @@ els.sketchUndo.addEventListener('click', undoEdit);
 const textUndoBtn = document.getElementById('text-undo');
 if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
-if (els.sketchGrabOne) els.sketchGrabOne.addEventListener('click', () => {
-  grabOneOnly = !grabOneOnly;
-  els.sketchGrabOne.classList.toggle('active', grabOneOnly);
-  els.sketchGrabOne.setAttribute('aria-pressed', grabOneOnly ? 'true' : 'false');
+if (els.sketchSelect) els.sketchSelect.addEventListener('click', () => {
+  selectMode = !selectMode;
+  if (selectMode) {
+    // Select mode owns the canvas; turn off paint/eraser so taps don't paint.
+    eraserOn = false;
+    if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+  } else {
+    clearSelection();
+  }
+  updateSelectChip();
+  renderSelectionHighlight();
 });
 // wos27: the active-char chip is the Canvas/Drawing mode toggle.
 if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
@@ -2401,14 +2616,19 @@ async function commitSave() {
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
+  // wos35: read Draft checkbox state. Default to true for new art (private
+  // WIP), false for existing pieces (preserve their published state).
+  const draft = els.editDraftInput ? !!els.editDraftInput.checked : false;
+
   let piece;
   if (editing) {
-    piece = { ...editing, title, tags, art, width, height };
+    piece = { ...editing, title, tags, art, width, height, draft };
   } else {
     piece = {
       id: newId(),
       title, tags, art, width, height,
       wosVerified: false,
+      draft,
     };
   }
 

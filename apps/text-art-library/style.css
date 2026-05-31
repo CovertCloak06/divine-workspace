@@ -349,12 +349,73 @@ body.editor .add-row { display: block; }
   background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: 16px;
-  padding: 14px 14px 32px;
+  /* wos35: reduced bottom padding from 32px to 14px now that the footer is a
+     real flex row instead of absolute-positioned bottom chrome. */
+  padding: 14px;
   position: relative;
   cursor: zoom-in;
   color: var(--ink-card);
   transition: border-color 160ms, transform 160ms, box-shadow 160ms;
+  /* wos35: column flex so .card-footer can margin-top:auto and ALWAYS sit at
+     the bottom of the card regardless of chip count / flag state. Fixes the
+     "random spacing" between Copy and the WoS/flag row. */
+  display: flex;
+  flex-direction: column;
 }
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;        /* push the footer to the bottom of the flex card */
+  padding-top: 12px;
+  min-height: 32px;
+}
+/* wos35: draft pill in the card title — small, dim, all caps so the admin
+   sees at a glance which pieces are still WIP. */
+.draft-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 200, 100, 0.20);
+  color: #f5c47a;
+  border: 1px solid rgba(255, 200, 100, 0.5);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  vertical-align: middle;
+}
+/* Drafts tab in the tag strip / drawer — orange-y to differentiate from the
+   red flagged tab. */
+.tag.drafts-tab,
+.drawer-item.drafts-tab {
+  background: rgba(255, 200, 100, 0.16);
+  color: #f5c47a;
+  border-color: rgba(255, 200, 100, 0.5);
+}
+.tag.drafts-tab.active,
+.drawer-item.drafts-tab.active {
+  background: rgba(255, 200, 100, 0.35);
+  color: #fff;
+}
+/* Save-sheet Draft checkbox row */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.checkbox-row .label-dim { font-weight: 400; }
+.draft-field { margin-top: 4px; }
 .card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
@@ -550,9 +611,7 @@ body.editor .card-actions { display: flex; }
 
 
 .wos-badge {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
+  /* wos35: now inside .card-footer; no longer absolutely positioned. */
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -574,9 +633,7 @@ body.editor .wos-badge { cursor: pointer; }
 }
 
 .flag-corner {
-  position: absolute;
-  bottom: 8px;
-  right: 12px;
+  /* wos35: now inside .card-footer; no longer absolutely positioned. */
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1533,6 +1590,25 @@ body.editor .export-bar { display: block; }
   border-radius: 3px;
   pointer-events: none;
 }
+/* wos36: persistent highlight on a selected cell (Select mode). Warm amber so
+   it reads as "chosen" and stands apart from the blue drop-target preview. */
+.sketch-selected {
+  position: absolute;
+  background: rgba(255, 193, 99, 0.34);
+  outline: 2px solid #ffc163;
+  outline-offset: -2px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+/* preview of cells a drag-box currently covers (before release) */
+.sketch-marquee {
+  position: absolute;
+  background: rgba(255, 193, 99, 0.16);
+  outline: 1px dashed rgba(255, 193, 99, 0.85);
+  outline-offset: -1px;
+  border-radius: 3px;
+  pointer-events: none;
+}
 .sketch-hint {
   color: var(--ink-card-soft);
   font-style: italic;
@@ -1629,8 +1705,9 @@ body.editor .export-bar { display: block; }
   font-size: 14px;
 }
 .copy-btn {
-  display: block;
-  margin: 8px auto 0;
+  /* wos35: in-footer copy button; centering handled by .card-footer flex. */
+  display: inline-block;
+  margin: 0;
   padding: 9px 26px;
   font-size: 13px;
   width: auto;

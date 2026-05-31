@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos34">
+  <link rel="stylesheet" href="style.css?v=wos36">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1304,7 +1304,7 @@
             <div class="sketch-bar" id="sketch-bar">
               <button type="button" class="sketch-active-char canvas-mode" id="sketch-active-char" aria-pressed="false" title="Canvas mode — tap to switch to Drawing">✋</button>
               <button class="tool-btn" id="sketch-eraser" title="Eraser — paints blank cells">⌫ Erase</button>
-              <button class="tool-btn" id="sketch-grab-one" title="When ON, long-press grabs ONE cell instead of the whole connected shape" aria-pressed="false">🤏 One</button>
+              <button class="tool-btn" id="sketch-select" title="Select mode — tap symbols (or drag a box) to highlight exactly what you want, then long-press a highlighted symbol to drag only those" aria-pressed="false">⬚ Select</button>
               <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)" aria-label="Undo">↶</button>
               <button class="tool-btn" id="sketch-clear" title="Start over with a fresh blank grid" style="margin-left:auto">🗑 Clear</button>
             </div>
@@ -1353,6 +1353,12 @@
             <label for="edit-tags-input">Tags <span class="label-dim">— comma-separated</span></label>
             <input id="edit-tags-input" type="text" placeholder="love, symbols">
           </div>
+          <div class="field draft-field">
+            <label class="checkbox-row">
+              <input id="edit-draft-input" type="checkbox">
+              <span>Save as <strong>Draft</strong> <span class="label-dim">— hidden from the public library until you publish</span></span>
+            </label>
+          </div>
           <div class="save-sheet-foot">
             <button class="btn-ghost" id="save-back" type="button">← Back</button>
             <button class="btn-primary" id="save-confirm" type="button">Save art</button>
@@ -1384,7 +1390,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos34"></script>
+  <script src="app.js?v=wos36"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
