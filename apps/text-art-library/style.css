@@ -1417,17 +1417,24 @@ body.editor .export-bar { display: block; }
 }
 .sketch-char {
   display: inline-block;
-  /* HARD-FIX (wos22): every grid cell is exactly 1em wide regardless of the
-     glyph it holds. Painted cells used to take their natural glyph width
-     (a row of "T"s being ~0.6em each), while empty cells were already 1em
-     — so the column grid drifted apart row-by-row. Fixed cells make the
-     drawing surface look like an actual grid again, matching the empty-
-     cell baseline that's been the WoS column unit all along.
-       - width: 1em       — uniform cell, every glyph occupies the same slot
+  /* HARD-FIX (wos22 + wos25): every grid cell is exactly 1em × 1em (with
+     the natural line-height inside) regardless of glyph. Width alone wasn't
+     enough — color emoji (🍪, 🍕) render at the OS's default emoji size
+     ignoring font-size, so they were ~1.5em tall and stretched their entire
+     row vertically, drifting any subsequent column out of alignment. Locking
+     both axes plus clipping anything that overflows guarantees the canvas
+     looks like a real grid. Single-line line-height keeps glyphs anchored
+     to the cell top so emoji don't push neighbors down.
+       - width / height — uniform 1em × 1em-line cell, every glyph occupies the same slot
+       - line-height: 1 — single-line anchor; line spacing comes from .sketch-line
        - text-align: center — center the glyph in its slot regardless of natural width
-       - vertical-align: top — keep painted + empty cells on the same baseline
-       - overflow: hidden  — clip any oddly-wide grapheme so it can't push neighbors */
+       - vertical-align: top — painted + empty cells share a baseline
+       - overflow: hidden — clip an oversize glyph so it can't push neighbors
+       - font-size: inherit — make sure emoji size scales with the canvas */
   width: 1em;
+  height: calc(var(--art-line-height, 1.45) * 1em);
+  line-height: 1;
+  font-size: inherit;
   text-align: center;
   vertical-align: top;
   overflow: hidden;

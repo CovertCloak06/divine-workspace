@@ -171,6 +171,16 @@ function trimTrailingBlankRows(s) {
   return lines.join('\n');
 }
 
+/* Render-time normalizer: returns art with trailing all-blank rows
+ * stripped, so old pieces saved before the save-time trim (wos24) also
+ * display without their dead NBSP void. Both the card grid and the
+ * lightbox route through this. Editor textarea loads the raw value
+ * directly \u2014 Draw mode needs the canvas headroom, and trim happens
+ * again at save. */
+function displayArt(raw) {
+  return trimTrailingBlankRows(raw || '');
+}
+
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -807,7 +817,7 @@ function renderCard(p) {
   prev.className = 'preview';
   const pre = document.createElement('pre');
   pre.className = 'art-render';
-  pre.textContent = p.art || '';
+  pre.textContent = displayArt(p.art);
   prev.appendChild(pre);
   card.appendChild(prev);
 
@@ -986,7 +996,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos24';
+const APP_VERSION = 'wos25';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1106,8 +1116,8 @@ function openLightbox(p) {
   els.lbTitle.textContent = p.title || 'Untitled';
   // WoS is proportional; show the art exactly as the bubble renders it (it will
   // visibly wrap if a line is too wide) rather than guessing from char counts.
-  els.lbPre.textContent = p.art || '';
-  const m = measure(p.art);
+  els.lbPre.textContent = displayArt(p.art);
+  const m = measure(displayArt(p.art));
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
   els.lbPills.innerHTML = '';
   for (const t of (p.tags || [])) {
