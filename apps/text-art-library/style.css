@@ -950,6 +950,43 @@ body.editor .export-bar { display: block; }
   margin-top: 4px;
 }
 
+/* ===== Palette: dynamic head label, plain text (no decorative container) === */
+.palette-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.palette-head-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ink-dim);
+  font-weight: 700;
+}
+.palette-active-group {
+  font-size: 13px;
+  color: var(--ink, #fff);
+  font-weight: 600;
+  /* plain text: no background, no border, no rounded pill */
+}
+/* Hide the per-group inline labels — the dynamic head is the single source. */
+.palette-group-label { display: none; }
+/* Subtle separation between groups so the visual breaks stay legible. */
+.palette-group + .palette-group { margin-top: 12px; }
+
+/* Whole-shape drag ghost: preserve layout for multi-line assemblies. */
+.grab-ghost {
+  white-space: pre;
+  font-family: var(--art-font, 'JetBrains Mono', monospace);
+  font-weight: 700;
+}
+.grab-ghost.multi {
+  font-size: 17px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
 /* lightbox-specific — match the card's lime preview tray */
 .wos-preview {
   background: var(--wos-bubble);

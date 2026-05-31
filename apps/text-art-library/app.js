@@ -1121,6 +1121,8 @@ function openAdd() {
   els.edit.classList.add('open');
   // After the modal is open, see if a draft is waiting for this target.
   tryRestoreDraft();
+  // Modal just became visible; refresh the dynamic group label with real rects.
+  requestAnimationFrame(refreshGroupLabel);
 }
 function openEdit(p) {
   editing = p;
@@ -1135,6 +1137,7 @@ function openEdit(p) {
   renderSketch();
   els.edit.classList.add('open');
   tryRestoreDraft();
+  requestAnimationFrame(refreshGroupLabel);
 }
 function closeEdit() {
   els.edit.classList.remove('open');
@@ -1549,23 +1552,42 @@ function writeCell(y, x, ch) {
   runAudit();
 }
 
-/* Find the contiguous run of non-blank cells in row y that includes column x.
- * This is what "the whole face / combo" means at grab time: any adjacent
- * non-blank characters travel together. Returns null if the pressed cell is
- * itself blank. */
-function findRun(y, x) {
+/* Find the connected 2D shape of non-blank cells that includes the pressed
+ * cell — 8-way flood fill (orthogonal + diagonal) so a multi-row art assembly
+ * (a face whose eyes touch the mouth diagonally, a car, an animal) travels as
+ * one unit. Returns null if the pressed cell is itself blank. */
+function findShape(startY, startX) {
   const lines = els.editArtInput.value.split('\n');
-  if (y < 0 || y >= lines.length) return null;
-  const gs = graphemes(lines[y]);
-  if (x < 0 || x >= gs.length || isBlankCell(gs[x])) return null;
-  let start = x, end = x;
-  while (start > 0 && !isBlankCell(gs[start - 1])) start--;
-  while (end < gs.length - 1 && !isBlankCell(gs[end + 1])) end++;
+  if (startY < 0 || startY >= lines.length) return null;
+  const lineGS = lines.map(graphemes);
+  if (startX < 0 || startX >= lineGS[startY].length || isBlankCell(lineGS[startY][startX])) return null;
+  const visited = new Set();
+  const cells = [];
+  const stack = [[startY, startX]];
+  let minY = startY, maxY = startY, minX = startX, maxX = startX;
+  while (stack.length) {
+    const [y, x] = stack.pop();
+    const key = y + ',' + x;
+    if (visited.has(key)) continue;
+    if (y < 0 || y >= lineGS.length) continue;
+    const row = lineGS[y];
+    if (x < 0 || x >= row.length || isBlankCell(row[x])) continue;
+    visited.add(key);
+    cells.push({ y: y, x: x, ch: row[x] });
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dy || dx) stack.push([y + dy, x + dx]);
+      }
+    }
+  }
   return {
-    runChars: gs.slice(start, end + 1),
-    runStart: start,
-    runY: y,
-    pressIdx: x - start, // where in the run the finger landed
+    cells: cells, minY: minY, maxY: maxY, minX: minX, maxX: maxX,
+    pressDY: startY - minY, // offset from bbox top-left in rows
+    pressDX: startX - minX, // offset from bbox top-left in cols
   };
 }
 
@@ -1574,12 +1596,28 @@ function clearDropTarget() {
   for (const c of dropHighlighted) c.classList.remove('drop-target');
   dropHighlighted = [];
 }
-function highlightDropRange(y, startX, len) {
+/* Highlight every cell the grabbed shape would land on if dropped with the
+ * press point at (releaseY, releaseX). Replaces the row-only highlighter; the
+ * shape's bbox offset is what positions every cell relative to the release. */
+function highlightDropShape(shape, releaseY, releaseX) {
   clearDropTarget();
-  for (let i = 0; i < len; i++) {
-    const c = cellAt(y, startX + i);
-    if (c) { c.classList.add('drop-target'); dropHighlighted.push(c); }
+  const newMinY = releaseY - shape.pressDY;
+  const newMinX = releaseX - shape.pressDX;
+  for (const c of shape.cells) {
+    const ny = newMinY + (c.y - shape.minY);
+    const nx = newMinX + (c.x - shape.minX);
+    const cell = cellAt(ny, nx);
+    if (cell) { cell.classList.add('drop-target'); dropHighlighted.push(cell); }
   }
+}
+/* Render the shape into a single (multi-line if needed) string for the ghost. */
+function buildGhostText(shape) {
+  const h = shape.maxY - shape.minY + 1;
+  const w = shape.maxX - shape.minX + 1;
+  if (h === 1 && w === 1) return shape.cells[0].ch;
+  const buf = Array.from({ length: h }, () => Array(w).fill('\u00A0'));
+  for (const c of shape.cells) buf[c.y - shape.minY][c.x - shape.minX] = c.ch;
+  return buf.map(function (r) { return r.join(''); }).join('\n');
 }
 function moveGhost(cx, cy) {
   if (grabGhostEl) { grabGhostEl.style.left = cx + 'px'; grabGhostEl.style.top = cy + 'px'; }
@@ -1597,21 +1635,20 @@ function gestureDown(cx, cy, cell) {
   clearTimeout(grabHoldTimer);
   grabHoldTimer = setTimeout(() => {
     if (!gesturePending) return;
-    const run = findRun(gesturePending.y, gesturePending.x);
-    if (!run) return; // pressed cell is blank; fall back to paint on release
+    const shape = findShape(gesturePending.y, gesturePending.x);
+    if (!shape) return; // pressed cell is blank; fall back to paint on release
     pushEditHistory(); // capture pre-grab state so the whole move = one undo
-    grabState = run;
+    grabState = shape;
     els.sketchView.classList.add('grabbing');
-    // Lift the ENTIRE run (one cell or many) off the canvas.
-    for (let i = 0; i < run.runChars.length; i++) {
-      writeCell(run.runY, run.runStart + i, '\u00A0');
-    }
+    // Lift the entire shape (every connected cell) off the canvas.
+    for (const c of shape.cells) writeCell(c.y, c.x, '\u00A0');
     grabGhostEl = document.createElement('div');
-    grabGhostEl.className = 'grab-ghost';
-    grabGhostEl.textContent = run.runChars.join('');
+    const multi = (shape.maxY > shape.minY) || (shape.maxX > shape.minX);
+    grabGhostEl.className = 'grab-ghost' + (multi ? ' multi' : '');
+    grabGhostEl.textContent = buildGhostText(shape);
     document.body.appendChild(grabGhostEl);
     moveGhost(gesturePending.clientX, gesturePending.clientY);
-    highlightDropRange(run.runY, run.runStart, run.runChars.length);
+    highlightDropShape(shape, gesturePending.y, gesturePending.x);
     gesturePending = null;
     paintActive = false;
   }, GRAB_HOLD_MS);
@@ -1622,8 +1659,7 @@ function gestureMove(cx, cy) {
     moveGhost(cx, cy);
     const cell = cellFromPoint(cx, cy);
     if (!cell) { clearDropTarget(); return; }
-    const newStart = (+cell.dataset.x) - grabState.pressIdx;
-    highlightDropRange(+cell.dataset.y, newStart, grabState.runChars.length);
+    highlightDropShape(grabState, +cell.dataset.y, +cell.dataset.x);
     return;
   }
   const cell = cellFromPoint(cx, cy);
@@ -1646,29 +1682,36 @@ function gestureUp(cx, cy) {
   clearTimeout(grabHoldTimer);
   if (grabState) {
     const cell = cellFromPoint(cx, cy);
-    const run = grabState;
+    const shape = grabState;
     let placed = false;
     if (cell) {
-      const ty = +cell.dataset.y;
-      const newStart = (+cell.dataset.x) - run.pressIdx;
-      const lineEl = els.sketchView.children[ty];
-      const rowWidth = lineEl ? lineEl.children.length : 0;
-      // Fit-check the whole run against the row; if it would overflow either
-      // edge, snap it back to origin instead of clipping the face in half.
-      if (newStart >= 0 && newStart + run.runChars.length <= rowWidth) {
-        for (let i = 0; i < run.runChars.length; i++) {
-          writeCell(ty, newStart + i, run.runChars[i]);
+      const newMinY = (+cell.dataset.y) - shape.pressDY;
+      const newMinX = (+cell.dataset.x) - shape.pressDX;
+      const lineCount = els.sketchView.children.length;
+      // Fit-check every cell of the shape against the canvas; if ANY would
+      // land off, snap the whole shape back to origin rather than clipping.
+      let valid = true;
+      for (const c of shape.cells) {
+        const ny = newMinY + (c.y - shape.minY);
+        const nx = newMinX + (c.x - shape.minX);
+        if (ny < 0 || ny >= lineCount) { valid = false; break; }
+        const lineEl = els.sketchView.children[ny];
+        const rowWidth = lineEl ? lineEl.children.length : 0;
+        if (nx < 0 || nx >= rowWidth) { valid = false; break; }
+      }
+      if (valid) {
+        for (const c of shape.cells) {
+          const ny = newMinY + (c.y - shape.minY);
+          const nx = newMinX + (c.x - shape.minX);
+          writeCell(ny, nx, c.ch);
         }
         placed = true;
       }
     }
     if (!placed) {
-      // Off-canvas or doesn't fit -> put it back where it was.
-      for (let i = 0; i < run.runChars.length; i++) {
-        writeCell(run.runY, run.runStart + i, run.runChars[i]);
-      }
+      for (const c of shape.cells) writeCell(c.y, c.x, c.ch);
     }
-    pushEditHistory(); // post-move state -> whole grab undoes in one step
+    pushEditHistory();
     endGrab();
     return;
   }
@@ -1701,9 +1744,7 @@ window.addEventListener('pointerup', (e) => {
 window.addEventListener('pointercancel', () => {
   clearTimeout(grabHoldTimer);
   if (grabState) {
-    for (let i = 0; i < grabState.runChars.length; i++) {
-      writeCell(grabState.runY, grabState.runStart + i, grabState.runChars[i]);
-    }
+    for (const c of grabState.cells) writeCell(c.y, c.x, c.ch);
     endGrab();
   }
   gesturePending = null; paintActive = false;
@@ -1733,9 +1774,7 @@ els.sketchView.addEventListener('touchend', (e) => {
 els.sketchView.addEventListener('touchcancel', () => {
   clearTimeout(grabHoldTimer);
   if (grabState) {
-    for (let i = 0; i < grabState.runChars.length; i++) {
-      writeCell(grabState.runY, grabState.runStart + i, grabState.runChars[i]);
-    }
+    for (const c of grabState.cells) writeCell(c.y, c.x, c.ch);
     endGrab();
   }
   gesturePending = null; paintActive = false;
@@ -1891,6 +1930,50 @@ function handlePaletteSelection(ch) {
 // still the raw mark — only the on-screen label gets the placeholder base.
 function paletteLabel(ch) {
   return /^\p{M}/u.test(ch) ? '◌' + ch : ch;
+}
+
+/* Dynamic palette head label: as the user scrolls the palette, name whichever
+ * group is currently most prominently in view. The per-group inline labels are
+ * hidden in CSS so this is the single source of truth. */
+let refreshGroupLabel = function () {};
+function setupGroupLabelTracker() {
+  const palette = els.charPalette;
+  const labelEl = document.getElementById('palette-active-group');
+  if (!palette || !labelEl) return;
+  let rafPending = false;
+  function update() {
+    rafPending = false;
+    const groups = palette.querySelectorAll('.palette-group');
+    if (!groups.length) return;
+    const palRect = palette.getBoundingClientRect();
+    // Palette is not laid out yet (modal hidden) -> every group reports {top:0}
+    // and the loop would pick the LAST one. Bail; a synthetic scroll on modal
+    // open will re-run this with real rects.
+    if (palRect.height === 0) return;
+    let active = '';
+    for (const g of groups) {
+      const gRect = g.getBoundingClientRect();
+      // Most-recent group whose top is at-or-above the palette's viewport top.
+      if (gRect.top - palRect.top <= 12) {
+        const heading = g.querySelector('.palette-group-label');
+        active = heading ? heading.textContent.trim() : '';
+      } else {
+        break;
+      }
+    }
+    if (!active && groups[0]) {
+      const heading = groups[0].querySelector('.palette-group-label');
+      active = heading ? heading.textContent.trim() : '';
+    }
+    labelEl.textContent = active;
+  }
+  palette.addEventListener('scroll', function () {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+  refreshGroupLabel = update;
+  update();
 }
 
 function buildPalette() {
@@ -2135,6 +2218,7 @@ els.btnExport.addEventListener('click', () => {
 /* ============ 15  Init ============ */
 buildPalette();
 buildFavoritesBar();
+setupGroupLabelTracker();
 boot().catch((err) => {
   console.error('boot failed', err);
   renderEmpty('Failed to load. Refresh to try again.');
