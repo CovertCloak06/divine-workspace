@@ -996,7 +996,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos26';
+const APP_VERSION = 'wos27';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1439,8 +1439,17 @@ function toggleDraw(on) {
   const txt = document.getElementById('draw-toggle-text');
   if (txt) txt.textContent = drawing ? '✏ Draw' : '⌨ Type';
   if (drawing) {
+    // wos27: every entry into Draw mode starts clean — no brush selected, in
+    // Canvas mode — so nothing gets placed until the user picks a character.
+    activeBrush = null;
+    eraserOn = false;
+    canvasMode = true;
+    if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+    if (els.charPalette) els.charPalette.querySelectorAll('.palette-btn.brush-active').forEach((b) => b.classList.remove('brush-active'));
+    if (els.favoritesBar) els.favoritesBar.querySelectorAll('.fav-slot.brush-active').forEach((b) => b.classList.remove('brush-active'));
     ensureBlankCanvas();
     renderSketch(true);
+    updateBrushChip();
   }
 }
 
@@ -1492,8 +1501,9 @@ function insertAtCursor(ch) {
 }
 
 /* ============ 12.5  Sketch view ============ */
-let activeBrush = '❤';
+let activeBrush = null;   // wos27: no default brush — user must pick one to paint
 let eraserOn = false;
+let canvasMode = true;    // wos27: true = Canvas mode (taps don't paint); false = Drawing/Input
 const editHistory = [];      // stack of prior art strings
 const EDIT_HISTORY_MAX = 40;
 let editHistorySuspend = false;
@@ -1525,9 +1535,54 @@ function undoEdit() {
   runAudit();
 }
 
+/* wos27: Canvas/Drawing mode + no-default-brush.
+ *   canvasMode true  → "Canvas mode": taps don't paint (long-press grab-move
+ *                      and scrolling still work, so you can rearrange/look
+ *                      without dropping unwanted characters).
+ *   canvasMode false → "Drawing/Input mode": taps paint activeBrush (or erase).
+ * The chip (#sketch-active-char) is the toggle button between the two. Picking
+ * a palette char selects it AND drops you into Drawing mode so you can paint
+ * right away. */
+function canPaint() {
+  return !canvasMode && (eraserOn || !!activeBrush);
+}
+
+function updateBrushChip() {
+  const chip = els.sketchActiveChar;
+  if (!chip) return;
+  chip.classList.toggle('canvas-mode', canvasMode);
+  chip.classList.toggle('eraser', !canvasMode && eraserOn);
+  chip.classList.toggle('empty', !canvasMode && !eraserOn && !activeBrush);
+  if (canvasMode) {
+    chip.textContent = '✋';
+    chip.title = 'Canvas mode — tap to switch to Drawing';
+    chip.setAttribute('aria-pressed', 'false');
+  } else if (eraserOn) {
+    chip.textContent = '⌫';
+    chip.title = 'Drawing mode (eraser) — tap to switch to Canvas';
+    chip.setAttribute('aria-pressed', 'true');
+  } else if (activeBrush) {
+    chip.textContent = activeBrush;
+    chip.title = 'Drawing mode — tap to switch to Canvas';
+    chip.setAttribute('aria-pressed', 'true');
+  } else {
+    chip.textContent = '·';
+    chip.title = 'Pick a character from the palette to draw';
+    chip.setAttribute('aria-pressed', 'true');
+  }
+}
+
+function toggleCanvasMode() {
+  canvasMode = !canvasMode;
+  updateBrushChip();
+}
+
 function setActiveBrush(ch) {
   activeBrush = ch;
-  if (els.sketchActiveChar) els.sketchActiveChar.textContent = ch;
+  eraserOn = false;     // choosing a paint char clears the eraser
+  canvasMode = false;   // ...and enters Drawing mode so you can paint immediately
+  if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+  updateBrushChip();
   // Highlight the matching palette button so the user can see what's selected.
   if (els.charPalette) {
     for (const b of els.charPalette.querySelectorAll('.palette-btn')) {
@@ -1543,11 +1598,9 @@ function setActiveBrush(ch) {
 
 function setEraser(on) {
   eraserOn = !!on;
+  if (eraserOn) canvasMode = false;   // eraser is a Drawing-mode tool
   if (els.sketchEraser) els.sketchEraser.classList.toggle('active', eraserOn);
-  if (els.sketchActiveChar) {
-    els.sketchActiveChar.classList.toggle('eraser', eraserOn);
-    els.sketchActiveChar.textContent = eraserOn ? '⌫' : activeBrush;
-  }
+  updateBrushChip();
 }
 
 function renderSketch(force) {
@@ -1832,6 +1885,9 @@ function gestureMove(cx, cy) {
     // Moved off the origin cell before the hold fired => paint drag.
     if (cell && (+cell.dataset.y !== gesturePending.y || +cell.dataset.x !== gesturePending.x)) {
       clearTimeout(grabHoldTimer);
+      // wos27: in Canvas mode (or with no brush) a drag places nothing — cancel
+      // the gesture. Long-press grab-move is armed separately and still works.
+      if (!canPaint()) { gesturePending = null; return; }
       startStroke();
       replaceCharAt(gesturePending.y, gesturePending.x);
       paintActive = true;
@@ -1881,9 +1937,13 @@ function gestureUp(cx, cy) {
     return;
   }
   if (gesturePending) {
-    startStroke();
-    replaceCharAt(gesturePending.y, gesturePending.x);
-    endStroke();
+    // wos27: a tap only paints in Drawing mode with a brush/eraser active.
+    // In Canvas mode a tap does nothing (no unwanted characters placed).
+    if (canPaint()) {
+      startStroke();
+      replaceCharAt(gesturePending.y, gesturePending.x);
+      endStroke();
+    }
     gesturePending = null;
     return;
   }
@@ -1965,6 +2025,8 @@ els.sketchUndo.addEventListener('click', undoEdit);
 const textUndoBtn = document.getElementById('text-undo');
 if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
+// wos27: the active-char chip is the Canvas/Drawing mode toggle.
+if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
 
 els.editArtInput.addEventListener('input', () => {
   // user typed/pasted directly — push a history snapshot of the value BEFORE
