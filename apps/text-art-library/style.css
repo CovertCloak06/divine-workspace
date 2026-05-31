@@ -804,7 +804,14 @@ body.editor .export-bar { display: block; }
 #edit.drawing .sketch-view {
   flex: 1 1 0;          /* fills the dock; height comes from the dock's share */
   min-height: 180px;    /* enough to show the full 12-row grid comfortably */
-  max-height: none;     /* base keeps width:fit-content so no wasted green margin */
+  max-height: none;
+  /* wos31: fill the dock width (was fit-content) so the canvas is the SAME
+     size as the Type text box. Previously the canvas hugged the grid (~158px)
+     while the text box was full-width, so every flip to Draw looked like the
+     canvas "shrank". Matching widths makes the toggle keep the surface size
+     constant. The grid stays left-aligned; the extra green is just bubble. */
+  width: 100%;
+  box-sizing: border-box;
 }
 #edit.drawing .field label { margin-bottom: 3px; }
 #edit.drawing .draw-workspace > .field { margin-bottom: 6px; }
