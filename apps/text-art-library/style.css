@@ -1590,6 +1590,25 @@ body.editor .export-bar { display: block; }
   border-radius: 3px;
   pointer-events: none;
 }
+/* wos36: persistent highlight on a selected cell (Select mode). Warm amber so
+   it reads as "chosen" and stands apart from the blue drop-target preview. */
+.sketch-selected {
+  position: absolute;
+  background: rgba(255, 193, 99, 0.34);
+  outline: 2px solid #ffc163;
+  outline-offset: -2px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+/* preview of cells a drag-box currently covers (before release) */
+.sketch-marquee {
+  position: absolute;
+  background: rgba(255, 193, 99, 0.16);
+  outline: 1px dashed rgba(255, 193, 99, 0.85);
+  outline-offset: -1px;
+  border-radius: 3px;
+  pointer-events: none;
+}
 .sketch-hint {
   color: var(--ink-card-soft);
   font-style: italic;
