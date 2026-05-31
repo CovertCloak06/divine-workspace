@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos18">
+  <link rel="stylesheet" href="style.css?v=wos19">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -213,6 +213,104 @@
       background: #f7d0d0;
       color: #5a1a1a;
     }
+
+    /* === Feedback form (drawer accordion section) === */
+    .feedback-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+    }
+    .feedback-field { display: flex; flex-direction: column; gap: 4px; }
+    .feedback-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: rgba(255, 255, 255, 0.78);
+      text-transform: uppercase;
+    }
+    .feedback-hint {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    .feedback-form input[type="text"],
+    .feedback-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(13, 26, 46, 0.55);
+      border: 1px solid rgba(123, 169, 220, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.4;
+      resize: vertical;
+      min-height: 0;
+    }
+    .feedback-form textarea { min-height: 96px; }
+    .feedback-form input[type="text"]:focus,
+    .feedback-form textarea:focus {
+      outline: 0;
+      border-color: rgba(123, 169, 220, 0.7);
+      background: rgba(13, 26, 46, 0.75);
+    }
+    .feedback-submit {
+      align-self: flex-start;
+      background: linear-gradient(180deg, #79bef0 0%, #4ea4dc 55%, #2e7ec0 100%);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: filter 120ms;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+    .feedback-submit:hover:not(:disabled) { filter: brightness(1.08); }
+    .feedback-submit:active:not(:disabled) { filter: brightness(0.92); }
+    .feedback-submit:disabled { opacity: 0.6; cursor: default; }
+    .feedback-status {
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.85);
+      min-height: 0;
+    }
+    .feedback-status:empty { display: none; }
+    .feedback-status.is-error { color: #ffb4b4; }
+    .feedback-status.is-success {
+      background: rgba(74, 159, 212, 0.12);
+      border: 1px solid rgba(74, 159, 212, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .feedback-status .triage-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+    .feedback-status .sev-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .feedback-status .sev-P1 { background: #c95c5c; color: #fff; }
+    .feedback-status .sev-P2 { background: #d68a3c; color: #fff; }
+    .feedback-status .sev-P3 { background: #c9a534; color: #2a2008; }
+    .feedback-status .sev-cosmetic { background: #5b8fc0; color: #fff; }
+    .feedback-status .sev-untriaged { background: #6b7480; color: #fff; }
 
     /* === Active-theme box (shows current filter under search bar) === */
     /* When the active-theme row is showing, collapse the spacing so the box
@@ -656,6 +754,26 @@
           <nav class="drawer-list" id="drawer-list" role="list"></nav>
         </div>
       </section>
+      <section class="drawer-section" data-section="feedback">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-feedback">
+          <span class="drawer-section-title">Send Feedback</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-feedback">
+          <form class="feedback-form" id="feedback-form" novalidate>
+            <label class="feedback-field">
+              <span class="feedback-label">Name <span class="feedback-hint">(optional)</span></span>
+              <input type="text" id="feedback-reporter" maxlength="80" autocomplete="off" placeholder="Anonymous">
+            </label>
+            <label class="feedback-field">
+              <span class="feedback-label">What went wrong?</span>
+              <textarea id="feedback-description" rows="4" maxlength="4000" required placeholder="The Save button stays grayed out after I draw a heart…"></textarea>
+            </label>
+            <button type="submit" class="feedback-submit" id="feedback-submit">Send report</button>
+            <div class="feedback-status" id="feedback-status" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
     </div>
   </aside>
 
@@ -910,7 +1028,7 @@
 
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos18"></script>
+  <script src="app.js?v=wos19"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

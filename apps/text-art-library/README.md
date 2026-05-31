@@ -51,6 +51,38 @@ The client auto-detects whichever backend is live: it probes `/.netlify/function
    npx netlify-cli@latest deploy --prod --dir . --functions ./netlify/functions --no-build
    ```
 
+## Bug feedback pipeline
+
+There's an in-app feedback form in the Settings drawer (Send Feedback section) that anyone using the site can submit. Each submission flows through `netlify/functions/submit-bug.js`, which does four things in order — all of them optional and skipped silently if their env var is missing:
+
+1. **AI triage** via Anthropic's API (model `claude-haiku-4-5`). Reads the report, returns severity / area / summary / likely-cause / suggested-fix area as JSON. Costs pennies per report.
+2. **GitHub Issue** created in `CovertCloak06/divine-workspace` with the triage analysis pre-filled in the body, labeled `bug` + `triage:<sev>`.
+3. **Discord push** to your phone via the Discord mobile app (a webhook URL = a push notification).
+4. **Storage** in Netlify Blobs (`frostline-feedback` store) under `bug/<id>.json` for the full report + everything that happened.
+
+To enable any of the four, add these env vars in *Netlify Site config → Environment variables*:
+
+| Variable | What it enables | Where to get it |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | AI triage on every report | https://console.anthropic.com/ |
+| `DISCORD_WEBHOOK_URL` | Push notifications to your phone | Discord server → Server Settings → Integrations → Webhooks |
+| `GITHUB_TOKEN` | Tracking issue creation | https://github.com/settings/tokens (classic, `repo` scope) |
+| `GITHUB_REPO` | Target repo for issues | Just `CovertCloak06/divine-workspace` |
+
+(`.env.example` also lists these — add them to your local `.env` for `netlify dev`.)
+
+### Auto-fix loop (optional but slick)
+
+If `GITHUB_TOKEN` is set, every bug report becomes a tracking Issue. From there, you can add the `auto-fix` label to any issue and a GitHub Action (`.github/workflows/claude-auto-fix.yml`) spawns a Claude Code session that reads the issue, makes a surgical fix, and opens a draft PR.
+
+To enable the auto-fix loop:
+
+1. Add `ANTHROPIC_API_KEY` to *GitHub repo → Settings → Secrets and variables → Actions* (same key as above).
+2. Install the GitHub App referenced by the action (run `claude /install-github-app` once if you haven't, or follow the action's setup docs).
+3. That's it. Add the `auto-fix` label to a triaged issue and watch the PR appear.
+
+You stay in the loop: the PRs are draft, so nothing merges without you reviewing on your phone.
+
 ## File layout
 
 ```

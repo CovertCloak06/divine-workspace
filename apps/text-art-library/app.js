@@ -928,7 +928,7 @@ document.addEventListener('keydown', (e) => {
 });
 /* Settings accordion — tap a section head to expand/collapse its body. Only
    one section is open by default (Themes); future sections (Character
-   Management, Bug Feedback, Chat) will hang off the same pattern. */
+   Management, Chat) will hang off the same pattern. */
 const drawerSectionsRoot = document.getElementById('drawer-sections');
 if (drawerSectionsRoot) {
   drawerSectionsRoot.addEventListener('click', (e) => {
@@ -941,6 +941,109 @@ if (drawerSectionsRoot) {
     head.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   });
 }
+
+/* === Feedback form ===========================================================
+ * Public bug-feedback form in the Settings drawer. POSTs to /api/submit-bug,
+ * which fans out to Anthropic (triage) -> Netlify Blobs (storage) -> GitHub
+ * Issue (tracking) -> Discord webhook (push to phone). Each downstream
+ * integration is optional on the server side; on the client we just render
+ * whatever the function returns.
+ */
+const APP_VERSION = 'wos19';
+
+function captureFeedbackContext() {
+  let editorState = 'locked';
+  if (typeof state !== 'undefined') {
+    if (state.editor) editorState = 'unlocked';
+  }
+  const ctx = {
+    appVersion: APP_VERSION,
+    url: location.pathname + location.search,
+    userAgent: navigator.userAgent.slice(0, 200),
+    viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio || 1 },
+    activeTag: (typeof state !== 'undefined' && state.activeTag) || null,
+    editorState,
+    drawing: !!document.getElementById('edit')?.classList.contains('drawing'),
+    timestamp: new Date().toISOString(),
+  };
+  try {
+    const theme = document.body.className.match(/\bfx-shape-(\w+)/);
+    if (theme) ctx.cardShape = theme[1];
+  } catch {}
+  return ctx;
+}
+
+function renderTriageStatus(triage, issue) {
+  if (!triage || triage.skipped || triage.error) {
+    const note = triage?.skipped
+      ? ' (AI triage not configured on this deploy)'
+      : triage?.error
+      ? ` (triage error: ${triage.error})`
+      : '';
+    return `Report sent.${note}${issue ? ` Tracked as <a href="${issue.url}" target="_blank" rel="noopener">issue #${issue.number}</a>.` : ''}`;
+  }
+  const sev = triage.severity || 'untriaged';
+  const sevClass = `sev-${sev}`;
+  const safeSummary = (triage.summary || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const safeArea = (triage.area || '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  let html = `<strong>Report sent.</strong> Claude pre-read it:`;
+  html += `<div class="triage-row"><span class="sev-badge ${sevClass}">${sev}</span>${safeArea ? `<span>${safeArea}</span>` : ''}</div>`;
+  if (safeSummary) html += `<div style="margin-top:6px;">${safeSummary}</div>`;
+  if (issue) html += `<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.7);">Tracked as <a href="${issue.url}" target="_blank" rel="noopener" style="color:#9bd1ff;">issue #${issue.number}</a></div>`;
+  return html;
+}
+
+(function wireFeedbackForm() {
+  const form = document.getElementById('feedback-form');
+  if (!form) return;
+  const descEl = document.getElementById('feedback-description');
+  const reporterEl = document.getElementById('feedback-reporter');
+  const submitBtn = document.getElementById('feedback-submit');
+  const statusEl = document.getElementById('feedback-status');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const description = (descEl.value || '').trim();
+    if (!description) {
+      statusEl.className = 'feedback-status is-error';
+      statusEl.textContent = 'A short description is required.';
+      descEl.focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    statusEl.className = 'feedback-status';
+    statusEl.textContent = 'Sending…';
+
+    try {
+      const url = await fnUrl('submit-bug');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description,
+          reporter: (reporterEl.value || '').trim() || null,
+          context: captureFeedbackContext(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        statusEl.className = 'feedback-status is-error';
+        statusEl.textContent = data.error || `Server returned ${res.status}.`;
+        submitBtn.disabled = false;
+        return;
+      }
+      statusEl.className = 'feedback-status is-success';
+      statusEl.innerHTML = renderTriageStatus(data.triage, data.issue);
+      descEl.value = '';
+      submitBtn.disabled = false;
+    } catch (err) {
+      statusEl.className = 'feedback-status is-error';
+      statusEl.textContent = 'Could not reach the server. Check your connection and try again.';
+      submitBtn.disabled = false;
+    }
+  });
+})();
 // Active-theme chip — tap to clear the filter back to "all"
 if (els.activeThemeChip) {
   els.activeThemeChip.addEventListener('click', () => setActiveTag('all'));
