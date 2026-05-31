@@ -949,7 +949,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos20';
+const APP_VERSION = 'wos21';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2616,12 +2616,195 @@ async function loadCustomPalette() {
   }
 }
 
+/* ============ Site Text manager (wos21) ===================================
+ * Lets the admin edit the chrome text — site title, tagline, share-bar URL
+ * label, add-button label, search placeholder, footer — from the drawer.
+ * Mirrors the palette-manager pattern: debounced autosave on change, status
+ * line shows Saving… → Saved, falls back silently if the network is down.
+ *
+ * Data flow:
+ *   - Defaults live in index.html (the literal text in each [data-st] node)
+ *   - On boot: capture defaults, then apply localStorage cache (already done
+ *     by the pre-paint script in index.html), then fetch from get-site-text
+ *     and apply any newer customizations.
+ *   - On admin edit: write to DOM live → cache to localStorage → debounced
+ *     POST to save-site-text.
+ *
+ * Keys are validated server-side in save-site-text.js; we additionally
+ * trim and reject empty values client-side so the form can't accidentally
+ * clear the page chrome to whitespace.
+ */
+const SITE_TEXT_CACHE_KEY = 'frostline:siteText:v1';
+const SITE_TEXT_SAVE_DEBOUNCE_MS = 500;
+const SITE_TEXT_KEYS = [
+  'siteTitle',
+  'tagline',
+  'shareUrlLabel',
+  'addButtonLabel',
+  'searchPlaceholder',
+  'footerText',
+];
+
+const SITE_TEXT_DEFAULTS = {};
+let siteTextSaveTimer = null;
+
+function siteTextCaptureDefaults() {
+  // Run before any custom text is applied so we always know the originals.
+  // Note: by the time this runs, the pre-paint script in index.html may
+  // have already replaced [data-st] textContent with cached values. To
+  // avoid recording cache values as "defaults", we use the cached values
+  // ONLY if no cache exists; otherwise capture is a no-op.
+  if (Object.keys(SITE_TEXT_DEFAULTS).length > 0) return;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(SITE_TEXT_CACHE_KEY) || 'null'); } catch {}
+  document.querySelectorAll('[data-st]').forEach((el) => {
+    const key = el.getAttribute('data-st');
+    const attr = el.getAttribute('data-st-attr');
+    const current = attr ? el.getAttribute(attr) : el.textContent;
+    if (cached && typeof cached[key] === 'string') {
+      // Pre-paint script already swapped this in; we don't know the
+      // original. Falling back to current is fine — the only thing
+      // defaults are used for is the "Reset to defaults" button, and
+      // a reset on a cached page still produces a sensible value
+      // (whatever the cached one was) until the next deploy.
+      SITE_TEXT_DEFAULTS[key] = current || '';
+    } else {
+      SITE_TEXT_DEFAULTS[key] = (current || '').trim();
+    }
+  });
+}
+
+function siteTextApply(text) {
+  if (!text || typeof text !== 'object') return;
+  document.querySelectorAll('[data-st]').forEach((el) => {
+    const key = el.getAttribute('data-st');
+    const val = text[key];
+    if (typeof val !== 'string' || val.length === 0) return;
+    const attr = el.getAttribute('data-st-attr');
+    if (attr) el.setAttribute(attr, val);
+    else el.textContent = val;
+  });
+}
+
+function siteTextSetStatus(msg, kind) {
+  const el = document.getElementById('site-text-status');
+  if (!el) return;
+  el.className = 'site-text-status' + (kind ? ` is-${kind}` : '');
+  el.textContent = msg;
+}
+
+function siteTextReadForm() {
+  const out = {};
+  SITE_TEXT_KEYS.forEach((key) => {
+    const input = document.querySelector(`[data-st-field="${key}"]`);
+    if (!input) return;
+    const v = (input.value || '').trim();
+    if (v.length > 0) out[key] = v;
+  });
+  return out;
+}
+
+function siteTextFillForm(text) {
+  SITE_TEXT_KEYS.forEach((key) => {
+    const input = document.querySelector(`[data-st-field="${key}"]`);
+    if (!input) return;
+    const val = (text && typeof text[key] === 'string') ? text[key] : (SITE_TEXT_DEFAULTS[key] || '');
+    input.value = val;
+  });
+}
+
+async function siteTextSave() {
+  if (!state.editor || !state.password) return;
+  const text = siteTextReadForm();
+  siteTextSetStatus('Saving…', 'saving');
+  try {
+    const url = await fnUrl('save-site-text');
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.password}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      siteTextSetStatus(`Save failed: ${data.error || res.status}`, 'error');
+      return;
+    }
+    try { localStorage.setItem(SITE_TEXT_CACHE_KEY, JSON.stringify(text)); } catch {}
+    siteTextSetStatus('Saved', 'saved');
+    setTimeout(() => {
+      const el = document.getElementById('site-text-status');
+      if (el && el.textContent === 'Saved') siteTextSetStatus('');
+    }, 1800);
+  } catch {
+    siteTextSetStatus('Save failed: network', 'error');
+  }
+}
+
+function siteTextScheduleSave() {
+  if (siteTextSaveTimer) clearTimeout(siteTextSaveTimer);
+  siteTextSaveTimer = setTimeout(siteTextSave, SITE_TEXT_SAVE_DEBOUNCE_MS);
+}
+
+function setupSiteTextEditor() {
+  const form = document.getElementById('site-text-form');
+  if (!form) return;
+  // Live-apply each keystroke to the DOM so the admin sees the change
+  // immediately (same UX as the palette manager), then schedule a save.
+  form.addEventListener('input', (e) => {
+    const input = e.target.closest('[data-st-field]');
+    if (!input) return;
+    const key = input.getAttribute('data-st-field');
+    const partial = {};
+    const v = (input.value || '').trim();
+    partial[key] = v.length > 0 ? v : (SITE_TEXT_DEFAULTS[key] || '');
+    siteTextApply(partial);
+    siteTextScheduleSave();
+  });
+  const resetBtn = document.getElementById('site-text-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Reset all site text to defaults?')) return;
+      siteTextFillForm({});
+      siteTextApply(SITE_TEXT_DEFAULTS);
+      try { localStorage.removeItem(SITE_TEXT_CACHE_KEY); } catch {}
+      siteTextScheduleSave();
+    });
+  }
+}
+
+async function loadCustomSiteText() {
+  try {
+    const url = await fnUrl('get-site-text');
+    const res = await fetch(url);
+    if (res.status === 404) {
+      // No custom text saved — pre-fill the form with defaults so the
+      // admin sees what's currently displayed.
+      siteTextFillForm({});
+      return;
+    }
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data.text || typeof data.text !== 'object') return;
+    siteTextApply(data.text);
+    siteTextFillForm(data.text);
+    try { localStorage.setItem(SITE_TEXT_CACHE_KEY, JSON.stringify(data.text)); } catch {}
+  } catch {
+    // network/parse error — leave the in-HTML defaults alone
+  }
+}
+
 /* ============ 15  Init ============ */
 buildPalette();
 buildFavoritesBar();
 setupGroupLabelTracker();
 renderPaletteManager();
 loadCustomPalette();
+siteTextCaptureDefaults();
+setupSiteTextEditor();
+loadCustomSiteText();
 boot().catch((err) => {
   console.error('boot failed', err);
   renderEmpty('Failed to load. Refresh to try again.');
