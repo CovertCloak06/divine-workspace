@@ -88,6 +88,7 @@ const els = {
   editClose: $('edit-close'),
   editTitleInput: $('edit-title-input'),
   editTagsInput: $('edit-tags-input'),
+  editDraftInput: $('edit-draft-input'),
   editArtInput: $('edit-art-input'),
   editPreview: $('edit-preview'),
   editAudit: $('edit-audit'),
@@ -720,6 +721,58 @@ function syncFlaggedTab() {
   syncActiveThemeChip();
 }
 
+/* wos35: admin-only "Drafts" tab. Mirror of syncFlaggedTab but for in-progress
+ * art. Counts non-deleted pieces with .draft truthy. */
+function liveDraftCount() {
+  const library = state.merged || [];
+  let n = 0;
+  for (const p of library) if (p && p.draft) n++;
+  return n;
+}
+function syncDraftsTab() {
+  if (!els.tagStrip) return;
+  let existing = els.tagStrip.querySelector('.tag.drafts-tab');
+  const count = liveDraftCount();
+  const shouldShow = state.editor && count > 0;
+  if (shouldShow) {
+    if (!existing) {
+      existing = document.createElement('button');
+      existing.className = 'tag drafts-tab';
+      existing.dataset.tag = '__drafts';
+      existing.addEventListener('click', () =>
+        setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts'),
+      );
+      els.tagStrip.appendChild(existing);
+    }
+    existing.textContent = `drafts (${count})`;
+    existing.classList.toggle('active', state.activeTag === '__drafts');
+  } else if (existing) {
+    existing.remove();
+    if (state.activeTag === '__drafts') state.activeTag = 'all';
+  }
+  if (els.drawerList) {
+    let drawerDrafts = els.drawerList.querySelector('.drawer-item.drafts-tab');
+    if (shouldShow) {
+      if (!drawerDrafts) {
+        drawerDrafts = document.createElement('button');
+        drawerDrafts.type = 'button';
+        drawerDrafts.className = 'drawer-item drafts-tab';
+        drawerDrafts.dataset.tag = '__drafts';
+        drawerDrafts.setAttribute('role', 'listitem');
+        drawerDrafts.addEventListener('click', () => {
+          setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts');
+          closeDrawer();
+        });
+        els.drawerList.appendChild(drawerDrafts);
+      }
+      drawerDrafts.textContent = `drafts (${count})`;
+      drawerDrafts.classList.toggle('active', state.activeTag === '__drafts');
+    } else if (drawerDrafts) {
+      drawerDrafts.remove();
+    }
+  }
+}
+
 function setActiveTag(tag) {
   state.activeTag = tag;
   for (const b of els.tagStrip.querySelectorAll('.tag')) {
@@ -742,10 +795,21 @@ function renderEmpty(msg) {
 
 function filtered() {
   let list = state.merged;
-  if (state.activeTag === '__flagged') {
-    list = list.filter((p) => p.id in state.flags);
-  } else if (state.activeTag !== 'all') {
-    list = list.filter((p) => Array.isArray(p.tags) && p.tags.includes(state.activeTag));
+  // wos35: drafts are private WIPs — never shown to non-admins, hidden by
+  // default in admin view too. Visible only in the admin-only "__drafts" tab.
+  if (state.activeTag === '__drafts') {
+    if (!state.editor) {
+      list = [];               // public has no access to the drafts view
+    } else {
+      list = list.filter((p) => p && p.draft);
+    }
+  } else {
+    list = list.filter((p) => p && !p.draft);
+    if (state.activeTag === '__flagged') {
+      list = list.filter((p) => p.id in state.flags);
+    } else if (state.activeTag !== 'all') {
+      list = list.filter((p) => Array.isArray(p.tags) && p.tags.includes(state.activeTag));
+    }
   }
   const q = state.query.trim().toLowerCase();
   if (q) {
@@ -759,6 +823,7 @@ function filtered() {
 
 function render() {
   syncFlaggedTab();
+  syncDraftsTab();
   const list = filtered();
   if (!list.length) {
     renderEmpty(state.query || state.activeTag !== 'all'
@@ -782,6 +847,12 @@ function renderCard(p) {
   const title = document.createElement('div');
   title.className = 'card-title';
   title.textContent = p.title || 'Untitled';
+  if (p.draft) {
+    const draftPill = document.createElement('span');
+    draftPill.className = 'draft-pill';
+    draftPill.textContent = 'DRAFT';
+    title.appendChild(draftPill);
+  }
   head.appendChild(title);
 
   // Width warning is decided after layout (in the fit pass below) from the ACTUAL
@@ -864,17 +935,14 @@ function renderCard(p) {
   note.addEventListener('click', (e) => e.stopPropagation());
   card.appendChild(note);
 
-  // copy
-  const copy = document.createElement('button');
-  copy.className = 'copy-btn';
-  copy.textContent = '📋 Copy';
-  copy.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyArt(p.art, copy);
-  });
-  card.appendChild(copy);
+  // wos35: footer is one flex row anchored at the bottom of the card. Before,
+  // Copy was in normal flow while WoS + flag were position:absolute, so the
+  // gap between Copy and the bottom row varied with chip count / flag state
+  // (the "random spacing" the user noticed).
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
 
-  // wos badge
+  // wos badge (left)
   const wos = document.createElement('span');
   wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
   wos.textContent = p.wosVerified ? '✅ WoS' : '? WoS';
@@ -883,9 +951,19 @@ function renderCard(p) {
     e.stopPropagation();
     toggleVerified(p);
   });
-  card.appendChild(wos);
+  footer.appendChild(wos);
 
-  // flag corner
+  // copy (center)
+  const copy = document.createElement('button');
+  copy.className = 'copy-btn';
+  copy.textContent = '📋 Copy';
+  copy.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyArt(p.art, copy);
+  });
+  footer.appendChild(copy);
+
+  // flag corner (right)
   const flag = document.createElement('span');
   flag.className = 'flag-corner';
   const box = document.createElement('span');
@@ -897,7 +975,9 @@ function renderCard(p) {
     e.stopPropagation();
     toggleFlag(p, card, box, flag, note);
   });
-  card.appendChild(flag);
+  footer.appendChild(flag);
+
+  card.appendChild(footer);
 
   // open lightbox on card body click
   card.addEventListener('click', () => openLightbox(p));
@@ -996,7 +1076,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos34';
+const APP_VERSION = 'wos35';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1274,6 +1354,9 @@ function openAdd() {
   els.editTitle.textContent = 'Add new art';
   els.editTitleInput.value = '';
   els.editTagsInput.value = '';
+  // wos35: new art defaults to Draft so the library only shows finished work
+  // by default. Admin can untick to publish straight away.
+  if (els.editDraftInput) els.editDraftInput.checked = true;
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
@@ -1295,6 +1378,7 @@ function openEdit(p) {
   els.editTitle.textContent = 'Edit art';
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
+  if (els.editDraftInput) els.editDraftInput.checked = !!p.draft;
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
   closeSaveSheet();
@@ -2401,14 +2485,19 @@ async function commitSave() {
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
+  // wos35: read Draft checkbox state. Default to true for new art (private
+  // WIP), false for existing pieces (preserve their published state).
+  const draft = els.editDraftInput ? !!els.editDraftInput.checked : false;
+
   let piece;
   if (editing) {
-    piece = { ...editing, title, tags, art, width, height };
+    piece = { ...editing, title, tags, art, width, height, draft };
   } else {
     piece = {
       id: newId(),
       title, tags, art, width, height,
       wosVerified: false,
+      draft,
     };
   }
 
