@@ -949,7 +949,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos19';
+const APP_VERSION = 'wos20';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2098,10 +2098,21 @@ function setupGroupLabelTracker() {
   update();
 }
 
+/* Live palette source. Starts as a deep-ish clone of the bundled
+ * PALETTE_GROUPS from palette-data.js. If the admin has saved a custom
+ * palette via the Settings -> Character Palette section, the boot loader
+ * fetches it from /get-palette and replaces this array, then rebuilds.
+ * buildPalette() reads this; never reads PALETTE_GROUPS directly. */
+let LIVE_PALETTE_GROUPS = (typeof PALETTE_GROUPS !== 'undefined' ? PALETTE_GROUPS : []).map((g) => ({
+  label: g.label,
+  wide: !!g.wide,
+  chars: Array.isArray(g.chars) ? [...g.chars] : [],
+}));
+
 function buildPalette() {
   els.charPalette.innerHTML = '';
   const favs = new Set(loadFavorites());
-  for (const group of PALETTE_GROUPS) {
+  for (const group of LIVE_PALETTE_GROUPS) {
     const section = document.createElement('div');
     section.className = 'palette-group';
 
@@ -2337,10 +2348,280 @@ els.btnExport.addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
+/* ============ 14  Character Palette manager (admin-only) ============
+ * Lives in the Menu drawer's "Character Palette" accordion section.
+ * Section is hidden unless body.editor is set (CSS-driven).
+ *
+ * Operations:
+ *   - Tap a character to select it; the action panel under that group shows
+ *     a "Move to" group picker + a Delete button.
+ *   - Add a character: type/paste into the input at the bottom of a group's
+ *     card and hit "+" (or Enter). Accepts multi-character strings (e.g. a
+ *     full kaomoji or a bracket pair).
+ *   - Add a new group: bottom of the section. Empty groups are allowed so
+ *     you can name them first and fill later.
+ *   - Delete a group: × on the group's head, after confirm. Refuses if the
+ *     group still has characters (delete those first or move them).
+ *
+ * Every mutation rebuilds the in-app palette and triggers a debounced save
+ * to /save-palette so the next page load (anywhere) sees the change.
+ */
+let paletteMgrSelected = null; // { groupIndex, charIndex } or null
+let paletteMgrSaveTimer = null;
+const PALETTE_SAVE_DEBOUNCE_MS = 800;
+
+function paletteMgrSetStatus(text, kind) {
+  const el = document.getElementById('palette-mgr-status');
+  if (!el) return;
+  el.className = 'palette-mgr-status' + (kind ? ` is-${kind}` : '');
+  el.textContent = text;
+}
+
+async function paletteMgrSave() {
+  if (!state.editor || !state.password) return;
+  paletteMgrSetStatus('Saving…', 'saving');
+  try {
+    const url = await fnUrl('save-palette');
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.password}`,
+      },
+      body: JSON.stringify({ groups: LIVE_PALETTE_GROUPS }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      paletteMgrSetStatus(`Save failed: ${data.error || res.status}`, 'error');
+      return;
+    }
+    paletteMgrSetStatus('Saved', 'saved');
+    setTimeout(() => {
+      const el = document.getElementById('palette-mgr-status');
+      if (el && el.textContent === 'Saved') paletteMgrSetStatus('');
+    }, 1800);
+  } catch (err) {
+    paletteMgrSetStatus('Save failed: network', 'error');
+  }
+}
+
+function paletteMgrScheduleSave() {
+  if (paletteMgrSaveTimer) clearTimeout(paletteMgrSaveTimer);
+  paletteMgrSaveTimer = setTimeout(paletteMgrSave, PALETTE_SAVE_DEBOUNCE_MS);
+}
+
+function paletteMgrCommitChange() {
+  // Rebuild the in-app palette so the change shows immediately in the editor
+  buildPalette();
+  // Refresh the dynamic group label since group structure may have changed
+  if (typeof refreshGroupLabel === 'function') refreshGroupLabel();
+  // Re-render the manager UI itself
+  renderPaletteManager();
+  // Save (debounced)
+  paletteMgrScheduleSave();
+}
+
+function renderPaletteManager() {
+  const host = document.getElementById('palette-mgr-groups');
+  if (!host) return;
+  host.innerHTML = '';
+
+  LIVE_PALETTE_GROUPS.forEach((group, groupIndex) => {
+    const card = document.createElement('div');
+    card.className = 'palette-mgr-group';
+
+    const head = document.createElement('div');
+    head.className = 'palette-mgr-group-head';
+    const label = document.createElement('span');
+    label.className = 'palette-mgr-group-label';
+    label.textContent = group.label;
+    head.appendChild(label);
+    const delGroupBtn = document.createElement('button');
+    delGroupBtn.type = 'button';
+    delGroupBtn.className = 'palette-mgr-group-delete';
+    delGroupBtn.title = 'Delete this whole group';
+    delGroupBtn.textContent = '×';
+    delGroupBtn.addEventListener('click', () => {
+      if (group.chars.length > 0) {
+        if (!confirm(`Delete the "${group.label}" group and all ${group.chars.length} characters in it?`)) return;
+      } else if (!confirm(`Delete the empty "${group.label}" group?`)) return;
+      LIVE_PALETTE_GROUPS.splice(groupIndex, 1);
+      paletteMgrSelected = null;
+      paletteMgrCommitChange();
+    });
+    head.appendChild(delGroupBtn);
+    card.appendChild(head);
+
+    const chars = document.createElement('div');
+    chars.className = 'palette-mgr-chars';
+    group.chars.forEach((ch, charIndex) => {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'palette-mgr-char' + (group.wide || ch.length > 2 ? ' wide' : '');
+      tile.textContent = paletteLabel(ch);
+      tile.title = ch;
+      if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex && paletteMgrSelected.charIndex === charIndex) {
+        tile.classList.add('is-selected');
+      }
+      tile.addEventListener('click', () => {
+        if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex && paletteMgrSelected.charIndex === charIndex) {
+          paletteMgrSelected = null;
+        } else {
+          paletteMgrSelected = { groupIndex, charIndex };
+        }
+        renderPaletteManager();
+      });
+      chars.appendChild(tile);
+    });
+    card.appendChild(chars);
+
+    // Selected-char action panel — only when selection is in this group
+    if (paletteMgrSelected && paletteMgrSelected.groupIndex === groupIndex) {
+      const selected = group.chars[paletteMgrSelected.charIndex];
+      if (selected) {
+        const info = document.createElement('div');
+        info.className = 'palette-mgr-charinfo';
+
+        const row = document.createElement('div');
+        row.className = 'palette-mgr-charinfo-row';
+        const preview = document.createElement('span');
+        preview.className = 'palette-mgr-charinfo-preview';
+        preview.textContent = selected;
+        row.appendChild(preview);
+
+        const moveLabel = document.createElement('span');
+        moveLabel.textContent = 'Move to';
+        row.appendChild(moveLabel);
+
+        const select = document.createElement('select');
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'choose group…';
+        select.appendChild(placeholder);
+        LIVE_PALETTE_GROUPS.forEach((g, idx) => {
+          if (idx === groupIndex) return;
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = g.label;
+          select.appendChild(opt);
+        });
+        select.addEventListener('change', () => {
+          const targetIdx = parseInt(select.value, 10);
+          if (!Number.isInteger(targetIdx) || targetIdx === groupIndex) return;
+          const ch = group.chars.splice(paletteMgrSelected.charIndex, 1)[0];
+          LIVE_PALETTE_GROUPS[targetIdx].chars.push(ch);
+          paletteMgrSelected = null;
+          paletteMgrCommitChange();
+        });
+        row.appendChild(select);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'palette-mgr-btn danger';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => {
+          group.chars.splice(paletteMgrSelected.charIndex, 1);
+          paletteMgrSelected = null;
+          paletteMgrCommitChange();
+        });
+        row.appendChild(delBtn);
+
+        info.appendChild(row);
+        card.appendChild(info);
+      }
+    }
+
+    // Add-character input
+    const addRow = document.createElement('form');
+    addRow.className = 'palette-mgr-addrow';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Add character…';
+    input.maxLength = 80;
+    addRow.appendChild(input);
+    const addBtn = document.createElement('button');
+    addBtn.type = 'submit';
+    addBtn.className = 'palette-mgr-btn';
+    addBtn.textContent = '+';
+    addRow.appendChild(addBtn);
+    addRow.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = input.value;
+      if (!val || !val.length) return;
+      if (val.length > 80) {
+        paletteMgrSetStatus('Character too long (max 80 chars)', 'error');
+        return;
+      }
+      if (group.chars.includes(val)) {
+        paletteMgrSetStatus('Already in this group', 'error');
+        return;
+      }
+      group.chars.push(val);
+      input.value = '';
+      paletteMgrCommitChange();
+    });
+    card.appendChild(addRow);
+
+    host.appendChild(card);
+  });
+}
+
+(function wirePaletteManager() {
+  const form = document.getElementById('palette-mgr-newgroup');
+  if (!form) return;
+  const input = document.getElementById('palette-mgr-newgroup-input');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const label = (input.value || '').trim();
+    if (!label) return;
+    if (label.length > 60) {
+      paletteMgrSetStatus('Group name too long (max 60 chars)', 'error');
+      return;
+    }
+    if (LIVE_PALETTE_GROUPS.some((g) => g.label === label)) {
+      paletteMgrSetStatus('A group with that name already exists', 'error');
+      return;
+    }
+    LIVE_PALETTE_GROUPS.push({ label, wide: false, chars: [] });
+    input.value = '';
+    paletteMgrCommitChange();
+  });
+})();
+
+async function loadCustomPalette() {
+  try {
+    const url = await fnUrl('get-palette');
+    const res = await fetch(url);
+    if (res.status === 404) return; // no custom palette yet
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.groups)) return;
+    // Sanitize incoming data — only keep well-formed groups/chars
+    const clean = [];
+    for (const g of data.groups) {
+      if (!g || typeof g.label !== 'string' || !Array.isArray(g.chars)) continue;
+      clean.push({
+        label: g.label,
+        wide: !!g.wide,
+        chars: g.chars.filter((c) => typeof c === 'string' && c.length > 0 && c.length <= 80),
+      });
+    }
+    if (clean.length === 0) return;
+    LIVE_PALETTE_GROUPS = clean;
+    buildPalette();
+    if (typeof refreshGroupLabel === 'function') refreshGroupLabel();
+    renderPaletteManager();
+  } catch {
+    // network/parse error — silently fall back to default palette
+  }
+}
+
 /* ============ 15  Init ============ */
 buildPalette();
 buildFavoritesBar();
 setupGroupLabelTracker();
+renderPaletteManager();
+loadCustomPalette();
 boot().catch((err) => {
   console.error('boot failed', err);
   renderEmpty('Failed to load. Refresh to try again.');
