@@ -1404,6 +1404,12 @@ body.editor .export-bar { display: block; }
   -webkit-user-select: none;
   touch-action: none;
   cursor: crosshair;
+  /* CRITICAL (wos22): force full-width rendering as a belt-and-suspenders
+     hint for fonts that ship full-width Latin variants. The real guarantee
+     of cell uniformity is `.sketch-char { width: 1em }` below — this just
+     helps narrow glyphs visually fill their slot when the font supports it. */
+  font-variant-east-asian: full-width;
+  font-feature-settings: "fwid";
 }
 .sketch-line {
   white-space: pre;
@@ -1411,11 +1417,20 @@ body.editor .export-bar { display: block; }
 }
 .sketch-char {
   display: inline-block;
-  /* Natural glyph width, left-aligned — box-drawing/blocks tile edge-to-edge
-     exactly like the card render instead of floating centered in padded cells.
-     Hit-testing uses each span's stored x index, not pixel width, so painting
-     is unaffected. */
-  text-align: left;
+  /* HARD-FIX (wos22): every grid cell is exactly 1em wide regardless of the
+     glyph it holds. Painted cells used to take their natural glyph width
+     (a row of "T"s being ~0.6em each), while empty cells were already 1em
+     — so the column grid drifted apart row-by-row. Fixed cells make the
+     drawing surface look like an actual grid again, matching the empty-
+     cell baseline that's been the WoS column unit all along.
+       - width: 1em       — uniform cell, every glyph occupies the same slot
+       - text-align: center — center the glyph in its slot regardless of natural width
+       - vertical-align: top — keep painted + empty cells on the same baseline
+       - overflow: hidden  — clip any oddly-wide grapheme so it can't push neighbors */
+  width: 1em;
+  text-align: center;
+  vertical-align: top;
+  overflow: hidden;
   cursor: crosshair;
   border-radius: 2px;
   background: transparent;
@@ -1427,12 +1442,8 @@ body.editor .export-bar { display: block; }
   outline: none;
 }
 .sketch-empty-cell {
-  /* Empty cells are a fixed full-width box (1em) — the unit WoS art is built on.
-     Painting a full-width glyph over an empty cell then doesn't change the cell
-     width, so the rest of the row doesn't get pushed sideways. */
-  display: inline-block;
-  width: 1em;
-  text-align: center;
+  /* Empty cells inherit width:1em from .sketch-char above. Keeping the
+     transparent-color treatment so the NBSP placeholder isn't visible. */
   background: transparent;
   outline: none;
   color: transparent;
