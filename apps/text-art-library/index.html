@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos28">
+  <link rel="stylesheet" href="style.css?v=wos29">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -171,8 +171,15 @@
       overflow: hidden;
       transition: max-height 220ms ease;
     }
+    /* wos29: when open, drop the 2000px cap and the overflow:hidden so a
+       tall section (Character Palette manager has 30+ groups well past
+       2000px on mobile) shows ALL content. The parent .drawer-sections
+       has overflow-y:auto and takes scroll. The closing transition still
+       animates from a known height back to 0 because the browser captures
+       the resolved height when .is-open is removed. */
     .drawer-section.is-open .drawer-section-body {
-      max-height: 2000px;
+      max-height: none;
+      overflow: visible;
     }
     .drawer-list {
       display: flex;
@@ -1383,7 +1390,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos28"></script>
+  <script src="app.js?v=wos29"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

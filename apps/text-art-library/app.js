@@ -101,7 +101,6 @@ const els = {
   sketchActiveChar: $('sketch-active-char'),
   sketchUndo: $('sketch-undo'),
   sketchEraser: $('sketch-eraser'),
-  sketchFill: $('sketch-fill'),
   sketchClear: $('sketch-clear'),
 };
 
@@ -996,7 +995,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos28';
+const APP_VERSION = 'wos29';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1701,7 +1700,14 @@ function replaceCharAt(y, x) {
   // wos28: a paint can shift glyph widths across the rest of the row on a
   // proportional font, so re-render the whole affected line (cheap) instead
   // of mutating one cell in place.
-  renderLine(y);
+  // wos29 fix (codex P2): if a multi-grapheme brush pushed THIS row past the
+  // current grid width, every OTHER row still has the old padding — clicks
+  // past the old right edge would clamp and grab/drop fit-checks would
+  // reject `nx >= gridW`. Fall back to a full re-render so gridW + every
+  // line's padding recompute together.
+  const newRowLen = graphemes(lines[y]).length;
+  if (brush.length > 1 && newRowLen > gridW) renderSketch(true);
+  else renderLine(y);
   runAudit();
 }
 
@@ -1763,7 +1769,7 @@ function cellFromPoint(cx, cy) {
   let best = null, bestD = Infinity;
   for (let y = 0; y < gridH; y++) {
     const el = view.children[y];
-    if (!el || !el.classList || !el.classList.contains(sketch-line)) continue;
+    if (!el || !el.classList || !el.classList.contains('sketch-line')) continue;
     const r = el.getBoundingClientRect();
     if (cy >= r.top && cy <= r.bottom) { lineEl = el; break; }
     const mid = (r.top + r.bottom) / 2, d = Math.abs(cy - mid);
@@ -2072,7 +2078,6 @@ function fillBlankGrid() {
   renderSketch(true);
   runAudit();
 }
-if (els.sketchFill) els.sketchFill.addEventListener('click', fillBlankGrid);
 if (els.sketchClear) els.sketchClear.addEventListener('click', () => {
   if (!confirm('Clear the canvas and start over with a fresh blank grid?')) return;
   fillBlankGrid();
@@ -2097,22 +2102,6 @@ els.editArtInput.addEventListener('input', () => {
   // Only re-render sketch view when it's actually visible.
   if (isSketchMode()) renderSketch();
 });
-
-const textBlankBtn = document.getElementById('text-blank-canvas');
-if (textBlankBtn) {
-  textBlankBtn.addEventListener('click', () => {
-    if (els.editArtInput.value && !confirm('Replace current art with a blank 27×12 canvas?')) return;
-    pushEditHistory();
-    const cols = 27, rows = 12;
-    const line = '\u00A0'.repeat(cols);
-    els.editArtInput.value = Array(rows).fill(line).join('\n');
-    lastEditSnapshot = els.editArtInput.value;
-    els.editArtInput.focus();
-    els.editArtInput.setSelectionRange(0, 0);
-    renderSketch();
-    runAudit();
-  });
-}
 
 // Ctrl/Cmd+Z anywhere in the edit modal undoes
 document.addEventListener('keydown', (e) => {
