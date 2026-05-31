@@ -805,13 +805,13 @@ body.editor .export-bar { display: block; }
   flex: 1 1 0;          /* fills the dock; height comes from the dock's share */
   min-height: 180px;    /* enough to show the full 12-row grid comfortably */
   max-height: none;
-  /* wos31: fill the dock width (was fit-content) so the canvas is the SAME
-     size as the Type text box. Previously the canvas hugged the grid (~158px)
-     while the text box was full-width, so every flip to Draw looked like the
-     canvas "shrank". Matching widths makes the toggle keep the surface size
-     constant. The grid stays left-aligned; the extra green is just bubble. */
-  width: 100%;
-  box-sizing: border-box;
+  /* wos34: REVERTED wos31's width:100% — that override left dead green space
+     to the right of the 27-col grid that taps clamped to. Back to fit-content
+     (the base rule's "permanent fix") so the canvas is exactly grid-width.
+     Reserve enough width for 27 cols of art-font so an empty NBSP grid
+     doesn't visually collapse and so the surface size matches the Type
+     textarea (which has cols=27 in the same font). */
+  min-width: 27ch;
 }
 #edit.drawing .field label { margin-bottom: 3px; }
 #edit.drawing .draw-workspace > .field { margin-bottom: 6px; }
@@ -913,10 +913,28 @@ body.editor .export-bar { display: block; }
   display: block;
   flex: 1 1 0;
   min-height: 180px;
-  width: 100%;
+  /* wos34: type mode now matches the canvas surface BYTE FOR BYTE.
+     Same art font + padding + bubble bg as .sketch-view so toggling
+     Type<->Draw keeps the surface dimensions identical (no shrink,
+     no width change). The textarea owns its own intrinsic width
+     from `cols`+the art font, just like the canvas owns its width
+     from grid×ch — both yield ~the same visual frame. */
+  width: fit-content;
+  max-width: 100%;
   box-sizing: border-box;
   resize: none;
   margin: 0;
+  font-family: var(--art-font) !important;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: var(--art-line-height);
+  letter-spacing: normal;
+  word-spacing: normal;
+  padding: 14px;
+  border: 2px solid var(--border-preview);
+  border-radius: 10px;
+  background: var(--wos-bubble);
+  color: var(--wos-ink);
 }
 #edit.drawing.typing .sketch-view { display: none; }   /* type-input: hide paint canvas */
 #edit.drawing.typing .grab-hint { display: none; }     /* grab hint is draw-only */

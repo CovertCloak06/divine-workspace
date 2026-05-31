@@ -102,6 +102,7 @@ const els = {
   sketchUndo: $('sketch-undo'),
   sketchEraser: $('sketch-eraser'),
   sketchClear: $('sketch-clear'),
+  sketchGrabOne: $('sketch-grab-one'),
 };
 
 /* ============ 02  Utilities ============ */
@@ -995,7 +996,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos31';
+const APP_VERSION = 'wos34';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1836,19 +1837,37 @@ function writeCell(y, x, ch) {
   runAudit();
 }
 
+/* wos34: One-cell grab mode. When ON, long-press grabs just the pressed cell,
+ * not the connected shape — useful when neighbors keep coming along. */
+let grabOneOnly = false;
+
 /* Find the connected 2D shape of non-blank cells that includes the pressed
- * cell — 8-way flood fill (orthogonal + diagonal) so a multi-row art assembly
- * (a face whose eyes touch the mouth diagonally, a car, an animal) travels as
- * one unit. Returns null if the pressed cell is itself blank. */
+ * cell. wos34: changed from 8-way (orthogonal + diagonal) to 4-way (orthogonal
+ * only) — diagonal neighbors were getting dragged along with the cat unless
+ * the user wanted them. The whole shape still travels for genuine connections
+ * (a row of chars, a stacked face); only chars that ONLY touch by a corner
+ * are now left behind. For finer control, the "🤏 One" toolbar toggle grabs
+ * exactly one cell. Returns null if the pressed cell is itself blank. */
 function findShape(startY, startX) {
   const lines = els.editArtInput.value.split('\n');
   if (startY < 0 || startY >= lines.length) return null;
   const lineGS = lines.map(graphemes);
   if (startX < 0 || startX >= lineGS[startY].length || isBlankCell(lineGS[startY][startX])) return null;
+  // One-cell grab: just return the pressed cell, skip flood-fill.
+  if (grabOneOnly) {
+    const ch = lineGS[startY][startX];
+    return {
+      cells: [{ y: startY, x: startX, ch }],
+      minY: startY, maxY: startY, minX: startX, maxX: startX,
+      pressDY: 0, pressDX: 0,
+    };
+  }
   const visited = new Set();
   const cells = [];
   const stack = [[startY, startX]];
   let minY = startY, maxY = startY, minX = startX, maxX = startX;
+  // 4-way neighbors only — diagonals were dragging unrelated chars along.
+  const NEIGHBORS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
   while (stack.length) {
     const [y, x] = stack.pop();
     const key = y + ',' + x;
@@ -1862,16 +1881,12 @@ function findShape(startY, startX) {
     if (y > maxY) maxY = y;
     if (x < minX) minX = x;
     if (x > maxX) maxX = x;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        if (dy || dx) stack.push([y + dy, x + dx]);
-      }
-    }
+    for (const [dy, dx] of NEIGHBORS) stack.push([y + dy, x + dx]);
   }
   return {
     cells: cells, minY: minY, maxY: maxY, minX: minX, maxX: maxX,
-    pressDY: startY - minY, // offset from bbox top-left in rows
-    pressDX: startX - minX, // offset from bbox top-left in cols
+    pressDY: startY - minY,
+    pressDX: startX - minX,
   };
 }
 
@@ -2109,6 +2124,11 @@ els.sketchUndo.addEventListener('click', undoEdit);
 const textUndoBtn = document.getElementById('text-undo');
 if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
+if (els.sketchGrabOne) els.sketchGrabOne.addEventListener('click', () => {
+  grabOneOnly = !grabOneOnly;
+  els.sketchGrabOne.classList.toggle('active', grabOneOnly);
+  els.sketchGrabOne.setAttribute('aria-pressed', grabOneOnly ? 'true' : 'false');
+});
 // wos27: the active-char chip is the Canvas/Drawing mode toggle.
 if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
 
