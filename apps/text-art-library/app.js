@@ -996,7 +996,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos27';
+const APP_VERSION = 'wos28';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1603,6 +1603,44 @@ function setEraser(on) {
   updateBrushChip();
 }
 
+/* wos28: the canvas renders each line as ONE continuous text node — so the
+ * browser shapes it and picks fonts exactly like the card's
+ * <pre class="art-render"> does. The old per-<span>-per-character structure
+ * forced isolated shaping/fallback on every glyph, which is why the editor
+ * never matched the card. Hit-testing is now geometry-based (measureLineCells
+ * + cellFromPoint) so painting still targets the right cell on a proportional
+ * font. */
+let gridW = 0, gridH = 0;   // current canvas dimensions (cols, rows)
+let overlayEl = null;       // drop-target highlight layer (grab-move)
+
+function lineModelText(rawLine) {
+  // Pad the model line to gridW NBSPs for DISPLAY only (never written back to
+  // the model) so the whole grid stays paintable to the right of the art.
+  const gs = (rawLine != null) ? graphemes(rawLine) : [];
+  while (gs.length < gridW) gs.push(' ');
+  return gs.join('');
+}
+function buildLineEl(y, rawLine) {
+  const lineEl = document.createElement('div');
+  lineEl.className = 'sketch-line';
+  lineEl.dataset.y = y;
+  lineEl.textContent = lineModelText(rawLine);
+  lineEl._cells = null; // lazy boundary cache (x offsets relative to the line)
+  return lineEl;
+}
+function renderLine(y) {
+  const lineEl = els.sketchView.children[y];
+  if (!lineEl || !lineEl.classList.contains('sketch-line')) return;
+  const lines = els.editArtInput.value.split('\n');
+  lineEl.textContent = lineModelText(lines[y]);
+  lineEl._cells = null; // glyph widths shift on a proportional font — re-measure lazily
+}
+function ensureOverlay() {
+  overlayEl = document.createElement('div');
+  overlayEl.className = 'sketch-overlay';
+  els.sketchView.appendChild(overlayEl);
+}
+
 function renderSketch(force) {
   if (!els.sketchView) return;
   if (!force && !isSketchMode()) return;
@@ -1613,33 +1651,20 @@ function renderSketch(force) {
     hint.className = 'sketch-hint';
     hint.textContent = 'Switch to Sketch mode to start drawing on a 27×12 blank canvas.';
     els.sketchView.appendChild(hint);
+    gridW = gridH = 0;
+    overlayEl = null;
     return;
   }
   // Cap canvas at WoS limits so there's no dead space outside chat-safe bounds.
-  //   width  → max(27, actual) capped at 58 (hard limit)
-  //   height → max(12, actual) capped at 24 (twice WoS height; anything beyond is degenerate)
   const lines = text.split('\n');
   let actualWidest = 0;
   for (const l of lines) actualWidest = Math.max(actualWidest, graphemeCount(l));
-  const widest = Math.min(WOS_HARD_LIMIT, Math.max(WOS_MAX_WIDTH, actualWidest));
-  const tallest = Math.min(24, Math.max(12, lines.length));
-  for (let y = 0; y < tallest; y++) {
-    const lineEl = document.createElement('div');
-    lineEl.className = 'sketch-line';
-    const gs = y < lines.length ? graphemes(lines[y]) : [];
-    while (gs.length < widest) gs.push('\u00A0');
-    for (let x = 0; x < widest; x++) {
-      const span = document.createElement('span');
-      span.className = 'sketch-char';
-      const g = gs[x];
-      span.textContent = (g === undefined || g === '\u00A0' || g === ' ') ? '\u00A0' : g;
-      if (g === undefined || g === '\u00A0' || g === ' ') span.classList.add('sketch-empty-cell');
-      span.dataset.y = y;
-      span.dataset.x = x;
-      lineEl.appendChild(span);
-    }
-    els.sketchView.appendChild(lineEl);
+  gridW = Math.min(WOS_HARD_LIMIT, Math.max(WOS_MAX_WIDTH, actualWidest));
+  gridH = Math.min(24, Math.max(12, lines.length));
+  for (let y = 0; y < gridH; y++) {
+    els.sketchView.appendChild(buildLineEl(y, lines[y]));
   }
+  ensureOverlay();
 }
 
 function replaceCharAt(y, x) {
@@ -1673,35 +1698,10 @@ function replaceCharAt(y, x) {
   editHistorySuspend = false;
   lastEditSnapshot = els.editArtInput.value;
 
-  // Single-char brush -> mutate just the touched span (fast path for drags).
-  // Multi-char brush -> re-render so every stamped cell refreshes.
-  if (brush.length === 1) {
-    const lineEl = els.sketchView.children[y];
-    if (lineEl) {
-      let span = lineEl.children[x];
-      if (!span) {
-        while (lineEl.children.length <= x) {
-          const s = document.createElement('span');
-          s.className = 'sketch-char sketch-empty-cell';
-          s.textContent = '\u00A0';
-          s.dataset.y = y;
-          s.dataset.x = lineEl.children.length;
-          lineEl.appendChild(s);
-        }
-        span = lineEl.children[x];
-      }
-      const nc = brush[0];
-      if (nc === '\u00A0' || nc === ' ') {
-        span.textContent = '\u00A0';
-        span.classList.add('sketch-empty-cell');
-      } else {
-        span.textContent = nc;
-        span.classList.remove('sketch-empty-cell');
-      }
-    }
-  } else {
-    renderSketch(true);
-  }
+  // wos28: a paint can shift glyph widths across the rest of the row on a
+  // proportional font, so re-render the whole affected line (cheap) instead
+  // of mutating one cell in place.
+  renderLine(y);
   runAudit();
 }
 
@@ -1731,13 +1731,60 @@ let grabGhostEl = null;      // floating chip that follows the finger
 let grabHoldTimer = null;
 const GRAB_HOLD_MS = 450;
 
-function cellFromPoint(cx, cy) {
-  const target = document.elementFromPoint(cx, cy);
-  return target && target.closest ? target.closest('.sketch-char') : null;
+function measureLineCells(lineEl) {
+  // Cache each grapheme cell as {left,right} pixel offsets RELATIVE to the
+  // line element, so the cache survives canvas scrolling. Recomputed lazily
+  // after any edit (renderLine nulls _cells).
+  if (lineEl._cells) return lineEl._cells;
+  const node = lineEl.firstChild;
+  const cells = [];
+  if (node && node.nodeType === 3) {
+    const lineLeft = lineEl.getBoundingClientRect().left;
+    const gs = graphemes(node.nodeValue);
+    const range = document.createRange();
+    let cu = 0;
+    for (let i = 0; i < gs.length; i++) {
+      const len = gs[i].length;
+      range.setStart(node, cu);
+      range.setEnd(node, cu + len);
+      const r = range.getBoundingClientRect();
+      cells.push({ left: r.left - lineLeft, right: r.right - lineLeft });
+      cu += len;
+    }
+  }
+  lineEl._cells = cells;
+  return cells;
 }
-function cellAt(y, x) {
-  const lineEl = els.sketchView.children[y];
-  return lineEl ? lineEl.children[x] : null;
+// wos28: pixel -> {y,x} grid cell by geometry (no per-char elements exist now).
+function cellFromPoint(cx, cy) {
+  const view = els.sketchView;
+  if (!view || gridH === 0) return null;
+  let lineEl = null;
+  let best = null, bestD = Infinity;
+  for (let y = 0; y < gridH; y++) {
+    const el = view.children[y];
+    if (!el || !el.classList || !el.classList.contains(sketch-line)) continue;
+    const r = el.getBoundingClientRect();
+    if (cy >= r.top && cy <= r.bottom) { lineEl = el; break; }
+    const mid = (r.top + r.bottom) / 2, d = Math.abs(cy - mid);
+    if (d < bestD) { bestD = d; best = el; }
+  }
+  if (!lineEl) lineEl = best;            // clamp to nearest row so edge drags still paint
+  if (!lineEl) return null;
+  const y = +lineEl.dataset.y;
+  const cells = measureLineCells(lineEl);
+  if (!cells.length) return { y, x: 0 };
+  const cxRel = cx - lineEl.getBoundingClientRect().left;
+  if (cxRel < cells[0].left) return { y, x: 0 };
+  if (cxRel >= cells[cells.length - 1].right) return { y, x: cells.length - 1 };
+  let lo = 0, hi = cells.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (cxRel < cells[mid].left) hi = mid - 1;
+    else if (cxRel >= cells[mid].right) lo = mid + 1;
+    else return { y, x: mid };
+  }
+  return { y, x: Math.min(cells.length - 1, Math.max(0, lo)) };
 }
 function cellContent(y, x) {
   const lines = els.editArtInput.value.split('\n');
@@ -1762,11 +1809,7 @@ function writeCell(y, x, ch) {
   els.editArtInput.value = lines.join('\n');
   editHistorySuspend = false;
   lastEditSnapshot = els.editArtInput.value;
-  const span = cellAt(y, x);
-  if (span) {
-    if (isBlankCell(ch)) { span.textContent = '\u00A0'; span.classList.add('sketch-empty-cell'); }
-    else { span.textContent = ch; span.classList.remove('sketch-empty-cell'); }
-  }
+  renderLine(y);
   runAudit();
 }
 
@@ -1809,23 +1852,37 @@ function findShape(startY, startX) {
   };
 }
 
-let dropHighlighted = [];
+// wos28: grab-move highlight uses an absolutely-positioned overlay layer
+// (there are no per-cell elements to add a class to anymore). Each target
+// cell is drawn as a box positioned from the measured grapheme rect.
 function clearDropTarget() {
-  for (const c of dropHighlighted) c.classList.remove('drop-target');
-  dropHighlighted = [];
+  if (overlayEl) overlayEl.innerHTML = '';
 }
-/* Highlight every cell the grabbed shape would land on if dropped with the
- * press point at (releaseY, releaseX). Replaces the row-only highlighter; the
- * shape's bbox offset is what positions every cell relative to the release. */
 function highlightDropShape(shape, releaseY, releaseX) {
   clearDropTarget();
+  if (!overlayEl) return;
+  const view = els.sketchView;
+  const viewRect = view.getBoundingClientRect();
+  const sl = view.scrollLeft, st = view.scrollTop;
   const newMinY = releaseY - shape.pressDY;
   const newMinX = releaseX - shape.pressDX;
   for (const c of shape.cells) {
     const ny = newMinY + (c.y - shape.minY);
     const nx = newMinX + (c.x - shape.minX);
-    const cell = cellAt(ny, nx);
-    if (cell) { cell.classList.add('drop-target'); dropHighlighted.push(cell); }
+    if (ny < 0 || ny >= gridH || nx < 0 || nx >= gridW) continue;
+    const lineEl = view.children[ny];
+    if (!lineEl || !lineEl.classList || !lineEl.classList.contains('sketch-line')) continue;
+    const cells = measureLineCells(lineEl);
+    if (nx >= cells.length) continue;
+    const cell = cells[nx];
+    const lineRect = lineEl.getBoundingClientRect();
+    const box = document.createElement('div');
+    box.className = 'sketch-drop';
+    box.style.left = ((lineRect.left - viewRect.left) + sl + cell.left) + 'px';
+    box.style.top = ((lineRect.top - viewRect.top) + st) + 'px';
+    box.style.width = Math.max(2, cell.right - cell.left) + 'px';
+    box.style.height = lineRect.height + 'px';
+    overlayEl.appendChild(box);
   }
 }
 /* Render the shape into a single (multi-line if needed) string for the ghost. */
@@ -1849,7 +1906,7 @@ function endGrab() {
 
 function gestureDown(cx, cy, cell) {
   if (!cell) return;
-  gesturePending = { y: +cell.dataset.y, x: +cell.dataset.x, clientX: cx, clientY: cy };
+  gesturePending = { y: cell.y, x: cell.x, clientX: cx, clientY: cy };
   clearTimeout(grabHoldTimer);
   grabHoldTimer = setTimeout(() => {
     if (!gesturePending) return;
@@ -1877,13 +1934,13 @@ function gestureMove(cx, cy) {
     moveGhost(cx, cy);
     const cell = cellFromPoint(cx, cy);
     if (!cell) { clearDropTarget(); return; }
-    highlightDropShape(grabState, +cell.dataset.y, +cell.dataset.x);
+    highlightDropShape(grabState, cell.y, cell.x);
     return;
   }
   const cell = cellFromPoint(cx, cy);
   if (gesturePending) {
     // Moved off the origin cell before the hold fired => paint drag.
-    if (cell && (+cell.dataset.y !== gesturePending.y || +cell.dataset.x !== gesturePending.x)) {
+    if (cell && (cell.y !== gesturePending.y || cell.x !== gesturePending.x)) {
       clearTimeout(grabHoldTimer);
       // wos27: in Canvas mode (or with no brush) a drag places nothing — cancel
       // the gesture. Long-press grab-move is armed separately and still works.
@@ -1892,11 +1949,11 @@ function gestureMove(cx, cy) {
       replaceCharAt(gesturePending.y, gesturePending.x);
       paintActive = true;
       gesturePending = null;
-      replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+      replaceCharAt(cell.y, cell.x);
     }
     return;
   }
-  if (paintActive && cell) replaceCharAt(+cell.dataset.y, +cell.dataset.x);
+  if (paintActive && cell) replaceCharAt(cell.y, cell.x);
 }
 
 function gestureUp(cx, cy) {
@@ -1906,9 +1963,9 @@ function gestureUp(cx, cy) {
     const shape = grabState;
     let placed = false;
     if (cell) {
-      const newMinY = (+cell.dataset.y) - shape.pressDY;
-      const newMinX = (+cell.dataset.x) - shape.pressDX;
-      const lineCount = els.sketchView.children.length;
+      const newMinY = (cell.y) - shape.pressDY;
+      const newMinX = (cell.x) - shape.pressDX;
+      const lineCount = gridH;
       // Fit-check every cell of the shape against the canvas; if ANY would
       // land off, snap the whole shape back to origin rather than clipping.
       let valid = true;
@@ -1916,8 +1973,7 @@ function gestureUp(cx, cy) {
         const ny = newMinY + (c.y - shape.minY);
         const nx = newMinX + (c.x - shape.minX);
         if (ny < 0 || ny >= lineCount) { valid = false; break; }
-        const lineEl = els.sketchView.children[ny];
-        const rowWidth = lineEl ? lineEl.children.length : 0;
+        const rowWidth = gridW;
         if (nx < 0 || nx >= rowWidth) { valid = false; break; }
       }
       if (valid) {
