@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos29">
+  <link rel="stylesheet" href="style.css?v=wos30">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1284,10 +1284,6 @@
     <div class="modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
       <div class="modal-head">
         <h3 id="edit-title">Add new art</h3>
-        <button type="button" class="draw-toggle head-toggle" id="draw-toggle" role="switch" aria-checked="false" title="Switch between typing and drawing on the canvas">
-          <span class="draw-switch"><span class="draw-knob"></span></span>
-          <span class="draw-toggle-text" id="draw-toggle-text">✏ Draw</span>
-        </button>
         <span class="autosave-indicator" id="autosave-indicator" aria-live="polite"></span>
         <button class="modal-close" id="edit-close" aria-label="Close">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1299,20 +1295,10 @@
         </button>
       </div>
       <div class="modal-body edit-modal-body">
-        <!-- Text-mode art field (hidden in draw mode). Title/Tags live in the
-             save sheet so the canvas + palette own the entire body. -->
-        <div class="field art-field-wrap">
-          <div class="art-label-row text-only-row">
-            <label for="edit-art-input">Art</label>
-            <div class="art-tools">
-              <button type="button" class="tool-btn text-only" id="text-undo" title="Undo last change (Ctrl+Z)">↶ Undo</button>
-            </div>
-          </div>
-          <textarea id="edit-art-input" placeholder="Paste your art here, or flip to Draw to paint it…" spellcheck="false"></textarea>
-        </div>
-        <!-- Draw workspace: the canvas dock is pinned (sticky) at the top of this
-             wrapper while the favorites + palette inside it scroll, so the canvas
-             stays visible the whole time you're picking characters. -->
+        <!-- wos30: ONE unified workspace for both Type and Draw. The toggle
+             under the canvas switches input method only; the canvas/text
+             surface, the favorites and palette stay put so the view never
+             swaps between two separate interfaces. -->
         <div class="draw-workspace draw-only">
           <div class="canvas-dock">
             <div class="sketch-bar" id="sketch-bar">
@@ -1322,7 +1308,14 @@
               <button class="tool-btn" id="sketch-clear" title="Start over with a fresh blank grid" style="margin-left:auto">🗑 Clear</button>
             </div>
             <div class="sketch-view" id="sketch-view"></div>
+            <textarea id="edit-art-input" placeholder="Type or paste your art here…" spellcheck="false"></textarea>
             <div class="grab-hint">✋ Long-press a face or character to grab &amp; move it</div>
+            <div class="mode-toggle-row">
+              <button type="button" class="draw-toggle" id="draw-toggle" role="switch" aria-checked="true" title="Switch between typing and drawing on the canvas">
+                <span class="draw-switch"><span class="draw-knob"></span></span>
+                <span class="draw-toggle-text" id="draw-toggle-text">✏ Draw</span>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label>Favorites <span style="color:var(--ink-dim);font-weight:400;text-transform:none;letter-spacing:0;">— long-press a palette char to add · long-press a favorite to remove</span></label>
@@ -1390,7 +1383,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos29"></script>
+  <script src="app.js?v=wos30"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

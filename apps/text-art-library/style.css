@@ -895,6 +895,35 @@ body.editor .export-bar { display: block; }
 .edit-modal .autosave-indicator { margin-left: 0; }
 /* Draw mode hides the text-mode art field entirely — this is the reclaimed space. */
 #edit.drawing .art-field-wrap { display: none; }
+
+/* ===== wos30: unified Type/Draw editor =================================
+   The editor is ALWAYS in the .drawing workspace layout (canvas-dock +
+   favorites + palette). The `.typing` modifier just swaps the paint canvas
+   for the text box in the SAME dock slot and hides the paint-only chrome,
+   so toggling never swaps to a different-looking interface. Brush state is
+   preserved across toggles (reset only happens on a fresh editor open). */
+#edit.drawing.typing #edit-art-input {
+  display: block;
+  flex: 1 1 0;
+  min-height: 180px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  margin: 0;
+}
+#edit.drawing.typing .sketch-view { display: none; }   /* type-input: hide paint canvas */
+#edit.drawing.typing .grab-hint { display: none; }     /* grab hint is draw-only */
+#edit.drawing.typing #sketch-active-char,
+#edit.drawing.typing #sketch-eraser,
+#edit.drawing.typing #sketch-clear { display: none; }  /* paint-only tools */
+/* The Draw/Type toggle now lives under the canvas window, centered. */
+.mode-toggle-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 8px 0 2px;
+}
 /* Anchor the absolutely-positioned save sheet to the editor modal. */
 .edit-modal { position: relative; }
 .save-sheet {

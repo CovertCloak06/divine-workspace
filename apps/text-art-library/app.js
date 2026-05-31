@@ -995,7 +995,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos29';
+const APP_VERSION = 'wos30';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1279,6 +1279,7 @@ function openAdd() {
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
   closeSaveSheet();
+  resetBrushState();          // fresh canvas: nothing armed (safe). Toggling keeps it after.
   toggleDraw(true); // new art opens straight into the draw canvas (primary feature)
   runAudit();
   renderSketch();
@@ -1296,7 +1297,8 @@ function openEdit(p) {
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
   closeSaveSheet();
-  toggleDraw(false);
+  resetBrushState();
+  toggleDraw(false); // existing art opens in type-input (keyboard) on the unified canvas
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
@@ -1306,6 +1308,7 @@ function openEdit(p) {
 function closeEdit() {
   els.edit.classList.remove('open');
   els.edit.classList.remove('drawing');
+  els.edit.classList.remove('typing');
   closeSaveSheet();
 }
 els.editClose.addEventListener('click', () => closeEdit());
@@ -1427,9 +1430,15 @@ function ensureBlankCanvas() {
   runAudit();
 }
 
+/* wos30: the editor is ALWAYS in the unified `.drawing` workspace layout;
+ * this only switches the INPUT sub-mode. on=true -> draw-input (paint the
+ * canvas). on=false -> type-input (`.typing`: keyboard into the text box).
+ * Brush state is NOT reset here (resetBrushState handles that once per open),
+ * so flipping Type<->Draw keeps whatever you had selected. */
 function toggleDraw(on) {
   const drawing = !!on;
-  els.edit.classList.toggle('drawing', drawing);
+  els.edit.classList.add('drawing');
+  els.edit.classList.toggle('typing', !drawing);
   const btn = document.getElementById('draw-toggle');
   if (btn) {
     btn.classList.toggle('active', drawing);
@@ -1438,18 +1447,26 @@ function toggleDraw(on) {
   const txt = document.getElementById('draw-toggle-text');
   if (txt) txt.textContent = drawing ? '✏ Draw' : '⌨ Type';
   if (drawing) {
-    // wos27: every entry into Draw mode starts clean — no brush selected, in
-    // Canvas mode — so nothing gets placed until the user picks a character.
-    activeBrush = null;
-    eraserOn = false;
-    canvasMode = true;
-    if (els.sketchEraser) els.sketchEraser.classList.remove('active');
-    if (els.charPalette) els.charPalette.querySelectorAll('.palette-btn.brush-active').forEach((b) => b.classList.remove('brush-active'));
-    if (els.favoritesBar) els.favoritesBar.querySelectorAll('.fav-slot.brush-active').forEach((b) => b.classList.remove('brush-active'));
     ensureBlankCanvas();
     renderSketch(true);
     updateBrushChip();
+  } else if (els.editArtInput) {
+    // entering type-input: hand focus to the text box for keyboard entry
+    setTimeout(() => { try { els.editArtInput.focus(); } catch {} }, 0);
   }
+}
+
+/* Reset the paint brush to a clean, safe state. Called once per editor open
+ * (NOT on every toggle) so a fresh canvas starts with nothing armed, while
+ * flipping Type<->Draw preserves whatever brush you had selected. */
+function resetBrushState() {
+  activeBrush = null;
+  eraserOn = false;
+  canvasMode = true;
+  if (els.sketchEraser) els.sketchEraser.classList.remove('active');
+  if (els.charPalette) els.charPalette.querySelectorAll('.palette-btn.brush-active').forEach((b) => b.classList.remove('brush-active'));
+  if (els.favoritesBar) els.favoritesBar.querySelectorAll('.fav-slot.brush-active').forEach((b) => b.classList.remove('brush-active'));
+  updateBrushChip();
 }
 
 const runAudit = () => {
@@ -2187,7 +2204,9 @@ function attachLongPress(el, { onTap, onLong }) {
 }
 
 function isSketchMode() {
-  return els.edit.classList.contains('drawing');
+  // wos30: `.drawing` is the always-on unified workspace; draw-INPUT mode is
+  // when we're NOT in the `.typing` sub-mode. Paint/render gating uses this.
+  return els.edit.classList.contains('drawing') && !els.edit.classList.contains('typing');
 }
 
 function handlePaletteSelection(ch) {
