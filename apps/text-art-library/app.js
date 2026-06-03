@@ -647,7 +647,11 @@ function buildDrawerList() {
 function syncActiveThemeChip() {
   if (!els.activeThemeRow) return;
   const t = state.activeTag;
-  const isDefault = !t || t === 'all';
+  /* wos38: hide the active-tag chip while viewing the Drafts destination —
+   * the dedicated banner above the gallery already labels the section, and
+   * showing the raw "__drafts" string in a topical-tag-style chip implied
+   * drafts was a tag in the strip (it isn't). */
+  const isDefault = !t || t === 'all' || t === '__drafts';
   if (isDefault) {
     els.activeThemeRow.hidden = true;
     return;
@@ -729,47 +733,41 @@ function liveDraftCount() {
   for (const p of library) if (p && p.draft) n++;
   return n;
 }
+/* wos38: Drafts is its own ADMIN DESTINATION, not a tag in the tag strip.
+ * The strip is for topical filters of the published library (hearts,
+ * animals, etc); drafts are work-in-progress and live in a separate place
+ * accessed only from the admin drawer. This syncs:
+ *   - the drawer's dedicated Drafts button (creates/removes/updates count)
+ *   - a banner shown ABOVE the gallery while __drafts is active so the user
+ *     knows they're in a separate WIP section (with a Back-to-library link).
+ * Anything that used to push Drafts into the tag strip is removed. */
 function syncDraftsTab() {
-  if (!els.tagStrip) return;
-  let existing = els.tagStrip.querySelector('.tag.drafts-tab');
   const count = liveDraftCount();
   const shouldShow = state.editor && count > 0;
-  if (shouldShow) {
-    if (!existing) {
-      existing = document.createElement('button');
-      existing.className = 'tag drafts-tab';
-      existing.dataset.tag = '__drafts';
-      existing.addEventListener('click', () =>
-        setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts'),
-      );
-      els.tagStrip.appendChild(existing);
-    }
-    existing.textContent = `drafts (${count})`;
-    existing.classList.toggle('active', state.activeTag === '__drafts');
-  } else if (existing) {
-    existing.remove();
-    if (state.activeTag === '__drafts') state.activeTag = 'all';
+
+  // Remove any stale tag-strip entry (this used to live here in wos35).
+  if (els.tagStrip) {
+    const stale = els.tagStrip.querySelector('.tag.drafts-tab');
+    if (stale) stale.remove();
   }
-  if (els.drawerList) {
-    let drawerDrafts = els.drawerList.querySelector('.drawer-item.drafts-tab');
-    if (shouldShow) {
-      if (!drawerDrafts) {
-        drawerDrafts = document.createElement('button');
-        drawerDrafts.type = 'button';
-        drawerDrafts.className = 'drawer-item drafts-tab';
-        drawerDrafts.dataset.tag = '__drafts';
-        drawerDrafts.setAttribute('role', 'listitem');
-        drawerDrafts.addEventListener('click', () => {
-          setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts');
-          closeDrawer();
-        });
-        els.drawerList.appendChild(drawerDrafts);
-      }
-      drawerDrafts.textContent = `drafts (${count})`;
-      drawerDrafts.classList.toggle('active', state.activeTag === '__drafts');
-    } else if (drawerDrafts) {
-      drawerDrafts.remove();
-    }
+
+  // Dedicated drawer entry (separate "destination").
+  const drawerBtn = document.getElementById('drawer-drafts-btn');
+  if (drawerBtn) {
+    drawerBtn.hidden = !shouldShow;
+    drawerBtn.textContent = `📝 Drafts (${count})`;
+    drawerBtn.classList.toggle('active', state.activeTag === '__drafts');
+  }
+
+  // If the active view IS drafts but admin lost access or count dropped to 0,
+  // bounce back to the published library so the user is never stranded.
+  if (state.activeTag === '__drafts' && !shouldShow) state.activeTag = 'all';
+
+  // Banner above the gallery while we're in the drafts destination.
+  const banner = document.getElementById('drafts-banner');
+  if (banner) {
+    const isDrafts = state.editor && state.activeTag === '__drafts';
+    banner.hidden = !isDrafts;
   }
 }
 
@@ -1053,6 +1051,18 @@ if (els.drawerScrim) els.drawerScrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && els.drawer && els.drawer.classList.contains('open')) closeDrawer();
 });
+
+// wos38: drawer "📝 Drafts" CTA — switches the gallery to the Drafts
+// destination (admin only) and closes the drawer.
+const draftsCta = document.getElementById('drawer-drafts-btn');
+if (draftsCta) draftsCta.addEventListener('click', () => {
+  if (!state.editor) return;
+  setActiveTag(state.activeTag === '__drafts' ? 'all' : '__drafts');
+  closeDrawer();
+});
+// "← Back to library" inside the drafts banner returns to the published view.
+const draftsBack = document.getElementById('drafts-banner-back');
+if (draftsBack) draftsBack.addEventListener('click', () => setActiveTag('all'));
 /* Settings accordion — tap a section head to expand/collapse its body. Only
    one section is open by default (Themes); future sections (Character
    Management, Chat) will hang off the same pattern. */
@@ -1076,7 +1086,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos37';
+const APP_VERSION = 'wos38';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
