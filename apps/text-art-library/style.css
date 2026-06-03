@@ -2086,3 +2086,63 @@ body.editor .export-bar { display: block; }
   white-space: pre;
   text-align: center;
 }
+
+/* ============================================================================
+   wos38 — dedicated DRAFTS admin destination
+   The drafts entry is OUT of the tag strip and into a prominent button at the
+   top of the drawer; a banner above the gallery makes the separate-section
+   nature obvious while you're viewing drafts.
+   ============================================================================ */
+.drawer-drafts-cta {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(255,200,100,0.18), rgba(255,200,100,0.08));
+  border: 1.5px solid rgba(255,200,100,0.55);
+  border-radius: 12px;
+  color: #f5c47a;
+  font: 800 14px/1 'Fredoka','Nunito',sans-serif;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+.drawer-drafts-cta:hover { background: rgba(255,200,100,0.22); }
+.drawer-drafts-cta.active {
+  background: rgba(255,200,100,0.35);
+  color: #fff;
+  border-color: rgba(255,200,100,0.85);
+}
+.drafts-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  margin: 0 0 10px;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, rgba(255,200,100,0.16), rgba(255,200,100,0.06));
+  border-bottom: 1.5px solid rgba(255,200,100,0.55);
+  color: #f5c47a;
+}
+.drafts-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.drafts-banner-emoji { font-size: 20px; line-height: 1; }
+.drafts-banner-text { display: flex; flex-direction: column; gap: 2px; }
+.drafts-banner-text strong { font-weight: 800; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+.drafts-banner-text span { font-size: 12px; color: rgba(245,196,122,0.85); }
+.drafts-banner-back {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(255,200,100,0.6);
+  color: #f5c47a;
+  font: 700 12px/1 'Fredoka','Nunito',sans-serif;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.drafts-banner-back:hover { background: rgba(255,200,100,0.18); color: #fff; }
