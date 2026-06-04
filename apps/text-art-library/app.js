@@ -29,8 +29,16 @@ const TAGS = [
   'decorative', 'celebration', 'symbols', 'aesthetic', 'kawaii',
   'gothic', 'memes', 'sayings', 'minimalist', 'nsfw',
 ];
-const WOS_MAX_WIDTH = 27;       // soft warn (⚠) — wide chars may clip
-const WOS_HARD_LIMIT = 58;      // hard warn (⛔) — likely to break in chat
+/* WoS chat rendering spec (v1.0):
+ *  - WoS uses a PROPORTIONAL font, so raw char count is meaningless.
+ *  - Effective hard wrap ≈ 34 VISUAL columns.
+ *  - Safe target = 30 VISUAL columns.
+ *  - Visual width is a weighted sum:  narrow=0.5, medium=1.0, wide=1.5
+ * These constants drive the audit zones AND the editor canvas size. */
+const WOS_SAFE_WIDTH   = 30;   // <= 30 visual cols  -> safe
+const WOS_HARD_LIMIT   = 34;   // 31..34 -> warn, > 34 -> fail
+const WOS_DEFAULT_COLS = 30;   // default canvas char-grid width (cols)
+const WOS_DEFAULT_ROWS = 12;   // default canvas rows
 const DEV_FALLBACK_PASSWORD = '0022';
 
 
@@ -92,6 +100,9 @@ const els = {
   editArtInput: $('edit-art-input'),
   editPreview: $('edit-preview'),
   editAudit: $('edit-audit'),
+  widthMeter: $('wos-width-meter'),
+  widthVal: $('wos-width-val'),
+  widthHint: $('wos-width-hint'),
   editCancel: $('edit-cancel'),
   editSave: $('edit-save'),
 
@@ -130,21 +141,36 @@ function measure(art) {
 // Does this art wrap inside the WoS chat bubble? WoS uses a proportional font,
 // so a character count can't predict wrapping \u2014 we measure the REAL render in a
 // hidden .art-render element (same font/width/wrap as the game).
-let _wrapMeasure = null;
-function wrapsInWoS(art) {
-  if (!art) return false;
-  if (!_wrapMeasure) {
-    _wrapMeasure = document.createElement('div');
-    _wrapMeasure.className = 'art-render';
-    _wrapMeasure.setAttribute('aria-hidden', 'true');
-    _wrapMeasure.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;font-size:16px;';
-    document.body.appendChild(_wrapMeasure);
+/* WoS visual-width model (per rendering spec v1.0).
+ *  narrow chars contribute 0.5, wide chars 1.5, everything else 1.0.
+ *  Single source of truth for both the audit zones and the warn-line UI. */
+const WOS_NARROW_CHARS = new Set(['.', ',', ':', ';', "'", '`', '|', '!', 'i', 'l']);
+const WOS_WIDE_CHARS   = new Set(['M', 'W', '@', '#', '%', '&']);
+function wosCharWidth(ch) {
+  if (WOS_NARROW_CHARS.has(ch)) return 0.5;
+  if (WOS_WIDE_CHARS.has(ch))   return 1.5;
+  return 1.0;
+}
+function wosVisualWidth(line) {
+  let w = 0;
+  for (const ch of line) w += wosCharWidth(ch);
+  return w;
+}
+function wosWidestVisualLine(art) {
+  if (!art) return 0;
+  let max = 0;
+  for (const line of art.split('\n')) {
+    const w = wosVisualWidth(line);
+    if (w > max) max = w;
   }
-  _wrapMeasure.style.fontSize = '16px';
-  _wrapMeasure.textContent = art;
-  const lh = parseFloat(getComputedStyle(_wrapMeasure).lineHeight) || 20;
-  const srcRows = art.split('\n').length;
-  return _wrapMeasure.scrollHeight > Math.ceil(srcRows * lh) + 1;
+  return max;
+}
+/* Returns one of: { level: 'safe' | 'warn' | 'fail', width: <number> } */
+function wosClassifyWidth(art) {
+  const w = wosWidestVisualLine(art);
+  if (w > WOS_HARD_LIMIT) return { level: 'fail', width: w };
+  if (w > WOS_SAFE_WIDTH) return { level: 'warn', width: w };
+  return { level: 'safe', width: w };
 }
 
 function spacesToNbsp(s) {
@@ -203,13 +229,20 @@ function auditArt(text) {
       msg: 'Contains regular spaces — auto-converted on save. Copy from the gallery, not the text editor, to get the WoS-safe version.',
     });
   }
-  // Width audit — does it ACTUALLY wrap in WoS's bubble? WoS is proportional,
-  // so a raw character count is meaningless (e.g. a 42-char line of narrow glyphs
-  // fits fine). We measure the real render instead.
-  if (wrapsInWoS(text)) {
+  // Width audit per WoS rendering spec v1.0.
+  // WoS uses a proportional font with effective wrap ~34 visual columns.
+  // We measure visual width via the weighted model (narrow 0.5 / med 1.0 / wide 1.5)
+  // and report against the safe (30) and hard (34) thresholds.
+  const widthCheck = wosClassifyWidth(text);
+  if (widthCheck.level === 'fail') {
+    issues.push({
+      level: 'error',
+      msg: `Artwork exceeds supported chat width (${widthCheck.width.toFixed(1)} of max ${WOS_HARD_LIMIT} visual columns). It will wrap or misalign in chat — trim wide rows.`,
+    });
+  } else if (widthCheck.level === 'warn') {
     issues.push({
       level: 'warn',
-      msg: 'A line is too wide and wraps in the WoS chat bubble. Shorten it until the preview shows no wrapping.',
+      msg: `Artwork is approaching the chat wrap limit (${widthCheck.width.toFixed(1)} of safe ${WOS_SAFE_WIDTH} visual columns; hard cap ${WOS_HARD_LIMIT}).`,
     });
   }
   const unsafe = new Set();
@@ -1090,7 +1123,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos42';
+const APP_VERSION = 'wos43';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1373,7 +1406,7 @@ function openAdd() {
   if (els.editDraftInput) els.editDraftInput.checked = true;
   syncStatusToggle();
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
-  const cols = 27, rows = 12;
+  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   resetEditHistory(els.editArtInput.value);
@@ -1543,7 +1576,7 @@ function ensureBlankCanvas() {
   // Make sure the textarea has a paintable 27×12 NBSP grid for sketch mode.
   // Called when entering Sketch mode with an empty textarea.
   if (els.editArtInput.value && els.editArtInput.value.trim()) return;
-  const cols = 27, rows = 12;
+  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   lastEditSnapshot = els.editArtInput.value;
@@ -1593,12 +1626,29 @@ function resetBrushState() {
   updateBrushChip();
 }
 
+function updateWidthMeter(text) {
+  if (!els.widthMeter) return;
+  const m = els.widthMeter;
+  m.hidden = false;
+  const r = wosClassifyWidth(text);
+  m.classList.remove('safe', 'warn', 'fail');
+  m.classList.add(r.level);
+  if (els.widthVal) els.widthVal.textContent = r.width.toFixed(1);
+  if (els.widthHint) {
+    els.widthHint.textContent =
+      r.level === 'fail' ? `⛔ exceeds ${WOS_HARD_LIMIT}-col cap` :
+      r.level === 'warn' ? `⚠ warn zone (cap ${WOS_HARD_LIMIT})` :
+      '';
+  }
+}
+
 const runAudit = () => {
   const text = els.editArtInput.value;
   if (els.editPreview) {
     els.editPreview.textContent = text;
     requestAnimationFrame(() => fitArt(els.editPreview.parentElement, els.editPreview, 16));
   }
+  updateWidthMeter(text);
   const issues = auditArt(text);
   if (!issues.length) {
     els.editAudit.innerHTML = '';
@@ -1795,12 +1845,14 @@ function renderSketch(force) {
     overlayEl = null;
     return;
   }
-  // Cap canvas at WoS limits so there's no dead space outside chat-safe bounds.
+  // Canvas grid width = at least the 30-col safe default, expand to fit any
+  // existing wider art so the user can see and trim it (the audit flags
+  // anything past 30/34 visual cols — see wosClassifyWidth).
   const lines = text.split('\n');
   let actualWidest = 0;
   for (const l of lines) actualWidest = Math.max(actualWidest, graphemeCount(l));
-  gridW = Math.min(WOS_HARD_LIMIT, Math.max(WOS_MAX_WIDTH, actualWidest));
-  gridH = Math.min(24, Math.max(12, lines.length));
+  gridW = Math.max(WOS_DEFAULT_COLS, actualWidest);
+  gridH = Math.min(24, Math.max(WOS_DEFAULT_ROWS, lines.length));
   for (let y = 0; y < gridH; y++) {
     els.sketchView.appendChild(buildLineEl(y, lines[y]));
   }
@@ -2345,7 +2397,7 @@ els.sketchView.addEventListener('touchcancel', () => {
 // paintable surface (replaces the old separate Blank + Clear buttons).
 function fillBlankGrid() {
   pushEditHistory();
-  const cols = 27, rows = 12;
+  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
   const line = '\u00A0'.repeat(cols);
   els.editArtInput.value = Array(rows).fill(line).join('\n');
   lastEditSnapshot = els.editArtInput.value;

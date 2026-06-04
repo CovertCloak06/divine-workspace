@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos42">
+  <link rel="stylesheet" href="style.css?v=wos43">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1272,8 +1272,18 @@
               <button class="tool-btn" id="sketch-undo" title="Undo last stroke (Ctrl+Z)" aria-label="Undo">↶</button>
               <button class="tool-btn" id="sketch-clear" title="Start over with a fresh blank grid" style="margin-left:auto">🗑 Clear</button>
             </div>
+            <!-- wos43: live WoS width meter. Always visible (drawing & typing
+                 mode) so the user gets continuous feedback on how the art
+                 lines up against the 30-col safe / 34-col hard limits. -->
+            <div class="wos-width-meter" id="wos-width-meter" role="status" aria-live="polite" hidden>
+              <span class="wos-width-label">WoS width</span>
+              <span class="wos-width-val" id="wos-width-val">0.0</span>
+              <span class="wos-width-slash">/</span>
+              <span class="wos-width-cap">30</span>
+              <span class="wos-width-hint" id="wos-width-hint"></span>
+            </div>
             <div class="sketch-view" id="sketch-view"></div>
-            <textarea id="edit-art-input" placeholder="Type or paste your art here…" spellcheck="false" cols="27" rows="12" wrap="off"></textarea>
+            <textarea id="edit-art-input" placeholder="Type or paste your art here…" spellcheck="false" cols="30" rows="12" wrap="off"></textarea>
             <div class="grab-hint">✋ Long-press a face or character to grab &amp; move it</div>
             <div class="mode-toggle-row">
               <button type="button" class="draw-toggle" id="draw-toggle" role="switch" aria-checked="true" title="Switch between typing and drawing on the canvas">
@@ -1363,7 +1373,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos42"></script>
+  <script src="app.js?v=wos43"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

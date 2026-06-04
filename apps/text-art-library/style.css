@@ -867,7 +867,7 @@ body.editor .export-bar { display: block; }
   height: calc(12 * var(--art-line-height) * 1em + 32px);
   min-height: calc(12 * var(--art-line-height) * 1em + 32px);
   max-height: calc(12 * var(--art-line-height) * 1em + 32px);
-  min-width: 27ch;
+  min-width: 30ch;
   overflow: auto;
 }
 #edit.drawing .field label { margin-bottom: 3px; }
@@ -968,16 +968,17 @@ body.editor .export-bar { display: block; }
    preserved across toggles (reset only happens on a fresh editor open). */
 #edit.drawing.typing #edit-art-input {
   display: block;
-  /* wos37: PIN to the SAME height AND width as the canvas. Height = 12
-     art-font rows + 32px (padding+border); width = 27ch + 32px so the
-     textbox fits the 27-col grid exactly like the canvas. Toggling
-     Type<->Draw now keeps the surface dimensions byte-for-byte identical. */
+  /* wos43: PIN to the SAME height AND width as the canvas (30-col WoS
+     safe default per rendering spec v1.0). Height = 12 art-font rows +
+     32px padding/border; width = 30ch + 32px so the textbox fits the
+     30-col grid exactly like the canvas. Toggling Type<->Draw keeps the
+     surface dimensions byte-for-byte identical. */
   flex: 0 0 auto;
   height: calc(12 * var(--art-line-height) * 1em + 32px);
   min-height: calc(12 * var(--art-line-height) * 1em + 32px);
   max-height: calc(12 * var(--art-line-height) * 1em + 32px);
-  width: calc(27ch + 32px);
-  min-width: calc(27ch + 32px);
+  width: calc(30ch + 32px);
+  min-width: calc(30ch + 32px);
   max-width: 100%;
   box-sizing: border-box;
   resize: none;
@@ -2153,13 +2154,11 @@ body.editor .export-bar { display: block; }
 }
 
 /* 4) Match the textarea's width to the canvas's exact px width so the
-   surface doesn't change size on toggle. The canvas hugs a 27-col grid
-   in the art font; we measure the same width in JS-rendered cells, then
-   express it here via 27ch + 32px padding/border. */
+   surface doesn't change size on toggle. wos43: 30-col WoS safe default
+   per rendering spec v1.0 (was 27). */
 #edit.drawing.typing #edit-art-input {
-  /* override the earlier looser sizing */
-  width: calc(27ch + 32px) !important;
-  min-width: calc(27ch + 32px) !important;
+  width: calc(30ch + 32px) !important;
+  min-width: calc(30ch + 32px) !important;
   max-width: 100% !important;
 }
 
@@ -2359,4 +2358,52 @@ body.editor .export-bar { display: block; }
   background: linear-gradient(180deg, #7ed09f 0%, #3f9c6a 100%);
   color: #062014;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* ============================================================================
+   wos43 — Live WoS width meter
+   Pill-style readout placed just above the canvas. Three states reflecting
+   the WoS rendering spec v1.0 zones:
+     safe  (<= 30 visual cols) — green
+     warn  (31..34)            — amber
+     fail  (> 34)              — red
+   ============================================================================ */
+.wos-width-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(13, 26, 46, 0.55);
+  border: 1px solid rgba(155, 184, 220, 0.22);
+  color: #d6e5f4;
+  margin: 0 0 6px;
+  width: max-content;
+  transition: background 160ms, color 160ms, border-color 160ms;
+}
+.wos-width-meter[hidden] { display: none; }
+.wos-width-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; color: var(--ink-dim,#9bb8dc); }
+.wos-width-val { font-variant-numeric: tabular-nums; }
+.wos-width-cap { font-variant-numeric: tabular-nums; opacity: 0.75; }
+.wos-width-slash { opacity: 0.55; }
+.wos-width-hint { margin-left: 4px; font-size: 11px; font-weight: 600; }
+
+.wos-width-meter.safe {
+  background: rgba(63, 156, 106, 0.18);
+  border-color: rgba(126, 208, 159, 0.45);
+  color: #b6ecc8;
+}
+.wos-width-meter.warn {
+  background: rgba(217, 154, 58, 0.18);
+  border-color: rgba(245, 196, 122, 0.55);
+  color: #f5d39a;
+}
+.wos-width-meter.fail {
+  background: rgba(220, 75, 60, 0.20);
+  border-color: rgba(255, 130, 110, 0.6);
+  color: #ffb8ad;
 }
