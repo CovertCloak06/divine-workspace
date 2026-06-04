@@ -494,7 +494,6 @@ body.editor .card-actions { display: flex; }
   transition: background 120ms, color 120ms;
 }
 .icon-btn:hover { background: var(--accent); color: #fff; }
-.icon-btn.danger:hover { background: var(--bad); color: #fff; }
 
 /* Canonical art render — shared by the card, the lightbox, and the editor
    live preview so the same string lays out identically in all three. */
@@ -1744,20 +1743,7 @@ body.editor .export-bar { display: block; }
   line-height: 1;
 }
 
-/* danger variant (delete icon button) — muted brick red, reads as warning without shouting */
-.icon-btn.danger {
-  background: linear-gradient(180deg, #c2867f 0%, #9b5d56 55%, #7a3f3a 100%);
-  border-color: #4a2220;
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -4px 0 rgba(0, 0, 0, 0.22),
-    0 4px 0 rgba(0, 0, 0, 0.22),
-    0 6px 12px rgba(0, 0, 0, 0.26);
-}
-.icon-btn.danger:hover {
-  filter: brightness(1.08);
-  background: linear-gradient(180deg, #c2867f 0%, #9b5d56 55%, #7a3f3a 100%);
-}
+/* danger variant (delete icon button) — same blue treatment as other icon buttons */
 
 /* copied / success state — green gradient */
 .copy-btn.copied,
