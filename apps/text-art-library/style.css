@@ -2146,3 +2146,93 @@ body.editor .export-bar { display: block; }
   cursor: pointer;
 }
 .drafts-banner-back:hover { background: rgba(255,200,100,0.18); color: #fff; }
+
+/* ============================================================================
+   wos39 — editor layout polish:
+   1) Desktop: palette becomes a vertical RIGHT SIDEBAR of the canvas (fills the
+      ~400px of dead space). Favorites still spans full width below.
+   2) All sizes: faint separator between each palette group so sections read
+      distinctly. The group label is visible at the top of each section.
+   3) Explicit spacing around the mode-toggle row so it never visually crowds
+      Favorites.
+   4) Textarea width matched to canvas width so toggling Type/Draw is byte-
+      for-byte the same surface frame.
+   ============================================================================ */
+
+/* 3) breathing room around the toggle row — prevents the visual cramping
+   the user reported between the toggle and the Favorites strip. */
+#edit.drawing .mode-toggle-row {
+  margin: 6px 0 14px;
+}
+
+/* 4) Match the textarea's width to the canvas's exact px width so the
+   surface doesn't change size on toggle. The canvas hugs a 27-col grid
+   in the art font; we measure the same width in JS-rendered cells, then
+   express it here via 27ch + 32px padding/border. */
+#edit.drawing.typing #edit-art-input {
+  /* override the earlier looser sizing */
+  width: calc(27ch + 32px) !important;
+  min-width: calc(27ch + 32px) !important;
+  max-width: 100% !important;
+}
+
+/* 2) Visible group separators in the palette. The earlier rule hid the
+   labels in favor of a single sticky head; reveal them and add a faint
+   divider between groups so each character section reads as its own block. */
+.palette-group-label {
+  display: block !important;
+  position: static !important;        /* drop the sticky behavior; one head per group */
+  background: transparent !important;
+  margin: 0 0 4px !important;
+  padding: 2px 0 2px !important;
+}
+.palette-group + .palette-group {
+  margin-top: 14px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid rgba(155, 184, 220, 0.18);
+}
+/* The single "Palette · <active group>" sticky head is now redundant
+   since each group has its own visible heading. */
+#edit.drawing .palette-head { display: none; }
+
+/* 1) Desktop layout: 2-column grid with palette in a tall right sidebar.
+   Mobile and small tablets keep the current vertical stack. */
+@media (min-width: 760px) {
+  #edit.drawing .draw-workspace {
+    display: grid !important;
+    grid-template-columns: minmax(0, max-content) minmax(220px, 1fr);
+    grid-template-areas:
+      "dock palette"
+      "favorites palette";
+    column-gap: 16px;
+    row-gap: 10px;
+    align-items: start;
+  }
+  #edit.drawing .draw-workspace > .canvas-dock { grid-area: dock; }
+  #edit.drawing .draw-workspace > .field:nth-of-type(2) { grid-area: favorites; }  /* Favorites */
+  #edit.drawing .draw-workspace > .field:nth-of-type(3) {                          /* Palette */
+    grid-area: palette;
+    margin-bottom: 0;
+    min-height: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Tall scrollable palette in the sidebar — uses the full vertical space
+     freed up next to the canvas. Tighter grid (5 cols) since the sidebar
+     is narrower than the previous full-width strip. */
+  #edit.drawing .char-palette {
+    flex: 1 1 auto;
+    max-height: none;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #edit.drawing .palette-grid {
+    grid-template-columns: repeat(5, minmax(36px, 1fr));
+  }
+  /* Wide-item groups (kaomoji faces / banners) stay single-column in the
+     narrower sidebar so each whole face fits. */
+  #edit.drawing .palette-grid.wide {
+    grid-template-columns: 1fr;
+  }
+}
