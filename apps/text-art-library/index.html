@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos41">
+  <link rel="stylesheet" href="style.css?v=wos42">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1170,8 +1170,7 @@
     <div class="drafts-banner-inner">
       <span class="drafts-banner-emoji" aria-hidden="true">📝</span>
       <div class="drafts-banner-text">
-        <strong>Drafts</strong>
-        <span>Works in progress — admin only · hidden from the public library</span>
+        <strong>Draft</strong>
       </div>
       <button type="button" id="drafts-banner-back" class="drafts-banner-back" title="Back to the published library">← Back to library</button>
     </div>
@@ -1319,10 +1318,19 @@
             <input id="edit-tags-input" type="text" placeholder="love, symbols">
           </div>
           <div class="field draft-field">
-            <label class="checkbox-row">
-              <input id="edit-draft-input" type="checkbox">
-              <span>Save as <strong>Draft</strong> <span class="label-dim">— hidden from the public library until you publish</span></span>
-            </label>
+            <!-- wos42: 2-state status toggle. Replaces the old "Save as Draft"
+                 checkbox; the hidden #edit-draft-input still drives the save
+                 handler (its .checked reflects which pill is active). -->
+            <label class="status-label">Status</label>
+            <div class="status-toggle" role="group" aria-label="Status">
+              <button type="button" class="status-opt" data-status="draft" aria-pressed="false">
+                <span class="status-opt-emoji" aria-hidden="true">📝</span> Draft
+              </button>
+              <button type="button" class="status-opt" data-status="published" aria-pressed="true">
+                <span class="status-opt-emoji" aria-hidden="true">✅</span> Published
+              </button>
+            </div>
+            <input id="edit-draft-input" type="checkbox" hidden aria-hidden="true">
           </div>
           <div class="save-sheet-foot">
             <button class="btn-ghost" id="save-back" type="button">← Back</button>
@@ -1355,7 +1363,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos41"></script>
+  <script src="app.js?v=wos42"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
