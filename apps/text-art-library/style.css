@@ -768,38 +768,46 @@ body.editor .export-bar { display: block; }
   margin-bottom: 6px;
 }
 .art-tools { display: flex; gap: 8px; align-items: center; }
+/* wos44: draw toggle is the primary input-mode control — it needs to be
+   obvious, not a 34x18px sliver. Pill now ~58x32 with a chunky knob, full
+   button frame around it, and a larger label. */
 .draw-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  color: var(--ink-dim);
-  font-weight: 700;
-  font-size: 13px;
-  transition: color .15s;
-}
-.draw-switch {
-  width: 34px;
-  height: 18px;
+  gap: 10px;
+  background: rgba(13, 26, 46, 0.55);
+  border: 1px solid rgba(155, 184, 220, 0.35);
   border-radius: 999px;
-  background: rgba(155, 184, 220, 0.4);
+  padding: 6px 14px 6px 6px;
+  cursor: pointer;
+  color: #d6e5f4;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  transition: background .15s, border-color .15s, color .15s, transform .1s;
+}
+.draw-toggle:hover { background: rgba(13, 26, 46, 0.72); border-color: rgba(155, 184, 220, 0.55); }
+.draw-toggle:active { transform: scale(0.98); }
+.draw-switch {
+  width: 50px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(155, 184, 220, 0.45);
   position: relative;
   flex: 0 0 auto;
   transition: background .15s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
 }
 .draw-knob {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #fff;
   transition: transform .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
 .draw-toggle.active {
   background: transparent;
@@ -807,7 +815,7 @@ body.editor .export-bar { display: block; }
   color: var(--accent);
 }
 .draw-toggle.active .draw-switch { background: var(--accent); }
-.draw-toggle.active .draw-knob { transform: translateX(16px); }
+.draw-toggle.active .draw-knob { transform: translateX(24px); }
 
 /* draw-only surfaces are hidden until the toggle is on; in draw mode the canvas
    replaces the textarea in place. */
@@ -2406,4 +2414,13 @@ body.editor .export-bar { display: block; }
   background: rgba(220, 75, 60, 0.20);
   border-color: rgba(255, 130, 110, 0.6);
   color: #ffb8ad;
+}
+
+/* wos44: disabled state for toolbar buttons (undo/redo). When the stack
+   is empty the button visibly dims and ignores clicks. */
+.tool-btn[disabled],
+.tool-btn[disabled]:hover {
+  opacity: 0.38;
+  cursor: not-allowed;
+  filter: none;
 }
