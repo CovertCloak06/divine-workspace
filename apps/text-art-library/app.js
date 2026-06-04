@@ -78,7 +78,7 @@ const els = {
   drawer: $('themes-drawer'),
   drawerScrim: $('drawer-scrim'),
   drawerClose: $('drawer-close'),
-  drawerList: $('drawer-list'),
+  themeTabs: $('theme-tabs'),
   activeThemeRow: $('active-theme-row'),
   activeThemeChip: $('active-theme-chip'),
   activeThemeLabel: $('active-theme-label'),
@@ -617,30 +617,32 @@ function buildTagStrip() {
     b.addEventListener('click', () => setActiveTag(tag === state.activeTag ? 'all' : tag));
     els.tagStrip.appendChild(b);
   }
-  buildDrawerList();
+  buildThemeTabs();
   syncFlaggedTab();
   syncActiveThemeChip();
 }
 
-/* Themes drawer — replaces the inline tag strip. Same labels, same handler,
-   different surface: a slide-in panel triggered by the hamburger button. */
-function buildDrawerList() {
-  if (!els.drawerList) return;
-  els.drawerList.innerHTML = '';
+/* wos40: themes render as a horizontal tab strip above the search bar.
+   Replaces the previous drawer Themes section entirely. */
+function buildThemeTabs() {
+  if (!els.themeTabs) return;
+  els.themeTabs.innerHTML = '';
   for (const tag of TAGS) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'drawer-item';
+    b.className = 'theme-tab';
     b.textContent = tag;
     b.dataset.tag = tag;
-    b.setAttribute('role', 'listitem');
-    if (tag === state.activeTag) b.classList.add('active');
+    b.setAttribute('role', 'tab');
+    if (tag === state.activeTag) {
+      b.classList.add('active');
+      b.setAttribute('aria-selected', 'true');
+    }
     b.addEventListener('click', () => {
       const next = tag === state.activeTag ? 'all' : tag;
       setActiveTag(next);
-      closeDrawer();
     });
-    els.drawerList.appendChild(b);
+    els.themeTabs.appendChild(b);
   }
 }
 
@@ -700,26 +702,25 @@ function syncFlaggedTab() {
     if (state.activeTag === '__flagged') state.activeTag = 'all';
   }
 
-  // Mirror into the drawer (editor-only entry)
-  if (els.drawerList) {
-    let drawerFlagged = els.drawerList.querySelector('.drawer-item.flagged-tab');
+  // wos40: mirror the flagged tag into the theme-tabs strip.
+  if (els.themeTabs) {
+    let tabFlagged = els.themeTabs.querySelector('.theme-tab.flagged-tab');
     if (shouldShow) {
-      if (!drawerFlagged) {
-        drawerFlagged = document.createElement('button');
-        drawerFlagged.type = 'button';
-        drawerFlagged.className = 'drawer-item flagged-tab';
-        drawerFlagged.dataset.tag = '__flagged';
-        drawerFlagged.setAttribute('role', 'listitem');
-        drawerFlagged.addEventListener('click', () => {
+      if (!tabFlagged) {
+        tabFlagged = document.createElement('button');
+        tabFlagged.type = 'button';
+        tabFlagged.className = 'theme-tab flagged-tab';
+        tabFlagged.dataset.tag = '__flagged';
+        tabFlagged.setAttribute('role', 'tab');
+        tabFlagged.addEventListener('click', () => {
           setActiveTag(state.activeTag === '__flagged' ? 'all' : '__flagged');
-          closeDrawer();
         });
-        els.drawerList.appendChild(drawerFlagged);
+        els.themeTabs.appendChild(tabFlagged);
       }
-      drawerFlagged.textContent = `flagged (${flagCount})`;
-      drawerFlagged.classList.toggle('active', state.activeTag === '__flagged');
-    } else if (drawerFlagged) {
-      drawerFlagged.remove();
+      tabFlagged.textContent = `flagged (${flagCount})`;
+      tabFlagged.classList.toggle('active', state.activeTag === '__flagged');
+    } else if (tabFlagged) {
+      tabFlagged.remove();
     }
   }
   syncActiveThemeChip();
@@ -776,9 +777,12 @@ function setActiveTag(tag) {
   for (const b of els.tagStrip.querySelectorAll('.tag')) {
     b.classList.toggle('active', b.dataset.tag === tag);
   }
-  if (els.drawerList) {
-    for (const b of els.drawerList.querySelectorAll('.drawer-item')) {
-      b.classList.toggle('active', b.dataset.tag === tag);
+  if (els.themeTabs) {
+    for (const b of els.themeTabs.querySelectorAll('.theme-tab')) {
+      const on = b.dataset.tag === tag;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-selected', 'true');
+      else b.removeAttribute('aria-selected');
     }
   }
   syncActiveThemeChip();
@@ -1086,7 +1090,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos39';
+const APP_VERSION = 'wos41';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
