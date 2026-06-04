@@ -1090,7 +1090,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos41';
+const APP_VERSION = 'wos42';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1371,6 +1371,7 @@ function openAdd() {
   // wos35: new art defaults to Draft so the library only shows finished work
   // by default. Admin can untick to publish straight away.
   if (els.editDraftInput) els.editDraftInput.checked = true;
+  syncStatusToggle();
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
   const cols = 27, rows = 12;
   const line = '\u00A0'.repeat(cols);
@@ -1387,12 +1388,33 @@ function openAdd() {
   // Modal just became visible; refresh the dynamic group label with real rects.
   requestAnimationFrame(refreshGroupLabel);
 }
+/* wos42: status toggle (Draft / Published) in the save sheet.
+   The buttons drive the hidden #edit-draft-input checkbox, which the
+   save handler already reads — so this is purely UI. */
+function syncStatusToggle() {
+  const isDraft = els.editDraftInput ? !!els.editDraftInput.checked : false;
+  const opts = document.querySelectorAll('.status-opt');
+  for (const o of opts) {
+    const on = (o.dataset.status === 'draft') === isDraft;
+    o.classList.toggle('active', on);
+    o.setAttribute('aria-pressed', String(on));
+  }
+}
+for (const opt of document.querySelectorAll('.status-opt')) {
+  opt.addEventListener('click', () => {
+    if (!els.editDraftInput) return;
+    els.editDraftInput.checked = (opt.dataset.status === 'draft');
+    syncStatusToggle();
+  });
+}
+
 function openEdit(p) {
   editing = p;
   els.editTitle.textContent = 'Edit art';
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
   if (els.editDraftInput) els.editDraftInput.checked = !!p.draft;
+  syncStatusToggle();
   els.editArtInput.value = p.art || '';
   resetEditHistory(p.art || '');
   closeSaveSheet();

@@ -2303,3 +2303,60 @@ body.editor .export-bar { display: block; }
   position: relative;
   z-index: 2;
 }
+
+/* ============================================================================
+   wos42 — Status toggle in editor save sheet
+   Replaces the old "Save as Draft" checkbox with an explicit 2-state pill
+   toggle (Draft / Published). Clearer affordance for moving art between the
+   public library and the Drafts admin destination.
+   ============================================================================ */
+.status-label {
+  display: block;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim, #9bb8dc);
+  margin: 0 0 6px;
+}
+.status-toggle {
+  display: inline-flex;
+  background: rgba(13, 26, 46, 0.55);
+  border: 1px solid rgba(155, 184, 220, 0.22);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.status-opt {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim, #9bb8dc);
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, transform 100ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-opt-emoji { font-size: 15px; line-height: 1; }
+.status-opt:hover { color: #d6e5f4; }
+.status-opt:active { transform: scale(0.97); }
+/* Draft active = orange-y (matches the existing draft accent color) */
+.status-opt[data-status="draft"].active {
+  background: linear-gradient(180deg, #f5c47a 0%, #d99a3a 100%);
+  color: #2a1a05;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
+/* Published active = green (matches the WoS-safe ✅ semantics) */
+.status-opt[data-status="published"].active {
+  background: linear-gradient(180deg, #7ed09f 0%, #3f9c6a 100%);
+  color: #062014;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
