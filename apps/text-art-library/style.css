@@ -768,25 +768,25 @@ body.editor .export-bar { display: block; }
   margin-bottom: 6px;
 }
 .art-tools { display: flex; gap: 8px; align-items: center; }
-/* wos44: draw toggle is the primary input-mode control — it needs to be
-   obvious, not a 34x18px sliver. Pill now ~58x32 with a chunky knob, full
-   button frame around it, and a larger label. */
+/* wos45: draw toggle — no container/frame around it (user preference).
+   Just a chunky switch + label sitting on the bg. The switch itself is
+   still 50x26 with a 20x20 knob so it's obvious. */
 .draw-toggle {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: rgba(13, 26, 46, 0.55);
-  border: 1px solid rgba(155, 184, 220, 0.35);
-  border-radius: 999px;
-  padding: 6px 14px 6px 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
   cursor: pointer;
   color: #d6e5f4;
   font-weight: 700;
   font-size: 14px;
   letter-spacing: 0.02em;
-  transition: background .15s, border-color .15s, color .15s, transform .1s;
+  transition: color .15s, transform .1s;
 }
-.draw-toggle:hover { background: rgba(13, 26, 46, 0.72); border-color: rgba(155, 184, 220, 0.55); }
+.draw-toggle:hover { color: #fff; }
 .draw-toggle:active { transform: scale(0.98); }
 .draw-switch {
   width: 50px;
@@ -860,8 +860,12 @@ body.editor .export-bar { display: block; }
    for the rest of the 879 characters. Both have explicit floors so neither
    collapses on a short window. flex: <grow> <shrink> <basis> = ratio with min. */
 #edit.drawing .canvas-dock {
-  flex: 8 1 240px;
-  min-height: 220px;
+  /* wos45: size to content so the children (toolbar + meter + canvas +
+     grab-hint + toggle) never overflow into the favorites sibling. The
+     canvas itself is height-pinned (12 rows), so the dock has a natural
+     deterministic height. Previously `flex: 8 1 240px` collided with
+     shorter modal heights, causing the toggle to land BEHIND favorites. */
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
 }
@@ -1473,30 +1477,46 @@ body.editor .export-bar { display: block; }
   color: #fff;
   border-color: var(--accent);
 }
-/* wos27: WoS-style toolbar — strip the pill containers off the draw-mode
-   tools so they read as plain icon/text controls. Scoped under
-   `#edit.drawing .sketch-bar` so it outranks the padding/font !important
-   override on `#edit.drawing .sketch-bar .tool-btn`. */
+/* wos45: WoS-style toolbar — every draw-mode button is a plain icon/text
+   control with NO pill background, NO border, NO container. Colors are
+   the only signal:
+     - Select / Undo / Redo  -> WoS badge teal (#0f88a8)
+     - Erase / Clear         -> destructive red (var(--bad))
+*/
+#edit.drawing .sketch-bar #sketch-select,
 #edit.drawing .sketch-bar #sketch-eraser,
 #edit.drawing .sketch-bar #sketch-undo,
+#edit.drawing .sketch-bar #sketch-redo,
 #edit.drawing .sketch-bar #sketch-clear {
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
   padding: 4px 6px !important;
   font-size: 14px !important;
-  color: var(--ink);
+  font-weight: 700;
+  outline: none !important;
+  box-shadow: none !important;
 }
-#edit.drawing .sketch-bar #sketch-undo {
-  color: #0f88a8 !important;     /* WoS badge blue; arrow-only label */
-  font-size: 20px !important;
+#edit.drawing .sketch-bar #sketch-select,
+#edit.drawing .sketch-bar #sketch-select.active {
+  color: #0f88a8 !important;
+}
+#edit.drawing .sketch-bar #sketch-undo,
+#edit.drawing .sketch-bar #sketch-redo {
+  color: #0f88a8 !important;
+  font-size: 22px !important;          /* arrow-only, render bigger */
   line-height: 1;
+  padding: 2px 8px !important;
 }
-#edit.drawing .sketch-bar #sketch-eraser.active {
-  color: var(--bad) !important;  /* eraser-on signalled by color, not a pill */
+#edit.drawing .sketch-bar #sketch-eraser,
+#edit.drawing .sketch-bar #sketch-eraser.active,
+#edit.drawing .sketch-bar #sketch-clear {
+  color: var(--bad) !important;        /* destructive actions are always red */
 }
+#edit.drawing .sketch-bar #sketch-select:hover,
 #edit.drawing .sketch-bar #sketch-eraser:hover,
 #edit.drawing .sketch-bar #sketch-undo:hover,
+#edit.drawing .sketch-bar #sketch-redo:hover,
 #edit.drawing .sketch-bar #sketch-clear:hover {
   filter: brightness(1.2);
 }

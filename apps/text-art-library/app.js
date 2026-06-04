@@ -1124,7 +1124,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos44';
+const APP_VERSION = 'wos45';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1453,7 +1453,7 @@ function openEdit(p) {
   resetEditHistory(p.art || '');
   closeSaveSheet();
   resetBrushState();
-  toggleDraw(false); // existing art opens in type-input (keyboard) on the unified canvas
+  toggleDraw(true); // wos45: existing art also opens straight into Draw mode
   runAudit();
   renderSketch();
   els.edit.classList.add('open');
