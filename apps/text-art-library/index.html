@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos40">
+  <link rel="stylesheet" href="style.css?v=wos41">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -181,52 +181,6 @@
       max-height: none;
       overflow: visible;
     }
-    .drawer-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      padding: 0;
-    }
-    /* Each drawer entry: full-width box, matches the Add Art button color */
-    .drawer-item {
-      display: block;
-      width: 100%;
-      background: linear-gradient(180deg, var(--btn-grad-top, #79bef0) 0%, var(--btn-grad-mid, #4ea4dc) 55%, var(--btn-grad-bot, #2e7ec0) 100%);
-      color: #fff;
-      border: 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.18);
-      padding: 16px 20px;
-      border-radius: 0;
-      font-family: 'Fredoka', 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.02em;
-      text-align: left;
-      cursor: pointer;
-      transition: filter 120ms;
-      text-shadow:
-        -1px 0 0 var(--btn-edge, #1f5993),
-        1px 0 0 var(--btn-edge, #1f5993),
-        0 -1px 0 var(--btn-edge, #1f5993),
-        0 1px 0 var(--btn-edge, #1f5993),
-        0 2px 3px rgba(0, 0, 0, 0.35);
-    }
-    .drawer-item:hover { filter: brightness(1.08); }
-    .drawer-item:active { filter: brightness(0.92); }
-    .drawer-item.active {
-      background: #0f88a8;
-      color: #ffffff;
-      text-shadow: none;
-    }
-    .drawer-item.flagged-tab {
-      background: #c95c5c;
-      color: #fff;
-    }
-    .drawer-item.flagged-tab.active {
-      background: #f7d0d0;
-      color: #5a1a1a;
-    }
-
     /* === Character Palette manager (drawer accordion section, editor-only) === */
     .drawer-section.editor-only { display: none; }
     body.editor .drawer-section.editor-only { display: flex; }
@@ -1037,15 +991,6 @@
            the drawer (above Themes) as a flat, prominent button. NOT a tag in
            the tag strip — drafts are a separate section, not a topical filter. -->
       <button type="button" id="drawer-drafts-btn" class="drawer-drafts-cta" hidden>📝 Drafts</button>
-      <section class="drawer-section is-open" data-section="themes">
-        <button class="drawer-section-head" type="button" aria-expanded="true" aria-controls="drawer-section-themes">
-          <span class="drawer-section-title">Themes</span>
-          <span class="drawer-section-caret" aria-hidden="true"></span>
-        </button>
-        <div class="drawer-section-body" id="drawer-section-themes">
-          <nav class="drawer-list" id="drawer-list" role="list"></nav>
-        </div>
-      </section>
       <section class="drawer-section editor-only" data-section="palette">
         <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-palette">
           <span class="drawer-section-title">Character Palette</span>
@@ -1410,7 +1355,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos40"></script>
+  <script src="app.js?v=wos41"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

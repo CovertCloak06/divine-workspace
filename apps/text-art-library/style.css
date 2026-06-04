@@ -386,19 +386,6 @@ body.editor .add-row { display: block; }
   letter-spacing: 0.07em;
   vertical-align: middle;
 }
-/* Drafts tab in the tag strip / drawer — orange-y to differentiate from the
-   red flagged tab. */
-.tag.drafts-tab,
-.drawer-item.drafts-tab {
-  background: rgba(255, 200, 100, 0.16);
-  color: #f5c47a;
-  border-color: rgba(255, 200, 100, 0.5);
-}
-.tag.drafts-tab.active,
-.drawer-item.drafts-tab.active {
-  background: rgba(255, 200, 100, 0.35);
-  color: #fff;
-}
 /* Save-sheet Draft checkbox row */
 .checkbox-row {
   display: flex;
@@ -2243,9 +2230,6 @@ body.editor .export-bar { display: block; }
    a horizontal tab strip above the search bar, styled like the reference
    mockup: dark blue inactive, light blue active, rounded-top tab shape.
    ============================================================================ */
-
-/* hide the now-redundant Themes section in the drawer */
-.drawer-section[data-section="themes"] { display: none !important; }
 
 /* the strip itself: horizontal flex, scrolls horizontally on overflow,
    sits flush atop the search row (no gap between tabs and search bar). */
