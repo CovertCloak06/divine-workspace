@@ -1744,19 +1744,19 @@ body.editor .export-bar { display: block; }
   line-height: 1;
 }
 
-/* danger variant (delete icon button) */
+/* danger variant (delete icon button) — muted brick red, reads as warning without shouting */
 .icon-btn.danger {
-  background: linear-gradient(180deg, #ff8d8d 0%, #ec5e5e 55%, #c63a3a 100%);
-  border-color: #8a2424;
+  background: linear-gradient(180deg, #c2867f 0%, #9b5d56 55%, #7a3f3a 100%);
+  border-color: #4a2220;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
-    0 3px 0 rgba(0, 0, 0, 0.2),
-    0 4px 10px rgba(0, 0, 0, 0.22);
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.22),
+    0 4px 0 rgba(0, 0, 0, 0.22),
+    0 6px 12px rgba(0, 0, 0, 0.26);
 }
 .icon-btn.danger:hover {
   filter: brightness(1.08);
-  background: linear-gradient(180deg, #ff8d8d 0%, #ec5e5e 55%, #c63a3a 100%);
+  background: linear-gradient(180deg, #c2867f 0%, #9b5d56 55%, #7a3f3a 100%);
 }
 
 /* copied / success state — green gradient */
