@@ -112,6 +112,7 @@ const els = {
   sketchView: $('sketch-view'),
   sketchActiveChar: $('sketch-active-char'),
   sketchUndo: $('sketch-undo'),
+  sketchRedo: $('sketch-redo'),
   sketchEraser: $('sketch-eraser'),
   sketchClear: $('sketch-clear'),
   sketchSelect: $('sketch-select'),
@@ -1123,7 +1124,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos43';
+const APP_VERSION = 'wos44';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1694,28 +1695,39 @@ function insertAtCursor(ch) {
 let activeBrush = null;   // wos27: no default brush — user must pick one to paint
 let eraserOn = false;
 let canvasMode = true;    // wos27: true = Canvas mode (taps don't paint); false = Drawing/Input
-const editHistory = [];      // stack of prior art strings
+const editHistory = [];      // stack of prior art strings (undo)
+const redoHistory = [];      // stack of states popped by undo (redo)
 const EDIT_HISTORY_MAX = 40;
 let editHistorySuspend = false;
 let lastEditSnapshot = '';
 let strokeStartSnapshot = null; // captured at pointerdown / touchstart
 let lastTouchAt = 0;            // ms timestamp of most recent touch event
 
+function syncHistoryButtons() {
+  if (els.sketchUndo) els.sketchUndo.disabled = editHistory.length < 2;
+  if (els.sketchRedo) els.sketchRedo.disabled = redoHistory.length < 1;
+}
 function pushEditHistory() {
   if (editHistorySuspend) return;
   const v = els.editArtInput.value;
   if (editHistory.length && editHistory[editHistory.length - 1] === v) return;
   editHistory.push(v);
   if (editHistory.length > EDIT_HISTORY_MAX) editHistory.shift();
+  // Any fresh edit invalidates the redo stack (standard undo/redo behavior).
+  redoHistory.length = 0;
+  syncHistoryButtons();
 }
 function resetEditHistory(v) {
   editHistory.length = 0;
+  redoHistory.length = 0;
   editHistory.push(v || '');
   lastEditSnapshot = v || '';
+  syncHistoryButtons();
 }
 function undoEdit() {
   if (editHistory.length < 2) return;
-  editHistory.pop();
+  const popped = editHistory.pop();
+  redoHistory.push(popped);
   const prev = editHistory[editHistory.length - 1];
   editHistorySuspend = true;
   els.editArtInput.value = prev;
@@ -1723,6 +1735,19 @@ function undoEdit() {
   editHistorySuspend = false;
   renderSketch(true);
   runAudit();
+  syncHistoryButtons();
+}
+function redoEdit() {
+  if (!redoHistory.length) return;
+  const next = redoHistory.pop();
+  editHistory.push(next);
+  editHistorySuspend = true;
+  els.editArtInput.value = next;
+  lastEditSnapshot = next;
+  editHistorySuspend = false;
+  renderSketch(true);
+  runAudit();
+  syncHistoryButtons();
 }
 
 /* wos27: Canvas/Drawing mode + no-default-brush.
@@ -2417,6 +2442,7 @@ if (els.sketchClear) els.sketchClear.addEventListener('click', () => {
   fillBlankGrid();
 });
 els.sketchUndo.addEventListener('click', undoEdit);
+if (els.sketchRedo) els.sketchRedo.addEventListener('click', redoEdit);
 const textUndoBtn = document.getElementById('text-undo');
 if (textUndoBtn) textUndoBtn.addEventListener('click', undoEdit);
 if (els.sketchEraser) els.sketchEraser.addEventListener('click', () => setEraser(!eraserOn));
@@ -2449,13 +2475,20 @@ els.editArtInput.addEventListener('input', () => {
   if (isSketchMode()) renderSketch();
 });
 
-// Ctrl/Cmd+Z anywhere in the edit modal undoes
+// Keyboard shortcuts inside the editor:
+//   Ctrl/Cmd + Z          -> undo
+//   Ctrl/Cmd + Shift + Z  -> redo
+//   Ctrl/Cmd + Y          -> redo
 document.addEventListener('keydown', (e) => {
   if (!els.edit.classList.contains('open')) return;
   const ctrl = e.ctrlKey || e.metaKey;
-  if (ctrl && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+  if (!ctrl) return;
+  if (!e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault();
     undoEdit();
+  } else if ((e.shiftKey && (e.key === 'z' || e.key === 'Z')) || e.key === 'y' || e.key === 'Y') {
+    e.preventDefault();
+    redoEdit();
   }
 });
 
