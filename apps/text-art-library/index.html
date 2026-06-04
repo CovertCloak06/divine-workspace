@@ -1102,7 +1102,7 @@
   </header>
 
   <nav class="controls" style="border-style: none; border-color: rgb(163, 229, 248); color: rgb(29, 118, 209)">
-    <svg class="snow-drift" xmlns="http://www.w3.org/2000/svg" width="260" height="30" viewBox="0 0 260 30" preserveAspectRatio="none" aria-hidden="true">
+    <svg class="snow-drift" xmlns="http://www.w3.org/2000/svg" width="1920" height="30" viewBox="0 0 1920 30" preserveAspectRatio="none" aria-hidden="true">
       <!--
         Continuous snow profile, one closed path. Top edge flat (y=0).
         Bottom edge curves: chunky on the left, dips and rises through
@@ -1499,7 +1499,7 @@
     };
     const rand = (lo, hi) => lo + rng() * (hi - lo);
 
-    const width = 260;
+    const width = 1920;
     const step = 13;
     const minDepth = 4;
     const maxDepth = 26;
@@ -1507,7 +1507,7 @@
     const pts = [];
     for (let x = 0; x <= width; x += step) {
       // Taper depth as we approach the right edge so the snow fades into the bar.
-      const tail = Math.max(0, (x - (width - 60)) / 60); // 0 until x>200, then 0→1
+      const tail = Math.max(0, (x - (width - 60)) / 60); // 0 until x>1860, then 0→1
       const cap = maxDepth - tail * (maxDepth - 3);
       pts.push({ x, d: rand(minDepth, cap) });
     }
