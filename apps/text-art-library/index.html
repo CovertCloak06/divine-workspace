@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos39">
+  <link rel="stylesheet" href="style.css?v=wos40">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1185,6 +1185,11 @@
       "/>
     </svg>
     <div class="controls-inner" style="font-weight: 700; font-family: Fredoka">
+      <!-- wos40: theme tabs replace the drawer Themes section. Scrolls horizontally
+           when overflow on narrow screens. Active tab uses a light fill (the
+           dark-blue inactive style + light-blue active style matches the user's
+           reference mockup). The strip sits on top of the search row. -->
+      <nav class="theme-tabs" id="theme-tabs" role="tablist" aria-label="Themes"></nav>
       <div class="search-row" style="color: rgb(191, 236, 206)">
         <input class="search-input" id="search" type="text" placeholder="Search art…" data-st-attr="placeholder" data-st="searchPlaceholder" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
       </div>
@@ -1405,7 +1410,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos39"></script>
+  <script src="app.js?v=wos40"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
