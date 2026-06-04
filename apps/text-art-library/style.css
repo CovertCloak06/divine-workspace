@@ -274,7 +274,7 @@ input, textarea { font-family: inherit; }
   height: 18px;
   display: block;
 }
-.icon-btn.danger svg path { fill: #ffffff; }
+.icon-btn.danger svg path { fill: #e84a4a; stroke: #6e1818; stroke-width: 1.5; paint-order: stroke; }
 
 /* modal-close: chunky blue square with white X svg */
 .modal-close svg {
