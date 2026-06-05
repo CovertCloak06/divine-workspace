@@ -3,9 +3,15 @@
 // (blob `auth/password` if rotated, env var EDITOR_PASSWORD otherwise).
 // Returns { ok: true } on success, 401 on failure.
 
+import { connectLambda } from '@netlify/blobs';
 import { verifyPassword } from './_auth.js';
 
 export const handler = async (event) => {
+  // wos47: REQUIRED before verifyPassword() reads the blob. Without this,
+  // getStore() silently throws inside _auth.js, the try/catch falls through
+  // to the env var, and rotated passwords appear to do nothing on login.
+  connectLambda(event);
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
