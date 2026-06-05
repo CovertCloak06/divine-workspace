@@ -1,32 +1,27 @@
 // Frostline — POST /auth
-// Validates the editor password against EDITOR_PASSWORD env var.
+// Validates the editor password. Source of truth: see _auth.js
+// (blob `auth/password` if rotated, env var EDITOR_PASSWORD otherwise).
 // Returns { ok: true } on success, 401 on failure.
+
+import { verifyPassword } from './_auth.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const expected = process.env.EDITOR_PASSWORD;
-  if (!expected) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'EDITOR_PASSWORD not configured' }),
-    };
-  }
-
   let body;
   try { body = JSON.parse(event.body || '{}'); }
   catch { return { statusCode: 400, body: JSON.stringify({ error: 'Bad JSON' }) }; }
 
-  if (body.password === expected) {
+  const ok = await verifyPassword(body.password);
+  if (ok) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ok: true }),
     };
   }
-
   return {
     statusCode: 401,
     headers: { 'Content-Type': 'application/json' },

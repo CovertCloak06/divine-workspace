@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos45">
+  <link rel="stylesheet" href="style.css?v=wos46">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1065,6 +1065,35 @@
           </form>
         </div>
       </section>
+      <!-- wos46: Admin-only password rotation. Verify current, then set a new
+           one. New password is PBKDF2-hashed and stored in Netlify Blob
+           `auth/password` — env var EDITOR_PASSWORD is ignored once set. -->
+      <section class="drawer-section editor-only" data-section="change-password">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-change-password">
+          <span class="drawer-section-title">Change Password</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-change-password">
+          <form class="change-pw-form" id="change-pw-form" novalidate autocomplete="off">
+            <label class="change-pw-field">
+              <span class="change-pw-label">Current password</span>
+              <input type="password" id="change-pw-current" autocomplete="current-password" required>
+            </label>
+            <label class="change-pw-field">
+              <span class="change-pw-label">New password <span class="change-pw-hint">(4–128 chars)</span></span>
+              <input type="password" id="change-pw-new" autocomplete="new-password" minlength="4" maxlength="128" required>
+            </label>
+            <label class="change-pw-field">
+              <span class="change-pw-label">Confirm new password</span>
+              <input type="password" id="change-pw-confirm" autocomplete="new-password" minlength="4" maxlength="128" required>
+            </label>
+            <div class="change-pw-status" id="change-pw-status" role="status" aria-live="polite"></div>
+            <div class="change-pw-actions">
+              <button type="submit" class="change-pw-btn" id="change-pw-submit">Change password</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </div>
   </aside>
 
@@ -1374,7 +1403,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos45"></script>
+  <script src="app.js?v=wos46"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>

@@ -402,6 +402,22 @@ const API = {
         : { ok: false, error: 'Wrong password' };
     }
   },
+  /* wos46: POST /change-password. Verifies currentPassword server-side
+   * and rotates the editor password into Netlify Blob storage. */
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const res = await fetch(await fnUrl('change-password'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) return { ok: true };
+      return { ok: false, status: res.status, error: data.error || 'Server error' };
+    } catch (err) {
+      return { ok: false, error: 'Network error' };
+    }
+  },
 };
 
 /* ============ 03.5  Session + persistent auth ============ */
@@ -1124,7 +1140,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos45';
+const APP_VERSION = 'wos46';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1167,6 +1183,68 @@ function renderTriageStatus(triage, issue) {
   if (issue) html += `<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.7);">Tracked as <a href="${issue.url}" target="_blank" rel="noopener" style="color:#9bd1ff;">issue #${issue.number}</a></div>`;
   return html;
 }
+
+/* wos46: in-app password rotation. Verifies the current password
+ * server-side, hashes the new one (PBKDF2-SHA256) into Netlify Blob.
+ * On success, updates state.password + remembered password so the user
+ * stays logged in seamlessly. */
+(function wireChangePasswordForm() {
+  const form = document.getElementById('change-pw-form');
+  if (!form) return;
+  const curEl = document.getElementById('change-pw-current');
+  const newEl = document.getElementById('change-pw-new');
+  const confEl = document.getElementById('change-pw-confirm');
+  const status = document.getElementById('change-pw-status');
+  const submit = document.getElementById('change-pw-submit');
+
+  const setStatus = (msg, kind) => {
+    status.textContent = msg || '';
+    status.className = 'change-pw-status' + (kind ? ' ' + kind : '');
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setStatus('', '');
+    const current = curEl.value;
+    const next = newEl.value;
+    const confirm = confEl.value;
+    if (!current || !next || !confirm) {
+      setStatus('All fields required.', 'err'); return;
+    }
+    if (next.length < 4 || next.length > 128) {
+      setStatus('New password must be 4–128 characters.', 'err'); return;
+    }
+    if (next !== confirm) {
+      setStatus('New password and confirmation do not match.', 'err'); return;
+    }
+    if (next === current) {
+      setStatus('New password must differ from current.', 'err'); return;
+    }
+
+    submit.disabled = true;
+    setStatus('Updating…', '');
+    const result = await API.changePassword(current, next);
+    submit.disabled = false;
+
+    if (!result.ok) {
+      setStatus(result.error || 'Failed to change password.', 'err');
+      return;
+    }
+
+    // Success: rotate the password the client uses for subsequent writes.
+    state.password = next;
+    // If the user previously chose "stay unlocked", update the remembered
+    // value so they don't get bounced to the lock screen on next visit.
+    try {
+      if (localStorage.getItem(REMEMBER_KEY)) {
+        localStorage.setItem(REMEMBER_KEY, next);
+      }
+    } catch {}
+
+    curEl.value = newEl.value = confEl.value = '';
+    setStatus('Password changed. The old password no longer works.', 'ok');
+  });
+})();
 
 (function wireFeedbackForm() {
   const form = document.getElementById('feedback-form');

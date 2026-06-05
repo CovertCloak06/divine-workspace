@@ -2444,3 +2444,66 @@ body.editor .export-bar { display: block; }
   cursor: not-allowed;
   filter: none;
 }
+
+/* ============================================================================
+   wos46 — Change Password form in admin drawer
+   ============================================================================ */
+.change-pw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 14px;
+}
+.change-pw-field { display: flex; flex-direction: column; gap: 4px; }
+.change-pw-label {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim, #9bb8dc);
+}
+.change-pw-hint {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--ink-dim, #9bb8dc);
+  opacity: 0.8;
+}
+.change-pw-field input {
+  background: rgba(13, 26, 46, 0.55);
+  border: 1px solid rgba(155, 184, 220, 0.22);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-size: 14px;
+  color: #f0f6ff;
+  outline: none;
+  transition: border-color 140ms, background 140ms;
+}
+.change-pw-field input:focus {
+  border-color: #0f88a8;
+  background: rgba(13, 26, 46, 0.85);
+}
+.change-pw-status {
+  min-height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.change-pw-status.ok   { color: #7ed09f; }
+.change-pw-status.err  { color: #ff8a78; }
+.change-pw-actions { display: flex; justify-content: flex-end; }
+.change-pw-btn {
+  background: linear-gradient(180deg, var(--btn-grad-top, #79bef0) 0%, var(--btn-grad-mid, #4ea4dc) 55%, var(--btn-grad-bot, #2e7ec0) 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 120ms;
+}
+.change-pw-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.change-pw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
