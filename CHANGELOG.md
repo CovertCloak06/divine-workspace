@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed obsolete planning documents (archived to `docs/archive/2026-01/`)
+  - `COMPREHENSIVE_CLEANUP_PLAN.md`
+  - `HOUSEKEEPING_PLAN.md`
+  - `CODE_AUDIT_REPORT.md`
+  - `PURGE_COMPLETE_REPORT.md`
+- Removed temporary purge scripts
+  - `purge_phone_now.sh`
+  - `purge_pkn_now.sh`
+  - `test_analyzers.sh`
+- Removed redundant `packages/dev-dashboard/` (functionality exists in `dashboard/`)
+
 ## [2.0.0] - 2026-01-10
 
 ### Major Refactoring - Monorepo Modularization
@@ -107,10 +120,11 @@ Complete restructuring of Divine Node workspace into production-ready monorepo w
   - `run_tests_for_files.py` - Smart test runner (120 lines)
   - `health_check.py` - System health monitor (100 lines)
 
-- **Development Dashboard** (`packages/dev-dashboard/`)
-  - `src/dashboard.py` - Terminal UI for service monitoring (70 lines)
-  - Real-time status for PKN, Code Academy, PKN Mobile
-  - Built with rich library
+- **Web Dashboard** (`dashboard/`)
+  - `server.py` - Flask web dashboard for development tools (551 lines)
+  - VS Code-like IDE, builder, and classic dashboard views
+  - API endpoints for health checks, imports, CI, and file operations
+  - Built with Flask + Flask-CORS
 
 - **VS Code Integration** (`.vscode/`)
   - `tasks.json` - 10 workspace tasks
