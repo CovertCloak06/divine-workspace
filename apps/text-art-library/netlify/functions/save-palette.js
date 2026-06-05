@@ -6,6 +6,7 @@
 // currently exposed via API; nuke via the Netlify dashboard if needed).
 
 import { connectLambda, getStore } from '@netlify/blobs';
+import { verifyRequest } from './_auth.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,13 +49,8 @@ export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
-  const expected = process.env.EDITOR_PASSWORD;
-  if (!expected) return json(500, { error: 'EDITOR_PASSWORD not configured' });
-
-  const auth = event.headers.authorization || event.headers.Authorization || '';
-  if (auth.replace(/^Bearer\s+/i, '') !== expected) {
-    return json(401, { error: 'Unauthorized' });
-  }
+  const ok = await verifyRequest(event);
+  if (!ok) return json(401, { error: 'Unauthorized' });
 
   let body;
   try {
