@@ -697,40 +697,126 @@ function buildThemeTabs() {
   attachThemeTabsScroll();
 }
 
-/* wos50: make the theme-tabs strip actually scrollable on PC.
-   - Mouse wheel scrolls horizontally instead of vertically (vertical wheel
-     was a no-op since the strip has no vertical overflow).
-   - data-scroll attribute reflects position so the edge fade-mask hides
-     correctly when the user is at the very start or end.
-   - Idempotent: removes any previously-attached listeners before adding. */
+/* wos51: scroll the theme-tabs strip via click-drag, arrow buttons, mouse
+   wheel, or touch swipe — no visible scrollbar (per user). Injects a
+   .theme-tabs-wrap wrapper around the strip and prepends/appends arrow
+   buttons that only show when there is overflow on that side. */
 function attachThemeTabsScroll() {
-  const el = els.themeTabs;
-  if (!el) return;
-  if (el._scrollWired) {
-    el.removeEventListener('wheel', el._scrollWired.onWheel);
-    el.removeEventListener('scroll', el._scrollWired.onScroll);
+  const strip = els.themeTabs;
+  if (!strip) return;
+
+  // Ensure wrapper exists. Wrap the strip lazily on first run.
+  let wrap = strip.parentElement && strip.parentElement.classList.contains('theme-tabs-wrap')
+    ? strip.parentElement
+    : null;
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.className = 'theme-tabs-wrap';
+    strip.parentNode.insertBefore(wrap, strip);
+    wrap.appendChild(strip);
   }
+
+  // Ensure arrow buttons exist (idempotent).
+  let leftBtn = wrap.querySelector('.theme-tab-arrow.left');
+  let rightBtn = wrap.querySelector('.theme-tab-arrow.right');
+  if (!leftBtn) {
+    leftBtn = document.createElement('button');
+    leftBtn.type = 'button';
+    leftBtn.className = 'theme-tab-arrow left';
+    leftBtn.setAttribute('aria-label', 'Scroll themes left');
+    leftBtn.innerHTML = '&#x2039;';
+    wrap.insertBefore(leftBtn, strip);
+  }
+  if (!rightBtn) {
+    rightBtn = document.createElement('button');
+    rightBtn.type = 'button';
+    rightBtn.className = 'theme-tab-arrow right';
+    rightBtn.setAttribute('aria-label', 'Scroll themes right');
+    rightBtn.innerHTML = '&#x203A;';
+    wrap.appendChild(rightBtn);
+  }
+
+  // Wire scroll behaviors once per element.
+  if (strip._scrollWired) return;
+  strip._scrollWired = true;
+
+  // -- Click-drag scroll --
+  let drag = null;
+  let dragStartedMoving = false;
+  const onPointerDown = (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return; // only left mouse
+    if (e.target.closest('.theme-tab-arrow')) return;
+    drag = { x: e.clientX, scrollLeft: strip.scrollLeft, pointerId: e.pointerId };
+    dragStartedMoving = false;
+  };
+  const onPointerMove = (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const dx = e.clientX - drag.x;
+    if (!dragStartedMoving && Math.abs(dx) > 4) {
+      dragStartedMoving = true;
+      strip.classList.add('dragging');
+      try { strip.setPointerCapture(drag.pointerId); } catch (_) {}
+    }
+    if (dragStartedMoving) {
+      strip.scrollLeft = drag.scrollLeft - dx;
+      e.preventDefault();
+    }
+  };
+  const onPointerUp = (e) => {
+    if (!drag) return;
+    const moved = dragStartedMoving;
+    strip.classList.remove('dragging');
+    try { strip.releasePointerCapture(drag.pointerId); } catch (_) {}
+    drag = null;
+    // If we dragged the strip, swallow the click so the tab under the
+    // pointer doesn't get activated as a click.
+    if (moved) {
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      strip.addEventListener('click', swallow, { capture: true, once: true });
+    }
+  };
+
+  // -- Mouse wheel → horizontal --
   const onWheel = (e) => {
-    // Only intercept when there's actual overflow to scroll through.
-    if (el.scrollWidth <= el.clientWidth) return;
-    // If user is holding shift, OS already maps wheel to horizontal — defer.
+    if (strip.scrollWidth <= strip.clientWidth) return;
     if (e.shiftKey) return;
-    // If the user's intent is clearly horizontal (touchpad swipe), defer.
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     e.preventDefault();
-    el.scrollLeft += e.deltaY;
+    strip.scrollLeft += e.deltaY;
   };
+
+  // -- Arrow buttons (one-screen step per click) --
+  const stepBy = (dir) => {
+    const step = Math.max(120, strip.clientWidth * 0.7);
+    strip.scrollTo({ left: strip.scrollLeft + dir * step, behavior: 'smooth' });
+  };
+  leftBtn.addEventListener('click', () => stepBy(-1));
+  rightBtn.addEventListener('click', () => stepBy(1));
+
+  // -- Position state + arrow visibility --
   const onScroll = () => {
-    const max = el.scrollWidth - el.clientWidth;
-    if (max <= 1) { el.dataset.scroll = 'none'; return; }
-    if (el.scrollLeft <= 1) el.dataset.scroll = 'start';
-    else if (el.scrollLeft >= max - 1) el.dataset.scroll = 'end';
-    else el.dataset.scroll = 'mid';
+    const max = strip.scrollWidth - strip.clientWidth;
+    if (max <= 1) {
+      strip.dataset.scroll = 'none';
+      leftBtn.hidden = rightBtn.hidden = true;
+      return;
+    }
+    if (strip.scrollLeft <= 1) strip.dataset.scroll = 'start';
+    else if (strip.scrollLeft >= max - 1) strip.dataset.scroll = 'end';
+    else strip.dataset.scroll = 'mid';
+    leftBtn.hidden  = strip.scrollLeft <= 1;
+    rightBtn.hidden = strip.scrollLeft >= max - 1;
   };
-  el.addEventListener('wheel', onWheel, { passive: false });
-  el.addEventListener('scroll', onScroll, { passive: true });
-  el._scrollWired = { onWheel, onScroll };
-  // Initial state — defer until layout has measured.
+
+  strip.addEventListener('pointerdown', onPointerDown);
+  strip.addEventListener('pointermove', onPointerMove);
+  strip.addEventListener('pointerup', onPointerUp);
+  strip.addEventListener('pointercancel', onPointerUp);
+  strip.addEventListener('wheel', onWheel, { passive: false });
+  strip.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+
+  // Initial state — wait for layout.
   requestAnimationFrame(onScroll);
 }
 
@@ -1032,10 +1118,12 @@ function renderCard(p) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
 
-  // wos badge (left)
+  // wos badge (left). Use text checkmark not the ✅ emoji so the badge
+  // doesn't balloon to ~35px tall on mobile (the colorful emoji ignores
+  // font-size and renders at its natural icon size).
   const wos = document.createElement('span');
   wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
-  wos.textContent = p.wosVerified ? '✅ WoS' : '? WoS';
+  wos.textContent = p.wosVerified ? '✓ WoS' : '? WoS';
   wos.addEventListener('click', (e) => {
     if (!state.editor) return;
     e.stopPropagation();
@@ -1043,10 +1131,10 @@ function renderCard(p) {
   });
   footer.appendChild(wos);
 
-  // copy (center)
+  // copy (center). Text-only — same reason as badge above.
   const copy = document.createElement('button');
   copy.className = 'copy-btn';
-  copy.textContent = '📋 Copy';
+  copy.textContent = 'Copy';
   copy.addEventListener('click', (e) => {
     e.stopPropagation();
     copyArt(p.art, copy);
@@ -1178,7 +1266,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos50';
+const APP_VERSION = 'wos51b';
 
 function captureFeedbackContext() {
   let editorState = 'locked';

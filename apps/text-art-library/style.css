@@ -349,6 +349,11 @@ body.editor .add-row { display: block; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  /* wos51: each card sizes to its own content height — no row-stretch.
+     Without this, CSS grid stretches every card in a row to the tallest
+     card's height, leaving empty space below short art (very visible on
+     Flagged tab where one wide-art card forces three small ones tall). */
+  align-items: start;
 }
 .grid-empty {
   grid-column: 1 / -1;
@@ -1682,15 +1687,23 @@ body.editor .export-bar { display: block; }
   .header { padding: 22px 16px 26px; }
   .controls { padding: 30px 12px 12px; }
   .grid {
-    padding: 0 12px;
-    gap: 12px;
+    padding: 0 10px;
+    gap: 10px;
     /* wos50: always show ≥2 columns of cards on mobile (was 1 col below
        430px because minmax(280px) couldn't fit two). */
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .card { padding: 12px 12px 30px; }
-  .wos-preview { padding: 18px; }
-  .wos-preview pre { font-size: 17px; }
+  /* wos51: compact card layout for 2-col mobile (was 12 12 30 = 54px of
+     vertical chrome on each card, making them too tall). */
+  .card { padding: 10px 10px 14px; }
+  .card-head { margin-bottom: 6px; min-height: 22px; }
+  .card-title { font-size: 13px; }
+  .card-size { font-size: 11px; padding: 2px 6px; }
+  .wos-preview { padding: 10px; }
+  .wos-preview pre { font-size: 14px; }
+  .card-footer { padding-top: 8px; gap: 6px; min-height: 26px; }
+  .wos-badge, .copy-btn { font-size: 10px !important; padding: 3px 8px !important; }
+  .tag-chip, .card .chip { font-size: 10px; padding: 2px 6px; }
 
   /* Bigger touch targets for the edit/delete icons in editor mode on mobile */
   body.editor .card-actions .icon-btn,
@@ -2294,11 +2307,13 @@ body.editor .export-bar { display: block; }
    mockup: dark blue inactive, light blue active, rounded-top tab shape.
    ============================================================================ */
 
-/* the strip itself: horizontal flex, scrolls horizontally on overflow,
-   sits flush atop the search row (no gap between tabs and search bar).
-   wos50: edge fade-mask so the user can see there's more content beyond
-   each edge; a thin scrollbar appears on PC hover so they know they can
-   drag the bar. */
+/* wos51: tabs strip is wrapped in .theme-tabs-wrap for the side arrows;
+   the strip itself has no scrollbar (per user) — scrolling happens via
+   click-drag, arrow buttons, mouse wheel, or touch swipe. Edge fade-mask
+   signals there's more content past the visible edges. */
+.theme-tabs-wrap {
+  position: relative;
+}
 .theme-tabs {
   display: flex;
   gap: 4px;
@@ -2306,47 +2321,63 @@ body.editor .export-bar { display: block; }
   margin: 0 4px -2px;          /* -2px so the active tab visually fuses into search-row */
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(138, 203, 240, 0.35) transparent;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
   align-items: flex-end;
   white-space: nowrap;
-  position: relative;
+  cursor: grab;
   -webkit-mask-image: linear-gradient(90deg,
-    transparent 0,
-    #000 24px,
-    #000 calc(100% - 24px),
-    transparent 100%);
+    transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
           mask-image: linear-gradient(90deg,
-    transparent 0,
-    #000 24px,
-    #000 calc(100% - 24px),
-    transparent 100%);
+    transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
 }
-/* When the user has scrolled to either edge, kill the fade on that side so
-   the first/last tab isn't dimmed when there's nothing past it to indicate. */
 .theme-tabs[data-scroll="start"] {
-  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
-          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
 }
 .theme-tabs[data-scroll="end"] {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 100%);
-          mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 100%);
 }
 .theme-tabs[data-scroll="none"] {
   -webkit-mask-image: none;
           mask-image: none;
 }
-.theme-tabs::-webkit-scrollbar {
-  height: 4px;
+.theme-tabs::-webkit-scrollbar { display: none; }
+.theme-tabs.dragging { cursor: grabbing; user-select: none; }
+.theme-tabs.dragging .theme-tab { pointer-events: none; }
+
+/* wos51: side arrow buttons for scroll on PC */
+.theme-tab-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  color: #061a2d;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 2px 6px rgba(0,0,0,0.35);
+  transition: opacity 150ms, filter 100ms;
+  opacity: 0.92;
 }
-.theme-tabs::-webkit-scrollbar-thumb {
-  background: rgba(138, 203, 240, 0.35);
-  border-radius: 2px;
-}
-.theme-tabs::-webkit-scrollbar-thumb:hover {
-  background: rgba(138, 203, 240, 0.6);
-}
-.theme-tabs::-webkit-scrollbar-track { background: transparent; }
+.theme-tab-arrow:hover { filter: brightness(1.1); opacity: 1; }
+.theme-tab-arrow:active { transform: translateY(-50%) scale(0.95); }
+.theme-tab-arrow.left { left: 2px; }
+.theme-tab-arrow.right { right: 2px; }
+.theme-tab-arrow[hidden] { display: none !important; }
+/* Hide arrows on touch — touch users already get swipe scrolling */
+@media (hover: none) { .theme-tab-arrow { display: none; } }
 
 /* a single tab — rounded-top, flat-bottom; dark blue inactive */
 .theme-tab {
@@ -2358,10 +2389,10 @@ body.editor .export-bar { display: block; }
   color: #f0f6ff;
   font-family: "Fredoka", "Nunito", sans-serif;
   font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  padding: 7px 14px 9px;
-  border-radius: 14px 14px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  padding: 5px 11px 7px;
+  border-radius: 12px 12px 0 0;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease, transform 120ms ease;
   text-transform: capitalize;
@@ -3057,6 +3088,15 @@ html body {
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.04) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.03) 0%, transparent 100%),
     linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%) !important;
+}
+
+/* wos51: cap badge / copy-btn line-height so any glyph (text checkmark,
+   emoji fallback, future icon) sits in a fixed-height pill instead of
+   expanding the row. Pairs with the JS change that switched from the ✅
+   emoji to the ✓ text checkmark. */
+.wos-badge,
+.copy-btn {
+  line-height: 1 !important;
 }
 
 /* End wos48 redesign */
