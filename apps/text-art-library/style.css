@@ -2619,77 +2619,119 @@ html body {
   border: 1px solid rgba(138, 203, 240, 0.45);
 }
 
-/* ── BATCH 3: gold CTA buttons ──────────────────────────────────────────── */
+/* ── BATCH 3: cohesive frosty CTAs (no gold; uniform aesthetic) ─────────── */
+/* Primary actions: Add new art, Export, Save, Unlock, Change password.
+   Frosted cyan gradient + subtle 3D press feel. Replaces the previous gold
+   buttons per "more cohesive aesthetic" feedback. */
 .btn-add,
 .btn-export,
-.copy-btn:not(.copied),
-.modal-copy:not(.copied),
 .auth-unlock,
 .btn-primary,
-.change-pw-btn {
+.change-pw-btn,
+.modal-copy:not(.copied) {
   background: linear-gradient(180deg,
-    var(--fl-gold-top) 0%,
-    var(--fl-gold-mid) 55%,
-    var(--fl-gold-bot) 100%) !important;
-  border: 1.5px solid var(--fl-gold-edge) !important;
-  color: var(--fl-text-on-gold) !important;
-  text-shadow: 0 1px 0 rgba(255,220,100,0.4);
+    #8fd4ee 0%,
+    #4a9fd4 55%,
+    #2a7fb8 100%) !important;
+  border: 1px solid #1f5d8e !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  font-weight: 800;
   box-shadow:
-    inset 0 1px 0 rgba(255, 245, 180, 0.55),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.22),
-    0 3px 0 rgba(80, 50, 0, 0.38),
-    0 4px 10px var(--fl-gold-glow) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 30, 60, 0.22),
+    0 2px 0 rgba(15, 50, 90, 0.4),
+    0 3px 8px rgba(74, 159, 212, 0.32) !important;
   transition: transform 80ms, box-shadow 80ms, filter 100ms;
 }
 .btn-add:hover,
 .btn-export:hover,
-.copy-btn:not(.copied):hover,
-.modal-copy:not(.copied):hover,
 .auth-unlock:hover,
 .btn-primary:hover,
-.change-pw-btn:hover {
-  filter: brightness(1.1) saturate(1.05);
+.change-pw-btn:hover,
+.modal-copy:not(.copied):hover {
+  filter: brightness(1.08) saturate(1.05);
 }
 .btn-add:active,
 .btn-export:active,
-.copy-btn:not(.copied):active,
-.modal-copy:not(.copied):active,
 .auth-unlock:active,
 .btn-primary:active,
-.change-pw-btn:active {
+.change-pw-btn:active,
+.modal-copy:not(.copied):active {
   transform: translateY(2px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 245, 180, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
-    0 1px 0 rgba(80, 50, 0, 0.3) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 30, 60, 0.15),
+    0 1px 0 rgba(15, 50, 90, 0.3) !important;
 }
 
-/* Secondary ghost / cancel buttons → frost variant */
+/* Copy button — pill, sized to match .wos-badge (4px 10px, 11px font) */
+.copy-btn:not(.copied) {
+  background: linear-gradient(180deg,
+    #8fd4ee 0%,
+    #4a9fd4 55%,
+    #2a7fb8 100%) !important;
+  border: 1px solid #1f5d8e !important;
+  border-radius: 999px !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 4px 12px !important;
+  margin: 0 !important;
+  letter-spacing: 0.02em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1.5px 0 rgba(0, 30, 60, 0.2),
+    0 1px 4px rgba(74, 159, 212, 0.3) !important;
+  transition: transform 80ms, filter 100ms;
+}
+.copy-btn:not(.copied):hover { filter: brightness(1.1); }
+.copy-btn:not(.copied):active { transform: translateY(1px); }
+
+/* WoS verified badge — frosted cyan (not gold), same pill size as Copy */
+.wos-badge.verified {
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(180,220,240,0.35) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.5) !important;
+  color: #0a2840 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 1px 3px rgba(0,30,60,0.25) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+}
+.wos-badge.unverified {
+  background: rgba(138, 203, 240, 0.16) !important;
+  border: 1px solid rgba(138, 203, 240, 0.4) !important;
+  color: var(--fl-ice-bright) !important;
+}
+
+/* Secondary ghost / cancel buttons → frost-ghost variant */
 .btn-ghost,
 .save-back,
 #edit-cancel {
   background: linear-gradient(180deg,
-    rgba(100, 175, 220, 0.18) 0%,
-    rgba(60, 110, 160, 0.12) 100%) !important;
-  border: 1.5px solid var(--fl-frost-rim) !important;
+    rgba(100, 175, 220, 0.16) 0%,
+    rgba(60, 110, 160, 0.10) 100%) !important;
+  border: 1px solid var(--fl-frost-rim) !important;
   color: var(--fl-ice-bright) !important;
   box-shadow:
-    inset 0 1px 0 rgba(200, 240, 255, 0.15),
-    0 2px 8px rgba(80, 160, 220, 0.15) !important;
+    inset 0 1px 0 rgba(200, 240, 255, 0.18),
+    0 2px 6px rgba(80, 160, 220, 0.12) !important;
 }
 .btn-ghost:hover,
 .save-back:hover,
 #edit-cancel:hover {
   background: linear-gradient(180deg,
-    rgba(100, 175, 220, 0.28) 0%,
-    rgba(60, 110, 160, 0.22) 100%) !important;
+    rgba(100, 175, 220, 0.26) 0%,
+    rgba(60, 110, 160, 0.20) 100%) !important;
   border-color: var(--fl-ice-bright) !important;
 }
 
 /* Lock icon button (frosty rim) */
 .btn-lock {
   background: linear-gradient(180deg, rgba(100,175,220,0.18), rgba(60,110,160,0.12));
-  border: 1.5px solid var(--fl-frost-rim);
+  border: 1px solid var(--fl-frost-rim);
   color: var(--fl-ice-bright);
 }
 .btn-lock:hover { border-color: var(--fl-ice-bright); }
@@ -2711,14 +2753,15 @@ html body {
 }
 .theme-tab.active {
   background: linear-gradient(180deg,
-    var(--fl-gold-top) 0%,
-    var(--fl-gold-mid) 60%,
-    var(--fl-gold-bot) 100%) !important;
-  border-color: var(--fl-gold-edge) !important;
-  color: var(--fl-text-on-gold) !important;
+    #8fd4ee 0%,
+    #4a9fd4 60%,
+    #2a7fb8 100%) !important;
+  border-color: #1f5d8e !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
   box-shadow:
-    inset 0 1px 0 rgba(255, 245, 180, 0.65),
-    0 -3px 10px var(--fl-gold-glow) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 -3px 10px rgba(74, 159, 212, 0.4) !important;
 }
 /* Active flagged tab keeps the red semantic — only restyle inactive variant */
 .theme-tab.flagged-tab:not(.active) {
@@ -2816,40 +2859,24 @@ textarea:not(#edit-art-input):not(.art-render):focus,
 }
 
 /* ── BATCH 6: ornamental corner accents ─────────────────────────────────── */
-/* Modal-only corner accents. Cards intentionally skip ornamentation —
-   the flag-corner (+) button and chip strip already occupy the corners. */
-.modal::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,0 6,4 10,5 6,6 5,10 4,6 0,5 4,4' fill='%23f4d36b' opacity='0.7'/%3E%3Ccircle cx='5' cy='5' r='1' fill='%23fff0b3'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,0 6,4 10,5 6,6 5,10 4,6 0,5 4,4' fill='%23f4d36b' opacity='0.7'/%3E%3Ccircle cx='5' cy='5' r='1' fill='%23fff0b3'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,0 6,4 10,5 6,6 5,10 4,6 0,5 4,4' fill='%23f4d36b' opacity='0.7'/%3E%3Ccircle cx='5' cy='5' r='1' fill='%23fff0b3'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolygon points='5,0 6,4 10,5 6,6 5,10 4,6 0,5 4,4' fill='%23f4d36b' opacity='0.7'/%3E%3Ccircle cx='5' cy='5' r='1' fill='%23fff0b3'/%3E%3C/svg%3E");
-  background-position: 3px 3px, calc(100% - 3px) 3px, 3px calc(100% - 3px), calc(100% - 3px) calc(100% - 3px);
-  background-repeat: no-repeat;
-  background-size: 10px 10px;
-  z-index: 0;
-  border-radius: inherit;
-}
+/* Corner accents dropped — they added visual noise without value once the
+   frost-rim + glow read clearly on dark navy. Cohesive minimalism. */
 .modal { position: relative; }
-.modal-head, .modal-foot, .modal-body { position: relative; z-index: 1; }
 
-/* Section title ribbon underline (gold) under modal heads + drawer subheads */
+/* Section title underline — frosty line, fading at edges */
 .modal-head h3::after,
 #edit-title::after,
 #auth-title::after,
 .drawer-head h2::after {
   content: '';
   display: block;
-  width: 70%;
-  height: 8px;
+  width: 60%;
+  height: 2px;
   margin: 6px auto 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='10' viewBox='0 0 200 10'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%23c89a26' stop-opacity='0'/%3E%3Cstop offset='0.2' stop-color='%23f4d36b'/%3E%3Cstop offset='0.5' stop-color='%23fff0b3'/%3E%3Cstop offset='0.8' stop-color='%23f4d36b'/%3E%3Cstop offset='1' stop-color='%23c89a26' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='3' width='200' height='4' rx='2' fill='url(%23g)'/%3E%3Crect x='20' y='4' width='160' height='2' rx='1' fill='%23fff0b3' opacity='0.5'/%3E%3C/svg%3E");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(138, 203, 240, 0.7) 50%,
+    transparent 100%);
 }
 
 /* Frost divider between drawer sections */
@@ -2870,14 +2897,14 @@ textarea:not(#edit-art-input):not(.art-render):focus,
   pointer-events: none;
 }
 
-/* ── BATCH 7: gold snowflake emblem ─────────────────────────────────────── */
+/* ── BATCH 7: icy snowflake emblem (frosty cohesion) ────────────────────── */
 #snowflake svg g,
 #snowflake svg polygon,
 #snowflake svg circle,
 .drawer-snowflake g,
 .drawer-snowflake polygon,
 .drawer-snowflake circle {
-  fill: var(--fl-gold-mid) !important;
+  fill: var(--fl-ice-bright) !important;
 }
 
 /* ── Misc text-on-dark cleanup ─────────────────────────────────────────── */
@@ -2895,41 +2922,62 @@ textarea:not(#edit-art-input):not(.art-render):focus,
 }
 
 /* ── BATCH 9: real-snow polish ──────────────────────────────────────────── */
-/* Falling snowflakes — overrides body.fx-snowfall::before from index.html.
-   Bigger, varied flakes with soft glow so it reads as actual snow against
-   the dark navy bg, not a grain pattern. */
+/* Falling snowflakes — override index.html's body.fx-snowfall::before.
+   Critical: do NOT mark background-position as !important; the @keyframes
+   animation must be able to drive that property. The previous wos48b rule
+   was setting an !important static position, which beat the animation and
+   froze the snow. */
 body.fx-snowfall::before {
   background-image:
     radial-gradient(circle, rgba(255,255,255,0.95) 1.6px, transparent 2.4px),
     radial-gradient(circle, rgba(255,255,255,0.85) 2.2px, transparent 3.2px),
-    radial-gradient(circle, rgba(255,255,255,0.7)  1.2px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,0.55) 2.8px, transparent 4px) !important;
+    radial-gradient(circle, rgba(255,255,255,0.75) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,0.6)  2.8px, transparent 4px) !important;
   background-size:
     180px 240px,
     260px 320px,
     140px 180px,
     340px 420px !important;
-  background-position: 20px 0, 90px 80px, 180px 30px, 250px 120px !important;
-  opacity: var(--tw-snow-amount, 0.55) !important;
-  filter: drop-shadow(0 0 1px rgba(255,255,255,0.6));
-  animation: snowfall-real 22s linear infinite !important;
+  opacity: var(--tw-snow-amount, 0.65) !important;
+  filter: drop-shadow(0 0 1.5px rgba(255,255,255,0.7));
+  animation: snowfall-real 18s linear infinite !important;
 }
 @keyframes snowfall-real {
-  from { background-position: 20px 0,        90px 80px,    180px 30px,   250px 120px; }
-  to   { background-position: 20px 1200px,   90px 1280px,  180px 1230px, 250px 1320px; }
+  from {
+    background-position:
+      20px -240px,
+      90px -160px,
+      180px -210px,
+      250px -300px;
+  }
+  to {
+    background-position:
+      20px 1200px,
+      90px 1280px,
+      180px 1230px,
+      250px 1320px;
+  }
 }
 
-/* Snow drift across controls bar — give it a soft fluffy edge */
+/* ── SNOW DRIFT REALISTIC TEXTURE ──
+   The procedurally-generated white snow path is now layered with
+   multiple drop-shadows for fluffy 3D dimensionality and given a
+   subtle organic shimmer via SVG turbulence-like CSS filter. */
 .snow-drift {
-  filter: drop-shadow(0 2px 3px rgba(0, 30, 80, 0.45))
-          drop-shadow(0 0 1px rgba(255, 255, 255, 0.5)) !important;
+  filter:
+    drop-shadow(0 -1px 0 #ffffff)
+    drop-shadow(0 0 1.5px rgba(220, 240, 255, 0.95))
+    drop-shadow(1px 0 0 rgba(230, 245, 255, 0.6))
+    drop-shadow(-1px 0 0 rgba(230, 245, 255, 0.6))
+    drop-shadow(0 2px 0 rgba(180, 215, 240, 0.55))
+    drop-shadow(0 4px 5px rgba(0, 20, 60, 0.55)) !important;
 }
+/* Subtle vertical gradient on the snow itself: bright top → cool icy bottom */
 .snow-profile {
-  fill: #ffffff !important;
+  fill: url(#fl-snow-gradient) !important;
 }
 
-/* Body background — keep the ice-crystal texture but tone it down so the
-   fx-snowfall flakes read cleanly on top. */
+/* Body background — minimal ice-crystal texture so flakes read on top. */
 html body {
   background-image:
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.04) 0%, transparent 100%),

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos48b">
+  <link rel="stylesheet" href="style.css?v=wos48c">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -961,6 +961,19 @@
       else if (t.cardShape === 'pill') body.classList.add('fx-shape-pill');
       if (t.cardBorder && t.cardBorder !== 'solid') body.classList.add('fx-border-' + t.cardBorder);
       if (t.buttonShape && t.buttonShape !== 'auto') body.classList.add('btn-shape-' + t.buttonShape);
+      // wos48c: apply effect-toggle classes on first frame too. Previously these
+      // only fired from React's TweaksPanel useEffects, which only mount in
+      // editor mode — so the public site never showed falling snow even though
+      // the saved tweak was true.
+      if (t.snowfall) body.classList.add('fx-snowfall');
+      if (t.sparkles) body.classList.add('fx-sparkles');
+      if (t.icicles)  body.classList.add('fx-icicles');
+      if (t.cardSnow) body.classList.add('fx-card-snow');
+      if (t.cardFrosty) body.classList.add('fx-card-frosty');
+      if (t.cardAurora) body.classList.add('fx-card-aurora');
+      if (t.cardBreath) body.classList.add('fx-card-breath');
+      if (t.snowfallAmount != null) root.setProperty('--tw-snow-amount', (t.snowfallAmount / 100).toFixed(2));
+      if (t.sparklesAmount != null) root.setProperty('--tw-sparkle-amount', (t.sparklesAmount / 100).toFixed(2));
       // Match the body inline bg to the saved page color so it can't flash.
       if (t.bgColor) body.style.backgroundColor = t.bgColor;
     }
@@ -1132,6 +1145,13 @@
 
   <nav class="controls" style="border-style: none; border-color: rgb(163, 229, 248); color: rgb(29, 118, 209)">
     <svg class="snow-drift" xmlns="http://www.w3.org/2000/svg" width="1920" height="30" viewBox="0 0 1920 30" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="fl-snow-gradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.55" stop-color="#f3faff" />
+          <stop offset="1" stop-color="#cfe4f5" />
+        </linearGradient>
+      </defs>
       <!--
         Continuous snow profile, one closed path. Top edge flat (y=0).
         Bottom edge curves: chunky on the left, dips and rises through
@@ -1403,7 +1423,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos48b"></script>
+  <script src="app.js?v=wos48c"></script>
 
   <!-- ============ Tweaks panel (React + Babel) ============ -->
   <div id="tweaks-mount"></div>
