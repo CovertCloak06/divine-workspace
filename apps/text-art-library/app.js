@@ -694,6 +694,44 @@ function buildThemeTabs() {
     });
     els.themeTabs.appendChild(b);
   }
+  attachThemeTabsScroll();
+}
+
+/* wos50: make the theme-tabs strip actually scrollable on PC.
+   - Mouse wheel scrolls horizontally instead of vertically (vertical wheel
+     was a no-op since the strip has no vertical overflow).
+   - data-scroll attribute reflects position so the edge fade-mask hides
+     correctly when the user is at the very start or end.
+   - Idempotent: removes any previously-attached listeners before adding. */
+function attachThemeTabsScroll() {
+  const el = els.themeTabs;
+  if (!el) return;
+  if (el._scrollWired) {
+    el.removeEventListener('wheel', el._scrollWired.onWheel);
+    el.removeEventListener('scroll', el._scrollWired.onScroll);
+  }
+  const onWheel = (e) => {
+    // Only intercept when there's actual overflow to scroll through.
+    if (el.scrollWidth <= el.clientWidth) return;
+    // If user is holding shift, OS already maps wheel to horizontal — defer.
+    if (e.shiftKey) return;
+    // If the user's intent is clearly horizontal (touchpad swipe), defer.
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    el.scrollLeft += e.deltaY;
+  };
+  const onScroll = () => {
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 1) { el.dataset.scroll = 'none'; return; }
+    if (el.scrollLeft <= 1) el.dataset.scroll = 'start';
+    else if (el.scrollLeft >= max - 1) el.dataset.scroll = 'end';
+    else el.dataset.scroll = 'mid';
+  };
+  el.addEventListener('wheel', onWheel, { passive: false });
+  el.addEventListener('scroll', onScroll, { passive: true });
+  el._scrollWired = { onWheel, onScroll };
+  // Initial state — defer until layout has measured.
+  requestAnimationFrame(onScroll);
 }
 
 function syncActiveThemeChip() {
@@ -1140,7 +1178,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos49';
+const APP_VERSION = 'wos50';
 
 function captureFeedbackContext() {
   let editorState = 'locked';

@@ -1681,7 +1681,13 @@ body.editor .export-bar { display: block; }
 @media (max-width: 480px) {
   .header { padding: 22px 16px 26px; }
   .controls { padding: 30px 12px 12px; }
-  .grid { padding: 0 12px; gap: 12px; }
+  .grid {
+    padding: 0 12px;
+    gap: 12px;
+    /* wos50: always show ≥2 columns of cards on mobile (was 1 col below
+       430px because minmax(280px) couldn't fit two). */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .card { padding: 12px 12px 30px; }
   .wos-preview { padding: 18px; }
   .wos-preview pre { font-size: 17px; }
@@ -2289,7 +2295,10 @@ body.editor .export-bar { display: block; }
    ============================================================================ */
 
 /* the strip itself: horizontal flex, scrolls horizontally on overflow,
-   sits flush atop the search row (no gap between tabs and search bar). */
+   sits flush atop the search row (no gap between tabs and search bar).
+   wos50: edge fade-mask so the user can see there's more content beyond
+   each edge; a thin scrollbar appears on PC hover so they know they can
+   drag the bar. */
 .theme-tabs {
   display: flex;
   gap: 4px;
@@ -2297,12 +2306,47 @@ body.editor .export-bar { display: block; }
   margin: 0 4px -2px;          /* -2px so the active tab visually fuses into search-row */
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;       /* Firefox */
-  -ms-overflow-style: none;    /* IE/Edge */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(138, 203, 240, 0.35) transparent;
   align-items: flex-end;
   white-space: nowrap;
+  position: relative;
+  -webkit-mask-image: linear-gradient(90deg,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%);
+          mask-image: linear-gradient(90deg,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%);
 }
-.theme-tabs::-webkit-scrollbar { display: none; }
+/* When the user has scrolled to either edge, kill the fade on that side so
+   the first/last tab isn't dimmed when there's nothing past it to indicate. */
+.theme-tabs[data-scroll="start"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+}
+.theme-tabs[data-scroll="end"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 100%);
+}
+.theme-tabs[data-scroll="none"] {
+  -webkit-mask-image: none;
+          mask-image: none;
+}
+.theme-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+.theme-tabs::-webkit-scrollbar-thumb {
+  background: rgba(138, 203, 240, 0.35);
+  border-radius: 2px;
+}
+.theme-tabs::-webkit-scrollbar-thumb:hover {
+  background: rgba(138, 203, 240, 0.6);
+}
+.theme-tabs::-webkit-scrollbar-track { background: transparent; }
 
 /* a single tab — rounded-top, flat-bottom; dark blue inactive */
 .theme-tab {
