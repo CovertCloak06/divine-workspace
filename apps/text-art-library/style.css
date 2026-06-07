@@ -1610,8 +1610,38 @@ body.editor .export-bar { display: block; }
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   z-index: 1;
+}
+
+/* wos49: thin vertical guides at WoS wrap boundaries — soft warning only,
+   never blocks input. .safe at col 30 (amber), .hard at col 34 (red). */
+.sketch-wrap-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  border-radius: 1px;
+  z-index: 2;
+}
+.sketch-wrap-guide.safe {
+  background: repeating-linear-gradient(180deg,
+    #d4a020 0,
+    #d4a020 6px,
+    transparent 6px,
+    transparent 12px);
+  box-shadow: 0 0 3px rgba(212, 160, 32, 0.55);
+}
+.sketch-wrap-guide.hard {
+  background: repeating-linear-gradient(180deg,
+    #e84a4a 0,
+    #e84a4a 6px,
+    transparent 6px,
+    transparent 12px);
+  box-shadow: 0 0 4px rgba(232, 74, 74, 0.6);
 }
 .sketch-drop {
   position: absolute;
