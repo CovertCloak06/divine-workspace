@@ -2507,3 +2507,392 @@ body.editor .export-bar { display: block; }
 }
 .change-pw-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .change-pw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================================
+ * wos48 — FROSTY + GOLD HYBRID REDESIGN
+ * Per ui-designer spec. Layered as a final cascade override so the existing
+ * tweaks engine and runtime overrides still function. WoS art renderer
+ * variables (--wos-bubble, --wos-ink, --art-font, --art-line-height,
+ * --wos-cols), the wos40 .theme-tabs structure, wos43 .wos-width-meter
+ * state colors, wos45 .tool-btn semantic colors, and wos46 .change-pw-form
+ * layout are all intentionally untouched.
+ * ========================================================================== */
+
+/* ── BATCH 1: color tokens + base ───────────────────────────────────────── */
+:root {
+  /* Background tiers */
+  --fl-bg-app:        #07111e;
+  --fl-bg-panel:      #0d1f36;
+  --fl-bg-panel-elev: #111e30;
+  /* Frost border / rim / glow */
+  --fl-frost-rim:     #8acbf0;
+  --fl-frost-glow:    rgba(100, 200, 255, 0.22);
+  --fl-frost-inner:   rgba(180, 230, 255, 0.10);
+  /* Icy accent */
+  --fl-ice-bright:    #b8ecff;
+  --fl-ice-mid:       #4a9fd4;
+  --fl-ice-dim:       #2a5a80;
+  /* Gold tokens */
+  --fl-gold-rim:      #fff0b3;
+  --fl-gold-top:      #f4d36b;
+  --fl-gold-mid:      #d4a020;
+  --fl-gold-bot:      #c89a26;
+  --fl-gold-edge:     #7a5a00;
+  --fl-gold-glow:     rgba(212, 160, 32, 0.45);
+  /* Text */
+  --fl-text-primary:  #dff0ff;
+  --fl-text-dim:      #6a9abf;
+  --fl-text-on-gold:  #2a1a00;
+  --fl-text-on-card:  #dff0ff;
+  /* States */
+  --fl-verified:      #f4d36b;
+}
+
+/* Body: dark navy + subtle ice-crystal pattern */
+html body {
+  background-color: var(--fl-bg-app);
+  background-image:
+    radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.06) 0%, transparent 100%),
+    radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.05) 0%, transparent 100%),
+    radial-gradient(ellipse 1px 1px at 50% 80%, rgba(180,230,255,0.04) 0%, transparent 100%),
+    linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%);
+  background-size: 320px 200px, 480px 300px, 600px 400px, 100% 100%;
+  background-attachment: fixed;
+  color: var(--fl-text-primary);
+}
+
+/* Header */
+.header {
+  background: linear-gradient(180deg, #0a1828 0%, #0d1f36 60%, #101f38 100%);
+  border-bottom: 1px solid var(--fl-frost-rim);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 -1px 0 var(--fl-frost-inner);
+}
+.title { color: var(--fl-text-primary); }
+.subtitle { color: var(--fl-text-dim); }
+
+/* Controls bar (search row) */
+.controls {
+  background: linear-gradient(180deg, #152a44 0%, #0f2035 55%, #0d1a2c 100%);
+  border-bottom: 2px solid var(--fl-frost-rim);
+  box-shadow: inset 0 1px 0 rgba(180,230,255,0.18), 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* ── BATCH 2: cards ─────────────────────────────────────────────────────── */
+.card {
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.92) 0%,
+    rgba(10, 22, 42, 0.96) 100%) !important;
+  border: 1.5px solid var(--fl-frost-rim) !important;
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 var(--fl-frost-inner),
+    0 0 0 1px rgba(138, 203, 240, 0.08),
+    0 8px 32px var(--fl-frost-glow),
+    0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  position: relative;
+  color: var(--fl-text-on-card);
+}
+.card-title { color: var(--fl-text-on-card); }
+.card-footer { color: var(--fl-text-on-card); }
+.card .chip,
+.card .tag-chip {
+  background: rgba(74, 159, 212, 0.18);
+  color: var(--fl-ice-bright);
+  border: 1px solid rgba(138, 203, 240, 0.35);
+}
+/* Card art preview keeps the WoS-bubble lime — required for fidelity. */
+
+/* WoS verified badge → gold medal */
+.wos-badge.verified {
+  background: linear-gradient(180deg, var(--fl-gold-top) 0%, var(--fl-gold-bot) 100%);
+  border: 1.5px solid var(--fl-gold-edge);
+  outline: 1px solid var(--fl-gold-rim);
+  outline-offset: -2px;
+  color: var(--fl-text-on-gold);
+  box-shadow:
+    inset 0 1px 0 rgba(255,245,180,0.55),
+    0 2px 6px var(--fl-gold-glow);
+}
+.wos-badge.unverified {
+  background: rgba(138, 203, 240, 0.18);
+  color: var(--fl-ice-bright);
+  border: 1px solid rgba(138, 203, 240, 0.45);
+}
+
+/* ── BATCH 3: gold CTA buttons ──────────────────────────────────────────── */
+.btn-add,
+.btn-export,
+.copy-btn:not(.copied),
+.modal-copy:not(.copied),
+.auth-unlock,
+.btn-primary,
+.change-pw-btn {
+  background: linear-gradient(180deg,
+    var(--fl-gold-top) 0%,
+    var(--fl-gold-mid) 55%,
+    var(--fl-gold-bot) 100%) !important;
+  border: 2px solid var(--fl-gold-edge) !important;
+  outline: 1.5px solid var(--fl-gold-rim);
+  outline-offset: -3px;
+  color: var(--fl-text-on-gold) !important;
+  text-shadow: 0 1px 0 rgba(255,220,100,0.4);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 245, 180, 0.6),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25),
+    0 4px 0 rgba(80, 50, 0, 0.45),
+    0 6px 14px var(--fl-gold-glow) !important;
+  transition: transform 80ms, box-shadow 80ms, filter 100ms;
+}
+.btn-add:hover,
+.btn-export:hover,
+.copy-btn:not(.copied):hover,
+.modal-copy:not(.copied):hover,
+.auth-unlock:hover,
+.btn-primary:hover,
+.change-pw-btn:hover {
+  filter: brightness(1.1) saturate(1.05);
+}
+.btn-add:active,
+.btn-export:active,
+.copy-btn:not(.copied):active,
+.modal-copy:not(.copied):active,
+.auth-unlock:active,
+.btn-primary:active,
+.change-pw-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 180, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(80, 50, 0, 0.3) !important;
+}
+
+/* Secondary ghost / cancel buttons → frost variant */
+.btn-ghost,
+.save-back,
+#edit-cancel {
+  background: linear-gradient(180deg,
+    rgba(100, 175, 220, 0.18) 0%,
+    rgba(60, 110, 160, 0.12) 100%) !important;
+  border: 1.5px solid var(--fl-frost-rim) !important;
+  color: var(--fl-ice-bright) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 240, 255, 0.15),
+    0 2px 8px rgba(80, 160, 220, 0.15) !important;
+}
+.btn-ghost:hover,
+.save-back:hover,
+#edit-cancel:hover {
+  background: linear-gradient(180deg,
+    rgba(100, 175, 220, 0.28) 0%,
+    rgba(60, 110, 160, 0.22) 100%) !important;
+  border-color: var(--fl-ice-bright) !important;
+}
+
+/* Lock icon button (frosty rim) */
+.btn-lock {
+  background: linear-gradient(180deg, rgba(100,175,220,0.18), rgba(60,110,160,0.12));
+  border: 1.5px solid var(--fl-frost-rim);
+  color: var(--fl-ice-bright);
+}
+.btn-lock:hover { border-color: var(--fl-ice-bright); }
+
+/* ── BATCH 4: theme tabs (color-only — keeps wos40 structure) ───────────── */
+.theme-tab {
+  background: linear-gradient(180deg,
+    rgba(30, 55, 88, 0.85) 0%,
+    rgba(15, 35, 60, 0.92) 100%) !important;
+  border: 1px solid rgba(138, 203, 240, 0.45) !important;
+  border-bottom: none !important;
+  color: var(--fl-text-dim) !important;
+}
+.theme-tab:hover {
+  background: linear-gradient(180deg,
+    rgba(50, 85, 125, 0.9) 0%,
+    rgba(25, 50, 85, 0.95) 100%) !important;
+  color: var(--fl-ice-bright) !important;
+}
+.theme-tab.active {
+  background: linear-gradient(180deg,
+    var(--fl-gold-top) 0%,
+    var(--fl-gold-mid) 60%,
+    var(--fl-gold-bot) 100%) !important;
+  border-color: var(--fl-gold-edge) !important;
+  color: var(--fl-text-on-gold) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 180, 0.65),
+    0 -3px 10px var(--fl-gold-glow) !important;
+}
+/* Active flagged tab keeps the red semantic — only restyle inactive variant */
+.theme-tab.flagged-tab:not(.active) {
+  border-color: rgba(232, 74, 74, 0.55) !important;
+  color: #ff9b8a !important;
+}
+
+/* ── BATCH 5: modals + drawer ───────────────────────────────────────────── */
+.modal,
+.edit-modal,
+.auth-modal,
+.modal-content,
+.modal > .modal-body {
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.96) 0%,
+    rgba(10, 22, 42, 0.98) 100%) !important;
+  border: 1.5px solid var(--fl-frost-rim) !important;
+  box-shadow:
+    inset 0 1px 0 var(--fl-frost-inner),
+    0 0 0 1px rgba(138, 203, 240, 0.1),
+    0 16px 48px var(--fl-frost-glow),
+    0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+.modal-head h3,
+.modal h3,
+.modal-title,
+#edit-title,
+#auth-title {
+  color: var(--fl-text-primary);
+}
+.modal-head {
+  border-bottom: 1px solid rgba(138, 203, 240, 0.35);
+}
+.modal-foot {
+  border-top: 1px solid rgba(138, 203, 240, 0.25);
+}
+
+.themes-drawer {
+  background: linear-gradient(180deg, #0a1828 0%, #0d1f36 100%) !important;
+  border-right: 1.5px solid var(--fl-frost-rim) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.5), inset -1px 0 0 var(--fl-frost-inner);
+}
+.drawer-head {
+  border-bottom: 1px solid var(--fl-frost-rim);
+  background: linear-gradient(180deg, #0c1c34 0%, #0a1828 100%);
+}
+.drawer-section + .drawer-section {
+  border-top: 1px solid rgba(138, 203, 240, 0.18);
+}
+.drawer-section-head {
+  color: var(--fl-text-dim);
+}
+.drawer-section-head:hover {
+  background: rgba(138, 203, 240, 0.08);
+  color: var(--fl-ice-bright);
+}
+.drawer-section.is-open .drawer-section-head {
+  color: var(--fl-ice-bright);
+}
+
+/* Save sheet matches modal panel */
+.save-sheet {
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.96) 0%,
+    rgba(10, 22, 42, 0.98) 100%) !important;
+  border: 1.5px solid var(--fl-frost-rim);
+}
+.save-sheet h3 { color: var(--fl-text-primary); }
+
+/* Inputs across the app */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea:not(#edit-art-input):not(.art-render),
+.search-input {
+  background: rgba(13, 26, 46, 0.65);
+  border: 1px solid rgba(138, 203, 240, 0.25);
+  color: var(--fl-text-primary);
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:not(#edit-art-input):not(.art-render):focus,
+.search-input:focus {
+  border-color: var(--fl-frost-rim);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--fl-frost-glow);
+}
+
+/* Auth (unlock) modal */
+.auth-modal .auth-password {
+  background: rgba(13, 26, 46, 0.7);
+  border: 1px solid var(--fl-frost-rim);
+  color: var(--fl-text-primary);
+}
+
+/* ── BATCH 6: ornamental corner accents ─────────────────────────────────── */
+.card::before,
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpolygon points='7,0 8.5,5.5 14,7 8.5,8.5 7,14 5.5,8.5 0,7 5.5,5.5' fill='%23f4d36b' opacity='0.75'/%3E%3Ccircle cx='7' cy='7' r='1.5' fill='%23fff0b3'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpolygon points='7,0 8.5,5.5 14,7 8.5,8.5 7,14 5.5,8.5 0,7 5.5,5.5' fill='%23f4d36b' opacity='0.75'/%3E%3Ccircle cx='7' cy='7' r='1.5' fill='%23fff0b3'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpolygon points='7,0 8.5,5.5 14,7 8.5,8.5 7,14 5.5,8.5 0,7 5.5,5.5' fill='%23f4d36b' opacity='0.75'/%3E%3Ccircle cx='7' cy='7' r='1.5' fill='%23fff0b3'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpolygon points='7,0 8.5,5.5 14,7 8.5,8.5 7,14 5.5,8.5 0,7 5.5,5.5' fill='%23f4d36b' opacity='0.75'/%3E%3Ccircle cx='7' cy='7' r='1.5' fill='%23fff0b3'/%3E%3C/svg%3E");
+  background-position: 8px 8px, calc(100% - 8px) 8px, 8px calc(100% - 8px), calc(100% - 8px) calc(100% - 8px);
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  z-index: 1;
+  border-radius: inherit;
+}
+.card { overflow: hidden; }
+.modal { position: relative; }
+
+/* Section title ribbon underline (gold) under modal heads + drawer subheads */
+.modal-head h3::after,
+#edit-title::after,
+#auth-title::after,
+.drawer-head h2::after {
+  content: '';
+  display: block;
+  width: 70%;
+  height: 8px;
+  margin: 6px auto 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='10' viewBox='0 0 200 10'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%23c89a26' stop-opacity='0'/%3E%3Cstop offset='0.2' stop-color='%23f4d36b'/%3E%3Cstop offset='0.5' stop-color='%23fff0b3'/%3E%3Cstop offset='0.8' stop-color='%23f4d36b'/%3E%3Cstop offset='1' stop-color='%23c89a26' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='3' width='200' height='4' rx='2' fill='url(%23g)'/%3E%3Crect x='20' y='4' width='160' height='2' rx='1' fill='%23fff0b3' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Frost divider between drawer sections */
+.drawer-section + .drawer-section {
+  position: relative;
+  border-top: none !important;
+}
+.drawer-section + .drawer-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12' viewBox='0 0 200 12'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%238acbf0' stop-opacity='0'/%3E%3Cstop offset='0.35' stop-color='%238acbf0' stop-opacity='0.7'/%3E%3Cstop offset='0.5' stop-color='%238acbf0' stop-opacity='0'/%3E%3Cstop offset='0.65' stop-color='%238acbf0' stop-opacity='0.7'/%3E%3Cstop offset='1' stop-color='%238acbf0' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='5' width='200' height='1.5' fill='url(%23f)'/%3E%3Cpolygon points='100,2 103.5,6 100,10 96.5,6' fill='%23b8ecff' opacity='0.9'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* ── BATCH 7: gold snowflake emblem ─────────────────────────────────────── */
+#snowflake svg g,
+#snowflake svg polygon,
+#snowflake svg circle,
+.drawer-snowflake g,
+.drawer-snowflake polygon,
+.drawer-snowflake circle {
+  fill: var(--fl-gold-mid) !important;
+}
+
+/* ── Misc text-on-dark cleanup ─────────────────────────────────────────── */
+.label-dim,
+.field label,
+.feedback-label,
+.site-text-label,
+.change-pw-label {
+  color: var(--fl-text-dim);
+}
+
+/* Grid empty state */
+.grid-empty {
+  color: var(--fl-text-dim);
+}
+
+/* End wos48 redesign */
