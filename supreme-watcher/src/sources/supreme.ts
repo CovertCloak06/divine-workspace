@@ -36,6 +36,13 @@ async function fetchJson<T>(url: string, timeoutMs = 15_000): Promise<T> {
       },
     });
     if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error(
+          `HTTP 403 from Supreme — the host IP is likely blocked by anti-bot ` +
+            `protection. Run from a residential connection (home network / Pi / phone) ` +
+            `or use a residential proxy. (${url})`,
+        );
+      }
       throw new Error(`HTTP ${res.status} ${res.statusText} for ${url}`);
     }
     return (await res.json()) as T;

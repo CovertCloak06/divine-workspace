@@ -72,6 +72,30 @@ keys, nothing that breaks on an iOS update.
 
 ---
 
+## Test it before you rely on it
+
+You don't need Supreme access (or even to wait for a drop) to confirm the bot
+works. The demo runs the **real** detection + alerting pipeline against scripted
+sample data, triggering a restock, a price drop, and a new item:
+
+```bash
+npm install
+npm run demo
+```
+
+- **Without** Pushover keys → it prints the 3 alerts it *would* send (dry run).
+- **With** keys set (`cp env.example .env` and fill them in) → it sends 3 **real
+  notifications to your phone**, so you can confirm end-to-end delivery works:
+
+```bash
+PUSHOVER_TOKEN=xxx PUSHOVER_USER=yyy npm run demo
+# → check the Pushover app: 3 notifications (restock / price-drop / new)
+```
+
+This is the recommended "does it actually work on my friend's phone?" check.
+
+---
+
 ## Configuration
 
 All settings live in `.env` (see `env.example` for the annotated list):
@@ -96,6 +120,13 @@ All settings live in `.env` (see `env.example` for the annotated list):
 
 The bot is just a long-running Node process, so any always-on host works. The
 iPhone only **receives** alerts; it does not run the bot.
+
+> ⚠️ **Important — where it can run.** Supreme protects its store against bots and
+> commonly returns **HTTP 403** to requests from datacenter/cloud IPs. So a
+> generic cloud VPS may get blocked. The most reliable hosts are on a **residential
+> connection**: a Raspberry Pi, an old phone/laptop, or a home server at the place
+> it'll run. If a cloud host returns 403, move it to a residential network (or a
+> residential proxy). The bot logs the 403 and simply retries next cycle.
 
 - **Docker** (anywhere): `docker build -t supreme-watcher . && docker run -d --env-file .env -v $PWD/data:/app/data supreme-watcher`
 - **Raspberry Pi / spare Android (Termux) / home server**: `npm run build && npm start`, kept alive with `pm2` or a `systemd` service.
