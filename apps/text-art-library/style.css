@@ -355,6 +355,17 @@ body.editor .add-row { display: block; }
      Flagged tab where one wide-art card forces three small ones tall). */
   align-items: start;
 }
+
+/* wos52: tablet breakpoints. The default auto-fill(280px) only fits 2 cols
+   from 481-1119px, wasting space on tablets. Explicit 3-col grid from
+   721-1080px gives tablet portrait (768px) and landscape (1024px) a more
+   useful density. Phablet 481-720px keeps 2 cols. */
+@media (min-width: 481px) and (max-width: 720px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 721px) and (max-width: 1080px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .grid-empty {
   grid-column: 1 / -1;
   text-align: center;

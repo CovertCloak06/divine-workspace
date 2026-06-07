@@ -1266,7 +1266,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos51b';
+const APP_VERSION = 'wos52';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2750,11 +2750,45 @@ if (els.sketchSelect) els.sketchSelect.addEventListener('click', () => {
 if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
 
 els.editArtInput.addEventListener('input', () => {
-  // wos49: user typed/pasted directly — push the POST-edit value so undo
-  // is granular per keystroke. (Browsers fire one input event per keystroke;
-  // a paste fires one input event so it's one undo step too.)
-  pushEditHistory();
-  // Only re-render sketch view when it's actually visible.
+  // wos49: push the POST-edit value so undo is granular per keystroke.
+  // wos52: tablet/mobile autosuggest, swipe-typing, paste, and predictive
+  // keyboards all insert MULTIPLE characters in a single input event. The
+  // previous wos49 behavior treated those as one undo step, so a single
+  // undo would revert a whole word — user reported "undo reverts 6 inputs".
+  // Now: when an input event inserts N>1 contiguous chars, push N
+  // intermediate history states so undo walks back one character at a
+  // time, no matter how the chars were entered.
+  if (!editHistorySuspend) {
+    const oldVal = lastEditSnapshot;
+    const newVal = els.editArtInput.value;
+    if (newVal !== oldVal) {
+      let i = 0;
+      while (i < oldVal.length && i < newVal.length && oldVal[i] === newVal[i]) i++;
+      let oldEnd = oldVal.length, newEnd = newVal.length;
+      while (oldEnd > i && newEnd > i && oldVal[oldEnd - 1] === newVal[newEnd - 1]) {
+        oldEnd--; newEnd--;
+      }
+      const insertedLen = newEnd - i;
+      const removedLen  = oldEnd - i;
+      // Pure insertion of >1 chars (no replacement) → split per-char.
+      if (insertedLen > 1 && removedLen === 0 && insertedLen <= 50) {
+        const prefix = oldVal.slice(0, i);
+        const suffix = oldVal.slice(oldEnd);
+        const inserted = newVal.slice(i, newEnd);
+        for (let k = 1; k <= inserted.length; k++) {
+          const step = prefix + inserted.slice(0, k) + suffix;
+          if (editHistory.length && editHistory[editHistory.length - 1] === step) continue;
+          editHistory.push(step);
+          if (editHistory.length > EDIT_HISTORY_MAX) editHistory.shift();
+        }
+        redoHistory.length = 0;
+        lastEditSnapshot = newVal;
+        syncHistoryButtons();
+      } else {
+        pushEditHistory();
+      }
+    }
+  }
   if (isSketchMode()) renderSketch();
 });
 
