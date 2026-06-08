@@ -1266,7 +1266,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos52';
+const APP_VERSION = 'wos53';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2651,8 +2651,26 @@ function gestureUp(cx, cy) {
   if (paintActive) endStroke();
 }
 
+// wos53: when the user taps the canvas scrollbar gutter, the touch lands on
+// .sketch-view and would otherwise trigger paint. Use a 18px hit zone
+// along the right/bottom edges when a scrollbar is present — wider than
+// the native scrollbar (which can be 4px on mobile) so imprecise finger
+// taps near the scrollbar register as scroll intent, not paint.
+const SCROLLBAR_HIT = 18;
+function isOnScrollbar(el, x, y) {
+  const rect = el.getBoundingClientRect();
+  const relX = x - rect.left;
+  const relY = y - rect.top;
+  const sbW = el.offsetWidth - el.clientWidth;
+  const sbH = el.offsetHeight - el.clientHeight;
+  if (sbW > 0 && relX >= el.offsetWidth - SCROLLBAR_HIT) return true;
+  if (sbH > 0 && relY >= el.offsetHeight - SCROLLBAR_HIT) return true;
+  return false;
+}
+
 els.sketchView.addEventListener('pointerdown', (e) => {
   if (Date.now() - lastTouchAt < 400) return; // ignore synthetic post-touch pointer
+  if (isOnScrollbar(els.sketchView, e.clientX, e.clientY)) return;
   const cell = cellFromPoint(e.clientX, e.clientY);
   if (!cell) return;
   gestureDown(e.clientX, e.clientY, cell);
@@ -2680,6 +2698,7 @@ window.addEventListener('pointercancel', () => {
 els.sketchView.addEventListener('touchstart', (e) => {
   lastTouchAt = Date.now();
   const t = e.touches[0]; if (!t) return;
+  if (isOnScrollbar(els.sketchView, t.clientX, t.clientY)) return; // wos53
   const cell = cellFromPoint(t.clientX, t.clientY);
   if (!cell) return;
   gestureDown(t.clientX, t.clientY, cell);

@@ -3110,4 +3110,122 @@ html body {
   line-height: 1 !important;
 }
 
+/* ── wos53: SIX EDITOR FIXES ───────────────────────────────────────────── */
+
+/* 6) Flag corner — was color:#14123c (dark navy) on a dark navy card =
+   invisible. Switched to warm amber so the "report this" affordance
+   reads on dark cards while keeping the red flagged state distinct. */
+.flag-corner {
+  color: var(--warn-ink, #ffcf6b) !important;
+}
+.flag-corner .box {
+  border: 1.5px solid var(--warn-ink, #ffcf6b) !important;
+  background: rgba(255, 207, 107, 0.08);
+}
+.card.flagged .flag-corner,
+.card.flagged .flag-corner .box {
+  color: #ff7d6e !important;
+  border-color: #ff7d6e !important;
+}
+
+/* 3) Compact .modal-foot in the editor — was 14×22×18 padding + 9×20 buttons
+   (~64px tall total). Now ~38px tall, frees ~26px for the canvas/favorites
+   row below the toggle. */
+#edit .modal-foot {
+  padding: 6px 14px 8px !important;
+  gap: 8px !important;
+}
+#edit .modal-foot .btn-ghost,
+#edit .modal-foot .btn-primary {
+  padding: 5px 14px !important;
+  font-size: 12px !important;
+}
+
+/* 5) Tool buttons split into PRIMARY (left) vs DESTRUCTIVE (right) groups.
+   The .tool-btn.destructive marker on Erase + Clear gives them a subtle
+   red tint so the group reads as "removes content" at a glance. */
+.tool-btn.destructive {
+  color: #ff9b8a !important;
+}
+.tool-btn.destructive:hover {
+  color: #ff7d6e !important;
+}
+
+/* 2) WoS-style custom scrollbars — chunky game-UI bar with up/down arrow
+   buttons at the ends. Applied to scrollable canvas, palette, and any
+   .has-wos-scroll opt-in container. */
+.sketch-view::-webkit-scrollbar,
+.char-palette::-webkit-scrollbar,
+.has-wos-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.sketch-view::-webkit-scrollbar-track,
+.char-palette::-webkit-scrollbar-track,
+.has-wos-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #0a1828 0%, #0e2238 100%);
+  border: 1px solid rgba(138, 203, 240, 0.25);
+  border-radius: 6px;
+}
+.sketch-view::-webkit-scrollbar-thumb,
+.char-palette::-webkit-scrollbar-thumb,
+.has-wos-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 30, 60, 0.22);
+}
+.sketch-view::-webkit-scrollbar-thumb:hover,
+.char-palette::-webkit-scrollbar-thumb:hover,
+.has-wos-scroll::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.12);
+}
+.sketch-view::-webkit-scrollbar-button:single-button,
+.char-palette::-webkit-scrollbar-button:single-button,
+.has-wos-scroll::-webkit-scrollbar-button:single-button {
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  border-radius: 4px;
+  display: block;
+  height: 14px;
+  width: 14px;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+/* Up arrow */
+.sketch-view::-webkit-scrollbar-button:vertical:decrement,
+.char-palette::-webkit-scrollbar-button:vertical:decrement,
+.has-wos-scroll::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M5 1 L9 6 L1 6 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Down arrow */
+.sketch-view::-webkit-scrollbar-button:vertical:increment,
+.char-palette::-webkit-scrollbar-button:vertical:increment,
+.has-wos-scroll::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M5 7 L9 2 L1 2 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Left arrow */
+.sketch-view::-webkit-scrollbar-button:horizontal:decrement,
+.has-wos-scroll::-webkit-scrollbar-button:horizontal:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpath d='M1 5 L6 1 L6 9 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Right arrow */
+.sketch-view::-webkit-scrollbar-button:horizontal:increment,
+.has-wos-scroll::-webkit-scrollbar-button:horizontal:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpath d='M7 5 L2 1 L2 9 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+.sketch-view::-webkit-scrollbar-corner,
+.char-palette::-webkit-scrollbar-corner,
+.has-wos-scroll::-webkit-scrollbar-corner {
+  background: #0a1828;
+}
+/* Firefox fallback */
+.sketch-view, .char-palette, .has-wos-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #4a9fd4 #0a1828;
+}
+
 /* End wos48 redesign */
