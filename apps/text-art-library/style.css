@@ -2668,12 +2668,37 @@ body.editor .export-bar { display: block; }
 html body {
   background-color: var(--fl-bg-app);
   background-image:
+    /* wos54: WoS-style frozen citadel artwork as the room behind the cards.
+       Layered over a dark navy base so the citadel detail reads but cards
+       still pop. linear-gradient overlay tones down the right side so the
+       glowing furnace doesn't fight card content. */
+    linear-gradient(180deg, rgba(7, 17, 30, 0.55) 0%, rgba(7, 17, 30, 0.65) 40%, rgba(7, 17, 30, 0.75) 100%),
+    url("assets/bg-frostline.webp"),
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.06) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.05) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 50% 80%, rgba(180,230,255,0.04) 0%, transparent 100%),
     linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%);
-  background-size: 320px 200px, 480px 300px, 600px 400px, 100% 100%;
-  background-attachment: fixed;
+  background-size:
+    cover,
+    cover,
+    320px 200px,
+    480px 300px,
+    600px 400px,
+    100% 100%;
+  background-position:
+    center center,
+    center center,
+    0 0, 30px 60px, 80px 120px,
+    center;
+  background-repeat:
+    no-repeat,
+    no-repeat,
+    repeat, repeat, repeat,
+    no-repeat;
+  background-attachment:
+    fixed,
+    fixed,
+    scroll, scroll, scroll, scroll;
   color: var(--fl-text-primary);
 }
 
@@ -3093,12 +3118,22 @@ body.fx-snowfall::before {
   fill: url(#fl-snow-gradient) !important;
 }
 
-/* Body background — minimal ice-crystal texture so flakes read on top. */
+/* wos54: WoS frozen citadel backdrop + minimal ice-crystal texture so
+   falling snow flakes still read on top. Uses !important to win over the
+   wos48b override below; keeps the citadel image + dark vignette overlay
+   from the main wos54 rule but spelled out again here in case the
+   cascade order pulls this one. */
 html body {
   background-image:
+    linear-gradient(180deg, rgba(7, 17, 30, 0.55) 0%, rgba(7, 17, 30, 0.65) 40%, rgba(7, 17, 30, 0.75) 100%),
+    url("assets/bg-frostline.webp"),
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.04) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.03) 0%, transparent 100%),
     linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%) !important;
+  background-size: cover, cover, 320px 200px, 480px 300px, 100% 100% !important;
+  background-position: center, center, 0 0, 30px 60px, center !important;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat !important;
+  background-attachment: fixed, fixed, scroll, scroll, scroll !important;
 }
 
 /* wos51: cap badge / copy-btn line-height so any glyph (text checkmark,
