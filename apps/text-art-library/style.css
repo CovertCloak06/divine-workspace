@@ -2720,9 +2720,14 @@ html body {
 
 /* ── BATCH 2: cards ─────────────────────────────────────────────────────── */
 .card {
+  /* wos55: glassmorphism — drop bg opacity 0.92/0.96 → 0.55/0.65 and add
+     a heavy backdrop-blur so the WoS citadel backdrop reads through the
+     card frame. The lime art preview keeps its own solid bg for contrast. */
   background: linear-gradient(160deg,
-    rgba(30, 55, 88, 0.92) 0%,
-    rgba(10, 22, 42, 0.96) 100%) !important;
+    rgba(30, 55, 88, 0.55) 0%,
+    rgba(10, 22, 42, 0.65) 100%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+          backdrop-filter: blur(14px) saturate(115%);
   border: 1.5px solid var(--fl-frost-rim) !important;
   border-radius: 18px;
   box-shadow:
@@ -2916,9 +2921,15 @@ html body {
 .auth-modal,
 .modal-content,
 .modal > .modal-body {
+  /* wos55: glassmorphism — was 0.96/0.98 (near-opaque). Modals are still
+     more opaque than cards because they're foreground panels you read
+     content in, but a 0.78/0.85 gives the citadel backdrop a soft presence
+     behind them when the overlay is up. */
   background: linear-gradient(160deg,
-    rgba(30, 55, 88, 0.96) 0%,
-    rgba(10, 22, 42, 0.98) 100%) !important;
+    rgba(30, 55, 88, 0.78) 0%,
+    rgba(10, 22, 42, 0.85) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+          backdrop-filter: blur(18px) saturate(120%);
   border: 1.5px solid var(--fl-frost-rim) !important;
   box-shadow:
     inset 0 1px 0 var(--fl-frost-inner),
