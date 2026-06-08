@@ -2672,7 +2672,7 @@ html body {
        Layered over a dark navy base so the citadel detail reads but cards
        still pop. linear-gradient overlay tones down the right side so the
        glowing furnace doesn't fight card content. */
-    linear-gradient(180deg, rgba(7, 17, 30, 0.55) 0%, rgba(7, 17, 30, 0.65) 40%, rgba(7, 17, 30, 0.75) 100%),
+    linear-gradient(180deg, rgba(7, 17, 30, 0.32) 0%, rgba(7, 17, 30, 0.42) 50%, rgba(7, 17, 30, 0.55) 100%),
     url("assets/bg-frostline.webp"),
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.06) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.05) 0%, transparent 100%),
@@ -2720,14 +2720,13 @@ html body {
 
 /* ── BATCH 2: cards ─────────────────────────────────────────────────────── */
 .card {
-  /* wos55: glassmorphism — drop bg opacity 0.92/0.96 → 0.55/0.65 and add
-     a heavy backdrop-blur so the WoS citadel backdrop reads through the
-     card frame. The lime art preview keeps its own solid bg for contrast. */
+  /* wos55→wos56: more glassmorphism — was 0.55/0.65, dropped to 0.32/0.42
+     so more of the WoS citadel backdrop shows through the card panel. */
   background: linear-gradient(160deg,
-    rgba(30, 55, 88, 0.55) 0%,
-    rgba(10, 22, 42, 0.65) 100%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(115%);
-          backdrop-filter: blur(14px) saturate(115%);
+    rgba(30, 55, 88, 0.32) 0%,
+    rgba(10, 22, 42, 0.42) 100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+          backdrop-filter: blur(16px) saturate(120%);
   border: 1.5px solid var(--fl-frost-rim) !important;
   border-radius: 18px;
   box-shadow:
@@ -3136,7 +3135,7 @@ body.fx-snowfall::before {
    cascade order pulls this one. */
 html body {
   background-image:
-    linear-gradient(180deg, rgba(7, 17, 30, 0.55) 0%, rgba(7, 17, 30, 0.65) 40%, rgba(7, 17, 30, 0.75) 100%),
+    linear-gradient(180deg, rgba(7, 17, 30, 0.32) 0%, rgba(7, 17, 30, 0.42) 50%, rgba(7, 17, 30, 0.55) 100%),
     url("assets/bg-frostline.webp"),
     radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.04) 0%, transparent 100%),
     radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.03) 0%, transparent 100%),
