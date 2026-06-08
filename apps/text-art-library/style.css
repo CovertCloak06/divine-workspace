@@ -3172,6 +3172,44 @@ html body {
   color: #ff7d6e !important;
   border-color: #ff7d6e !important;
 }
+/* wos57: when the flag is ACTIVATED (card has .flagged), drop the box
+   border + background entirely so only the flag glyph + "flag" text show.
+   The previous rule only changed border-color which still rendered a
+   coral box around the icon. */
+.card.flagged .flag-corner .box {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* wos57: snow drift on top of the search bar — chunky scalloped white
+   accumulation that mirrors the snow piled atop the controls bar. Tall
+   curvy SVG path positioned overlapping the input top edge so it reads
+   as fresh snow that just landed on the bar's top frame. */
+.search-row {
+  position: relative;
+}
+.search-row::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -2px;
+  right: -2px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 3;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='24' viewBox='0 0 240 24' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff' d='M0 24 L0 14 C5 6 11 4 18 8 C23 11 28 4 36 6 C44 8 49 18 56 14 C62 11 68 3 76 4 C82 5 88 16 96 12 C102 9 108 5 116 7 C122 9 128 17 136 13 C142 10 148 3 156 5 C163 7 168 16 176 12 C182 9 188 4 196 7 C202 10 208 18 216 14 C222 11 228 5 234 8 C237 10 240 12 240 13 L240 24 Z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  filter:
+    drop-shadow(0 -1px 0 #ffffff)
+    drop-shadow(0 0 2px rgba(220, 240, 255, 0.85))
+    drop-shadow(1px 0 0 rgba(230, 245, 255, 0.55))
+    drop-shadow(-1px 0 0 rgba(230, 245, 255, 0.55))
+    drop-shadow(0 3px 3px rgba(0, 30, 80, 0.5));
+}
 
 /* 3) Compact .modal-foot in the editor — was 14×22×18 padding + 9×20 buttons
    (~64px tall total). Now ~38px tall, frees ~26px for the canvas/favorites
