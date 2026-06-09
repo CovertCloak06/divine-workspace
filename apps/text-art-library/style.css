@@ -349,6 +349,22 @@ body.editor .add-row { display: block; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  /* wos51: each card sizes to its own content height — no row-stretch.
+     Without this, CSS grid stretches every card in a row to the tallest
+     card's height, leaving empty space below short art (very visible on
+     Flagged tab where one wide-art card forces three small ones tall). */
+  align-items: start;
+}
+
+/* wos52: tablet breakpoints. The default auto-fill(280px) only fits 2 cols
+   from 481-1119px, wasting space on tablets. Explicit 3-col grid from
+   721-1080px gives tablet portrait (768px) and landscape (1024px) a more
+   useful density. Phablet 481-720px keeps 2 cols. */
+@media (min-width: 481px) and (max-width: 720px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 721px) and (max-width: 1080px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .grid-empty {
   grid-column: 1 / -1;
@@ -1610,8 +1626,38 @@ body.editor .export-bar { display: block; }
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   z-index: 1;
+}
+
+/* wos49: thin vertical guides at WoS wrap boundaries — soft warning only,
+   never blocks input. .safe at col 30 (amber), .hard at col 34 (red). */
+.sketch-wrap-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  border-radius: 1px;
+  z-index: 2;
+}
+.sketch-wrap-guide.safe {
+  background: repeating-linear-gradient(180deg,
+    #d4a020 0,
+    #d4a020 6px,
+    transparent 6px,
+    transparent 12px);
+  box-shadow: 0 0 3px rgba(212, 160, 32, 0.55);
+}
+.sketch-wrap-guide.hard {
+  background: repeating-linear-gradient(180deg,
+    #e84a4a 0,
+    #e84a4a 6px,
+    transparent 6px,
+    transparent 12px);
+  box-shadow: 0 0 4px rgba(232, 74, 74, 0.6);
 }
 .sketch-drop {
   position: absolute;
@@ -1651,10 +1697,24 @@ body.editor .export-bar { display: block; }
 @media (max-width: 480px) {
   .header { padding: 22px 16px 26px; }
   .controls { padding: 30px 12px 12px; }
-  .grid { padding: 0 12px; gap: 12px; }
-  .card { padding: 12px 12px 30px; }
-  .wos-preview { padding: 18px; }
-  .wos-preview pre { font-size: 17px; }
+  .grid {
+    padding: 0 10px;
+    gap: 10px;
+    /* wos50: always show ≥2 columns of cards on mobile (was 1 col below
+       430px because minmax(280px) couldn't fit two). */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* wos51: compact card layout for 2-col mobile (was 12 12 30 = 54px of
+     vertical chrome on each card, making them too tall). */
+  .card { padding: 10px 10px 14px; }
+  .card-head { margin-bottom: 6px; min-height: 22px; }
+  .card-title { font-size: 13px; }
+  .card-size { font-size: 11px; padding: 2px 6px; }
+  .wos-preview { padding: 10px; }
+  .wos-preview pre { font-size: 14px; }
+  .card-footer { padding-top: 8px; gap: 6px; min-height: 26px; }
+  .wos-badge, .copy-btn { font-size: 10px !important; padding: 3px 8px !important; }
+  .tag-chip, .card .chip { font-size: 10px; padding: 2px 6px; }
 
   /* Bigger touch targets for the edit/delete icons in editor mode on mobile */
   body.editor .card-actions .icon-btn,
@@ -2258,8 +2318,13 @@ body.editor .export-bar { display: block; }
    mockup: dark blue inactive, light blue active, rounded-top tab shape.
    ============================================================================ */
 
-/* the strip itself: horizontal flex, scrolls horizontally on overflow,
-   sits flush atop the search row (no gap between tabs and search bar). */
+/* wos51: tabs strip is wrapped in .theme-tabs-wrap for the side arrows;
+   the strip itself has no scrollbar (per user) — scrolling happens via
+   click-drag, arrow buttons, mouse wheel, or touch swipe. Edge fade-mask
+   signals there's more content past the visible edges. */
+.theme-tabs-wrap {
+  position: relative;
+}
 .theme-tabs {
   display: flex;
   gap: 4px;
@@ -2271,8 +2336,59 @@ body.editor .export-bar { display: block; }
   -ms-overflow-style: none;    /* IE/Edge */
   align-items: flex-end;
   white-space: nowrap;
+  cursor: grab;
+  -webkit-mask-image: linear-gradient(90deg,
+    transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+          mask-image: linear-gradient(90deg,
+    transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+}
+.theme-tabs[data-scroll="start"] {
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+}
+.theme-tabs[data-scroll="end"] {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 100%);
+}
+.theme-tabs[data-scroll="none"] {
+  -webkit-mask-image: none;
+          mask-image: none;
 }
 .theme-tabs::-webkit-scrollbar { display: none; }
+.theme-tabs.dragging { cursor: grabbing; user-select: none; }
+.theme-tabs.dragging .theme-tab { pointer-events: none; }
+
+/* wos51: side arrow buttons for scroll on PC */
+.theme-tab-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  color: #061a2d;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 2px 6px rgba(0,0,0,0.35);
+  transition: opacity 150ms, filter 100ms;
+  opacity: 0.92;
+}
+.theme-tab-arrow:hover { filter: brightness(1.1); opacity: 1; }
+.theme-tab-arrow:active { transform: translateY(-50%) scale(0.95); }
+.theme-tab-arrow.left { left: 2px; }
+.theme-tab-arrow.right { right: 2px; }
+.theme-tab-arrow[hidden] { display: none !important; }
+/* Hide arrows on touch — touch users already get swipe scrolling */
+@media (hover: none) { .theme-tab-arrow { display: none; } }
 
 /* a single tab — rounded-top, flat-bottom; dark blue inactive */
 .theme-tab {
@@ -2284,10 +2400,10 @@ body.editor .export-bar { display: block; }
   color: #f0f6ff;
   font-family: "Fredoka", "Nunito", sans-serif;
   font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  padding: 7px 14px 9px;
-  border-radius: 14px 14px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  padding: 5px 11px 7px;
+  border-radius: 12px 12px 0 0;
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease, transform 120ms ease;
   text-transform: capitalize;
@@ -2507,3 +2623,692 @@ body.editor .export-bar { display: block; }
 }
 .change-pw-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .change-pw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================================
+ * wos48 — FROSTY + GOLD HYBRID REDESIGN
+ * Per ui-designer spec. Layered as a final cascade override so the existing
+ * tweaks engine and runtime overrides still function. WoS art renderer
+ * variables (--wos-bubble, --wos-ink, --art-font, --art-line-height,
+ * --wos-cols), the wos40 .theme-tabs structure, wos43 .wos-width-meter
+ * state colors, wos45 .tool-btn semantic colors, and wos46 .change-pw-form
+ * layout are all intentionally untouched.
+ * ========================================================================== */
+
+/* ── BATCH 1: color tokens + base ───────────────────────────────────────── */
+:root {
+  /* Background tiers */
+  --fl-bg-app:        #07111e;
+  --fl-bg-panel:      #0d1f36;
+  --fl-bg-panel-elev: #111e30;
+  /* Frost border / rim / glow */
+  --fl-frost-rim:     #8acbf0;
+  --fl-frost-glow:    rgba(100, 200, 255, 0.22);
+  --fl-frost-inner:   rgba(180, 230, 255, 0.10);
+  /* Icy accent */
+  --fl-ice-bright:    #b8ecff;
+  --fl-ice-mid:       #4a9fd4;
+  --fl-ice-dim:       #2a5a80;
+  /* Gold tokens */
+  --fl-gold-rim:      #fff0b3;
+  --fl-gold-top:      #f4d36b;
+  --fl-gold-mid:      #d4a020;
+  --fl-gold-bot:      #c89a26;
+  --fl-gold-edge:     #7a5a00;
+  --fl-gold-glow:     rgba(212, 160, 32, 0.45);
+  /* Text */
+  --fl-text-primary:  #dff0ff;
+  --fl-text-dim:      #6a9abf;
+  --fl-text-on-gold:  #2a1a00;
+  --fl-text-on-card:  #dff0ff;
+  /* States */
+  --fl-verified:      #f4d36b;
+}
+
+/* Body: dark navy + subtle ice-crystal pattern */
+html body {
+  background-color: var(--fl-bg-app);
+  background-image:
+    /* wos54: WoS-style frozen citadel artwork as the room behind the cards.
+       Layered over a dark navy base so the citadel detail reads but cards
+       still pop. linear-gradient overlay tones down the right side so the
+       glowing furnace doesn't fight card content. */
+    linear-gradient(180deg, rgba(7, 17, 30, 0.32) 0%, rgba(7, 17, 30, 0.42) 50%, rgba(7, 17, 30, 0.55) 100%),
+    url("assets/bg-frostline.webp"),
+    radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.06) 0%, transparent 100%),
+    radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.05) 0%, transparent 100%),
+    radial-gradient(ellipse 1px 1px at 50% 80%, rgba(180,230,255,0.04) 0%, transparent 100%),
+    linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%);
+  background-size:
+    cover,
+    cover,
+    320px 200px,
+    480px 300px,
+    600px 400px,
+    100% 100%;
+  background-position:
+    center center,
+    center center,
+    0 0, 30px 60px, 80px 120px,
+    center;
+  background-repeat:
+    no-repeat,
+    no-repeat,
+    repeat, repeat, repeat,
+    no-repeat;
+  background-attachment:
+    fixed,
+    fixed,
+    scroll, scroll, scroll, scroll;
+  color: var(--fl-text-primary);
+}
+
+/* Header */
+.header {
+  background: linear-gradient(180deg, #0a1828 0%, #0d1f36 60%, #101f38 100%);
+  border-bottom: 1px solid var(--fl-frost-rim);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 -1px 0 var(--fl-frost-inner);
+}
+.title { color: var(--fl-text-primary); }
+.subtitle { color: var(--fl-text-dim); }
+
+/* Controls bar (search row) */
+.controls {
+  background: linear-gradient(180deg, #152a44 0%, #0f2035 55%, #0d1a2c 100%);
+  border-bottom: 2px solid var(--fl-frost-rim);
+  box-shadow: inset 0 1px 0 rgba(180,230,255,0.18), 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* ── BATCH 2: cards ─────────────────────────────────────────────────────── */
+.card {
+  /* wos55→wos56: more glassmorphism — was 0.55/0.65, dropped to 0.32/0.42
+     so more of the WoS citadel backdrop shows through the card panel. */
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.32) 0%,
+    rgba(10, 22, 42, 0.42) 100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+          backdrop-filter: blur(16px) saturate(120%);
+  border: 1.5px solid var(--fl-frost-rim) !important;
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 var(--fl-frost-inner),
+    0 0 0 1px rgba(138, 203, 240, 0.08),
+    0 8px 32px var(--fl-frost-glow),
+    0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  position: relative;
+  color: var(--fl-text-on-card);
+}
+.card-title { color: var(--fl-text-on-card); }
+.card-footer { color: var(--fl-text-on-card); }
+.card .chip,
+.card .tag-chip {
+  background: rgba(74, 159, 212, 0.18);
+  color: var(--fl-ice-bright);
+  border: 1px solid rgba(138, 203, 240, 0.35);
+}
+/* Card art preview keeps the WoS-bubble lime — required for fidelity. */
+
+/* WoS verified badge → gold medal */
+.wos-badge.verified {
+  background: linear-gradient(180deg, var(--fl-gold-top) 0%, var(--fl-gold-bot) 100%);
+  border: 1.5px solid var(--fl-gold-edge);
+  outline: 1px solid var(--fl-gold-rim);
+  outline-offset: -2px;
+  color: var(--fl-text-on-gold);
+  box-shadow:
+    inset 0 1px 0 rgba(255,245,180,0.55),
+    0 2px 6px var(--fl-gold-glow);
+}
+.wos-badge.unverified {
+  background: rgba(138, 203, 240, 0.18);
+  color: var(--fl-ice-bright);
+  border: 1px solid rgba(138, 203, 240, 0.45);
+}
+
+/* ── BATCH 3: cohesive frosty CTAs (no gold; uniform aesthetic) ─────────── */
+/* Primary actions: Add new art, Export, Save, Unlock, Change password.
+   Frosted cyan gradient + subtle 3D press feel. Replaces the previous gold
+   buttons per "more cohesive aesthetic" feedback. */
+.btn-add,
+.btn-export,
+.auth-unlock,
+.btn-primary,
+.change-pw-btn,
+.modal-copy:not(.copied) {
+  background: linear-gradient(180deg,
+    #8fd4ee 0%,
+    #4a9fd4 55%,
+    #2a7fb8 100%) !important;
+  border: 1px solid #1f5d8e !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 30, 60, 0.22),
+    0 2px 0 rgba(15, 50, 90, 0.4),
+    0 3px 8px rgba(74, 159, 212, 0.32) !important;
+  transition: transform 80ms, box-shadow 80ms, filter 100ms;
+}
+.btn-add:hover,
+.btn-export:hover,
+.auth-unlock:hover,
+.btn-primary:hover,
+.change-pw-btn:hover,
+.modal-copy:not(.copied):hover {
+  filter: brightness(1.08) saturate(1.05);
+}
+.btn-add:active,
+.btn-export:active,
+.auth-unlock:active,
+.btn-primary:active,
+.change-pw-btn:active,
+.modal-copy:not(.copied):active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 30, 60, 0.15),
+    0 1px 0 rgba(15, 50, 90, 0.3) !important;
+}
+
+/* Copy button — pill, sized to match .wos-badge (4px 10px, 11px font) */
+.copy-btn:not(.copied) {
+  background: linear-gradient(180deg,
+    #8fd4ee 0%,
+    #4a9fd4 55%,
+    #2a7fb8 100%) !important;
+  border: 1px solid #1f5d8e !important;
+  border-radius: 999px !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 4px 12px !important;
+  margin: 0 !important;
+  letter-spacing: 0.02em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1.5px 0 rgba(0, 30, 60, 0.2),
+    0 1px 4px rgba(74, 159, 212, 0.3) !important;
+  transition: transform 80ms, filter 100ms;
+}
+.copy-btn:not(.copied):hover { filter: brightness(1.1); }
+.copy-btn:not(.copied):active { transform: translateY(1px); }
+
+/* WoS verified badge — frosted cyan (not gold), same pill size as Copy */
+.wos-badge.verified {
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(180,220,240,0.35) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.5) !important;
+  color: #0a2840 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    0 1px 3px rgba(0,30,60,0.25) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+}
+.wos-badge.unverified {
+  background: rgba(138, 203, 240, 0.16) !important;
+  border: 1px solid rgba(138, 203, 240, 0.4) !important;
+  color: var(--fl-ice-bright) !important;
+}
+
+/* Secondary ghost / cancel buttons → frost-ghost variant */
+.btn-ghost,
+.save-back,
+#edit-cancel {
+  background: linear-gradient(180deg,
+    rgba(100, 175, 220, 0.16) 0%,
+    rgba(60, 110, 160, 0.10) 100%) !important;
+  border: 1px solid var(--fl-frost-rim) !important;
+  color: var(--fl-ice-bright) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 240, 255, 0.18),
+    0 2px 6px rgba(80, 160, 220, 0.12) !important;
+}
+.btn-ghost:hover,
+.save-back:hover,
+#edit-cancel:hover {
+  background: linear-gradient(180deg,
+    rgba(100, 175, 220, 0.26) 0%,
+    rgba(60, 110, 160, 0.20) 100%) !important;
+  border-color: var(--fl-ice-bright) !important;
+}
+
+/* Lock icon button (frosty rim) */
+.btn-lock {
+  background: linear-gradient(180deg, rgba(100,175,220,0.18), rgba(60,110,160,0.12));
+  border: 1px solid var(--fl-frost-rim);
+  color: var(--fl-ice-bright);
+}
+.btn-lock:hover { border-color: var(--fl-ice-bright); }
+
+/* ── BATCH 4: theme tabs (color-only — keeps wos40 structure) ───────────── */
+.theme-tab {
+  background: linear-gradient(180deg,
+    rgba(30, 55, 88, 0.85) 0%,
+    rgba(15, 35, 60, 0.92) 100%) !important;
+  border: 1px solid rgba(138, 203, 240, 0.45) !important;
+  border-bottom: none !important;
+  color: var(--fl-text-dim) !important;
+}
+.theme-tab:hover {
+  background: linear-gradient(180deg,
+    rgba(50, 85, 125, 0.9) 0%,
+    rgba(25, 50, 85, 0.95) 100%) !important;
+  color: var(--fl-ice-bright) !important;
+}
+.theme-tab.active {
+  background: linear-gradient(180deg,
+    #8fd4ee 0%,
+    #4a9fd4 60%,
+    #2a7fb8 100%) !important;
+  border-color: #1f5d8e !important;
+  color: #061a2d !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 -3px 10px rgba(74, 159, 212, 0.4) !important;
+}
+/* Active flagged tab keeps the red semantic — only restyle inactive variant */
+.theme-tab.flagged-tab:not(.active) {
+  border-color: rgba(232, 74, 74, 0.55) !important;
+  color: #ff9b8a !important;
+}
+
+/* ── BATCH 5: modals + drawer ───────────────────────────────────────────── */
+.modal,
+.edit-modal,
+.auth-modal,
+.modal-content,
+.modal > .modal-body {
+  /* wos55: glassmorphism — was 0.96/0.98 (near-opaque). Modals are still
+     more opaque than cards because they're foreground panels you read
+     content in, but a 0.78/0.85 gives the citadel backdrop a soft presence
+     behind them when the overlay is up. */
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.78) 0%,
+    rgba(10, 22, 42, 0.85) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+          backdrop-filter: blur(18px) saturate(120%);
+  border: 1.5px solid var(--fl-frost-rim) !important;
+  box-shadow:
+    inset 0 1px 0 var(--fl-frost-inner),
+    0 0 0 1px rgba(138, 203, 240, 0.1),
+    0 16px 48px var(--fl-frost-glow),
+    0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+.modal-head h3,
+.modal h3,
+.modal-title,
+#edit-title,
+#auth-title {
+  color: var(--fl-text-primary);
+}
+.modal-head {
+  border-bottom: 1px solid rgba(138, 203, 240, 0.35);
+}
+.modal-foot {
+  border-top: 1px solid rgba(138, 203, 240, 0.25);
+}
+
+.themes-drawer {
+  background: linear-gradient(180deg, #0a1828 0%, #0d1f36 100%) !important;
+  border-right: 1.5px solid var(--fl-frost-rim) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.5), inset -1px 0 0 var(--fl-frost-inner);
+}
+.drawer-head {
+  border-bottom: 1px solid var(--fl-frost-rim);
+  background: linear-gradient(180deg, #0c1c34 0%, #0a1828 100%);
+}
+.drawer-section + .drawer-section {
+  border-top: 1px solid rgba(138, 203, 240, 0.18);
+}
+.drawer-section-head {
+  color: var(--fl-text-dim);
+}
+.drawer-section-head:hover {
+  background: rgba(138, 203, 240, 0.08);
+  color: var(--fl-ice-bright);
+}
+.drawer-section.is-open .drawer-section-head {
+  color: var(--fl-ice-bright);
+}
+
+/* Save sheet matches modal panel */
+.save-sheet {
+  background: linear-gradient(160deg,
+    rgba(30, 55, 88, 0.96) 0%,
+    rgba(10, 22, 42, 0.98) 100%) !important;
+  border: 1.5px solid var(--fl-frost-rim);
+}
+.save-sheet h3 { color: var(--fl-text-primary); }
+
+/* Inputs across the app */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea:not(#edit-art-input):not(.art-render),
+.search-input {
+  background: rgba(13, 26, 46, 0.65);
+  border: 1px solid rgba(138, 203, 240, 0.25);
+  color: var(--fl-text-primary);
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:not(#edit-art-input):not(.art-render):focus,
+.search-input:focus {
+  border-color: var(--fl-frost-rim);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--fl-frost-glow);
+}
+
+/* Auth (unlock) modal */
+.auth-modal .auth-password {
+  background: rgba(13, 26, 46, 0.7);
+  border: 1px solid var(--fl-frost-rim);
+  color: var(--fl-text-primary);
+}
+
+/* ── BATCH 6: ornamental corner accents ─────────────────────────────────── */
+/* Corner accents dropped — they added visual noise without value once the
+   frost-rim + glow read clearly on dark navy. Cohesive minimalism. */
+.modal { position: relative; }
+
+/* Section title underline — frosty line, fading at edges */
+.modal-head h3::after,
+#edit-title::after,
+#auth-title::after,
+.drawer-head h2::after {
+  content: '';
+  display: block;
+  width: 60%;
+  height: 2px;
+  margin: 6px auto 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(138, 203, 240, 0.7) 50%,
+    transparent 100%);
+}
+
+/* Frost divider between drawer sections */
+.drawer-section + .drawer-section {
+  position: relative;
+  border-top: none !important;
+}
+.drawer-section + .drawer-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='12' viewBox='0 0 200 12'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%238acbf0' stop-opacity='0'/%3E%3Cstop offset='0.35' stop-color='%238acbf0' stop-opacity='0.7'/%3E%3Cstop offset='0.5' stop-color='%238acbf0' stop-opacity='0'/%3E%3Cstop offset='0.65' stop-color='%238acbf0' stop-opacity='0.7'/%3E%3Cstop offset='1' stop-color='%238acbf0' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='5' width='200' height='1.5' fill='url(%23f)'/%3E%3Cpolygon points='100,2 103.5,6 100,10 96.5,6' fill='%23b8ecff' opacity='0.9'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* ── BATCH 7: icy snowflake emblem (frosty cohesion) ────────────────────── */
+#snowflake svg g,
+#snowflake svg polygon,
+#snowflake svg circle,
+.drawer-snowflake g,
+.drawer-snowflake polygon,
+.drawer-snowflake circle {
+  fill: var(--fl-ice-bright) !important;
+}
+
+/* ── Misc text-on-dark cleanup ─────────────────────────────────────────── */
+.label-dim,
+.field label,
+.feedback-label,
+.site-text-label,
+.change-pw-label {
+  color: var(--fl-text-dim);
+}
+
+/* Grid empty state */
+.grid-empty {
+  color: var(--fl-text-dim);
+}
+
+/* ── BATCH 9: real-snow polish ──────────────────────────────────────────── */
+/* Falling snowflakes — override index.html's body.fx-snowfall::before.
+   Critical: do NOT mark background-position as !important; the @keyframes
+   animation must be able to drive that property. The previous wos48b rule
+   was setting an !important static position, which beat the animation and
+   froze the snow. */
+body.fx-snowfall::before {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.95) 1.6px, transparent 2.4px),
+    radial-gradient(circle, rgba(255,255,255,0.85) 2.2px, transparent 3.2px),
+    radial-gradient(circle, rgba(255,255,255,0.75) 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,0.6)  2.8px, transparent 4px) !important;
+  background-size:
+    180px 240px,
+    260px 320px,
+    140px 180px,
+    340px 420px !important;
+  opacity: var(--tw-snow-amount, 0.65) !important;
+  filter: drop-shadow(0 0 1.5px rgba(255,255,255,0.7));
+  animation: snowfall-real 18s linear infinite !important;
+}
+@keyframes snowfall-real {
+  from {
+    background-position:
+      20px -240px,
+      90px -160px,
+      180px -210px,
+      250px -300px;
+  }
+  to {
+    background-position:
+      20px 1200px,
+      90px 1280px,
+      180px 1230px,
+      250px 1320px;
+  }
+}
+
+/* ── SNOW DRIFT REALISTIC TEXTURE ──
+   The procedurally-generated white snow path is now layered with
+   multiple drop-shadows for fluffy 3D dimensionality and given a
+   subtle organic shimmer via SVG turbulence-like CSS filter. */
+.snow-drift {
+  filter:
+    drop-shadow(0 -1px 0 #ffffff)
+    drop-shadow(0 0 1.5px rgba(220, 240, 255, 0.95))
+    drop-shadow(1px 0 0 rgba(230, 245, 255, 0.6))
+    drop-shadow(-1px 0 0 rgba(230, 245, 255, 0.6))
+    drop-shadow(0 2px 0 rgba(180, 215, 240, 0.55))
+    drop-shadow(0 4px 5px rgba(0, 20, 60, 0.55)) !important;
+}
+/* Subtle vertical gradient on the snow itself: bright top → cool icy bottom */
+.snow-profile {
+  fill: url(#fl-snow-gradient) !important;
+}
+
+/* wos54: WoS frozen citadel backdrop + minimal ice-crystal texture so
+   falling snow flakes still read on top. Uses !important to win over the
+   wos48b override below; keeps the citadel image + dark vignette overlay
+   from the main wos54 rule but spelled out again here in case the
+   cascade order pulls this one. */
+html body {
+  background-image:
+    linear-gradient(180deg, rgba(7, 17, 30, 0.32) 0%, rgba(7, 17, 30, 0.42) 50%, rgba(7, 17, 30, 0.55) 100%),
+    url("assets/bg-frostline.webp"),
+    radial-gradient(ellipse 1px 1px at 30% 20%, rgba(180,230,255,0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 1px 1px at 70% 60%, rgba(180,230,255,0.03) 0%, transparent 100%),
+    linear-gradient(160deg, rgba(20,40,70,0.4) 0%, transparent 60%) !important;
+  background-size: cover, cover, 320px 200px, 480px 300px, 100% 100% !important;
+  background-position: center, center, 0 0, 30px 60px, center !important;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat !important;
+  background-attachment: fixed, fixed, scroll, scroll, scroll !important;
+}
+
+/* wos51: cap badge / copy-btn line-height so any glyph (text checkmark,
+   emoji fallback, future icon) sits in a fixed-height pill instead of
+   expanding the row. Pairs with the JS change that switched from the ✅
+   emoji to the ✓ text checkmark. */
+.wos-badge,
+.copy-btn {
+  line-height: 1 !important;
+}
+
+/* ── wos53: SIX EDITOR FIXES ───────────────────────────────────────────── */
+
+/* 6) Flag corner — was color:#14123c (dark navy) on a dark navy card =
+   invisible. Switched to warm amber so the "report this" affordance
+   reads on dark cards while keeping the red flagged state distinct. */
+.flag-corner {
+  color: var(--warn-ink, #ffcf6b) !important;
+}
+.flag-corner .box {
+  border: 1.5px solid var(--warn-ink, #ffcf6b) !important;
+  background: rgba(255, 207, 107, 0.08);
+}
+.card.flagged .flag-corner,
+.card.flagged .flag-corner .box {
+  color: #ff7d6e !important;
+  border-color: #ff7d6e !important;
+}
+/* wos57: when the flag is ACTIVATED (card has .flagged), drop the box
+   border + background entirely so only the flag glyph + "flag" text show.
+   The previous rule only changed border-color which still rendered a
+   coral box around the icon. */
+.card.flagged .flag-corner .box {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* wos57: snow drift on top of the search bar — chunky scalloped white
+   accumulation that mirrors the snow piled atop the controls bar. Tall
+   curvy SVG path positioned overlapping the input top edge so it reads
+   as fresh snow that just landed on the bar's top frame. */
+.search-row {
+  position: relative;
+}
+.search-row::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -2px;
+  right: -2px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 3;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='24' viewBox='0 0 240 24' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff' d='M0 24 L0 14 C5 6 11 4 18 8 C23 11 28 4 36 6 C44 8 49 18 56 14 C62 11 68 3 76 4 C82 5 88 16 96 12 C102 9 108 5 116 7 C122 9 128 17 136 13 C142 10 148 3 156 5 C163 7 168 16 176 12 C182 9 188 4 196 7 C202 10 208 18 216 14 C222 11 228 5 234 8 C237 10 240 12 240 13 L240 24 Z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  filter:
+    drop-shadow(0 -1px 0 #ffffff)
+    drop-shadow(0 0 2px rgba(220, 240, 255, 0.85))
+    drop-shadow(1px 0 0 rgba(230, 245, 255, 0.55))
+    drop-shadow(-1px 0 0 rgba(230, 245, 255, 0.55))
+    drop-shadow(0 3px 3px rgba(0, 30, 80, 0.5));
+}
+
+/* 3) Compact .modal-foot in the editor — was 14×22×18 padding + 9×20 buttons
+   (~64px tall total). Now ~38px tall, frees ~26px for the canvas/favorites
+   row below the toggle. */
+#edit .modal-foot {
+  padding: 6px 14px 8px !important;
+  gap: 8px !important;
+}
+#edit .modal-foot .btn-ghost,
+#edit .modal-foot .btn-primary {
+  padding: 5px 14px !important;
+  font-size: 12px !important;
+}
+
+/* 5) Tool buttons split into PRIMARY (left) vs DESTRUCTIVE (right) groups.
+   The .tool-btn.destructive marker on Erase + Clear gives them a subtle
+   red tint so the group reads as "removes content" at a glance. */
+.tool-btn.destructive {
+  color: #ff9b8a !important;
+}
+.tool-btn.destructive:hover {
+  color: #ff7d6e !important;
+}
+
+/* 2) WoS-style custom scrollbars — chunky game-UI bar with up/down arrow
+   buttons at the ends. Applied to scrollable canvas, palette, and any
+   .has-wos-scroll opt-in container. */
+.sketch-view::-webkit-scrollbar,
+.char-palette::-webkit-scrollbar,
+.has-wos-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.sketch-view::-webkit-scrollbar-track,
+.char-palette::-webkit-scrollbar-track,
+.has-wos-scroll::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #0a1828 0%, #0e2238 100%);
+  border: 1px solid rgba(138, 203, 240, 0.25);
+  border-radius: 6px;
+}
+.sketch-view::-webkit-scrollbar-thumb,
+.char-palette::-webkit-scrollbar-thumb,
+.has-wos-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 30, 60, 0.22);
+}
+.sketch-view::-webkit-scrollbar-thumb:hover,
+.char-palette::-webkit-scrollbar-thumb:hover,
+.has-wos-scroll::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.12);
+}
+.sketch-view::-webkit-scrollbar-button:single-button,
+.char-palette::-webkit-scrollbar-button:single-button,
+.has-wos-scroll::-webkit-scrollbar-button:single-button {
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border: 1px solid #1f5d8e;
+  border-radius: 4px;
+  display: block;
+  height: 14px;
+  width: 14px;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+/* Up arrow */
+.sketch-view::-webkit-scrollbar-button:vertical:decrement,
+.char-palette::-webkit-scrollbar-button:vertical:decrement,
+.has-wos-scroll::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M5 1 L9 6 L1 6 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Down arrow */
+.sketch-view::-webkit-scrollbar-button:vertical:increment,
+.char-palette::-webkit-scrollbar-button:vertical:increment,
+.has-wos-scroll::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M5 7 L9 2 L1 2 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Left arrow */
+.sketch-view::-webkit-scrollbar-button:horizontal:decrement,
+.has-wos-scroll::-webkit-scrollbar-button:horizontal:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpath d='M1 5 L6 1 L6 9 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+/* Right arrow */
+.sketch-view::-webkit-scrollbar-button:horizontal:increment,
+.has-wos-scroll::-webkit-scrollbar-button:horizontal:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpath d='M7 5 L2 1 L2 9 Z' fill='%23061a2d'/%3E%3C/svg%3E");
+}
+.sketch-view::-webkit-scrollbar-corner,
+.char-palette::-webkit-scrollbar-corner,
+.has-wos-scroll::-webkit-scrollbar-corner {
+  background: #0a1828;
+}
+/* Firefox fallback */
+.sketch-view, .char-palette, .has-wos-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #4a9fd4 #0a1828;
+}
+
+/* End wos48 redesign */

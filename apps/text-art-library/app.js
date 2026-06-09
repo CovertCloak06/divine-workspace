@@ -694,6 +694,130 @@ function buildThemeTabs() {
     });
     els.themeTabs.appendChild(b);
   }
+  attachThemeTabsScroll();
+}
+
+/* wos51: scroll the theme-tabs strip via click-drag, arrow buttons, mouse
+   wheel, or touch swipe — no visible scrollbar (per user). Injects a
+   .theme-tabs-wrap wrapper around the strip and prepends/appends arrow
+   buttons that only show when there is overflow on that side. */
+function attachThemeTabsScroll() {
+  const strip = els.themeTabs;
+  if (!strip) return;
+
+  // Ensure wrapper exists. Wrap the strip lazily on first run.
+  let wrap = strip.parentElement && strip.parentElement.classList.contains('theme-tabs-wrap')
+    ? strip.parentElement
+    : null;
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.className = 'theme-tabs-wrap';
+    strip.parentNode.insertBefore(wrap, strip);
+    wrap.appendChild(strip);
+  }
+
+  // Ensure arrow buttons exist (idempotent).
+  let leftBtn = wrap.querySelector('.theme-tab-arrow.left');
+  let rightBtn = wrap.querySelector('.theme-tab-arrow.right');
+  if (!leftBtn) {
+    leftBtn = document.createElement('button');
+    leftBtn.type = 'button';
+    leftBtn.className = 'theme-tab-arrow left';
+    leftBtn.setAttribute('aria-label', 'Scroll themes left');
+    leftBtn.innerHTML = '&#x2039;';
+    wrap.insertBefore(leftBtn, strip);
+  }
+  if (!rightBtn) {
+    rightBtn = document.createElement('button');
+    rightBtn.type = 'button';
+    rightBtn.className = 'theme-tab-arrow right';
+    rightBtn.setAttribute('aria-label', 'Scroll themes right');
+    rightBtn.innerHTML = '&#x203A;';
+    wrap.appendChild(rightBtn);
+  }
+
+  // Wire scroll behaviors once per element.
+  if (strip._scrollWired) return;
+  strip._scrollWired = true;
+
+  // -- Click-drag scroll --
+  let drag = null;
+  let dragStartedMoving = false;
+  const onPointerDown = (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return; // only left mouse
+    if (e.target.closest('.theme-tab-arrow')) return;
+    drag = { x: e.clientX, scrollLeft: strip.scrollLeft, pointerId: e.pointerId };
+    dragStartedMoving = false;
+  };
+  const onPointerMove = (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const dx = e.clientX - drag.x;
+    if (!dragStartedMoving && Math.abs(dx) > 4) {
+      dragStartedMoving = true;
+      strip.classList.add('dragging');
+      try { strip.setPointerCapture(drag.pointerId); } catch (_) {}
+    }
+    if (dragStartedMoving) {
+      strip.scrollLeft = drag.scrollLeft - dx;
+      e.preventDefault();
+    }
+  };
+  const onPointerUp = (e) => {
+    if (!drag) return;
+    const moved = dragStartedMoving;
+    strip.classList.remove('dragging');
+    try { strip.releasePointerCapture(drag.pointerId); } catch (_) {}
+    drag = null;
+    // If we dragged the strip, swallow the click so the tab under the
+    // pointer doesn't get activated as a click.
+    if (moved) {
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      strip.addEventListener('click', swallow, { capture: true, once: true });
+    }
+  };
+
+  // -- Mouse wheel → horizontal --
+  const onWheel = (e) => {
+    if (strip.scrollWidth <= strip.clientWidth) return;
+    if (e.shiftKey) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    strip.scrollLeft += e.deltaY;
+  };
+
+  // -- Arrow buttons (one-screen step per click) --
+  const stepBy = (dir) => {
+    const step = Math.max(120, strip.clientWidth * 0.7);
+    strip.scrollTo({ left: strip.scrollLeft + dir * step, behavior: 'smooth' });
+  };
+  leftBtn.addEventListener('click', () => stepBy(-1));
+  rightBtn.addEventListener('click', () => stepBy(1));
+
+  // -- Position state + arrow visibility --
+  const onScroll = () => {
+    const max = strip.scrollWidth - strip.clientWidth;
+    if (max <= 1) {
+      strip.dataset.scroll = 'none';
+      leftBtn.hidden = rightBtn.hidden = true;
+      return;
+    }
+    if (strip.scrollLeft <= 1) strip.dataset.scroll = 'start';
+    else if (strip.scrollLeft >= max - 1) strip.dataset.scroll = 'end';
+    else strip.dataset.scroll = 'mid';
+    leftBtn.hidden  = strip.scrollLeft <= 1;
+    rightBtn.hidden = strip.scrollLeft >= max - 1;
+  };
+
+  strip.addEventListener('pointerdown', onPointerDown);
+  strip.addEventListener('pointermove', onPointerMove);
+  strip.addEventListener('pointerup', onPointerUp);
+  strip.addEventListener('pointercancel', onPointerUp);
+  strip.addEventListener('wheel', onWheel, { passive: false });
+  strip.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+
+  // Initial state — wait for layout.
+  requestAnimationFrame(onScroll);
 }
 
 function syncActiveThemeChip() {
@@ -994,10 +1118,12 @@ function renderCard(p) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
 
-  // wos badge (left)
+  // wos badge (left). Use text checkmark not the ✅ emoji so the badge
+  // doesn't balloon to ~35px tall on mobile (the colorful emoji ignores
+  // font-size and renders at its natural icon size).
   const wos = document.createElement('span');
   wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
-  wos.textContent = p.wosVerified ? '✅ WoS' : '? WoS';
+  wos.textContent = p.wosVerified ? '✓ WoS' : '? WoS';
   wos.addEventListener('click', (e) => {
     if (!state.editor) return;
     e.stopPropagation();
@@ -1005,10 +1131,10 @@ function renderCard(p) {
   });
   footer.appendChild(wos);
 
-  // copy (center)
+  // copy (center). Text-only — same reason as badge above.
   const copy = document.createElement('button');
   copy.className = 'copy-btn';
-  copy.textContent = '📋 Copy';
+  copy.textContent = 'Copy';
   copy.addEventListener('click', (e) => {
     e.stopPropagation();
     copyArt(p.art, copy);
@@ -1140,7 +1266,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos47';
+const APP_VERSION = 'wos58';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1773,26 +1899,35 @@ function insertAtCursor(ch) {
 let activeBrush = null;   // wos27: no default brush — user must pick one to paint
 let eraserOn = false;
 let canvasMode = true;    // wos27: true = Canvas mode (taps don't paint); false = Drawing/Input
-const editHistory = [];      // stack of prior art strings (undo)
+const editHistory = [];      // wos49: stack of POST-edit art-string snapshots (top = current state)
 const redoHistory = [];      // stack of states popped by undo (redo)
-const EDIT_HISTORY_MAX = 40;
+const EDIT_HISTORY_MAX = 200;
 let editHistorySuspend = false;
 let lastEditSnapshot = '';
 let strokeStartSnapshot = null; // captured at pointerdown / touchstart
+let grabStartSnapshot = null;   // captured at grab start
 let lastTouchAt = 0;            // ms timestamp of most recent touch event
+
+// wos49: free-form canvas caps — generous so users almost never hit them, but
+// finite so a runaway gesture can't create a 100,000-row canvas.
+const FREEFORM_MAX_ROWS = 50;
+const FREEFORM_MAX_COLS = 80;
 
 function syncHistoryButtons() {
   if (els.sketchUndo) els.sketchUndo.disabled = editHistory.length < 2;
   if (els.sketchRedo) els.sketchRedo.disabled = redoHistory.length < 1;
 }
+// wos49: push the CURRENT (post-edit) value onto history. Undo pops the top
+// to revert to the previous edit's snapshot. This makes undo granular per
+// keystroke (input event) and per paint stroke (pointerdown..pointerup).
 function pushEditHistory() {
   if (editHistorySuspend) return;
   const v = els.editArtInput.value;
   if (editHistory.length && editHistory[editHistory.length - 1] === v) return;
   editHistory.push(v);
   if (editHistory.length > EDIT_HISTORY_MAX) editHistory.shift();
-  // Any fresh edit invalidates the redo stack (standard undo/redo behavior).
   redoHistory.length = 0;
+  lastEditSnapshot = v;
   syncHistoryButtons();
 }
 function resetEditHistory(v) {
@@ -1804,8 +1939,9 @@ function resetEditHistory(v) {
 }
 function undoEdit() {
   if (editHistory.length < 2) return;
-  const popped = editHistory.pop();
-  redoHistory.push(popped);
+  // wos49: pop the CURRENT state, expose the previous one. Symmetric model.
+  const current = editHistory.pop();
+  redoHistory.push(current);
   const prev = editHistory[editHistory.length - 1];
   editHistorySuspend = true;
   els.editArtInput.value = prev;
@@ -1932,6 +2068,48 @@ function ensureOverlay() {
   overlayEl = document.createElement('div');
   overlayEl.className = 'sketch-overlay';
   els.sketchView.appendChild(overlayEl);
+  renderWrapGuides();
+}
+// wos49: thin vertical guides at WoS safe / hard wrap boundaries so users
+// see where their art will wrap in the WoS chat bubble — visual cue only,
+// never blocks input. Reference width is measured from a hidden 34×'o' line
+// so the guide position is content-independent (matches the "average char"
+// row, regardless of what the user actually typed).
+let _wrapGuideRefCache = null;
+function measureWrapGuideRef() {
+  const probe = document.createElement('div');
+  probe.className = 'sketch-line';
+  probe.style.visibility = 'hidden';
+  probe.style.position = 'absolute';
+  probe.style.top = '-9999px';
+  probe.style.whiteSpace = 'pre';
+  probe.textContent = 'o'.repeat(WOS_HARD_LIMIT);
+  els.sketchView.appendChild(probe);
+  const w = probe.getBoundingClientRect().width;
+  probe.remove();
+  return w / WOS_HARD_LIMIT;
+}
+function renderWrapGuides() {
+  if (!overlayEl || !els.sketchView) return;
+  overlayEl.querySelectorAll('.sketch-wrap-guide').forEach(g => g.remove());
+  const firstLine = els.sketchView.querySelector('.sketch-line');
+  if (!firstLine) return;
+  if (!_wrapGuideRefCache) _wrapGuideRefCache = measureWrapGuideRef();
+  const refWidth = _wrapGuideRefCache;
+  if (!refWidth) return;
+  const viewRect = els.sketchView.getBoundingClientRect();
+  const offsetX = firstLine.getBoundingClientRect().left - viewRect.left;
+  const safePx = offsetX + (WOS_SAFE_WIDTH * refWidth);
+  const hardPx = offsetX + (WOS_HARD_LIMIT * refWidth);
+  const make = (cls, px) => {
+    const g = document.createElement('div');
+    g.className = 'sketch-wrap-guide ' + cls;
+    g.style.left = px + 'px';
+    g.setAttribute('aria-hidden', 'true');
+    overlayEl.appendChild(g);
+  };
+  make('safe', safePx);
+  make('hard', hardPx);
 }
 
 function renderSketch(force) {
@@ -1939,25 +2117,15 @@ function renderSketch(force) {
   if (!force && !isSketchMode()) return;
   const text = els.editArtInput.value;
   els.sketchView.innerHTML = '';
-  if (!text) {
-    const hint = document.createElement('div');
-    hint.className = 'sketch-hint';
-    hint.textContent = 'Switch to Sketch mode to start drawing on a 27×12 blank canvas.';
-    els.sketchView.appendChild(hint);
-    gridW = gridH = 0;
-    overlayEl = null;
-    return;
-  }
-  // Canvas grid width = at least the 30-col safe default, expand to fit any
-  // existing wider art so the user can see and trim it (the audit flags
-  // anything past 30/34 visual cols — see wosClassifyWidth).
-  const lines = text.split('\n');
+  // wos49: free-form input — render at least an empty row so first tap lands
+  // somewhere. Expand to fit existing content; cap at FREEFORM_MAX_ROWS.
+  const lines = text ? text.split('\n') : [''];
   let actualWidest = 0;
   for (const l of lines) actualWidest = Math.max(actualWidest, graphemeCount(l));
   gridW = Math.max(WOS_DEFAULT_COLS, actualWidest);
-  gridH = Math.min(24, Math.max(WOS_DEFAULT_ROWS, lines.length));
+  gridH = Math.min(FREEFORM_MAX_ROWS, Math.max(WOS_DEFAULT_ROWS, lines.length));
   for (let y = 0; y < gridH; y++) {
-    els.sketchView.appendChild(buildLineEl(y, lines[y]));
+    els.sketchView.appendChild(buildLineEl(y, lines[y] != null ? lines[y] : ''));
   }
   ensureOverlay();
   // wos36: the overlay was just rebuilt empty — restore selection highlight.
@@ -1998,24 +2166,31 @@ function replaceCharAt(y, x) {
   // wos28: a paint can shift glyph widths across the rest of the row on a
   // proportional font, so re-render the whole affected line (cheap) instead
   // of mutating one cell in place.
-  // wos29 fix (codex P2): if a multi-grapheme brush pushed THIS row past the
-  // current grid width, every OTHER row still has the old padding — clicks
-  // past the old right edge would clamp and grab/drop fit-checks would
-  // reject `nx >= gridW`. Fall back to a full re-render so gridW + every
-  // line's padding recompute together.
+  // wos29: a multi-grapheme brush pushing past the current gridW would leave
+  // other rows with stale padding — full re-render so gridW + every line's
+  // padding recompute together.
+  // wos49: free-form input — when paint lands in a new row (y >= gridH) or
+  // pushes a row beyond gridW, the per-line update has no element to write
+  // to. Force a full re-render so the new cell becomes part of the grid and
+  // future taps in that region work too.
   const newRowLen = graphemes(lines[y]).length;
-  if (brush.length > 1 && newRowLen > gridW) renderSketch(true);
+  const grewBeyondGrid = (y >= gridH) || (lines.length > gridH) || (newRowLen > gridW);
+  if (grewBeyondGrid || (brush.length > 1 && newRowLen > gridW)) renderSketch(true);
   else renderLine(y);
   runAudit();
 }
 
 function startStroke() {
-  // Snapshot value once at the start of a paint drag so a whole drag = one undo.
+  // wos49: snapshot pre-stroke value but DON'T push history yet — the push
+  // happens at endStroke once the stroke is complete, so the snapshot at
+  // history's top is the POST-stroke state (granular per-stroke undo).
   strokeStartSnapshot = els.editArtInput.value;
-  pushEditHistory();
 }
 function endStroke() {
   paintActive = false;
+  if (strokeStartSnapshot !== null && strokeStartSnapshot !== els.editArtInput.value) {
+    pushEditHistory();
+  }
   strokeStartSnapshot = null;
 }
 
@@ -2059,36 +2234,68 @@ function measureLineCells(lineEl) {
   lineEl._cells = cells;
   return cells;
 }
-// wos28: pixel -> {y,x} grid cell by geometry (no per-char elements exist now).
+// wos28/49: pixel -> {y,x} grid cell by geometry. Free-form: extrapolates
+// beyond rendered grid bounds (right of last cell, below last row) so taps
+// in empty space create new cells. Bounded by FREEFORM_MAX_ROWS/COLS.
 function cellFromPoint(cx, cy) {
   const view = els.sketchView;
   if (!view || gridH === 0) return null;
+  // Walk children: collect first/last row and detect exact-Y hit.
   let lineEl = null;
-  let best = null, bestD = Infinity;
+  let firstRowEl = null;
+  let lastRowEl = null;
+  let rowHeight = 0;
   for (let y = 0; y < gridH; y++) {
     const el = view.children[y];
     if (!el || !el.classList || !el.classList.contains('sketch-line')) continue;
+    if (!firstRowEl) firstRowEl = el;
+    lastRowEl = el;
     const r = el.getBoundingClientRect();
+    if (!rowHeight && r.height) rowHeight = r.height;
     if (cy >= r.top && cy <= r.bottom) { lineEl = el; break; }
-    const mid = (r.top + r.bottom) / 2, d = Math.abs(cy - mid);
-    if (d < bestD) { bestD = d; best = el; }
   }
-  if (!lineEl) lineEl = best;            // clamp to nearest row so edge drags still paint
+  // FREE-FORM Y: tap below the last row extrapolates to a new row index.
+  if (!lineEl && lastRowEl) {
+    const lastRect = lastRowEl.getBoundingClientRect();
+    if (cy > lastRect.bottom && rowHeight > 0) {
+      const extra = Math.floor((cy - lastRect.bottom) / rowHeight) + 1;
+      const newY = (+lastRowEl.dataset.y) + extra;
+      if (newY >= FREEFORM_MAX_ROWS) return null;
+      return { y: newY, x: cellXFromPoint(lastRowEl, cx) };
+    }
+    if (firstRowEl) {
+      const firstRect = firstRowEl.getBoundingClientRect();
+      if (cy < firstRect.top) lineEl = firstRowEl;
+    }
+  }
   if (!lineEl) return null;
   const y = +lineEl.dataset.y;
+  return { y, x: cellXFromPoint(lineEl, cx) };
+}
+// Compute the column index for a given pixel x on a specific line element.
+// Free-form: returns indices beyond cells.length-1 when cx is right of the
+// last rendered cell, using the cell width as the extrapolation step.
+function cellXFromPoint(lineEl, cx) {
   const cells = measureLineCells(lineEl);
-  if (!cells.length) return { y, x: 0 };
-  const cxRel = cx - lineEl.getBoundingClientRect().left;
-  if (cxRel < cells[0].left) return { y, x: 0 };
-  if (cxRel >= cells[cells.length - 1].right) return { y, x: cells.length - 1 };
+  if (!cells.length) return 0;
+  const lineRect = lineEl.getBoundingClientRect();
+  const cxRel = cx - lineRect.left;
+  if (cxRel < cells[0].left) return 0;
+  const lastCell = cells[cells.length - 1];
+  if (cxRel >= lastCell.right) {
+    const cellWidth = (lastCell.right - lastCell.left) || 12;
+    const extra = Math.floor((cxRel - lastCell.right) / cellWidth) + 1;
+    const newX = cells.length - 1 + extra;
+    return Math.min(FREEFORM_MAX_COLS - 1, newX);
+  }
   let lo = 0, hi = cells.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     if (cxRel < cells[mid].left) hi = mid - 1;
     else if (cxRel >= cells[mid].right) lo = mid + 1;
-    else return { y, x: mid };
+    else return mid;
   }
-  return { y, x: Math.min(cells.length - 1, Math.max(0, lo)) };
+  return Math.min(cells.length - 1, Math.max(0, lo));
 }
 function cellContent(y, x) {
   const lines = els.editArtInput.value.split('\n');
@@ -2264,7 +2471,10 @@ function shapeFromSelection(py, px) {
 // Lift a shape off the canvas and start the ghost drag (shared by quick-grab
 // and selection-move).
 function beginShapeDrag(shape, pressY, pressX, clientX, clientY) {
-  pushEditHistory();
+  // wos49: capture pre-grab snapshot for stroke logic, but DON'T push to
+  // history until the grab is committed (drop or restore). The push happens
+  // at gestureUp (line ~2423) so one grab = one undo entry.
+  grabStartSnapshot = els.editArtInput.value;
   grabState = shape;
   els.sketchView.classList.add('grabbing');
   for (const c of shape.cells) writeCell(c.y, c.x, ' ');
@@ -2441,8 +2651,26 @@ function gestureUp(cx, cy) {
   if (paintActive) endStroke();
 }
 
+// wos53: when the user taps the canvas scrollbar gutter, the touch lands on
+// .sketch-view and would otherwise trigger paint. Use a 18px hit zone
+// along the right/bottom edges when a scrollbar is present — wider than
+// the native scrollbar (which can be 4px on mobile) so imprecise finger
+// taps near the scrollbar register as scroll intent, not paint.
+const SCROLLBAR_HIT = 18;
+function isOnScrollbar(el, x, y) {
+  const rect = el.getBoundingClientRect();
+  const relX = x - rect.left;
+  const relY = y - rect.top;
+  const sbW = el.offsetWidth - el.clientWidth;
+  const sbH = el.offsetHeight - el.clientHeight;
+  if (sbW > 0 && relX >= el.offsetWidth - SCROLLBAR_HIT) return true;
+  if (sbH > 0 && relY >= el.offsetHeight - SCROLLBAR_HIT) return true;
+  return false;
+}
+
 els.sketchView.addEventListener('pointerdown', (e) => {
   if (Date.now() - lastTouchAt < 400) return; // ignore synthetic post-touch pointer
+  if (isOnScrollbar(els.sketchView, e.clientX, e.clientY)) return;
   const cell = cellFromPoint(e.clientX, e.clientY);
   if (!cell) return;
   gestureDown(e.clientX, e.clientY, cell);
@@ -2470,6 +2698,7 @@ window.addEventListener('pointercancel', () => {
 els.sketchView.addEventListener('touchstart', (e) => {
   lastTouchAt = Date.now();
   const t = e.touches[0]; if (!t) return;
+  if (isOnScrollbar(els.sketchView, t.clientX, t.clientY)) return; // wos53
   const cell = cellFromPoint(t.clientX, t.clientY);
   if (!cell) return;
   gestureDown(t.clientX, t.clientY, cell);
@@ -2540,16 +2769,45 @@ if (els.sketchSelect) els.sketchSelect.addEventListener('click', () => {
 if (els.sketchActiveChar) els.sketchActiveChar.addEventListener('click', toggleCanvasMode);
 
 els.editArtInput.addEventListener('input', () => {
-  // user typed/pasted directly — push a history snapshot of the value BEFORE
-  // this change.
+  // wos49: push the POST-edit value so undo is granular per keystroke.
+  // wos52: tablet/mobile autosuggest, swipe-typing, paste, and predictive
+  // keyboards all insert MULTIPLE characters in a single input event. The
+  // previous wos49 behavior treated those as one undo step, so a single
+  // undo would revert a whole word — user reported "undo reverts 6 inputs".
+  // Now: when an input event inserts N>1 contiguous chars, push N
+  // intermediate history states so undo walks back one character at a
+  // time, no matter how the chars were entered.
   if (!editHistorySuspend) {
-    if (lastEditSnapshot !== els.editArtInput.value) {
-      editHistory.push(lastEditSnapshot);
-      if (editHistory.length > EDIT_HISTORY_MAX) editHistory.shift();
-      lastEditSnapshot = els.editArtInput.value;
+    const oldVal = lastEditSnapshot;
+    const newVal = els.editArtInput.value;
+    if (newVal !== oldVal) {
+      let i = 0;
+      while (i < oldVal.length && i < newVal.length && oldVal[i] === newVal[i]) i++;
+      let oldEnd = oldVal.length, newEnd = newVal.length;
+      while (oldEnd > i && newEnd > i && oldVal[oldEnd - 1] === newVal[newEnd - 1]) {
+        oldEnd--; newEnd--;
+      }
+      const insertedLen = newEnd - i;
+      const removedLen  = oldEnd - i;
+      // Pure insertion of >1 chars (no replacement) → split per-char.
+      if (insertedLen > 1 && removedLen === 0 && insertedLen <= 50) {
+        const prefix = oldVal.slice(0, i);
+        const suffix = oldVal.slice(oldEnd);
+        const inserted = newVal.slice(i, newEnd);
+        for (let k = 1; k <= inserted.length; k++) {
+          const step = prefix + inserted.slice(0, k) + suffix;
+          if (editHistory.length && editHistory[editHistory.length - 1] === step) continue;
+          editHistory.push(step);
+          if (editHistory.length > EDIT_HISTORY_MAX) editHistory.shift();
+        }
+        redoHistory.length = 0;
+        lastEditSnapshot = newVal;
+        syncHistoryButtons();
+      } else {
+        pushEditHistory();
+      }
     }
   }
-  // Only re-render sketch view when it's actually visible.
   if (isSketchMode()) renderSketch();
 });
 
