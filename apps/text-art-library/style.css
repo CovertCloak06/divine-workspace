@@ -1715,13 +1715,16 @@ body.editor .export-bar { display: block; }
   .wos-badge, .copy-btn { font-size: 10px !important; padding: 3px 8px !important; }
   .tag-chip, .card .chip { font-size: 10px; padding: 2px 6px; }
 
-  /* wos59: hide the flag-corner affordance on mobile cards — at 2-col the
-     unflagged "[ ] flag" checkbox + label was making the footer wrap and
-     squeezing the WoS/Copy pills. Already-flagged cards still show their
-     red flag in the card body, and an editor can flag from the lightbox. */
-  .card .flag-corner { display: none !important; }
-  /* Center the WoS+Copy pair now that the flag is out of the row */
-  .card-footer { justify-content: center !important; gap: 8px !important; }
+  /* wos60: keep the flag control on mobile but compact it to icon-only.
+     The unflagged "[ ] flag" checkbox + text label crowded the 2-col
+     footer, but flag-corner is the ONLY flag toggle (toggleFlag is wired
+     to it and the lightbox has no flag control), so hiding it removed
+     flagging entirely on phones — the app's primary platform. font-size:0
+     collapses the trailing text label; the .box icon keeps its own size,
+     leaving a small tappable flag checkbox. */
+  .card .flag-corner { font-size: 0 !important; gap: 0 !important; }
+  .card .flag-corner .box { font-size: 11px !important; }
+  .card-footer { gap: 6px !important; }   /* keep default space-between */
 
   /* Bigger touch targets for the edit/delete icons in editor mode on mobile */
   body.editor .card-actions .icon-btn,
