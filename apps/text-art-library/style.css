@@ -3403,3 +3403,31 @@ header.header {
   box-shadow: none !important;
 }
 /* End wos71 */
+
+/* ============================================================================
+ * wos72 — art cards wrapped in the ice-card frame (user asset).
+ * assets/ice-card.webp: a portrait ice tray (transparent) with a recessed
+ * centre panel + icicles at the bottom. Applied as a border-image 9-slice so
+ * it flexes to each card's height; the card content (title, lime art panel,
+ * footer) sits in the recessed centre. Overrides the wos48 glass card.
+ * ========================================================================== */
+.grid .card {
+  background: none !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 22px 22px 30px 22px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-card.webp") !important;
+  border-image-slice: 90 96 150 96 fill !important;
+  border-image-width: 22px 22px 30px 22px !important;
+  border-image-outset: 0 2px 14px 2px !important;  /* icicles hang below */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 4px 6px 2px !important;
+  filter: drop-shadow(0 5px 12px rgba(0, 20, 45, 0.42));
+}
+.grid .card::before { display: none !important; }
+.grid .card:hover { transform: translateY(-2px) !important; }
+/* End wos72 ice cards */
