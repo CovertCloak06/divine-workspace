@@ -3496,3 +3496,52 @@ header.header {
 }
 .title-row .snowflake-btn { justify-self: end !important; }
 /* End wos77b */
+
+/* ============================================================================
+ * wos79 — frozen theme carried into the PREVIEW + EDITOR modals so every view
+ * matches the ice-framed grid cards. The preview lightbox becomes a large ice
+ * card (same ice-card asset as the grid, ~1:1 horizontal so no distortion);
+ * the editor keeps a clean frosted-slab treatment (a photographic frame would
+ * clutter the form). Scoped by #id so the shared .modal base is untouched
+ * elsewhere.
+ * ========================================================================== */
+
+/* --- Preview lightbox: full ice-card frame (mirrors a grid card) --- */
+#lightbox .modal {
+  background: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 30px 24px 44px 24px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-card.webp?v=wos79") !important;
+  border-image-slice: 105 78 214 75 fill !important;
+  border-image-width: 30px 24px 60px 24px !important;
+  border-image-outset: 0 3px 18px 3px !important;  /* icicles hang below */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  filter: drop-shadow(0 12px 30px rgba(0, 20, 45, 0.55))
+          drop-shadow(0 0 18px rgba(96, 206, 255, 0.22));
+}
+/* head/body/foot sit inside the recessed teal panel, clear of the ice bevel */
+#lightbox .modal-head {
+  border-bottom-color: rgba(150, 220, 255, 0.18) !important;
+  padding: 6px 10px 12px !important;
+}
+#lightbox .modal-body { padding: 14px 10px 8px !important; }
+/* the teal panel already reads frozen; keep the green WoS bubble as-is since it
+   simulates the in-game chat, exactly like the grid card preview */
+
+/* --- Editor: frosted slab (frozen, but no photographic frame) --- */
+#edit .modal {
+  background:
+    linear-gradient(180deg, rgba(32, 74, 112, 0.30) 0%, rgba(12, 30, 54, 0.30) 100%),
+    #132743 !important;
+  border: 1px solid rgba(150, 220, 255, 0.35) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(190, 232, 255, 0.30),
+    0 12px 34px rgba(0, 18, 40, 0.55),
+    0 0 22px rgba(96, 206, 255, 0.16) !important;
+}
+#edit .modal-head { border-bottom-color: rgba(150, 220, 255, 0.16) !important; }
+/* End wos79 */
