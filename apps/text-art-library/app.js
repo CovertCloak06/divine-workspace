@@ -1438,7 +1438,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos89';
+const APP_VERSION = 'wos90';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -3071,6 +3071,7 @@ function deleteAtCursor() {
 // ---- Keyboard proxy: route the hidden textarea's input onto the grid cursor.
 els.editArtInput.addEventListener('keydown', (e) => {
   if (!els.edit.classList.contains('open')) return;
+  if (e.isComposing || e.keyCode === 229) return;   // let IME composition run
   switch (e.key) {
     case 'ArrowLeft':  moveCursor(0, -1); e.preventDefault(); break;
     case 'ArrowRight': moveCursor(0, 1);  e.preventDefault(); break;
@@ -3083,8 +3084,22 @@ els.editArtInput.addEventListener('keydown', (e) => {
       e.preventDefault();
       break;
     }
-    // printable keys, Enter, Backspace and Delete are handled via beforeinput
-    // below so IME / mobile / emoji input all flow through the same path.
+    // wos90: handle Space / Enter / Backspace / Delete HERE, not only via
+    // beforeinput. beforeinput doesn't fire for these consistently across
+    // browsers (Safari + physical tablet keyboards were the report: "can't use
+    // the space bar or delete"). keydown fires reliably for physical keys, and
+    // preventDefault stops beforeinput from also running (no double input). The
+    // beforeinput handler below still covers soft keyboards that report keys as
+    // 'Unidentified' (keyCode 229, guarded above) and IME/emoji text.
+    case ' ':
+    case 'Spacebar':                       // legacy name (old Edge)
+      typeAtCursor(' '); e.preventDefault(); break;
+    case 'Enter':
+      typeAtCursor('\n'); e.preventDefault(); break;
+    case 'Backspace':
+      backspaceAtCursor(); e.preventDefault(); break;
+    case 'Delete':
+      deleteAtCursor(); e.preventDefault(); break;
   }
 });
 els.editArtInput.addEventListener('beforeinput', (e) => {
