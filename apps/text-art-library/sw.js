@@ -3,7 +3,7 @@
  * the install prompt. Bumps the cache name on every release so old assets
  * are evicted cleanly.
  */
-const CACHE = 'frostline-v30-wos88';
+const CACHE = 'frostline-v31-wos89';
 /* SHELL urls are stored WITHOUT version query strings; cache lookups use
  * { ignoreSearch: true } so a request for /app.js?v=wos60 still matches
  * the cached /app.js. This avoids re-listing every URL on each version bump. */
@@ -52,6 +52,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   // Only intercept same-origin requests; let API + CDN go straight to network.
   if (url.origin !== self.location.origin) return;
+  // wos89: version.json powers the app's auto-update self-heal — it must NEVER
+  // be served from cache, or a stale SW would report the old version and defeat
+  // the whole mechanism. Always go straight to the network (no cache put/fallback).
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(fetch(req));
+    return;
+  }
   // Network-first for HTML so users see fresh content; fall back to cache offline.
   // ignoreSearch on the fallback so /?utm=... still matches the cached /.
   if (req.mode === 'navigate' || req.destination === 'document') {
