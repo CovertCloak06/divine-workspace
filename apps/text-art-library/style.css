@@ -3545,3 +3545,293 @@ header.header {
 }
 #edit .modal-head { border-bottom-color: rgba(150, 220, 255, 0.16) !important; }
 /* End wos79 */
+
+/* ============================================================================
+ * wos80 — first-visit content notice / age gate + Safe Mode toggle.
+ * A frozen "frosted slab" card (same language as the editor) over a blurred
+ * winter backdrop. Blocks the gallery until the visitor acknowledges.
+ * ========================================================================== */
+html.gate-open, html.gate-open body { overflow: hidden !important; }
+
+.content-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;                 /* above every modal + sticky bar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 14, 26, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.content-gate[hidden] { display: none; }
+
+.content-gate-card {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  color: #eaf4ff;
+  padding: 30px 26px 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(150, 220, 255, 0.38);
+  background:
+    linear-gradient(180deg, rgba(36, 82, 124, 0.55) 0%, rgba(14, 32, 58, 0.62) 100%),
+    #112743;
+  box-shadow:
+    inset 0 1px 0 rgba(190, 232, 255, 0.35),
+    0 18px 50px rgba(0, 16, 38, 0.6),
+    0 0 26px rgba(96, 206, 255, 0.18);
+}
+.content-gate-emblem {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 8px;
+  color: #bfe8ff;
+  filter: drop-shadow(0 2px 8px rgba(96, 206, 255, 0.5));
+}
+.content-gate-card h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #ffffff;
+}
+.content-gate-card p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #cfe4f6;
+}
+.content-gate-card p strong { color: #ffffff; }
+.content-gate-fine {
+  font-size: 12px !important;
+  color: #9db8d2 !important;
+}
+.content-gate-safe {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(10, 26, 48, 0.5);
+  border: 1px solid rgba(150, 220, 255, 0.2);
+  font-size: 13px;
+  color: #dcecfb;
+  cursor: pointer;
+}
+.content-gate-safe input {
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: #4a9fd4;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.content-gate-safe em { color: #8fd0a0; font-style: normal; font-weight: 600; }
+.content-gate-age {
+  font-size: 12.5px !important;
+  color: #b9d2ea !important;
+  margin-bottom: 18px !important;
+}
+.content-gate-actions {
+  display: flex;
+  gap: 10px;
+}
+.content-gate-btn {
+  flex: 1 1 0;
+  padding: 13px 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+.content-gate-btn.primary {
+  background: linear-gradient(180deg, #5db4ea 0%, #2f7fc0 100%);
+  color: #06263f;
+  border-color: rgba(190, 232, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 16px rgba(20, 90, 150, 0.4);
+}
+.content-gate-btn.primary:hover { filter: brightness(1.08); }
+.content-gate-btn.ghost {
+  background: rgba(12, 30, 54, 0.6);
+  color: #c6dcef;
+  border-color: rgba(150, 220, 255, 0.28);
+}
+.content-gate-btn.ghost:hover { background: rgba(20, 44, 74, 0.75); }
+
+@media (max-width: 420px) {
+  .content-gate-card { padding: 24px 18px 20px; }
+  .content-gate-card h2 { font-size: 20px; }
+}
+
+/* Drawer Safe Mode toggle — matches the drafts CTA, with an on/off pill. */
+.drawer-safe-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(150, 220, 255, 0.22);
+  background: rgba(12, 30, 54, 0.55);
+  color: #e6f2ff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.drawer-safe-cta:hover { background: rgba(20, 44, 74, 0.7); }
+.drawer-safe-state {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(120, 140, 160, 0.35);
+  color: #d6e2ee;
+}
+.drawer-safe-cta.is-on .drawer-safe-state {
+  background: linear-gradient(180deg, #63c98a 0%, #3f9e6a 100%);
+  color: #062615;
+}
+/* End wos80 */
+
+/* ============================================================================
+ * wos82 — typeable canvas. The grid is the single editing surface; the
+ * #edit-art-input textarea becomes an invisible, focusable KEYBOARD PROXY
+ * (a <div> can't summon a mobile soft keyboard). A blinking cursor box marks
+ * where typed characters land. The old Draw/Type toggle is retired.
+ * ========================================================================== */
+.sketch-view { position: relative; }   /* anchor the absolutely-placed cursor */
+
+/* Textarea proxy: present + focusable (so the soft keyboard appears) but not
+   visually competing with the grid, and click-through so taps hit the canvas.
+   Overrides the earlier `#edit.drawing #edit-art-input { display:none }`. */
+#edit.drawing #edit-art-input {
+  display: block;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0.01;
+  color: transparent;
+  background: transparent;
+  caret-color: transparent;
+  pointer-events: none;
+  resize: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.sketch-cursor {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid #5fbdf0;
+  border-radius: 2px;
+  background: rgba(96, 206, 255, 0.14);
+  box-shadow: 0 0 7px rgba(96, 206, 255, 0.7);
+  z-index: 6;
+  animation: sketch-cursor-blink 1.05s steps(2, start) infinite;
+}
+@keyframes sketch-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.28; }
+}
+
+/* Retire the Draw/Type toggle — typing and drawing now share one surface. */
+.mode-toggle-row { display: none !important; }
+/* End wos82 */
+
+/* ============================================================================
+ * wos83 — admin-only analytics panel (drawer). Frozen-theme cards: totals, a
+ * 14-day visits bar chart, and a most-copied leaderboard.
+ * ========================================================================== */
+.analytics-panel { padding: 4px 2px 2px; }
+.analytics-status {
+  font-size: 12.5px;
+  color: var(--ink-dim, #8aa8c8);
+  padding: 8px 4px;
+}
+.an-totals { display: flex; gap: 10px; margin: 4px 0 12px; }
+.an-total {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(12, 30, 54, 0.55);
+  border: 1px solid rgba(150, 220, 255, 0.2);
+}
+.an-total-n { display: block; font-size: 22px; font-weight: 800; color: #dcedff; }
+.an-total-l { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #8fb0d0; margin-top: 2px; }
+.an-section-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #7fa6cc;
+  margin: 12px 0 6px;
+  font-weight: 700;
+}
+.an-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 74px;
+  padding: 4px 2px 0;
+}
+.an-bar {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.an-bar-fill {
+  width: 70%;
+  min-height: 2px;
+  background: linear-gradient(180deg, #5fbdf0 0%, #2f7fc0 100%);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 5px rgba(96, 206, 255, 0.4);
+}
+.an-bar-n { font-size: 9px; color: #a9c6e2; height: 11px; line-height: 11px; }
+.an-bar-d { font-size: 8px; color: #6f92b4; margin-top: 2px; transform: rotate(-45deg); transform-origin: center; white-space: nowrap; }
+.an-top { list-style: none; margin: 4px 0 0; padding: 0; }
+.an-top li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #dcecfb;
+}
+.an-top li:nth-child(odd) { background: rgba(12, 30, 54, 0.4); }
+.an-rank { width: 18px; color: #7fa6cc; font-weight: 700; font-size: 12px; text-align: right; flex: 0 0 auto; }
+.an-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-count { flex: 0 0 auto; font-weight: 800; color: #7fe0a6; }
+.an-empty { color: #8aa8c8; font-style: italic; }
+.analytics-refresh {
+  margin-top: 12px;
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(150, 220, 255, 0.25);
+  background: rgba(12, 30, 54, 0.55);
+  color: #cfe4f6;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.analytics-refresh:hover { background: rgba(20, 44, 74, 0.7); }
+/* End wos83 */
