@@ -996,10 +996,13 @@ function filtered() {
   }
   // Safe Mode — public content protection (the content-warning gate defaults it
   // ON). Hides pieces flagged as mature so minors don't see reported / NSFW art.
-  // Editors always see everything, and the admin "__flagged" review view is
-  // exempt so moderators can still find and clear flags.
-  if (document.documentElement.classList.contains('safe-mode')
-      && !state.editor && state.activeTag !== '__flagged') {
+  // Only editors are exempt (they see everything, including the admin flagged
+  // view). We deliberately do NOT exempt the "__flagged" tag here: a stale
+  // '__flagged' activeTag restored from a prior editor session (loadSession runs
+  // before auth) would otherwise drop a public visitor straight onto flagged
+  // content with the filter bypassed. For a non-editor the flagged view simply
+  // ends up empty, which is the safe outcome.
+  if (document.documentElement.classList.contains('safe-mode') && !state.editor) {
     const flags = state.flags || {};
     list = list.filter((p) => !(p.id in flags));
   }
@@ -1275,7 +1278,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos80';
+const APP_VERSION = 'wos81';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -3184,11 +3187,18 @@ async function toggleFlag(p, card, box, flag, note) {
     note.value = '';
   }
   syncFlaggedTab();
+  // Safe Mode: flagging is public, so a visitor flagging a card must stop seeing
+  // it at once. The gallery filter only runs in render(), and toggleFlag mutates
+  // state.flags without re-rendering — so re-render now to drop the just-flagged
+  // card immediately (the async save continues below).
+  const publicSafe = !state.editor && document.documentElement.classList.contains('safe-mode');
+  if (publicSafe) render();
   const r = await API.saveFlag(p.id, 'toggle');
   if (r && r.flagged !== undefined) {
     if (r.flagged) state.flags[p.id] = r.note || '';
     else delete state.flags[p.id];
     syncFlaggedTab();
+    if (publicSafe) render();   // reconcile with the server's authoritative flag state
   }
 }
 
