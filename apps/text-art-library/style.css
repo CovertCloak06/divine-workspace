@@ -3451,3 +3451,13 @@ header.header {
    touch smaller next to the wordmark */
 .title-row { gap: 6px; }
 /* End wos75 */
+
+/* wos76 — enlarge the snowflake emblem to match the ice wordmark height. */
+#snowflake { display: inline-flex; align-items: center; padding: 0; }
+#snowflake svg {
+  width: clamp(44px, 8vw, 82px) !important;
+  height: clamp(44px, 8vw, 82px) !important;
+  margin-right: 0 !important;
+}
+.title-row { gap: 10px; }
+/* End wos76 */
