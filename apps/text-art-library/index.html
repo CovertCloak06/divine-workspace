@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos68">
+  <link rel="stylesheet" href="style.css?v=wos69">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1450,13 +1450,26 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos68"></script>
+  <script src="app.js?v=wos69"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
     if ('serviceWorker' in navigator) {
+      /* wos69: when a new service worker takes control (after a deploy),
+         reload once so the fresh build shows immediately — no more manual
+         cache-clearing to see updates. */
+      let __swRefreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (__swRefreshing) return;
+        __swRefreshing = true;
+        window.location.reload();
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          /* Poll for updates so long-lived tabs pick up new deploys. */
+          reg.update();
+          setInterval(() => reg.update(), 60000);
+        }).catch(() => {
           /* Silent: SW failures shouldn't block the page. */
         });
       });
