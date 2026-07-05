@@ -3386,3 +3386,20 @@ nav.controls {
   }
 }
 /* End wos66 ice-frame container */
+
+/* ============================================================================
+ * wos71 — header blends into the winter scene.
+ * The titleBarColor tweak (a dark-green block) is disabled (default null);
+ * the header is now transparent with only a soft top vignette for text
+ * legibility, so the background photo runs continuously from the top of the
+ * page through the title and into the ice bar — one cohesive frozen scene.
+ * ========================================================================== */
+header.header {
+  background: linear-gradient(180deg,
+    rgba(7, 17, 30, 0.48) 0%,
+    rgba(7, 17, 30, 0.14) 62%,
+    transparent 100%) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+/* End wos71 */
