@@ -513,25 +513,28 @@ body.editor .card-actions { display: flex; }
 /* Canonical art render — shared by the card, the lightbox, and the editor
    live preview so the same string lays out identically in all three. */
 .art-render {
-  /* WoS-EXACT renderer. Whiteout Survival chat renders with the Android system
-     stack — Roboto (Latin + narrow symbols like ■) plus Noto Sans CJK for
-     full-width glyphs — verified by matching WoS's measured glyph widths
-     (■≈0.68em, M≈0.88em, full-width=1em). Lines wrap mid-run at the ~17-full-width
-     bubble, exactly like the game. NO letter-spacing and NO forced full-width
-     (WoS keeps ■ and other ambiguous glyphs narrow via Roboto). */
+  /* wos86 — RIGID PICTURE renderer. The art is treated as a fixed grid: each
+     authored line stays on ONE line (white-space: pre, never wrap) and the
+     whole block is uniformly scaled to fit its container by fitArt() (font-size
+     only — never transform: scale). This makes the preview identical across
+     container widths, zoom levels and devices: it can't re-flow into extra
+     lines, so the "picture" never breaks. (WoS-width compliance is a separate
+     concern surfaced by the ⚠ badge + the editor width meter, not by letting
+     the preview wrap.) Font stack is embedded (see wos86 @font-face) so glyph
+     metrics are consistent everywhere too. */
   font-family: var(--art-font);
   font-weight: 700;
   letter-spacing: normal;
   word-spacing: normal;
   line-height: var(--art-line-height);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;          /* was pre-wrap — never auto-wrap a logical line */
+  overflow-wrap: normal;     /* was anywhere — do not break inside a line */
   text-align: left;
   font-variant-east-asian: normal;
   font-feature-settings: normal;
   color: var(--wos-ink);
   display: inline-block;
-  max-width: calc(var(--wos-cols, 17) * 1em);
+  max-width: none;           /* measure the TRUE unwrapped width; fitArt scales */
   margin: 0;
 }
 
@@ -557,6 +560,10 @@ body.editor .card-actions { display: flex; }
   align-items: center;
   justify-content: center;
   padding: 12px;
+  /* wos86: clip any transient overflow before fitArt scales the rigid art to
+     fit (the art no longer wraps, so an unscaled line could momentarily exceed
+     the box). The editor tray re-enables scrolling via .edit-preview-tray. */
+  overflow: hidden;
   margin-bottom: 10px;
   overflow: hidden;
 }

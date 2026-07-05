@@ -1126,13 +1126,19 @@ function renderCard(p) {
   prev.appendChild(pre);
   card.appendChild(prev);
 
-  // scale to fit after layout, then flag the card if the real render wrapped
+  // wos86: the art renders RIGID (white-space: pre — it never wraps), then
+  // fitArt scales the whole block to fit. So the ⚠ badge can no longer mean
+  // "wrapped in preview" (impossible now); it means "wider than the WoS bubble"
+  // — i.e. this piece WILL wrap in the game. Decide that from the true unwrapped
+  // width at base size, then scale the picture down to fit the card.
   requestAnimationFrame(() => {
+    pre.style.fontSize = '14px';
+    const emPx = parseFloat(getComputedStyle(pre).fontSize) || 14;
+    const wosCols = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--wos-cols'),
+    ) || 17;
+    warn.style.display = (pre.scrollWidth > wosCols * emPx + 1) ? '' : 'none';
     fitArt(prev, pre, 14, { height: true });
-    const srcRows = (p.art || '').split('\n').length;
-    const lh = parseFloat(getComputedStyle(pre).lineHeight) || 1;
-    const rows = Math.round(pre.scrollHeight / lh);
-    warn.style.display = rows > srcRows ? '' : 'none';
   });
 
   // chips
@@ -1241,6 +1247,25 @@ function fitArt(container, pre, base, { height = false } = {}) {
   scale = Math.min(1, scale);
   if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
+
+// wos86: re-fit every rigid art block when its container can change size — the
+// grid reflows columns on viewport resize / orientation change, and a rigid
+// (non-wrapping) block must be re-scaled to keep fitting. Debounced so a drag-
+// resize doesn't thrash. Also re-fits the open lightbox.
+function refitAllArt() {
+  document.querySelectorAll('.grid .card .preview').forEach((prev) => {
+    const pre = prev.querySelector('.art-render');
+    if (pre) fitArt(prev, pre, 14, { height: true });
+  });
+  if (els.lightbox && els.lightbox.classList.contains('open') && els.lbPre) {
+    fitArt(els.lbPre.parentElement, els.lbPre, 20);
+  }
+}
+let _refitTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_refitTimer);
+  _refitTimer = setTimeout(refitAllArt, 120);
+});
 
 /* ============ 06  Filtering + search ============ */
 els.search.addEventListener('input', () => {
@@ -1401,7 +1426,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos85';
+const APP_VERSION = 'wos86';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
