@@ -3,7 +3,7 @@
  * the install prompt. Bumps the cache name on every release so old assets
  * are evicted cleanly.
  */
-const CACHE = 'frostline-v5-wos63';
+const CACHE = 'frostline-v21-wos79';
 /* SHELL urls are stored WITHOUT version query strings; cache lookups use
  * { ignoreSearch: true } so a request for /app.js?v=wos60 still matches
  * the cached /app.js. This avoids re-listing every URL on each version bump. */
@@ -17,6 +17,9 @@ const SHELL = [
   '/manifest.webmanifest',
   '/assets/bg-frostline.webp',
   '/assets/snow-cap.png',
+  '/assets/ice-frame.webp',
+  '/assets/ice-card.webp',
+  '/assets/title.webp',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/assets/icon-180.png',
@@ -64,19 +67,21 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Cache-first for static assets (CSS, JS, images). ignoreSearch so a
-  // request for /style.css?v=wos60 still hits the cached /style.css —
-  // the SHELL list stays version-free and survives release bumps.
+  // wos69: NETWORK-FIRST for static assets (CSS, JS, images). Previously
+  // cache-first, which meant a returning PWA kept serving the OLD /style.css
+  // and /app.js for a new ?v=... — users got stuck on a stale build until
+  // they cleared data. Now: try the network, refresh the cache, and only
+  // fall back to the cache when offline. Keeps offline support without
+  // trapping users on old code.
   event.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
+    fetch(req)
+      .then((res) => {
         if (res.ok && res.type === 'basic') {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }
         return res;
-      });
-    })
+      })
+      .catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });

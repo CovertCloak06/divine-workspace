@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos63">
+  <link rel="stylesheet" href="style.css?v=wos79">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -849,8 +849,8 @@
     "accentColor": "#115555",
     "bgColor": "#394856",
     "bgCardColor": "#173e4f",
-    "titleBarColor": "#122b28",
-    "searchBarColor": "#1b3e50",
+    "titleBarColor": null,
+    "searchBarColor": null,
     "chunkiness": 4,
     "font": "fredoka",
     "fontSize": 18,
@@ -1142,7 +1142,9 @@
             </g>
           </svg>
         </button>
-        <h1 class="title" data-st="siteTitle">Frostline</h1>
+        <h1 class="title" aria-label="Frostline">
+          <img class="title-img" src="assets/title.webp?v=wos75" alt="Frostline" width="1824" height="402">
+        </h1>
       </div>
       <p class="subtitle" data-st="tagline">Curated text art for Whiteout Survival chat</p>
       <button class="share-bar" id="share-bar" type="button">
@@ -1450,13 +1452,26 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos63"></script>
+  <script src="app.js?v=wos79"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
     if ('serviceWorker' in navigator) {
+      /* wos69: when a new service worker takes control (after a deploy),
+         reload once so the fresh build shows immediately — no more manual
+         cache-clearing to see updates. */
+      let __swRefreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (__swRefreshing) return;
+        __swRefreshing = true;
+        window.location.reload();
+      });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          /* Poll for updates so long-lived tabs pick up new deploys. */
+          reg.update();
+          setInterval(() => reg.update(), 60000);
+        }).catch(() => {
           /* Silent: SW failures shouldn't block the page. */
         });
       });

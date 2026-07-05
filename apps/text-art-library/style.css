@@ -3337,3 +3337,211 @@ html body {
 }
 
 /* End wos48 redesign */
+
+/* ============================================================================
+ * wos66 — .controls framed by a real photographic ICE FRAME (user-supplied).
+ * assets/ice-frame.png is the user's glacier-ice asset — snow on top, icicles
+ * below, glowing cracks, recessed centre — with its baked checkerboard keyed
+ * out to true transparency and cropped tight. Applied as a CSS border-image
+ * 9-slice so the rounded ice caps stay crisp while the middle (snow / ice /
+ * icicles) stretches to any width. The theme tabs + search sit in the centre.
+ *
+ * The <nav> carries an inline `border-style:none` from the tweaks engine, so
+ * `border-style: solid !important` is required to enable border-image at all.
+ * ========================================================================== */
+nav.controls {
+  margin: 2px 12px 30px !important;     /* inset; bottom room for icicle overhang */
+  background: none !important;          /* drop the old procedural ice-block */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;          /* the ice provides the silhouette */
+  border-style: solid !important;       /* enable border-image over inline none */
+  border-color: transparent !important;
+  /* wos78: new ice-trough asset (snow-capped rail, icicle fringe, recessed
+     teal panel). Slices measured from the asset's flat teal panel on the
+     alpha-cropped 1966x424 image: top 66 / right 61 / bottom 146 / left 58.
+     Bottom slice is tall because it carries the bottom rail + icicles; it
+     renders larger than the layout border-width and the overflow hangs below
+     via border-image-outset (icicles), so the content box stays compact. */
+  border-width: 40px 44px 46px 44px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-frame.webp?v=wos78") !important;
+  border-image-slice: 66 61 146 58 fill !important;  /* snow-rail / cap / rail+icicles / cap */
+  border-image-width: 40px 44px 96px 44px !important;  /* bottom drawn tall for icicles */
+  border-image-outset: 16px 4px 50px 4px !important;   /* snow up 16, icicles down 50 (46+50=96) */
+  border-image-repeat: stretch stretch !important;
+  /* wos70: no box-shadow — it was rectangular (followed the .controls box)
+     and its sharp corners showed behind the organic ice edges. The ice
+     image carries its own glow; a soft organic glow is added via
+     filter: drop-shadow, which follows the ice's actual alpha silhouette
+     instead of the box. */
+  box-shadow: none !important;
+  filter: drop-shadow(0 6px 12px rgba(0, 20, 45, 0.45))
+          drop-shadow(0 0 16px rgba(96, 206, 255, 0.28)) !important;
+  /* Extra padding beyond the border so the theme tabs + search input clear the
+     panel's inner bevel and sit fully inside the flat teal recess. */
+  padding: 12px 30px 10px !important;
+}
+/* This frame has its own snow — retire the separate snow cap. */
+.controls::before { display: none !important; }
+
+@media (max-width: 480px) {
+  nav.controls {
+    margin: 2px 6px 20px !important;
+    border-width: 26px 30px 30px 30px !important;
+    border-image-width: 26px 30px 62px 30px !important;
+    border-image-outset: 10px 3px 32px 3px !important;
+    padding: 8px 16px 6px !important;
+  }
+}
+/* End wos66 ice-frame container */
+
+/* ============================================================================
+ * wos71 — header blends into the winter scene.
+ * The titleBarColor tweak (a dark-green block) is disabled (default null);
+ * the header is now transparent with only a soft top vignette for text
+ * legibility, so the background photo runs continuously from the top of the
+ * page through the title and into the ice bar — one cohesive frozen scene.
+ * ========================================================================== */
+header.header {
+  background: linear-gradient(180deg,
+    rgba(7, 17, 30, 0.48) 0%,
+    rgba(7, 17, 30, 0.14) 62%,
+    transparent 100%) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+/* End wos71 */
+
+/* ============================================================================
+ * wos72 — art cards wrapped in the ice-card frame (user asset).
+ * assets/ice-card.webp: a portrait ice tray (transparent) with a recessed
+ * centre panel + icicles at the bottom. Applied as a border-image 9-slice so
+ * it flexes to each card's height; the card content (title, lime art panel,
+ * footer) sits in the recessed centre. Overrides the wos48 glass card.
+ * ========================================================================== */
+.grid .card {
+  background: none !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  /* Slices measured from the asset's actual inner panel (105/78/214/75) so
+     the rendered border == the ice frame and the content box == the recessed
+     panel. Extra padding keeps title/art/footer off the frame's inner edge. */
+  border-width: 24px 20px 44px 20px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-card.webp") !important;
+  border-image-slice: 105 78 214 75 fill !important;
+  border-image-width: 24px 20px 44px 20px !important;
+  border-image-outset: 0 2px 16px 2px !important;  /* icicles hang below */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  /* Extra padding on top of the border so title/art/footer clear the frame's
+     inner bevel and sit inside the flat teal panel (not on the ice lip). */
+  padding: 18px 26px 26px !important;
+  filter: drop-shadow(0 5px 12px rgba(0, 20, 45, 0.42));
+}
+.grid .card::before { display: none !important; }
+.grid .card:hover { transform: translateY(-2px) !important; }
+/* End wos72 ice cards */
+
+/* wos75 — ice "Frostline" wordmark image replaces the text title. */
+.title { line-height: 0 !important; margin: 0 !important; }
+.title-img {
+  display: block;
+  height: clamp(46px, 8.5vw, 88px);
+  width: auto;
+  max-width: min(90vw, 620px);
+  object-fit: contain;
+  filter: drop-shadow(0 3px 10px rgba(0, 20, 45, 0.55));
+}
+/* the snowflake emblem (also the hidden editor unlock) stays but sits a
+   touch smaller next to the wordmark */
+.title-row { gap: 6px; }
+/* End wos75 */
+
+/* wos76 — enlarge the snowflake emblem to match the ice wordmark height. */
+#snowflake { display: inline-flex; align-items: center; padding: 0; }
+#snowflake svg {
+  width: clamp(44px, 8vw, 82px) !important;
+  height: clamp(44px, 8vw, 82px) !important;
+  margin-right: 0 !important;
+}
+.title-row { gap: 10px; }
+/* End wos76 */
+
+/* wos77 — strip the container around the share link; just the icon + text
+   so it blends into the header like the rest of the frozen scene. */
+.share-bar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 1px 4px rgba(0, 12, 28, 0.75);
+}
+.share-bar:hover { background: transparent !important; border: none !important; }
+.share-bar:hover .cta { text-decoration: underline; }
+/* End wos77 */
+
+/* wos77b — center the wordmark on the page (not the snowflake+wordmark group)
+   so the tagline + link align centered under "Frostline". 3-col grid: the
+   snowflake sits in a left column, the title in the centre column, and an
+   empty equal-width right column balances it. */
+.title-row {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.title-row .snowflake-btn { justify-self: end !important; }
+/* End wos77b */
+
+/* ============================================================================
+ * wos79 — frozen theme carried into the PREVIEW + EDITOR modals so every view
+ * matches the ice-framed grid cards. The preview lightbox becomes a large ice
+ * card (same ice-card asset as the grid, ~1:1 horizontal so no distortion);
+ * the editor keeps a clean frosted-slab treatment (a photographic frame would
+ * clutter the form). Scoped by #id so the shared .modal base is untouched
+ * elsewhere.
+ * ========================================================================== */
+
+/* --- Preview lightbox: full ice-card frame (mirrors a grid card) --- */
+#lightbox .modal {
+  background: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 30px 24px 44px 24px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-card.webp?v=wos79") !important;
+  border-image-slice: 105 78 214 75 fill !important;
+  border-image-width: 30px 24px 60px 24px !important;
+  border-image-outset: 0 3px 18px 3px !important;  /* icicles hang below */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  filter: drop-shadow(0 12px 30px rgba(0, 20, 45, 0.55))
+          drop-shadow(0 0 18px rgba(96, 206, 255, 0.22));
+}
+/* head/body/foot sit inside the recessed teal panel, clear of the ice bevel */
+#lightbox .modal-head {
+  border-bottom-color: rgba(150, 220, 255, 0.18) !important;
+  padding: 6px 10px 12px !important;
+}
+#lightbox .modal-body { padding: 14px 10px 8px !important; }
+/* the teal panel already reads frozen; keep the green WoS bubble as-is since it
+   simulates the in-game chat, exactly like the grid card preview */
+
+/* --- Editor: frosted slab (frozen, but no photographic frame) --- */
+#edit .modal {
+  background:
+    linear-gradient(180deg, rgba(32, 74, 112, 0.30) 0%, rgba(12, 30, 54, 0.30) 100%),
+    #132743 !important;
+  border: 1px solid rgba(150, 220, 255, 0.35) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(190, 232, 255, 0.30),
+    0 12px 34px rgba(0, 18, 40, 0.55),
+    0 0 22px rgba(96, 206, 255, 0.16) !important;
+}
+#edit .modal-head { border-bottom-color: rgba(150, 220, 255, 0.16) !important; }
+/* End wos79 */
