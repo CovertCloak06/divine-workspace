@@ -1387,7 +1387,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos83';
+const APP_VERSION = 'wos84';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2780,11 +2780,22 @@ function gestureUp(cx, cy) {
     return;
   }
   if (gesturePending) {
-    // wos82 typeable canvas: a quick tap places the TEXT CURSOR at the cell and
-    // focuses the keyboard proxy so you can type there. Drawing is done by
-    // dragging a stroke or picking a palette char — a tap never paints, so it
-    // can't drop an unwanted character. (Long-press grab-move still works.)
-    placeCursorAt(gesturePending.y, gesturePending.x);
+    const { y, x } = gesturePending;
+    // wos84: an explicit tap PLACES the armed character at that exact cell — the
+    // classic "pick a char, then click the spot" flow. Selecting a palette char
+    // only arms it now; the character isn't dropped until this click. With
+    // nothing armed (Canvas mode / no brush) the tap just repositions the text
+    // cursor so keyboard typing continues from there. Either way the cursor
+    // lands here and the keyboard proxy stays focused.
+    if (canPaint()) {
+      startStroke();
+      replaceCharAt(y, x);
+      endStroke();
+      const adv = eraserOn ? 1 : Math.max(1, graphemes(activeBrush).length);
+      placeCursorAt(y, x + adv);
+    } else {
+      placeCursorAt(y, x);
+    }
     focusTypeProxy();
     gesturePending = null;
     return;
@@ -3226,12 +3237,12 @@ function isSketchMode() {
 }
 
 function handlePaletteSelection(ch) {
-  setActiveBrush(ch);   // arm it so a subsequent drag paints the same char
-  // wos82 typeable canvas: tapping a palette char also TYPES it at the grid
-  // cursor and advances — so you can build art by tapping chars (positioned by
-  // tapping cells) exactly like typing. Then keep the keyboard proxy focused.
-  typeAtCursor(ch);
-  focusTypeProxy();
+  // wos84: selecting a palette char only ARMS it (readies it for placement) —
+  // it is NOT dropped onto the canvas here. The character is placed when the
+  // user explicitly clicks a cell (see the tap handler in gestureUp), or by
+  // dragging a stroke. This restores the classic "pick a char, click a spot"
+  // flow; the earlier auto-type-on-select was the reported regression.
+  setActiveBrush(ch);
 }
 
 // A leading combining mark (e.g. a bare mouth/nose piece) has nothing to attach
