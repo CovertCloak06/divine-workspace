@@ -292,6 +292,35 @@ async function fnUrl(name) {
   return `${prefix}/${name}`;
 }
 
+/* ---- Anonymous usage counters (feeds the admin-only analytics panel) ----
+ * Fire-and-forget: never blocks the UI, silently no-ops when the backend is
+ * unreachable, and sends only an aggregate event + (for copies) the piece id —
+ * no identifiers or personal data. */
+function trackEvent(kind, id) {
+  try {
+    fnUrl('track').then((url) => {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(id ? { event: kind, id } : { event: kind }),
+        keepalive: true,
+      }).catch(() => {});
+    }).catch(() => {});
+  } catch { /* ignore */ }
+}
+// Count one visit per device per UTC day so a single user refreshing doesn't
+// inflate the numbers (roughly "unique daily visitors").
+function trackVisitOncePerDay() {
+  let day;
+  try { day = new Date().toISOString().slice(0, 10); } catch { day = 'x'; }
+  try {
+    const key = 'frostline:tracked:' + day;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+  } catch { /* no storage — just count it */ }
+  trackEvent('visit');
+}
+
 // localStorage is a last-known-good CACHE only (never a competing store), so an
 // unreachable backend shows your real library instead of the bundled seed.
 const CACHE_KEY = 'frostline:cache:v2';
@@ -528,6 +557,9 @@ async function boot() {
   state.booted = true;
   recomputeMerged();
   render();
+
+  // Count this visit (anonymous, deduped per day) for the admin analytics panel.
+  trackVisitOncePerDay();
 
   // --- Restore scroll position + reopen the lightbox the user was viewing.
   if (typeof sess.scrollY === 'number' && sess.scrollY > 0) {
@@ -1149,7 +1181,7 @@ function renderCard(p) {
   copy.textContent = 'Copy';
   copy.addEventListener('click', (e) => {
     e.stopPropagation();
-    copyArt(p.art, copy);
+    copyArt(p.art, copy, false, p.id);
   });
   footer.appendChild(copy);
 
@@ -1268,8 +1300,85 @@ if (drawerSectionsRoot) {
     const willOpen = !section.classList.contains('is-open');
     section.classList.toggle('is-open', willOpen);
     head.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (willOpen && section.dataset.section === 'analytics') loadAnalytics();
   });
 }
+
+/* === Admin analytics panel ===================================================
+ * Fetches /get-stats (Bearer = editor password) and renders visits-per-day +
+ * most-copied art. Editor-only (the drawer section is hidden unless unlocked,
+ * and the server rejects the request without a valid password). */
+async function loadAnalytics() {
+  const statusEl = document.getElementById('analytics-status');
+  const contentEl = document.getElementById('analytics-content');
+  if (!statusEl || !contentEl) return;
+  if (!state.editor || !state.password) {
+    statusEl.hidden = false;
+    statusEl.textContent = 'Unlock the editor to view analytics.';
+    contentEl.hidden = true;
+    return;
+  }
+  statusEl.hidden = false;
+  statusEl.textContent = 'Loading…';
+  contentEl.hidden = true;
+  try {
+    const res = await fetch(await fnUrl('get-stats'), {
+      headers: { 'Authorization': 'Bearer ' + state.password },
+      cache: 'no-store',
+    });
+    if (res.status === 404) { statusEl.textContent = 'Analytics not deployed yet.'; return; }
+    if (res.status === 401) { statusEl.textContent = 'Not authorized.'; return; }
+    if (!res.ok) { statusEl.textContent = 'Could not load stats.'; return; }
+    renderAnalytics(await res.json());
+    statusEl.hidden = true;
+    contentEl.hidden = false;
+  } catch {
+    statusEl.textContent = 'Offline — analytics need the network.';
+  }
+}
+
+function renderAnalytics(stats) {
+  const contentEl = document.getElementById('analytics-content');
+  if (!contentEl) return;
+  const byDay = stats.visitsByDay || {};
+  // Last 14 days, oldest→newest, filling gaps with 0.
+  const days = [];
+  const today = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
+    days.push({ d, n: byDay[d] || 0 });
+  }
+  const maxN = Math.max(1, ...days.map((x) => x.n));
+  const bars = days.map((x) => {
+    const h = Math.round((x.n / maxN) * 46);
+    const label = x.d.slice(5); // MM-DD
+    return `<div class="an-bar" title="${x.d}: ${x.n}"><span class="an-bar-fill" style="height:${h}px"></span><span class="an-bar-n">${x.n || ''}</span><span class="an-bar-d">${label}</span></div>`;
+  }).join('');
+
+  // Resolve titles for the most-copied pieces from the loaded library.
+  const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
+  const titleFor = (id) => {
+    const p = lib.find((q) => q && q.id === id);
+    return p ? (p.title || id) : id;
+  };
+  const top = (stats.topCopied || []).slice(0, 10);
+  const rows = top.length
+    ? top.map((c, i) => `<li><span class="an-rank">${i + 1}</span><span class="an-title">${escapeHtml(titleFor(c.id))}</span><span class="an-count">${c.n}</span></li>`).join('')
+    : '<li class="an-empty">No copies recorded yet.</li>';
+
+  contentEl.innerHTML = `
+    <div class="an-totals">
+      <div class="an-total"><span class="an-total-n">${stats.visitsTotal || 0}</span><span class="an-total-l">total visits</span></div>
+      <div class="an-total"><span class="an-total-n">${stats.copyTotal || 0}</span><span class="an-total-l">total copies</span></div>
+    </div>
+    <div class="an-section-label">Visits · last 14 days</div>
+    <div class="an-chart">${bars}</div>
+    <div class="an-section-label">Most-copied art</div>
+    <ol class="an-top">${rows}</ol>`;
+}
+
+const analyticsRefreshBtn = document.getElementById('analytics-refresh');
+if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnalytics);
 
 /* === Feedback form ===========================================================
  * Public bug-feedback form in the Settings drawer. POSTs to /api/submit-bug,
@@ -1278,7 +1387,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos82';
+const APP_VERSION = 'wos83';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1472,7 +1581,7 @@ function openLightbox(p) {
   }
   els.lbCopy.classList.remove('copied');
   els.lbCopy.textContent = '📋 Copy to Clipboard';
-  els.lbCopy.onclick = () => copyArt(p.art, els.lbCopy, true);
+  els.lbCopy.onclick = () => copyArt(p.art, els.lbCopy, true, p.id);
   // fit preview to modal width
   requestAnimationFrame(() => fitArt(els.lbPre.parentElement, els.lbPre, 20));
   els.lightbox.classList.add('open');
@@ -1495,7 +1604,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ============ 08  Copy with NBSP ============ */
-async function copyArt(text, btn, isLightbox) {
+async function copyArt(text, btn, isLightbox, id) {
+  if (id) trackEvent('copy', id);   // anonymous most-copied counter (admin stats)
   const normalized = spacesToNbsp(text);
   try {
     await navigator.clipboard.writeText(normalized);

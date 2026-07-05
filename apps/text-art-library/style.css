@@ -3752,3 +3752,86 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
 /* Retire the Draw/Type toggle — typing and drawing now share one surface. */
 .mode-toggle-row { display: none !important; }
 /* End wos82 */
+
+/* ============================================================================
+ * wos83 — admin-only analytics panel (drawer). Frozen-theme cards: totals, a
+ * 14-day visits bar chart, and a most-copied leaderboard.
+ * ========================================================================== */
+.analytics-panel { padding: 4px 2px 2px; }
+.analytics-status {
+  font-size: 12.5px;
+  color: var(--ink-dim, #8aa8c8);
+  padding: 8px 4px;
+}
+.an-totals { display: flex; gap: 10px; margin: 4px 0 12px; }
+.an-total {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(12, 30, 54, 0.55);
+  border: 1px solid rgba(150, 220, 255, 0.2);
+}
+.an-total-n { display: block; font-size: 22px; font-weight: 800; color: #dcedff; }
+.an-total-l { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #8fb0d0; margin-top: 2px; }
+.an-section-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #7fa6cc;
+  margin: 12px 0 6px;
+  font-weight: 700;
+}
+.an-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 74px;
+  padding: 4px 2px 0;
+}
+.an-bar {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.an-bar-fill {
+  width: 70%;
+  min-height: 2px;
+  background: linear-gradient(180deg, #5fbdf0 0%, #2f7fc0 100%);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 5px rgba(96, 206, 255, 0.4);
+}
+.an-bar-n { font-size: 9px; color: #a9c6e2; height: 11px; line-height: 11px; }
+.an-bar-d { font-size: 8px; color: #6f92b4; margin-top: 2px; transform: rotate(-45deg); transform-origin: center; white-space: nowrap; }
+.an-top { list-style: none; margin: 4px 0 0; padding: 0; }
+.an-top li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #dcecfb;
+}
+.an-top li:nth-child(odd) { background: rgba(12, 30, 54, 0.4); }
+.an-rank { width: 18px; color: #7fa6cc; font-weight: 700; font-size: 12px; text-align: right; flex: 0 0 auto; }
+.an-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-count { flex: 0 0 auto; font-weight: 800; color: #7fe0a6; }
+.an-empty { color: #8aa8c8; font-style: italic; }
+.analytics-refresh {
+  margin-top: 12px;
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(150, 220, 255, 0.25);
+  background: rgba(12, 30, 54, 0.55);
+  color: #cfe4f6;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.analytics-refresh:hover { background: rgba(20, 44, 74, 0.7); }
+/* End wos83 */

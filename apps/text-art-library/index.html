@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos82">
+  <link rel="stylesheet" href="style.css?v=wos83">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1071,6 +1071,21 @@
         <span class="drawer-safe-label">🛡️ Safe Mode</span>
         <span class="drawer-safe-state" id="drawer-safe-state">On</span>
       </button>
+      <!-- Admin-only usage analytics (visits/day + most-copied art). Private:
+           gated by the editor password on the server. Loads on expand. -->
+      <section class="drawer-section editor-only" data-section="analytics">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-analytics">
+          <span class="drawer-section-title">📊 Analytics</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-analytics">
+          <div class="analytics-panel" id="analytics-panel">
+            <div class="analytics-status" id="analytics-status" role="status" aria-live="polite">Open to load stats…</div>
+            <div class="analytics-content" id="analytics-content" hidden></div>
+            <button type="button" class="analytics-refresh" id="analytics-refresh">↻ Refresh</button>
+          </div>
+        </div>
+      </section>
       <section class="drawer-section editor-only" data-section="palette">
         <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-palette">
           <span class="drawer-section-title">Character Palette</span>
@@ -1509,7 +1524,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos82"></script>
+  <script src="app.js?v=wos83"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
