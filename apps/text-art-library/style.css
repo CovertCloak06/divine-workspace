@@ -3357,11 +3357,17 @@ nav.controls {
   border-radius: 0 !important;          /* the ice provides the silhouette */
   border-style: solid !important;       /* enable border-image over inline none */
   border-color: transparent !important;
-  border-width: 42px 60px 48px 60px !important;   /* top right bottom left */
-  border-image-source: url("assets/ice-frame.webp") !important;
-  border-image-slice: 96 170 115 170 fill !important;  /* snow / cap / icicles / cap */
-  border-image-width: 42px 60px 48px 60px !important;
-  border-image-outset: 22px 4px 30px 4px !important;   /* snow up, icicles down */
+  /* wos78: new ice-trough asset (snow-capped rail, icicle fringe, recessed
+     teal panel). Slices measured from the asset's flat teal panel on the
+     alpha-cropped 1966x424 image: top 66 / right 61 / bottom 146 / left 58.
+     Bottom slice is tall because it carries the bottom rail + icicles; it
+     renders larger than the layout border-width and the overflow hangs below
+     via border-image-outset (icicles), so the content box stays compact. */
+  border-width: 40px 44px 46px 44px !important;   /* top right bottom left */
+  border-image-source: url("assets/ice-frame.webp?v=wos78") !important;
+  border-image-slice: 66 61 146 58 fill !important;  /* snow-rail / cap / rail+icicles / cap */
+  border-image-width: 40px 44px 96px 44px !important;  /* bottom drawn tall for icicles */
+  border-image-outset: 16px 4px 50px 4px !important;   /* snow up 16, icicles down 50 (46+50=96) */
   border-image-repeat: stretch stretch !important;
   /* wos70: no box-shadow — it was rectangular (followed the .controls box)
      and its sharp corners showed behind the organic ice edges. The ice
@@ -3371,18 +3377,20 @@ nav.controls {
   box-shadow: none !important;
   filter: drop-shadow(0 6px 12px rgba(0, 20, 45, 0.45))
           drop-shadow(0 0 16px rgba(96, 206, 255, 0.28)) !important;
-  padding: 6px 26px 4px !important;      /* content sits in the ice body */
+  /* Extra padding beyond the border so the theme tabs + search input clear the
+     panel's inner bevel and sit fully inside the flat teal recess. */
+  padding: 12px 30px 10px !important;
 }
 /* This frame has its own snow — retire the separate snow cap. */
 .controls::before { display: none !important; }
 
 @media (max-width: 480px) {
   nav.controls {
-    margin: 2px 6px 22px !important;
-    border-width: 26px 38px 34px 38px !important;
-    border-image-width: 26px 38px 34px 38px !important;
-    border-image-outset: 12px 3px 20px 3px !important;
-    padding: 4px 12px 2px !important;
+    margin: 2px 6px 20px !important;
+    border-width: 26px 30px 30px 30px !important;
+    border-image-width: 26px 30px 62px 30px !important;
+    border-image-outset: 10px 3px 32px 3px !important;
+    padding: 8px 16px 6px !important;
   }
 }
 /* End wos66 ice-frame container */
