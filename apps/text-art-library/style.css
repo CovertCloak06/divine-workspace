@@ -3417,15 +3417,18 @@ header.header {
           backdrop-filter: none !important;
   border-style: solid !important;
   border-color: transparent !important;
-  border-width: 22px 22px 30px 22px !important;   /* top right bottom left */
+  /* Slices measured from the asset's actual inner panel (105/78/214/75) so
+     the rendered border == the ice frame and the content box == the recessed
+     panel. Extra padding keeps title/art/footer off the frame's inner edge. */
+  border-width: 24px 20px 44px 20px !important;   /* top right bottom left */
   border-image-source: url("assets/ice-card.webp") !important;
-  border-image-slice: 90 96 150 96 fill !important;
-  border-image-width: 22px 22px 30px 22px !important;
-  border-image-outset: 0 2px 14px 2px !important;  /* icicles hang below */
+  border-image-slice: 105 78 214 75 fill !important;
+  border-image-width: 24px 20px 44px 20px !important;
+  border-image-outset: 0 2px 16px 2px !important;  /* icicles hang below */
   border-radius: 0 !important;
   box-shadow: none !important;
   overflow: visible !important;
-  padding: 4px 6px 2px !important;
+  padding: 8px 12px 6px !important;
   filter: drop-shadow(0 5px 12px rgba(0, 20, 45, 0.42));
 }
 .grid .card::before { display: none !important; }
