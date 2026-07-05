@@ -1266,6 +1266,14 @@ window.addEventListener('resize', () => {
   clearTimeout(_refitTimer);
   _refitTimer = setTimeout(refitAllArt, 120);
 });
+// wos86: the art fits at render time using whatever fonts are loaded then. When
+// the web fonts (Roboto / Noto Sans / Noto Color Emoji) finish loading, glyph
+// widths change — re-fit so the rigid block re-scales to the real metrics
+// instead of staying sized for the fallback font (avoids a slightly-off scale
+// on first paint / cold cache).
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => { try { refitAllArt(); } catch {} });
+}
 
 /* ============ 06  Filtering + search ============ */
 els.search.addEventListener('input', () => {
@@ -1426,7 +1434,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos86';
+const APP_VERSION = 'wos87';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
