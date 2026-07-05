@@ -3363,10 +3363,14 @@ nav.controls {
   border-image-width: 42px 60px 48px 60px !important;
   border-image-outset: 22px 4px 30px 4px !important;   /* snow up, icicles down */
   border-image-repeat: stretch stretch !important;
-  box-shadow:
-    0 0 26px rgba(96,206,255,0.40),      /* cyan glow halo */
-    0 0 54px rgba(60,160,230,0.26),
-    0 12px 32px rgba(0,0,0,0.45) !important;
+  /* wos70: no box-shadow — it was rectangular (followed the .controls box)
+     and its sharp corners showed behind the organic ice edges. The ice
+     image carries its own glow; a soft organic glow is added via
+     filter: drop-shadow, which follows the ice's actual alpha silhouette
+     instead of the box. */
+  box-shadow: none !important;
+  filter: drop-shadow(0 6px 12px rgba(0, 20, 45, 0.45))
+          drop-shadow(0 0 16px rgba(96, 206, 255, 0.28)) !important;
   padding: 6px 26px 4px !important;      /* content sits in the ice body */
 }
 /* This frame has its own snow — retire the separate snow cap. */
