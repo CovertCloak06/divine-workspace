@@ -3339,57 +3339,39 @@ html body {
 /* End wos48 redesign */
 
 /* ============================================================================
- * wos64 — .controls as a slab of glacier ice / cut crystal
- * (css-wizard design). Layers behind .controls-inner (tabs + search paint
- * their own opaque surfaces on top). Snow cap (.controls::before, z-index 11)
- * and base .controls rule (position/padding) are untouched.
+ * wos64 — .controls as a sheet of cracked frosted GLASS.
+ * Translucent + backdrop-blur so the winter background photo diffuses
+ * through it (real frosted-glass transparency), with visible ice/glass
+ * cracks across the surface. The runtime tweaks override that used to
+ * paint .controls with a flat !important gradient is disabled (its
+ * searchBarColor default is now null), so this renders cleanly. Uses
+ * nav.controls (higher specificity) so nothing incidental overrides it.
+ * Tabs + search paint their own opaque surfaces on top and stay readable.
  * ========================================================================== */
-.controls {
-  background-color: var(--fl-bg-panel);
+nav.controls {
+  /* Low-alpha tint — the container is mostly see-through; the frost comes
+     from backdrop-filter blurring the winter photo behind it. */
+  background-color: rgba(11, 26, 46, 0.30) !important;
   background-image:
-    linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.10) 46%, rgba(255,255,255,0.03) 50%, transparent 56%),
-    linear-gradient(72deg, transparent 66%, rgba(184,236,255,0.08) 70%, transparent 76%),
-    linear-gradient(124deg, transparent 0%, transparent 34%, rgba(184,236,255,0.10) 34%, rgba(184,236,255,0.10) 58%, transparent 58%),
-    linear-gradient(52deg, transparent 0%, transparent 52%, rgba(3,9,18,0.30) 52%, rgba(3,9,18,0.30) 80%, transparent 80%),
-    conic-gradient(from 205deg at 88% -10%, rgba(184,236,255,0.45) 0deg 14deg, transparent 14deg 360deg),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='200'%3E%3Cg fill='none' stroke='%23bfe8ff' stroke-width='1' opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M12,158 L64,120 L54,66 L108,44'/%3E%3Cpath d='M108,44 L150,74 L206,36'/%3E%3Cpath d='M54,66 L18,16'/%3E%3Cpath d='M150,74 L166,132 L228,150'/%3E%3Cpath d='M206,36 L252,58 L296,30'/%3E%3Cpath d='M228,150 L280,176'/%3E%3C/g%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='fl-grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fl-grain)' opacity='0.06'/%3E%3C/svg%3E"),
-    linear-gradient(170deg, rgba(120,190,230,0.30) 0%, rgba(31,58,92,0.85) 28%, rgba(13,31,54,0.92) 60%, rgba(7,15,26,0.95) 100%);
-  background-repeat:     no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat, no-repeat;
-  background-size:       auto, auto, auto, auto, auto, 320px 200px, 180px 180px, auto;
-  background-position:   0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
-  background-blend-mode: screen, screen, soft-light, multiply, screen, soft-light, overlay, normal;
-  backdrop-filter: blur(18px) saturate(150%) brightness(1.04);
-  -webkit-backdrop-filter: blur(18px) saturate(150%) brightness(1.04);
-  border-bottom: 1.5px solid var(--fl-ice-bright);
+    /* soft diagonal glass glare */
+    linear-gradient(122deg, transparent 32%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.02) 52%, transparent 62%),
+    /* primary ice/glass cracks — branching fracture network */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='230'%3E%3Cg fill='none' stroke='%23dff2ff' stroke-width='1.1' opacity='0.55' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10,74 L96,92 L150,58 L232,104 L300,72 L430,110'/%3E%3Cpath d='M96,92 L118,164 L74,228'/%3E%3Cpath d='M150,58 L168,4'/%3E%3Cpath d='M232,104 L300,150 L286,224'/%3E%3Cpath d='M232,104 L214,26'/%3E%3Cpath d='M300,72 L356,20'/%3E%3Cpath d='M118,164 L196,150 L246,182'/%3E%3C/g%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M96,92 L60,60 L20,70'/%3E%3Cpath d='M300,150 L340,140 L360,168'/%3E%3Cpath d='M168,4 L150,58 L110,30'/%3E%3Cpath d='M214,26 L232,104 L268,60'/%3E%3C/g%3E%3C/svg%3E"),
+    /* faint frost grain so the glass isn't perfectly smooth */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='flg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23flg)' opacity='0.05'/%3E%3C/svg%3E"),
+    /* very light cool top sheen → clear deeper down */
+    linear-gradient(180deg, rgba(150,210,240,0.16) 0%, rgba(11,26,46,0.05) 45%, rgba(7,15,26,0.10) 100%) !important;
+  background-repeat:     no-repeat, repeat, repeat, no-repeat !important;
+  background-position:   0 0, center, 0 0, 0 0 !important;
+  background-size:       200% 100%, 420px 230px, 200px 200px, auto !important;
+  background-blend-mode: screen, screen, overlay, normal !important;
+  backdrop-filter: blur(12px) saturate(135%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) brightness(1.06) !important;
+  border-bottom: 1px solid rgba(184, 236, 255, 0.45) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.45),
-    inset 0 18px 30px -20px rgba(138,203,240,0.35),
-    inset 1px 0 0 rgba(255,255,255,0.06),
-    inset -1px 0 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.30),
-    0 1px 0 var(--fl-ice-bright),
-    0 2px 0 rgba(184,236,255,0.35),
-    0 10px 30px rgba(74,159,212,0.28),
-    0 6px 20px rgba(0,0,0,0.45);
+    inset 0 1px 0 rgba(255,255,255,0.40),           /* bright glass top edge */
+    inset 0 -1px 0 rgba(0,0,0,0.22),                /* thin bottom edge */
+    0 1px 0 rgba(184,236,255,0.40),                 /* crisp icy rim below */
+    0 8px 26px rgba(0,0,0,0.35) !important;         /* grounding shadow */
 }
-/* Crystal crest sheen in FRONT of tabs but pointer-events:none + screen-blend
-   (can only brighten, never reduce label contrast). Sits below the snow cap. */
-.controls::after {
-  content: '';
-  display: block;
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  clip-path: polygon(
-    0% 34%, 9% 16%, 19% 30%, 29% 8%, 40% 26%, 51% 5%,
-    63% 24%, 75% 9%, 87% 27%, 100% 13%, 100% 0%, 0% 0%
-  );
-  background: linear-gradient(200deg,
-    rgba(184,236,255,0.22) 0%,
-    rgba(138,203,240,0.10) 45%,
-    transparent 75%);
-  mix-blend-mode: screen;
-}
-/* End wos64 ice container */
+/* End wos64 glass container */
