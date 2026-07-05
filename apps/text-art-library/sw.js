@@ -3,7 +3,7 @@
  * the install prompt. Bumps the cache name on every release so old assets
  * are evicted cleanly.
  */
-const CACHE = 'frostline-v6-wos64';
+const CACHE = 'frostline-v7-wos65';
 /* SHELL urls are stored WITHOUT version query strings; cache lookups use
  * { ignoreSearch: true } so a request for /app.js?v=wos60 still matches
  * the cached /app.js. This avoids re-listing every URL on each version bump. */
@@ -17,6 +17,7 @@ const SHELL = [
   '/manifest.webmanifest',
   '/assets/bg-frostline.webp',
   '/assets/snow-cap.png',
+  '/assets/ice-block.png',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/assets/icon-180.png',

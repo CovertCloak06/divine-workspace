@@ -3339,39 +3339,41 @@ html body {
 /* End wos48 redesign */
 
 /* ============================================================================
- * wos64 — .controls as a sheet of cracked frosted GLASS.
- * Translucent + backdrop-blur so the winter background photo diffuses
- * through it (real frosted-glass transparency), with visible ice/glass
- * cracks across the surface. The runtime tweaks override that used to
- * paint .controls with a flat !important gradient is disabled (its
- * searchBarColor default is now null), so this renders cleanly. Uses
- * nav.controls (higher specificity) so nothing incidental overrides it.
- * Tabs + search paint their own opaque surfaces on top and stay readable.
+ * wos65 — .controls as a glowing block of glacier ice (per user reference).
+ * A baked ice-block texture (assets/ice-block.png: luminous blue body +
+ * glowing cyan crack network, rendered from an SVG turbulence + glow filter)
+ * fills an inset, rounded, floating panel with a strong cyan rim glow. The
+ * snow cap (.controls::before) still sits on top. Tabs + search paint their
+ * own opaque surfaces inside it and stay readable. The runtime searchBarColor
+ * override is disabled (default null) so this renders cleanly; nav.controls
+ * specificity + !important guard the rest. The inline border-style:none on
+ * the <nav> means the edge must be carried by box-shadow, not a border.
  * ========================================================================== */
 nav.controls {
-  /* Low-alpha tint — the container is mostly see-through; the frost comes
-     from backdrop-filter blurring the winter photo behind it. */
-  background-color: rgba(11, 26, 46, 0.30) !important;
-  background-image:
-    /* soft diagonal glass glare */
-    linear-gradient(122deg, transparent 32%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.02) 52%, transparent 62%),
-    /* a few sparse ice/glass cracks — large tile so it barely repeats */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='230'%3E%3Cg fill='none' stroke='%23dff2ff' stroke-width='1' opacity='0.28' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-20,96 L230,120 L470,74 L700,128 L990,98'/%3E%3Cpath d='M470,74 L512,168'/%3E%3Cpath d='M700,128 L742,52'/%3E%3C/g%3E%3C/svg%3E"),
-    /* faint frost grain so the glass isn't perfectly smooth */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='flg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23flg)' opacity='0.05'/%3E%3C/svg%3E"),
-    /* very light cool top sheen → clear deeper down */
-    linear-gradient(180deg, rgba(150,210,240,0.16) 0%, rgba(11,26,46,0.05) 45%, rgba(7,15,26,0.10) 100%) !important;
-  background-repeat:     no-repeat, repeat, repeat, no-repeat !important;
-  background-position:   0 0, center, 0 0, 0 0 !important;
-  background-size:       200% 100%, 420px 230px, 200px 200px, auto !important;
-  background-blend-mode: screen, screen, overlay, normal !important;
-  backdrop-filter: blur(12px) saturate(135%) brightness(1.06) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(135%) brightness(1.06) !important;
-  border-bottom: 1px solid rgba(184, 236, 255, 0.45) !important;
+  margin: 6px 18px 6px !important;             /* inset floating block */
+  border-radius: 22px !important;              /* rounded ice-chunk corners */
+  background:
+    url("assets/ice-block.png") center center / cover no-repeat,
+    linear-gradient(180deg, rgba(20,58,92,0.55) 0%, rgba(10,34,56,0.6) 100%) !important;
+  background-blend-mode: screen, normal !important;
+  border: none !important;                     /* inline border-style:none wins anyway */
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.40),           /* bright glass top edge */
-    inset 0 -1px 0 rgba(0,0,0,0.22),                /* thin bottom edge */
-    0 1px 0 rgba(184,236,255,0.40),                 /* crisp icy rim below */
-    0 8px 26px rgba(0,0,0,0.35) !important;         /* grounding shadow */
+    inset 0 2px 0 rgba(224,248,255,0.55),      /* bright top edge — light entering the ice */
+    inset 0 0 26px rgba(120,220,255,0.30),      /* inner cyan core glow */
+    inset 0 -10px 24px -10px rgba(0,20,40,0.5), /* dense base */
+    0 0 22px rgba(96,206,255,0.45),             /* outer cyan glow halo */
+    0 0 48px rgba(60,160,230,0.30),             /* wider ambient glow */
+    0 10px 30px rgba(0,0,0,0.45) !important;    /* grounding drop shadow */
+  backdrop-filter: saturate(130%) brightness(1.03) !important;
+  -webkit-backdrop-filter: saturate(130%) brightness(1.03) !important;
 }
-/* End wos64 glass container */
+/* Snow cap follows the rounded block: inset its ends slightly so mounds
+   don't overhang the rounded corners. */
+.controls::before {
+  left: 10px !important;
+  right: 10px !important;
+}
+@media (max-width: 480px) {
+  nav.controls { margin: 4px 8px 6px !important; border-radius: 18px !important; }
+}
+/* End wos65 ice-block container */
