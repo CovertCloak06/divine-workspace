@@ -1278,7 +1278,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos81';
+const APP_VERSION = 'wos82';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1821,6 +1821,11 @@ function toggleDraw(on) {
     ensureBlankCanvas();
     renderSketch(true);
     updateBrushChip();
+    // wos82 typeable canvas: seat the text cursor at the top-left and hand focus
+    // to the hidden keyboard proxy so you can type on the canvas immediately —
+    // no separate "Type" mode to switch into.
+    placeCursorAt(0, 0);
+    focusTypeProxy();
   } else if (els.editArtInput) {
     // entering type-input: hand focus to the text box for keyboard entry, with
     // the caret at the very start (row 0, col 0) and scrolled to the top. The
@@ -2153,6 +2158,10 @@ function renderSketch(force) {
   ensureOverlay();
   // wos36: the overlay was just rebuilt empty — restore selection highlight.
   if (selectMode && selection.size) renderSelectionHighlight();
+  // wos82: the view was wiped, taking the cursor box with it — re-place it.
+  // Guard on `.drawing` (set the moment the canvas is active) rather than
+  // `.open`, since openAdd renders once more before it adds the `.open` class.
+  if (els.edit && els.edit.classList.contains('drawing')) positionCursor();
 }
 
 function replaceCharAt(y, x) {
@@ -2661,13 +2670,12 @@ function gestureUp(cx, cy) {
     return;
   }
   if (gesturePending) {
-    // wos27: a tap only paints in Drawing mode with a brush/eraser active.
-    // In Canvas mode a tap does nothing (no unwanted characters placed).
-    if (canPaint()) {
-      startStroke();
-      replaceCharAt(gesturePending.y, gesturePending.x);
-      endStroke();
-    }
+    // wos82 typeable canvas: a quick tap places the TEXT CURSOR at the cell and
+    // focuses the keyboard proxy so you can type there. Drawing is done by
+    // dragging a stroke or picking a palette char — a tap never paints, so it
+    // can't drop an unwanted character. (Long-press grab-move still works.)
+    placeCursorAt(gesturePending.y, gesturePending.x);
+    focusTypeProxy();
     gesturePending = null;
     return;
   }
@@ -2746,6 +2754,183 @@ els.sketchView.addEventListener('touchcancel', () => {
     endGrab();
   }
   gesturePending = null; paintActive = false;
+});
+
+/* ============================================================================
+ * wos82 — TYPEABLE CANVAS. The draw grid is now directly typeable: a text
+ * cursor sits on a cell, the keyboard writes into cells (overwrite + advance),
+ * and tapping a cell moves the cursor there. Drag-to-paint, palette, grab-move
+ * and Select all still work on the same surface — so Type and Draw are ONE mode
+ * with no toggle. The existing #edit-art-input textarea stays in the DOM as the
+ * KEYBOARD PROXY (a <div> grid can't summon a mobile soft keyboard); we
+ * intercept its input events so its value is only ever changed through our own
+ * positional writes — the textarea itself is an invisible, focusable overlay.
+ * ========================================================================== */
+let cursorCell = { y: 0, x: 0 };
+let cursorEl = null;
+
+function focusTypeProxy() {
+  // Immediate focus (called from within a tap gesture) so the mobile soft
+  // keyboard reliably appears; preventScroll avoids the page jumping.
+  try { els.editArtInput.focus({ preventScroll: true }); } catch {}
+}
+
+function clampCursor(y, x) {
+  return {
+    y: Math.max(0, Math.min(y, FREEFORM_MAX_ROWS - 1)),
+    x: Math.max(0, Math.min(x, FREEFORM_MAX_COLS - 1)),
+  };
+}
+
+// Position the blinking cursor box over the current cell (same geometry the
+// overlay boxes use). Re-run after any render since renderSketch wipes the view.
+function positionCursor() {
+  const view = els.sketchView;
+  if (!cursorEl) {
+    cursorEl = document.createElement('div');
+    cursorEl.className = 'sketch-cursor';
+    cursorEl.setAttribute('aria-hidden', 'true');
+  }
+  if (!view) return;
+  if (cursorEl.parentNode !== view) view.appendChild(cursorEl);
+  const ry = Math.max(0, Math.min(cursorCell.y, gridH - 1));
+  const lineEl = view.children[ry];
+  if (!lineEl || !lineEl.classList || !lineEl.classList.contains('sketch-line')) {
+    cursorEl.style.display = 'none';
+    return;
+  }
+  const cells = measureLineCells(lineEl);
+  if (!cells.length) { cursorEl.style.display = 'none'; return; }
+  const viewRect = view.getBoundingClientRect();
+  const lineRect = lineEl.getBoundingClientRect();
+  const baseLeft = (lineRect.left - viewRect.left) + view.scrollLeft;
+  const baseTop = (lineRect.top - viewRect.top) + view.scrollTop;
+  const x = cursorCell.x;
+  let cellLeft, cellW;
+  if (x < cells.length) {
+    cellLeft = cells[x].left;
+    cellW = Math.max(3, cells[x].right - cells[x].left);
+  } else {
+    const last = cells[cells.length - 1];
+    const step = (last.right - last.left) || 10;
+    cellLeft = last.right + step * (x - cells.length);
+    cellW = Math.max(3, step);
+  }
+  cursorEl.style.display = 'block';
+  cursorEl.style.left = (baseLeft + cellLeft) + 'px';
+  cursorEl.style.top = baseTop + 'px';
+  cursorEl.style.width = cellW + 'px';
+  cursorEl.style.height = lineRect.height + 'px';
+}
+
+function scrollCursorIntoView() {
+  const view = els.sketchView;
+  if (!cursorEl || !view || cursorEl.style.display === 'none') return;
+  const cTop = cursorEl.offsetTop, cBot = cTop + cursorEl.offsetHeight;
+  if (cTop < view.scrollTop) view.scrollTop = cTop;
+  else if (cBot > view.scrollTop + view.clientHeight) view.scrollTop = cBot - view.clientHeight;
+  const cLeft = cursorEl.offsetLeft, cRight = cLeft + cursorEl.offsetWidth;
+  if (cLeft < view.scrollLeft) view.scrollLeft = cLeft;
+  else if (cRight > view.scrollLeft + view.clientWidth) view.scrollLeft = cRight - view.clientWidth;
+}
+
+function placeCursorAt(y, x) {
+  cursorCell = clampCursor(y, x);
+  positionCursor();
+}
+function moveCursor(dy, dx) {
+  cursorCell = clampCursor(cursorCell.y + dy, cursorCell.x + dx);
+  positionCursor();
+  scrollCursorIntoView();
+}
+
+// Type a string into the grid at the cursor: each grapheme OVERWRITES its cell
+// and advances; '\n' drops to column 0 of the next row. One history entry per
+// call = one undo per keystroke / paste.
+function typeAtCursor(str) {
+  if (!str) return;
+  const before = els.editArtInput.value;
+  for (const g of graphemes(str)) {
+    if (g === '\n' || g === '\r') { cursorCell = clampCursor(cursorCell.y + 1, 0); continue; }
+    writeCell(cursorCell.y, cursorCell.x, g);
+    cursorCell = clampCursor(cursorCell.y, cursorCell.x + 1);
+  }
+  renderSketch(true);        // grow the grid for any new rows/cols, then re-place
+  positionCursor();
+  scrollCursorIntoView();
+  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
+  runAudit();
+}
+
+// Backspace: clear the cell to the LEFT (overtype-erase) and move there; at the
+// row start, hop to the end of the previous row (no line-joining on a grid).
+function backspaceAtCursor() {
+  const before = els.editArtInput.value;
+  if (cursorCell.x > 0) {
+    cursorCell = clampCursor(cursorCell.y, cursorCell.x - 1);
+    writeCell(cursorCell.y, cursorCell.x, ' ');
+  } else if (cursorCell.y > 0) {
+    const lines = els.editArtInput.value.split('\n');
+    const py = cursorCell.y - 1;
+    cursorCell = clampCursor(py, graphemes(lines[py] || '').length);
+  }
+  renderSketch(true);
+  positionCursor();
+  scrollCursorIntoView();
+  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
+  runAudit();
+}
+// Delete: clear the current cell in place (no advance).
+function deleteAtCursor() {
+  const before = els.editArtInput.value;
+  writeCell(cursorCell.y, cursorCell.x, ' ');
+  renderSketch(true);
+  positionCursor();
+  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
+  runAudit();
+}
+
+// ---- Keyboard proxy: route the hidden textarea's input onto the grid cursor.
+els.editArtInput.addEventListener('keydown', (e) => {
+  if (!els.edit.classList.contains('open')) return;
+  switch (e.key) {
+    case 'ArrowLeft':  moveCursor(0, -1); e.preventDefault(); break;
+    case 'ArrowRight': moveCursor(0, 1);  e.preventDefault(); break;
+    case 'ArrowUp':    moveCursor(-1, 0); e.preventDefault(); break;
+    case 'ArrowDown':  moveCursor(1, 0);  e.preventDefault(); break;
+    case 'Home': placeCursorAt(cursorCell.y, 0); e.preventDefault(); break;
+    case 'End': {
+      const lines = els.editArtInput.value.split('\n');
+      placeCursorAt(cursorCell.y, graphemes(lines[cursorCell.y] || '').length);
+      e.preventDefault();
+      break;
+    }
+    // printable keys, Enter, Backspace and Delete are handled via beforeinput
+    // below so IME / mobile / emoji input all flow through the same path.
+  }
+});
+els.editArtInput.addEventListener('beforeinput', (e) => {
+  if (!els.edit.classList.contains('open')) return;
+  const t = e.inputType || '';
+  if (t === 'insertText' || t === 'insertReplacementText') {
+    if (e.data != null) typeAtCursor(e.data);
+  } else if (t === 'insertParagraph' || t === 'insertLineBreak') {
+    typeAtCursor('\n');
+  } else if (t === 'deleteContentBackward') {
+    backspaceAtCursor();
+  } else if (t === 'deleteContentForward') {
+    deleteAtCursor();
+  }
+  // Always block the native edit — the textarea value is our model and must
+  // only change through the positional writes above (keeps the grid coherent).
+  e.preventDefault();
+});
+// Paste gives the full (possibly multi-line) text in one shot.
+els.editArtInput.addEventListener('paste', (e) => {
+  if (!els.edit.classList.contains('open')) return;
+  const cb = e.clipboardData || window.clipboardData;
+  const txt = cb && cb.getData ? cb.getData('text') : '';
+  if (txt) { typeAtCursor(txt); e.preventDefault(); }
 });
 
 // Consolidated "Clear": reset to a FRESH blank 27×12 grid so there's always a
@@ -2931,10 +3116,12 @@ function isSketchMode() {
 }
 
 function handlePaletteSelection(ch) {
-  setActiveBrush(ch);
-  // In Sketch mode, just set the brush — user places the char by tapping the canvas.
-  // In Text mode, also insert at cursor so it acts like a keyboard shortcut.
-  if (!isSketchMode()) insertAtCursor(ch);
+  setActiveBrush(ch);   // arm it so a subsequent drag paints the same char
+  // wos82 typeable canvas: tapping a palette char also TYPES it at the grid
+  // cursor and advances — so you can build art by tapping chars (positioned by
+  // tapping cells) exactly like typing. Then keep the keyboard proxy focused.
+  typeAtCursor(ch);
+  focusTypeProxy();
 }
 
 // A leading combining mark (e.g. a bare mouth/nose piece) has nothing to attach

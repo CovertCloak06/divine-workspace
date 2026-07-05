@@ -3700,3 +3700,55 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
   color: #062615;
 }
 /* End wos80 */
+
+/* ============================================================================
+ * wos82 — typeable canvas. The grid is the single editing surface; the
+ * #edit-art-input textarea becomes an invisible, focusable KEYBOARD PROXY
+ * (a <div> can't summon a mobile soft keyboard). A blinking cursor box marks
+ * where typed characters land. The old Draw/Type toggle is retired.
+ * ========================================================================== */
+.sketch-view { position: relative; }   /* anchor the absolutely-placed cursor */
+
+/* Textarea proxy: present + focusable (so the soft keyboard appears) but not
+   visually competing with the grid, and click-through so taps hit the canvas.
+   Overrides the earlier `#edit.drawing #edit-art-input { display:none }`. */
+#edit.drawing #edit-art-input {
+  display: block;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0.01;
+  color: transparent;
+  background: transparent;
+  caret-color: transparent;
+  pointer-events: none;
+  resize: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.sketch-cursor {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid #5fbdf0;
+  border-radius: 2px;
+  background: rgba(96, 206, 255, 0.14);
+  box-shadow: 0 0 7px rgba(96, 206, 255, 0.7);
+  z-index: 6;
+  animation: sketch-cursor-blink 1.05s steps(2, start) infinite;
+}
+@keyframes sketch-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.28; }
+}
+
+/* Retire the Draw/Type toggle — typing and drawing now share one surface. */
+.mode-toggle-row { display: none !important; }
+/* End wos82 */
