@@ -3436,3 +3436,18 @@ header.header {
 .grid .card::before { display: none !important; }
 .grid .card:hover { transform: translateY(-2px) !important; }
 /* End wos72 ice cards */
+
+/* wos75 — ice "Frostline" wordmark image replaces the text title. */
+.title { line-height: 0 !important; margin: 0 !important; }
+.title-img {
+  display: block;
+  height: clamp(46px, 8.5vw, 88px);
+  width: auto;
+  max-width: min(90vw, 620px);
+  object-fit: contain;
+  filter: drop-shadow(0 3px 10px rgba(0, 20, 45, 0.55));
+}
+/* the snowflake emblem (also the hidden editor unlock) stays but sits a
+   touch smaller next to the wordmark */
+.title-row { gap: 6px; }
+/* End wos75 */
