@@ -635,6 +635,20 @@ function resolveLibrary(data) {
   // (by then consistent) server state, so this never permanently hides anything.
   const tomb = new Set(deletedIds);
   if (state.deletedIds) for (const id of state.deletedIds) tomb.add(id);
+  // Also fold in tombstones recorded in the LOCAL CACHE. A delete that didn't
+  // reach the server (offline, a transient failure, or Blobs list() lag) writes
+  // its tombstone to the cache but not the server. On the NEXT page reload the
+  // server returns a fresh `library` that lacks the tombstone, and (before this)
+  // the cache tombstones were only read in the offline branch — so the deleted
+  // piece came back ("I deleted it but it reappeared"). Unioning them here keeps
+  // the delete sticky across reloads; needsPersist re-sends it so the tombstone
+  // eventually reaches the server and the piece is deleted everywhere.
+  const cached = readCache();
+  if (cached && Array.isArray(cached.deletedIds)) {
+    for (const id of cached.deletedIds) {
+      if (!tomb.has(id)) { tomb.add(id); needsPersist = true; }
+    }
+  }
   state.deletedIds = tomb;
 
   // The piece-list may also lag our delete — drop anything tombstoned so a stale
@@ -1387,7 +1401,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos84';
+const APP_VERSION = 'wos85';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2332,6 +2346,11 @@ function endStroke() {
   paintActive = false;
   if (strokeStartSnapshot !== null && strokeStartSnapshot !== els.editArtInput.value) {
     pushEditHistory();
+    // wos84: paints/tap-placements set editArtInput.value programmatically (the
+    // native 'input' event is suppressed), so the input-driven autosave never
+    // fires. Schedule a draft write here so click-placed / dragged art survives
+    // an in-modal Close/Cancel (which don't trigger pagehide/visibilitychange).
+    debouncedAutosave();
   }
   strokeStartSnapshot = null;
 }
@@ -2759,6 +2778,7 @@ function gestureUp(cx, cy) {
       for (const c of shape.cells) writeCell(c.y, c.x, c.ch);
     }
     pushEditHistory();
+    debouncedAutosave();   // wos84: persist grab-moved art to the draft too
     endGrab();
     if (selectMode) { renderSelectionHighlight(); updateSelectChip(); }
     return;
