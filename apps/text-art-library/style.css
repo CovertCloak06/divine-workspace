@@ -3461,3 +3461,30 @@ header.header {
 }
 .title-row { gap: 10px; }
 /* End wos76 */
+
+/* wos77 — strip the container around the share link; just the icon + text
+   so it blends into the header like the rest of the frozen scene. */
+.share-bar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 1px 4px rgba(0, 12, 28, 0.75);
+}
+.share-bar:hover { background: transparent !important; border: none !important; }
+.share-bar:hover .cta { text-decoration: underline; }
+/* End wos77 */
+
+/* wos77b — center the wordmark on the page (not the snowflake+wordmark group)
+   so the tagline + link align centered under "Frostline". 3-col grid: the
+   snowflake sits in a left column, the title in the centre column, and an
+   empty equal-width right column balances it. */
+.title-row {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.title-row .snowflake-btn { justify-self: end !important; }
+/* End wos77b */
