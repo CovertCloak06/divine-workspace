@@ -19,7 +19,50 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos88">
+  <link rel="stylesheet" href="style.css?v=wos89">
+  <script>
+    /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
+       old build (esp. on iOS / an installed app resumed from memory), so a new
+       deploy "doesn't look different". This runs early, independent of the SW
+       lifecycle: it reads the build actually running (from the cached page's
+       ?v=) and compares it to version.json fetched fresh from the network. If
+       they differ, it drops the service worker + all caches and reloads ONCE
+       (sessionStorage-guarded so it can never loop). After this ships, every
+       future update applies itself with no manual cache-clearing. */
+    (function () {
+      try {
+        var link = document.querySelector('link[rel="stylesheet"][href*="style.css"]');
+        var m = link && link.href.match(/[?&]v=(wos\d+)/);
+        var running = m ? m[1] : null;
+        if (!running) return;
+        fetch('version.json?_=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (v) {
+            if (!v || !v.version || v.version === running) return;
+            if (sessionStorage.getItem('fl:heal') === v.version) return; // already tried this build
+            sessionStorage.setItem('fl:heal', v.version);
+            var reload = function () { location.reload(); };
+            var p = Promise.resolve();
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+              p = p.then(function () {
+                return navigator.serviceWorker.getRegistrations().then(function (rs) {
+                  return Promise.all(rs.map(function (x) { return x.unregister(); }));
+                });
+              });
+            }
+            if (window.caches && caches.keys) {
+              p = p.then(function () {
+                return caches.keys().then(function (ks) {
+                  return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+                });
+              });
+            }
+            p.then(reload, reload);
+          })
+          .catch(function () { /* offline / no version.json — keep running */ });
+      } catch (e) { /* never let the self-heal break the page */ }
+    })();
+  </script>
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -1524,7 +1567,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos88"></script>
+  <script src="app.js?v=wos89"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
