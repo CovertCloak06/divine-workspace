@@ -3355,8 +3355,8 @@ nav.controls {
   background-image:
     /* soft diagonal glass glare */
     linear-gradient(122deg, transparent 32%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.02) 52%, transparent 62%),
-    /* primary ice/glass cracks — branching fracture network */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='230'%3E%3Cg fill='none' stroke='%23dff2ff' stroke-width='1.1' opacity='0.55' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10,74 L96,92 L150,58 L232,104 L300,72 L430,110'/%3E%3Cpath d='M96,92 L118,164 L74,228'/%3E%3Cpath d='M150,58 L168,4'/%3E%3Cpath d='M232,104 L300,150 L286,224'/%3E%3Cpath d='M232,104 L214,26'/%3E%3Cpath d='M300,72 L356,20'/%3E%3Cpath d='M118,164 L196,150 L246,182'/%3E%3C/g%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.4' stroke-linecap='round'%3E%3Cpath d='M96,92 L60,60 L20,70'/%3E%3Cpath d='M300,150 L340,140 L360,168'/%3E%3Cpath d='M168,4 L150,58 L110,30'/%3E%3Cpath d='M214,26 L232,104 L268,60'/%3E%3C/g%3E%3C/svg%3E"),
+    /* a few sparse ice/glass cracks — large tile so it barely repeats */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='230'%3E%3Cg fill='none' stroke='%23dff2ff' stroke-width='1' opacity='0.28' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-20,96 L230,120 L470,74 L700,128 L990,98'/%3E%3Cpath d='M470,74 L512,168'/%3E%3Cpath d='M700,128 L742,52'/%3E%3C/g%3E%3C/svg%3E"),
     /* faint frost grain so the glass isn't perfectly smooth */
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='flg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23flg)' opacity='0.05'/%3E%3C/svg%3E"),
     /* very light cool top sheen → clear deeper down */
