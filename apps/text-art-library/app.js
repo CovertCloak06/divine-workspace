@@ -1266,7 +1266,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos65';
+const APP_VERSION = 'wos66';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
