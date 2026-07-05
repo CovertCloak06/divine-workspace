@@ -3428,7 +3428,9 @@ header.header {
   border-radius: 0 !important;
   box-shadow: none !important;
   overflow: visible !important;
-  padding: 8px 12px 6px !important;
+  /* Extra padding on top of the border so title/art/footer clear the frame's
+     inner bevel and sit inside the flat teal panel (not on the ice lip). */
+  padding: 18px 26px 26px !important;
   filter: drop-shadow(0 5px 12px rgba(0, 20, 45, 0.42));
 }
 .grid .card::before { display: none !important; }
