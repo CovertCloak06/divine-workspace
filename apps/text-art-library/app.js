@@ -1187,7 +1187,11 @@ function renderCard(p) {
   // font-size and renders at its natural icon size).
   const wos = document.createElement('span');
   wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
-  wos.textContent = p.wosVerified ? '✓ WoS' : '? WoS';
+  // wos88: force TEXT presentation of the checkmark (U+FE0E). Since wos87 loads
+  // Noto Color Emoji, a bare ✓ was falling back to a COLOR-emoji glyph — taller
+  // than text, which made verified cards' footers ~11px taller and broke the
+  // uniform card height. The variation selector keeps it a flat text ✓.
+  wos.textContent = p.wosVerified ? '✓︎ WoS' : '? WoS';
   wos.addEventListener('click', (e) => {
     if (!state.editor) return;
     e.stopPropagation();
@@ -1434,7 +1438,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos87';
+const APP_VERSION = 'wos88';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1667,7 +1671,7 @@ async function copyArt(text, btn, isLightbox, id) {
   }
   const original = isLightbox ? '📋 Copy to Clipboard' : '📋 Copy';
   btn.classList.add('copied');
-  btn.textContent = '✓ Copied!';
+  btn.textContent = '✓︎ Copied!';
   setTimeout(() => {
     btn.classList.remove('copied');
     btn.textContent = original;
@@ -1681,7 +1685,7 @@ els.shareBar.addEventListener('click', async () => {
   els.shareBar.classList.add('copied');
   const cta = els.shareBar.querySelector('.cta');
   const prev = cta.textContent;
-  cta.textContent = '✓ Copied!';
+  cta.textContent = '✓︎ Copied!';
   setTimeout(() => { cta.textContent = prev; els.shareBar.classList.remove('copied'); }, 1400);
 });
 
