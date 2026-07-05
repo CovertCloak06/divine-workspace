@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos79">
+  <link rel="stylesheet" href="style.css?v=wos80">
   <style id="hamburger-themes-ui">
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
@@ -990,6 +990,57 @@
   })();
   </script>
 
+  <!-- ===== First-visit content notice / age gate =====
+       Community-submitted art may include mature themes; this is the liability
+       notice + age acknowledgement. Self-contained (no app.js dependency) so it
+       gates before the gallery paints. The "hide mature-flagged content" choice
+       defaults ON and drives Safe Mode (see app.js filtered()). -->
+  <div id="content-gate" class="content-gate" role="dialog" aria-modal="true" aria-labelledby="cg-title" hidden>
+    <div class="content-gate-card">
+      <div class="content-gate-emblem" aria-hidden="true">❄</div>
+      <h2 id="cg-title">Content Notice</h2>
+      <p>Frostline is a community library of text art for <strong>Whiteout Survival</strong> chat. Pieces are submitted by users and may occasionally include mature or suggestive themes.</p>
+      <p class="content-gate-fine">Frostline is a fan-made tool and is <strong>not affiliated with, endorsed by, or connected to</strong> Whiteout Survival or its publisher. All trademarks belong to their respective owners.</p>
+      <label class="content-gate-safe">
+        <input type="checkbox" id="cg-safe" checked>
+        <span>Hide content flagged as mature <em>(recommended)</em></span>
+      </label>
+      <p class="content-gate-age">By entering, you confirm you are <strong>18 or older</strong>, or that you have a parent or guardian's permission to view community-submitted content.</p>
+      <div class="content-gate-actions">
+        <button type="button" id="cg-leave" class="content-gate-btn ghost">Leave</button>
+        <button type="button" id="cg-enter" class="content-gate-btn primary">Enter Frostline</button>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var ACK = 'frostline:ageok', SAFE = 'frostline:safe';
+    var gate = document.getElementById('content-gate');
+    if (!gate) return;
+    var acked; try { acked = localStorage.getItem(ACK); } catch (e) { acked = '1'; }
+    // Apply the persisted Safe Mode choice to <html> before the gallery renders
+    // (default ON until the visitor explicitly turns it off). app.js reads this.
+    try { if (localStorage.getItem(SAFE) !== '0') document.documentElement.classList.add('safe-mode'); } catch (e) {}
+    if (acked) { gate.hidden = true; return; }
+    document.documentElement.classList.add('gate-open');   // locks page scroll
+    gate.hidden = false;
+    var safeBox = document.getElementById('cg-safe');
+    document.getElementById('cg-enter').addEventListener('click', function () {
+      var safe = !!(safeBox && safeBox.checked);
+      try { localStorage.setItem(ACK, '1'); localStorage.setItem(SAFE, safe ? '1' : '0'); } catch (e) {}
+      document.documentElement.classList.toggle('safe-mode', safe);
+      document.documentElement.classList.remove('gate-open');
+      gate.hidden = true;
+      // If app.js already booted, tell it to re-render + refresh the drawer toggle.
+      try { window.dispatchEvent(new CustomEvent('frostline:safemode', { detail: { on: safe } })); } catch (e) {}
+    });
+    document.getElementById('cg-leave').addEventListener('click', function () {
+      // Send non-consenting / under-age visitors away from the content.
+      window.location.href = 'https://www.google.com/';
+    });
+  })();
+  </script>
+
   <!-- Menu drawer (hamburger menu) -->
   <div class="drawer-scrim" id="drawer-scrim" hidden></div>
   <aside class="themes-drawer" id="themes-drawer" hidden aria-hidden="true" aria-label="Menu">
@@ -1014,6 +1065,12 @@
            the drawer (above Themes) as a flat, prominent button. NOT a tag in
            the tag strip — drafts are a separate section, not a topical filter. -->
       <button type="button" id="drawer-drafts-btn" class="drawer-drafts-cta" hidden>📝 Drafts</button>
+      <!-- Public Safe Mode toggle — mirrors the content-gate choice; lets an
+           adult turn mature-flagged content back on (or off) after entering. -->
+      <button type="button" id="drawer-safe-btn" class="drawer-safe-cta" role="switch" aria-checked="true">
+        <span class="drawer-safe-label">🛡️ Safe Mode</span>
+        <span class="drawer-safe-state" id="drawer-safe-state">On</span>
+      </button>
       <section class="drawer-section editor-only" data-section="palette">
         <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-palette">
           <span class="drawer-section-title">Character Palette</span>
@@ -1452,7 +1509,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos79"></script>
+  <script src="app.js?v=wos80"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

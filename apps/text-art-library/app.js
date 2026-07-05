@@ -994,6 +994,15 @@ function filtered() {
       return hay.includes(q);
     });
   }
+  // Safe Mode — public content protection (the content-warning gate defaults it
+  // ON). Hides pieces flagged as mature so minors don't see reported / NSFW art.
+  // Editors always see everything, and the admin "__flagged" review view is
+  // exempt so moderators can still find and clear flags.
+  if (document.documentElement.classList.contains('safe-mode')
+      && !state.editor && state.activeTag !== '__flagged') {
+    const flags = state.flags || {};
+    list = list.filter((p) => !(p.id in flags));
+  }
   return list;
 }
 
@@ -1266,7 +1275,7 @@ if (drawerSectionsRoot) {
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos79';
+const APP_VERSION = 'wos80';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1810,8 +1819,19 @@ function toggleDraw(on) {
     renderSketch(true);
     updateBrushChip();
   } else if (els.editArtInput) {
-    // entering type-input: hand focus to the text box for keyboard entry
-    setTimeout(() => { try { els.editArtInput.focus(); } catch {} }, 0);
+    // entering type-input: hand focus to the text box for keyboard entry, with
+    // the caret at the very start (row 0, col 0) and scrolled to the top. The
+    // blank canvas is a full 12-row × 30-NBSP block, so the textarea's default
+    // end-caret would otherwise land in the bottom-right cell and scroll the
+    // view to the bottom — the "cursor starts at the bottom" bug.
+    setTimeout(() => {
+      try {
+        els.editArtInput.focus();
+        els.editArtInput.setSelectionRange(0, 0);
+        els.editArtInput.scrollTop = 0;
+        els.editArtInput.scrollLeft = 0;
+      } catch {}
+    }, 0);
   }
 }
 
@@ -3689,6 +3709,35 @@ loadCustomPalette();
 siteTextCaptureDefaults();
 setupSiteTextEditor();
 loadCustomSiteText();
+
+/* ===== Safe Mode (public content protection) =====
+   The first-visit content gate (inline in index.html) sets the `safe-mode`
+   class on <html> and persists the choice under 'frostline:safe'. This wires
+   the drawer toggle so an adult can flip it afterward, keeps the switch UI in
+   sync, and re-renders when it changes (the gate fires 'frostline:safemode'
+   in case the app had already booted). Filtering lives in filtered(). */
+(function setupSafeMode() {
+  const SAFE_KEY = 'frostline:safe';
+  const btn = document.getElementById('drawer-safe-btn');
+  const stateEl = document.getElementById('drawer-safe-state');
+  function isOn() { return document.documentElement.classList.contains('safe-mode'); }
+  function syncUi() {
+    const on = isOn();
+    if (btn) { btn.setAttribute('aria-checked', on ? 'true' : 'false'); btn.classList.toggle('is-on', on); }
+    if (stateEl) stateEl.textContent = on ? 'On' : 'Off';
+  }
+  function setSafe(on, persist) {
+    document.documentElement.classList.toggle('safe-mode', !!on);
+    if (persist) { try { localStorage.setItem(SAFE_KEY, on ? '1' : '0'); } catch {} }
+    syncUi();
+    try { render(); } catch {}
+  }
+  if (btn) btn.addEventListener('click', () => setSafe(!isOn(), true));
+  // Gate resolves after boot on a fresh visit — re-sync + re-render then.
+  window.addEventListener('frostline:safemode', (e) => setSafe(!!(e.detail && e.detail.on), false));
+  syncUi();
+})();
+
 boot().catch((err) => {
   console.error('boot failed', err);
   renderEmpty('Failed to load. Refresh to try again.');
