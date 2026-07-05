@@ -3357,11 +3357,11 @@ nav.controls {
   border-radius: 0 !important;          /* the ice provides the silhouette */
   border-style: solid !important;       /* enable border-image over inline none */
   border-color: transparent !important;
-  border-width: 40px 66px 50px 66px !important;   /* top right bottom left */
+  border-width: 40px 68px 54px 68px !important;   /* top right bottom left */
   border-image-source: url("assets/ice-frame.webp") !important;
-  border-image-slice: 96 190 140 190 fill !important;  /* snow / cap / icicles / cap */
-  border-image-width: 40px 66px 50px 66px !important;
-  border-image-outset: 20px 4px 30px 4px !important;   /* snow up, icicles down */
+  border-image-slice: 96 196 150 196 fill !important;  /* snow / cap / icicles / cap */
+  border-image-width: 40px 68px 54px 68px !important;
+  border-image-outset: 20px 4px 34px 4px !important;   /* snow up, longer icicles down */
   border-image-repeat: stretch stretch !important;
   box-shadow:
     0 0 26px rgba(96,206,255,0.40),      /* cyan glow halo */
