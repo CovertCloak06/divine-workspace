@@ -546,6 +546,9 @@ body.editor .card-actions { display: flex; }
 
 /* Editor live preview tray — taller than a card preview, scrolls if needed. */
 .preview.edit-preview-tray {
+  /* wos88: the editor live-preview tray keeps its own flexible height — the
+     fixed 140px card-preview height must not apply here. */
+  height: auto;
   min-height: 120px;
   max-height: 300px;
   overflow: auto;
@@ -561,17 +564,20 @@ body.editor .card-actions { display: flex; }
   background: var(--wos-bubble);
   border: 1px solid var(--border-preview);
   border-radius: 8px;
-  min-height: 90px;
+  /* wos88: FIXED preview height so every card is the same size regardless of the
+     art's dimensions. The art is centered and uniformly scaled by fitArt() to
+     fit this box (width + height), so short and tall pieces both fill the same
+     rigid frame and the grid reads clean and aligned. */
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
-  /* wos86: clip any transient overflow before fitArt scales the rigid art to
-     fit (the art no longer wraps, so an unscaled line could momentarily exceed
-     the box). The editor tray re-enables scrolling via .edit-preview-tray. */
+  /* clip any transient overflow before fitArt scales the rigid art to fit (the
+     art no longer wraps, so an unscaled line could momentarily exceed the box).
+     The editor tray re-enables scrolling via .edit-preview-tray. */
   overflow: hidden;
   margin-bottom: 10px;
-  overflow: hidden;
 }
 .preview pre {
   font-size: 14px;
@@ -581,9 +587,17 @@ body.editor .card-actions { display: flex; }
 .chips {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  /* wos88: keep tags to ONE row of fixed height so a card with 1 tag is the
+     same height as one with 3 — part of making every card uniform. Tags that
+     don't fit are clipped with a soft right-edge fade rather than wrapping. */
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-height: 24px;
   margin-bottom: 10px;
+  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+          mask-image: linear-gradient(to right, #000 88%, transparent 100%);
 }
+.chip { flex: 0 0 auto; white-space: nowrap; }
 .chip {
   background: rgba(26, 42, 68, 0.1);
   color: var(--ink-card-soft);
@@ -649,6 +663,17 @@ body.editor .card-actions { display: flex; }
   padding: 4px 10px;
   cursor: default;
   user-select: none;
+  /* wos88: the ✓ (U+2713) must render as a flat TEXT checkmark. wos87 loaded
+     Noto Color Emoji, which the inherited Fredoka stack fell through to for ✓ —
+     a tall COLOR glyph that made verified badges 32px vs 21px and broke uniform
+     card height. Give the badge an explicit text stack that HAS a checkmark
+     (Roboto / Noto Sans Symbols 2) AND a fixed box height so no glyph can ever
+     change the footer's height again. */
+  font-family: 'Roboto', 'Noto Sans', 'Noto Sans Symbols 2', system-ui, sans-serif;
+  height: 24px;
+  box-sizing: border-box;
+  line-height: 1;
+  overflow: hidden;
 }
 body.editor .wos-badge { cursor: pointer; }
 .wos-badge.verified {
