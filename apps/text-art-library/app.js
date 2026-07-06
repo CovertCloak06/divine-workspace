@@ -1438,7 +1438,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos91';
+const APP_VERSION = 'wos92';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1784,9 +1784,11 @@ function openAdd() {
   if (els.editDraftInput) els.editDraftInput.checked = true;
   syncStatusToggle();
   // Auto-prepare a blank canvas so the cursor / sketch view both work immediately.
-  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
-  const line = '\u00A0'.repeat(cols);
-  els.editArtInput.value = Array(rows).fill(line).join('\n');
+  // wos92: start from EMPTY lines (not an NBSP-filled grid) so keyboard INSERT
+  // typing doesn't widen the canvas per keystroke; the paint grid still shows
+  // via display padding, and tap/drag pad cells on demand.
+  const rows = WOS_DEFAULT_ROWS;
+  els.editArtInput.value = Array(rows).fill('').join('\n');
   resetEditHistory(els.editArtInput.value);
   closeSaveSheet();
   resetBrushState();          // fresh canvas: nothing armed (safe). Toggling keeps it after.
@@ -1954,9 +1956,11 @@ function ensureBlankCanvas() {
   // Make sure the textarea has a paintable 27×12 NBSP grid for sketch mode.
   // Called when entering Sketch mode with an empty textarea.
   if (els.editArtInput.value && els.editArtInput.value.trim()) return;
-  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
-  const line = '\u00A0'.repeat(cols);
-  els.editArtInput.value = Array(rows).fill(line).join('\n');
+  // wos92: start from EMPTY lines (not an NBSP-filled grid) so keyboard INSERT
+  // typing doesn't widen the canvas per keystroke; the paint grid still shows
+  // via display padding, and tap/drag pad cells on demand.
+  const rows = WOS_DEFAULT_ROWS;
+  els.editArtInput.value = Array(rows).fill('').join('\n');
   lastEditSnapshot = els.editArtInput.value;
   resetEditHistory(els.editArtInput.value);
   runAudit();
@@ -3025,47 +3029,79 @@ function moveCursor(dy, dx) {
 // Type a string into the grid at the cursor: each grapheme OVERWRITES its cell
 // and advances; '\n' drops to column 0 of the next row. One history entry per
 // call = one undo per keystroke / paste.
+// wos92 — the KEYBOARD path uses normal-text INSERT semantics (not overwrite):
+// a character (incl. space) is spliced in at the cursor and pushes the rest of
+// the line to the RIGHT, like any text box. Overwrite/positional placement is
+// still available for DRAWING via tap + drag (replaceCharAt), untouched. Fixes
+// "the space bar deletes characters instead of pushing them over" — overwrite
+// made a typed space replace the character sitting under the cursor.
+function commitLines(lines, before) {
+  editHistorySuspend = true;
+  els.editArtInput.value = lines.join('\n');
+  editHistorySuspend = false;
+  lastEditSnapshot = els.editArtInput.value;
+  renderSketch(true);
+  positionCursor();
+  scrollCursorIntoView();
+  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
+  runAudit();
+}
 function typeAtCursor(str) {
   if (!str) return;
   const before = els.editArtInput.value;
+  const lines = els.editArtInput.value.split('\n');
   for (const g of graphemes(str)) {
-    if (g === '\n' || g === '\r') { cursorCell = clampCursor(cursorCell.y + 1, 0); continue; }
-    writeCell(cursorCell.y, cursorCell.x, g);
+    while (cursorCell.y >= lines.length) lines.push('');
+    if (g === '\n' || g === '\r') {
+      // Split the current line at the cursor into two lines (normal Enter).
+      const gs = graphemes(lines[cursorCell.y]);
+      while (gs.length < cursorCell.x) gs.push(' ');
+      lines.splice(cursorCell.y, 1, gs.slice(0, cursorCell.x).join(''), gs.slice(cursorCell.x).join(''));
+      cursorCell = clampCursor(cursorCell.y + 1, 0);
+      continue;
+    }
+    const gs = graphemes(lines[cursorCell.y]);
+    while (gs.length < cursorCell.x) gs.push(' ');   // pad a gap up to the cursor
+    gs.splice(cursorCell.x, 0, g);                         // INSERT — push the rest right
+    lines[cursorCell.y] = gs.join('');
     cursorCell = clampCursor(cursorCell.y, cursorCell.x + 1);
   }
-  renderSketch(true);        // grow the grid for any new rows/cols, then re-place
-  positionCursor();
-  scrollCursorIntoView();
-  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
-  runAudit();
+  commitLines(lines, before);
 }
 
-// Backspace: clear the cell to the LEFT (overtype-erase) and move there; at the
-// row start, hop to the end of the previous row (no line-joining on a grid).
+// Backspace: remove the character BEFORE the cursor and pull the rest left; at
+// column 0, join this line onto the end of the previous one (normal text).
 function backspaceAtCursor() {
   const before = els.editArtInput.value;
+  const lines = els.editArtInput.value.split('\n');
+  if (cursorCell.y >= lines.length) cursorCell = clampCursor(Math.max(0, lines.length - 1), 0);
   if (cursorCell.x > 0) {
+    const gs = graphemes(lines[cursorCell.y] || '');
+    if (cursorCell.x - 1 < gs.length) gs.splice(cursorCell.x - 1, 1);
+    lines[cursorCell.y] = gs.join('');
     cursorCell = clampCursor(cursorCell.y, cursorCell.x - 1);
-    writeCell(cursorCell.y, cursorCell.x, ' ');
   } else if (cursorCell.y > 0) {
-    const lines = els.editArtInput.value.split('\n');
-    const py = cursorCell.y - 1;
-    cursorCell = clampCursor(py, graphemes(lines[py] || '').length);
+    const joinX = graphemes(lines[cursorCell.y - 1] || '').length;
+    lines[cursorCell.y - 1] = (lines[cursorCell.y - 1] || '') + (lines[cursorCell.y] || '');
+    lines.splice(cursorCell.y, 1);
+    cursorCell = clampCursor(cursorCell.y - 1, joinX);
   }
-  renderSketch(true);
-  positionCursor();
-  scrollCursorIntoView();
-  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
-  runAudit();
+  commitLines(lines, before);
 }
-// Delete: clear the current cell in place (no advance).
+// Delete: remove the character AT the cursor and pull the rest left; at the line
+// end, pull the next line up (normal text).
 function deleteAtCursor() {
   const before = els.editArtInput.value;
-  writeCell(cursorCell.y, cursorCell.x, ' ');
-  renderSketch(true);
-  positionCursor();
-  if (before !== els.editArtInput.value) { pushEditHistory(); debouncedAutosave(); }
-  runAudit();
+  const lines = els.editArtInput.value.split('\n');
+  const gs = graphemes(lines[cursorCell.y] || '');
+  if (cursorCell.x < gs.length) {
+    gs.splice(cursorCell.x, 1);
+    lines[cursorCell.y] = gs.join('');
+  } else if (cursorCell.y < lines.length - 1) {
+    lines[cursorCell.y] = (lines[cursorCell.y] || '') + (lines[cursorCell.y + 1] || '');
+    lines.splice(cursorCell.y + 1, 1);
+  }
+  commitLines(lines, before);
 }
 
 // ---- Keyboard proxy: route the hidden textarea's input onto the grid cursor.
@@ -3130,9 +3166,11 @@ els.editArtInput.addEventListener('paste', (e) => {
 // paintable surface (replaces the old separate Blank + Clear buttons).
 function fillBlankGrid() {
   pushEditHistory();
-  const cols = WOS_DEFAULT_COLS, rows = WOS_DEFAULT_ROWS;
-  const line = '\u00A0'.repeat(cols);
-  els.editArtInput.value = Array(rows).fill(line).join('\n');
+  // wos92: start from EMPTY lines (not an NBSP-filled grid) so keyboard INSERT
+  // typing doesn't widen the canvas per keystroke; the paint grid still shows
+  // via display padding, and tap/drag pad cells on demand.
+  const rows = WOS_DEFAULT_ROWS;
+  els.editArtInput.value = Array(rows).fill('').join('\n');
   lastEditSnapshot = els.editArtInput.value;
   clearSelection();          // wos36: nothing left to keep selected
   if (els.sketchSelect) updateSelectChip();
