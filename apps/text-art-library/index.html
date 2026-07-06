@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos90">
+  <link rel="stylesheet" href="style.css?v=wos91">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1033,6 +1033,20 @@
   })();
   </script>
 
+  <!-- wos91: animated chimney smoke rising from the citadel furnace tower
+       (top-right of the winter backdrop). Purely decorative, sits over the
+       background art but behind the cards; respects prefers-reduced-motion. -->
+  <div class="smoke" aria-hidden="true">
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+    <span class="smoke-puff"></span>
+  </div>
+
   <!-- ===== First-visit content notice / age gate =====
        Community-submitted art may include mature themes; this is the liability
        notice + age acknowledgement. Self-contained (no app.js dependency) so it
@@ -1477,7 +1491,7 @@
               <span class="wos-width-hint" id="wos-width-hint"></span>
             </div>
             <div class="sketch-view" id="sketch-view"></div>
-            <textarea id="edit-art-input" placeholder="Type or paste your art here…" spellcheck="false" cols="30" rows="12" wrap="off"></textarea>
+            <textarea id="edit-art-input" placeholder="Type or paste your art here…" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" data-gramm="false" cols="30" rows="12" wrap="off"></textarea>
             <div class="grab-hint">✋ Long-press a face or character to grab &amp; move it</div>
             <div class="mode-toggle-row">
               <button type="button" class="draw-toggle" id="draw-toggle" role="switch" aria-checked="true" title="Switch between typing and drawing on the canvas">
@@ -1567,7 +1581,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos90"></script>
+  <script src="app.js?v=wos91"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

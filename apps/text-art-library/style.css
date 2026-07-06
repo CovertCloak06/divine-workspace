@@ -3873,3 +3873,72 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
 }
 .analytics-refresh:hover { background: rgba(20, 44, 74, 0.7); }
 /* End wos83 */
+
+/* ============================================================================
+ * wos91 — animated chimney smoke. A soft plume of dark grey-blue puffs rises
+ * from the citadel furnace tower (top-right of bg-frostline.webp), drifting up
+ * and to the side with the wind and dissipating — matching the static smoke in
+ * the artwork. Fixed overlay: z-index:-1 sits it ABOVE the body background but
+ * BEHIND the cards, so the gallery stays fully readable. GPU-cheap (transform +
+ * opacity only). Position is tuned for landscape (the primary desktop/tablet
+ * layout); hidden on very narrow/portrait phones where the chimney is cropped.
+ * ========================================================================== */
+.smoke {
+  position: fixed;
+  top: -4vh;
+  right: 7.5%;          /* over the furnace chimney on landscape screens */
+  width: 110px;
+  height: 40vh;         /* plume travels up over this height */
+  pointer-events: none;
+  /* z-index 2: above the header's dark vignette (which would otherwise occlude
+     the plume) but below the sticky ice search bar (z-index 10) and modals, so
+     the smoke drifts in the empty top-right sky without covering any UI. It
+     sits in the header region where there is no text (the title is on the
+     left), so it never obstructs content. */
+  z-index: 2;
+  opacity: 0.8;
+  filter: blur(7px);
+  will-change: transform;
+}
+.smoke-puff {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  /* Pale, moonlit blue-grey — dark smoke would vanish against the dark night
+     sky; a luminous plume reads as backlit chimney steam and stays visible. */
+  background: radial-gradient(circle at 50% 50%,
+    rgba(178, 200, 228, 0.5) 0%,
+    rgba(168, 190, 220, 0.24) 45%,
+    rgba(168, 190, 220, 0) 72%);
+  transform: translate(-50%, 0) scale(0.35);
+  opacity: 0;
+  animation: smoke-rise 9s linear infinite;
+  will-change: transform, opacity;
+}
+.smoke-puff:nth-child(1) { animation-delay: 0s;    }
+.smoke-puff:nth-child(2) { animation-delay: 1.1s;  }
+.smoke-puff:nth-child(3) { animation-delay: 2.25s; }
+.smoke-puff:nth-child(4) { animation-delay: 3.4s;  }
+.smoke-puff:nth-child(5) { animation-delay: 4.5s;  }
+.smoke-puff:nth-child(6) { animation-delay: 5.65s; }
+.smoke-puff:nth-child(7) { animation-delay: 6.75s; }
+.smoke-puff:nth-child(8) { animation-delay: 7.9s;  }
+@keyframes smoke-rise {
+  0%   { transform: translate(-50%, 0) scale(0.35) rotate(0deg);  opacity: 0; }
+  14%  { opacity: 0.75; }
+  55%  { opacity: 0.5; }
+  100% { transform: translate(calc(-50% + 52px), calc(-40vh)) scale(2.6) rotate(28deg); opacity: 0; }
+}
+/* Chimney is cropped out of the cover-fit backdrop on narrow/portrait phones —
+   hide the plume there so it doesn't float over empty sky. */
+@media (max-width: 560px) {
+  .smoke { display: none; }
+}
+/* Accessibility: no drifting smoke for users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .smoke { display: none; }
+}
+/* End wos91 */
