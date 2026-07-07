@@ -33,6 +33,13 @@ const money = (n) =>
   });
 const fmt = (n, digits = 0) =>
   n.toLocaleString('en-US', { maximumFractionDigits: digits });
+// Local YYYY-MM-DD. Avoids toISOString() (UTC), which rolls to tomorrow in the
+// evening for users west of UTC and would default the job date a day ahead.
+const todayLocal = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
 
 /* ---------- area rows ---------- */
 const areaRows = $('area-rows');
@@ -302,7 +309,7 @@ function newJob() {
   FIELD_IDS.forEach((id) => {
     const el = $(id);
     if (id === 'job-name' || id === 'job-address') el.value = '';
-    else if (id === 'job-date') el.value = new Date().toISOString().slice(0, 10);
+    else if (id === 'job-date') el.value = todayLocal();
     // numeric settings keep their defaults from the HTML
   });
   areaRows.innerHTML = '';
@@ -315,7 +322,7 @@ function newJob() {
 /* ---------- wire up ---------- */
 function init() {
   // Default date = today
-  if (!$('job-date').value) $('job-date').value = new Date().toISOString().slice(0, 10);
+  if (!$('job-date').value) $('job-date').value = todayLocal();
 
   // Start with two area rows
   addAreaRow();

@@ -3,13 +3,15 @@
  * version.json is always network-first so the version label stays honest.
  */
 const CACHE = 'turfpro-v1';
+// Relative to the SW's own location so the app works when hosted from a
+// subdirectory (e.g. /apps/turf-installer/) as well as from the site root.
 const SHELL = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.webmanifest',
-  '/assets/icon.svg',
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './manifest.webmanifest',
+  './assets/icon.svg',
 ];
 
 self.addEventListener('install', (event) => {
@@ -54,7 +56,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() =>
         caches.match(req, { ignoreSearch: true }).then(
-          (cached) => cached || caches.match('/', { ignoreSearch: true })
+          (cached) => cached || caches.match('./', { ignoreSearch: true })
         )
       )
   );
