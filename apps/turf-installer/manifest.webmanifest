@@ -1,0 +1,27 @@
+{
+  "name": "TurfPro — Field Turf Estimator",
+  "short_name": "TurfPro",
+  "description": "Measure areas and estimate turf, infill, base, and labor for artificial turf installs. Works offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1b3a2b",
+  "background_color": "#0e1a13",
+  "lang": "en",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

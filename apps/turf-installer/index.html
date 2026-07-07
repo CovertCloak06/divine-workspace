@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b3a2b" />
+  <title>TurfPro — Field Turf Job Estimator</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-bar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🌱</span>
+      <div>
+        <h1>TurfPro</h1>
+        <p class="tagline">Field Turf job &amp; material estimator</p>
+      </div>
+    </div>
+    <button id="new-job" class="btn ghost" type="button">+ New job</button>
+  </header>
+
+  <main>
+    <!-- JOB DETAILS -->
+    <section class="card" aria-labelledby="job-h">
+      <h2 id="job-h">Job details</h2>
+      <div class="grid two">
+        <label>Client / job name
+          <input id="job-name" type="text" placeholder="e.g. Miller backyard" autocomplete="off" />
+        </label>
+        <label>Date
+          <input id="job-date" type="date" />
+        </label>
+        <label class="full">Address / notes
+          <input id="job-address" type="text" placeholder="123 Main St — backyard, remove sod first" autocomplete="off" />
+        </label>
+      </div>
+    </section>
+
+    <!-- AREA -->
+    <section class="card" aria-labelledby="area-h">
+      <h2 id="area-h">Measured areas</h2>
+      <p class="hint">Add each rectangular section of the job. Irregular shapes: break them into rectangles.</p>
+      <div id="area-rows" class="rows"></div>
+      <button id="add-area" class="btn small" type="button">+ Add area</button>
+
+      <div class="grid two tight">
+        <label>Waste / cut factor
+          <div class="suffix-field">
+            <input id="waste" type="number" min="0" max="60" step="1" value="10" inputmode="decimal" />
+            <span>%</span>
+          </div>
+        </label>
+        <div class="readout">
+          <span class="readout-label">Net area</span>
+          <span id="net-area" class="readout-value">0 ft²</span>
+          <span id="gross-area" class="readout-sub">0 ft² with waste</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MATERIALS -->
+    <section class="card" aria-labelledby="mat-h">
+      <h2 id="mat-h">Materials &amp; settings</h2>
+      <p class="hint">Defaults are typical Field Turf install values — adjust to your spec and pricing.</p>
+
+      <div class="grid two">
+        <label>Turf roll width
+          <div class="suffix-field">
+            <input id="roll-width" type="number" min="1" step="0.5" value="15" inputmode="decimal" />
+            <span>ft</span>
+          </div>
+        </label>
+        <label>Turf price
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="turf-price" type="number" min="0" step="0.01" value="2.75" inputmode="decimal" />
+            <span>/ft²</span>
+          </div>
+        </label>
+
+        <label>Infill rate
+          <div class="suffix-field">
+            <input id="infill-rate" type="number" min="0" step="0.1" value="1.5" inputmode="decimal" />
+            <span>lb/ft²</span>
+          </div>
+        </label>
+        <label>Infill price
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="infill-price" type="number" min="0" step="0.01" value="0.35" inputmode="decimal" />
+            <span>/lb</span>
+          </div>
+        </label>
+
+        <label>Base depth
+          <div class="suffix-field">
+            <input id="base-depth" type="number" min="0" step="0.5" value="3" inputmode="decimal" />
+            <span>in</span>
+          </div>
+        </label>
+        <label>Base price
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="base-price" type="number" min="0" step="0.01" value="55" inputmode="decimal" />
+            <span>/yd³</span>
+          </div>
+        </label>
+
+        <label>Nails per ft²
+          <div class="suffix-field">
+            <input id="nail-rate" type="number" min="0" step="0.1" value="1" inputmode="decimal" />
+            <span>nails</span>
+          </div>
+        </label>
+        <label>Nail price
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="nail-price" type="number" min="0" step="0.001" value="0.06" inputmode="decimal" />
+            <span>/nail</span>
+          </div>
+        </label>
+
+        <label>Seam length
+          <div class="suffix-field">
+            <input id="seam-len" type="number" min="0" step="1" value="0" inputmode="decimal" />
+            <span>ft</span>
+          </div>
+        </label>
+        <label>Seam tape + glue
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="seam-price" type="number" min="0" step="0.01" value="1.20" inputmode="decimal" />
+            <span>/ft</span>
+          </div>
+        </label>
+
+        <label>Labor
+          <div class="suffix-field">
+            <span class="prefix">$</span>
+            <input id="labor-rate" type="number" min="0" step="0.01" value="1.50" inputmode="decimal" />
+            <span>/ft²</span>
+          </div>
+        </label>
+        <label>Markup
+          <div class="suffix-field">
+            <input id="markup" type="number" min="0" step="1" value="0" inputmode="decimal" />
+            <span>%</span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- ESTIMATE -->
+    <section class="card estimate" aria-labelledby="est-h">
+      <h2 id="est-h">Estimate</h2>
+      <table class="est-table">
+        <thead>
+          <tr><th>Item</th><th>Qty</th><th class="num">Cost</th></tr>
+        </thead>
+        <tbody id="est-body"></tbody>
+        <tfoot>
+          <tr class="subtotal"><td colspan="2">Subtotal</td><td id="est-subtotal" class="num">$0.00</td></tr>
+          <tr class="markup-row"><td colspan="2">Markup</td><td id="est-markup" class="num">$0.00</td></tr>
+          <tr class="total"><td colspan="2">Total</td><td id="est-total" class="num">$0.00</td></tr>
+        </tfoot>
+      </table>
+
+      <div class="actions">
+        <button id="save-job" class="btn" type="button">Save job</button>
+        <button id="share-job" class="btn ghost" type="button">Share / copy</button>
+      </div>
+    </section>
+
+    <!-- SAVED JOBS -->
+    <section class="card" aria-labelledby="saved-h">
+      <h2 id="saved-h">Saved jobs</h2>
+      <div id="saved-list" class="saved-list"></div>
+      <p id="saved-empty" class="hint">No saved jobs yet — fill one out and tap <strong>Save job</strong>.</p>
+    </section>
+  </main>
+
+  <footer class="app-foot">
+    <span>TurfPro · works offline · estimates only</span>
+    <span id="app-version"></span>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

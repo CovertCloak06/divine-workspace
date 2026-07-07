@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TurfPro">
+  <rect width="512" height="512" rx="96" fill="#1b3a2b"/>
+  <!-- turf blades -->
+  <g fill="none" stroke="#6ee089" stroke-width="22" stroke-linecap="round">
+    <path d="M120 400 L120 210"/>
+    <path d="M120 260 L82 200"/>
+    <path d="M120 260 L158 200"/>
+    <path d="M196 400 L196 170"/>
+    <path d="M196 220 L156 158"/>
+    <path d="M196 220 L236 158"/>
+    <path d="M272 400 L272 210"/>
+    <path d="M272 260 L234 200"/>
+    <path d="M272 260 L310 200"/>
+    <path d="M348 400 L348 170"/>
+    <path d="M348 220 L308 158"/>
+    <path d="M348 220 L388 158"/>
+  </g>
+  <!-- ground line -->
+  <rect x="72" y="398" width="352" height="26" rx="13" fill="#3fae5a"/>
+</svg>
