@@ -49,13 +49,126 @@ html, body {
 .app-bar h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
 .tagline { margin: 0; font-size: 12px; color: var(--muted); }
 
+/* ---- Tabs ---- */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  background: #0c1712;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 40px;
+}
+.tab.active {
+  background: var(--turf);
+  color: #07130c;
+  border-color: var(--turf);
+}
+
+/* ---- Panels ---- */
+.panel { display: none; }
+.panel.active { display: block; }
+
 main {
   max-width: 720px;
   margin: 0 auto;
   padding: 16px 16px 40px;
+}
+main .card { margin-bottom: 16px; }
+
+/* ---- Result lines ---- */
+.results { margin-top: 14px; border-top: 1px solid var(--line); }
+.res-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.res-k { font-size: 14px; color: var(--muted); }
+.res-v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.res-line.big .res-v { font-size: 22px; font-weight: 800; color: var(--turf-bright); }
+
+.layer-h {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--turf-bright);
+  letter-spacing: 0.3px;
+}
+
+/* ---- Preset buttons ---- */
+.preset-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.preset {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 2px;
+  align-items: center;
+  padding: 10px 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.preset span { font-size: 11px; color: var(--muted); font-weight: 400; }
+.preset.active { border-color: var(--turf); background: rgba(63, 174, 90, 0.15); }
+.preset.active span { color: var(--turf-bright); }
+
+/* ---- Select in suffix-field ---- */
+.unit-select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  appearance: none;
+}
+.unit-select option { background: var(--panel-2); color: var(--text); }
+
+/* ---- Converters ---- */
+.conv-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.conv-label { flex: 1 0 100%; font-size: 12px; color: var(--muted); }
+.conv-row input { flex: 1; min-width: 70px; text-align: center; }
+.conv-eq { color: var(--muted); }
+.conv-row output {
+  flex: 1;
+  min-width: 90px;
+  text-align: right;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--turf-bright);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Cards ---- */

@@ -156,20 +156,36 @@ per sq ft.
 
 ---
 
-## Phase 8 — Infill application
+## Phase 8 — Infill application ✅ (from Cameron, 2026-07-07)
 **Goal:** Infill spread and brushed in to weight the turf and stand blades up.
 
+**Infill is TWO layers:**
+1. **Sand (base infill)** — the bottom stabilizing layer.
+   - Supplied **sometimes as bulk sand, sometimes in bags** (job-dependent).
+   - So the calculator shows sand both ways: bulk (tons + yd³) *and* bag count.
+2. **Top fill (performance layer)** — goes on top of the sand.
+   - The product **varies by installation** — it depends on **what the customer
+     chooses for that particular field**. Not one standard product.
+   - ❓NEEDS INPUT: which top-fill products do you commonly install? (crumb
+     rubber/SBR, coated sand, cork/organic, TPE, EPDM, Zeolite, others?)
+
 **Steps**
-1. Spread infill with a drop spreader. ❓NEEDS INPUT: infill type — silica
-   sand, coated sand, rubber, antimicrobial (Zeolite)? Rate per sq ft?
-2. Power-broom to work infill down and lift the blades.
-3. Repeat in lifts if needed.
+1. Spread the sand layer; brush/broom it down into the turf.
+2. Spread the customer's chosen top fill.
+3. Power-broom to work infill down and lift the blades. Repeat in lifts.
 
-**Tools / materials:** infill, drop spreader, power broom / stiff push broom.
+**Tools / materials:** sand (bulk or bagged), top-fill product, drop spreader,
+power broom / stiff push broom.
 
-**Measurements / specs:** ❓NEEDS INPUT — lbs per sq ft, number of lifts.
+**Measurements / specs:** ❓NEEDS INPUT — target rate for the sand layer vs. the
+top layer (lb/ft² each), and total infill depth. Calculator currently defaults
+to sand 4 lb/ft² + top 2 lb/ft² (= 6 total) as a *placeholder* — give me the
+real spec.
 
-**Watch out:** too much/little infill; not brushing enough.
+**Watch out:** too much/little infill; not brushing enough between lifts.
+
+> App status: the **Infill** tab now models both layers — sand with a bulk⇄bagged
+> toggle (shows tons/yd³ and bag count), and a top-fill product picker per job.
 
 ---
 

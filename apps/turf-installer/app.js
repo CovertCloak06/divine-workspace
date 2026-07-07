@@ -1,374 +1,399 @@
-/* TurfPro — Field Turf job & material estimator
+/* TurfPro — on-the-job Field Turf calculators (prototype)
  *
- * Pure client-side, no build step, works offline. All state lives in the DOM
- * inputs; saved jobs persist to localStorage. Every calculation is an estimate
- * — real orders should add a safety margin and confirm supplier pack sizes.
+ * Pure client-side, no build step, offline-capable. Six calculator modules
+ * behind a tab bar: Turf & Rolls, Base Rock, Infill, Seam & Nails, Estimate,
+ * Convert. Each reusable "area block" lets a worker measure once per module.
  *
- * Calculation model
- * -----------------
- *   net area      = Σ(length × width) of each measured rectangle
- *   gross area    = net × (1 + waste%)          ← turf you actually buy/lay
- *   turf rolls    = ceil(gross / rollWidth)  linear-ft strips (informational)
- *   infill        = net × infillRate (lb)        ← infill covers laid area
- *   base material = net × (depth_ft) / 27 (yd³)  ← sub-base under the turf
- *   nails         = round(net × nailRate)
- *   seam          = seamLen × seamPrice
- *   labor         = net × laborRate
- *   markup        = subtotal × markup%
+ * Specs baked into the defaults come from published turf-install guidance:
+ *   - Base: Class II road base ≈ 1.5 t/yd³, crushed rock ≈ 1.4, DG ≈ 1.45;
+ *     order ~15–20% extra loose to cover compaction. yd³ = area·(in/12)/27.
+ *   - Infill: residential ~2 lb/ft², pet/play ~3, sports fields ≥6 lb/ft².
+ *   - Fasteners: perimeter nails every 4–8″, seams zig-zag every 2–3″.
+ * All outputs are ESTIMATES — confirm supplier pack sizes and add margin.
  */
 
-const STORE_KEY = 'turfpro.jobs.v1';
-const VERSION = 'v1';
+const STORE_KEY = 'turfpro.jobs.v2';
+const VERSION = 'v2';
 
-/* ---------- tiny helpers ---------- */
+/* ---------- helpers ---------- */
 const $ = (id) => document.getElementById(id);
 const num = (el) => {
-  const v = parseFloat(el && el.value);
+  const v = parseFloat(typeof el === 'string' ? $(el)?.value : el?.value);
   return Number.isFinite(v) ? v : 0;
 };
 const money = (n) =>
   '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
   });
-const fmt = (n, digits = 0) =>
-  n.toLocaleString('en-US', { maximumFractionDigits: digits });
-// Local YYYY-MM-DD. Avoids toISOString() (UTC), which rolls to tomorrow in the
-// evening for users west of UTC and would default the job date a day ahead.
+const fmt = (n, d = 0) => n.toLocaleString('en-US', { maximumFractionDigits: d });
 const todayLocal = () => {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
+  const d = new Date(); const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-/* ---------- area rows ---------- */
-const areaRows = $('area-rows');
+/* ---------- reusable area block ---------- */
+/* Each <div class="area-block" data-area="KEY"> becomes a mini measurer with
+ * length×width rows and a live square-footage readout. areaTotal(KEY) reads it. */
+const areaBlocks = {};
 
-function addAreaRow(len = '', wid = '') {
-  const row = document.createElement('div');
-  row.className = 'area-row';
-  row.innerHTML = `
-    <input class="len" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Length" />
-    <span class="times">×</span>
-    <input class="wid" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Width" />
-    <span class="sqft">0 ft²</span>
-    <button class="remove" type="button" aria-label="Remove area">✕</button>`;
-  row.querySelector('.len').value = len;
-  row.querySelector('.wid').value = wid;
-  areaRows.appendChild(row);
-  return row;
+function buildAreaBlock(el) {
+  const key = el.dataset.area;
+  el.innerHTML = `
+    <div class="rows"></div>
+    <button class="btn small add-area" type="button">+ Add area</button>
+    <div class="readout">
+      <span class="readout-label">Measured area</span>
+      <span class="readout-value net">0 ft²</span>
+    </div>`;
+  const rows = el.querySelector('.rows');
+  areaBlocks[key] = { el, rows };
+
+  const addRow = (l = '', w = '') => {
+    const row = document.createElement('div');
+    row.className = 'area-row';
+    row.innerHTML = `
+      <input class="len" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Length" />
+      <span class="times">×</span>
+      <input class="wid" type="number" min="0" step="0.1" inputmode="decimal" placeholder="Width" />
+      <span class="sqft">0 ft²</span>
+      <button class="remove" type="button" aria-label="Remove">✕</button>`;
+    row.querySelector('.len').value = l;
+    row.querySelector('.wid').value = w;
+    rows.appendChild(row);
+  };
+  areaBlocks[key].addRow = addRow;
+
+  addRow();
+  el.querySelector('.add-area').addEventListener('click', () => { addRow(); render(); });
+  rows.addEventListener('click', (e) => {
+    if (!e.target.classList.contains('remove')) return;
+    if (rows.querySelectorAll('.area-row').length > 1) e.target.closest('.area-row').remove();
+    else {
+      const r = e.target.closest('.area-row');
+      r.querySelector('.len').value = ''; r.querySelector('.wid').value = '';
+    }
+    render();
+  });
 }
 
-function netArea() {
+function areaTotal(key) {
+  const b = areaBlocks[key];
+  if (!b) return 0;
   let total = 0;
-  areaRows.querySelectorAll('.area-row').forEach((row) => {
-    const l = num(row.querySelector('.len'));
-    const w = num(row.querySelector('.wid'));
-    const sq = l * w;
+  b.rows.querySelectorAll('.area-row').forEach((row) => {
+    const sq = num(row.querySelector('.len')) * num(row.querySelector('.wid'));
     row.querySelector('.sqft').textContent = fmt(sq, 1) + ' ft²';
     total += sq;
   });
+  b.el.querySelector('.net').textContent = fmt(total, 0) + ' ft²';
   return total;
 }
 
-/* ---------- core estimate ---------- */
-function calc() {
-  const net = netArea();
-  const waste = num($('waste')) / 100;
-  const gross = net * (1 + waste);
-
-  const rollWidth = num($('roll-width')) || 15;
-  const turfPrice = num($('turf-price'));
-  const infillRate = num($('infill-rate'));
-  const infillPrice = num($('infill-price'));
-  const baseDepthIn = num($('base-depth'));
-  const basePrice = num($('base-price'));
-  const nailRate = num($('nail-rate'));
-  const nailPrice = num($('nail-price'));
-  const seamLen = num($('seam-len'));
-  const seamPrice = num($('seam-price'));
-  const laborRate = num($('labor-rate'));
-  const markupPct = num($('markup')) / 100;
-
-  // Quantities
-  const turfSqft = gross;                       // buy turf at gross (waste incl.)
-  const rollStrips = rollWidth > 0 ? Math.ceil(gross / rollWidth) : 0;
-  const infillLb = net * infillRate;
-  const infillBags = Math.ceil(infillLb / 50);  // typical 50 lb bag
-  const baseYd3 = (net * (baseDepthIn / 12)) / 27;
-  const nails = Math.round(net * nailRate);
-
-  // Costs
-  const items = [
-    {
-      name: 'Turf',
-      qty: `${fmt(turfSqft, 0)} ft²`,
-      sub: `${rollStrips} strip${rollStrips === 1 ? '' : 's'} @ ${fmt(rollWidth, 0)}ft`,
-      cost: turfSqft * turfPrice,
-    },
-    {
-      name: 'Infill',
-      qty: `${fmt(infillLb, 0)} lb`,
-      sub: `~${infillBags} × 50 lb bag`,
-      cost: infillLb * infillPrice,
-    },
-    {
-      name: 'Base material',
-      qty: `${fmt(baseYd3, 1)} yd³`,
-      sub: `${fmt(baseDepthIn, 1)}" deep`,
-      cost: baseYd3 * basePrice,
-    },
-    {
-      name: 'Nails / staples',
-      qty: `${fmt(nails, 0)} pcs`,
-      sub: '',
-      cost: nails * nailPrice,
-    },
-    {
-      name: 'Seaming',
-      qty: `${fmt(seamLen, 0)} ft`,
-      sub: '',
-      cost: seamLen * seamPrice,
-    },
-    {
-      name: 'Labor',
-      qty: `${fmt(net, 0)} ft²`,
-      sub: '',
-      cost: net * laborRate,
-    },
-  ];
-
-  const subtotal = items.reduce((s, it) => s + it.cost, 0);
-  const markup = subtotal * markupPct;
-  const total = subtotal + markup;
-
-  return { net, gross, items, subtotal, markup, total };
+/* small result-line renderer */
+function lines(targetId, items) {
+  $(targetId).innerHTML = items.map((it) =>
+    `<div class="res-line${it.big ? ' big' : ''}">
+       <span class="res-k">${it.k}</span>
+       <span class="res-v">${it.v}</span>
+     </div>`).join('');
 }
 
-/* ---------- render ---------- */
-function render() {
-  const r = calc();
+/* ---------- calculators ---------- */
+function calcTurf() {
+  const net = areaTotal('turf');
+  const waste = num('turf-waste') / 100;
+  const gross = net * (1 + waste);
+  const width = num('turf-roll-width') || 15;
+  const linear = width > 0 ? gross / width : 0;   // total linear ft off the roll
+  lines('turf-results', [
+    { k: 'Net area', v: fmt(net, 0) + ' ft²' },
+    { k: `With ${fmt(waste * 100, 0)}% waste`, v: fmt(gross, 0) + ' ft²', big: true },
+    { k: `Roll to buy @ ${fmt(width, 0)} ft wide`, v: fmt(linear, 1) + ' linear ft' },
+    { k: 'That covers', v: fmt(linear * width, 0) + ' ft²' },
+  ]);
+}
 
-  $('net-area').textContent = fmt(r.net, 0) + ' ft²';
-  $('gross-area').textContent = fmt(r.gross, 0) + ' ft² with waste';
+function calcBase() {
+  const net = areaTotal('base');
+  const depthFt = num('base-depth') / 12;
+  const comp = 1 + num('base-compaction') / 100;
+  const tonsPerYd = num('base-material') || 1.5;
+  const yd3Compacted = (net * depthFt) / 27;
+  const yd3Order = yd3Compacted * comp;          // loose volume to buy
+  const tons = yd3Order * tonsPerYd;
+  const cost = tons * num('base-price');
+  lines('base-results', [
+    { k: 'Compacted volume', v: fmt(yd3Compacted, 2) + ' yd³' },
+    { k: 'Order (loose)', v: fmt(yd3Order, 2) + ' yd³' },
+    { k: 'Weight', v: fmt(tons, 2) + ' tons', big: true },
+    { k: 'Cost', v: money(cost) },
+  ]);
+}
+
+const SAND_TONS_PER_YD3 = 1.35;   // dry masonry/silica sand ≈ 2700 lb/yd³
+
+function calcInfill() {
+  const net = areaTotal('infill');
+
+  // --- Layer 1: sand ---
+  const sandLb = net * num('sand-rate');
+  const sandTons = sandLb / 2000;
+  const sandYd3 = sandTons / SAND_TONS_PER_YD3;
+  const sandBagSize = num('sand-bag') || 50;
+  const sandBags = Math.ceil(sandLb / sandBagSize);
+  const supply = $('sand-supply').value;
+  // show/hide bulk vs bag inputs
+  document.querySelectorAll('.sand-bulk').forEach((n) => n.style.display = supply === 'bulk' ? '' : 'none');
+  document.querySelectorAll('.sand-bag').forEach((n) => n.style.display = supply === 'bags' ? '' : 'none');
+  const sandCost = supply === 'bulk'
+    ? sandTons * num('sand-ton-price')
+    : sandBags * num('sand-bag-price');
+  lines('sand-results', [
+    { k: 'Total sand', v: fmt(sandLb, 0) + ' lb', big: true },
+    { k: 'If bulk', v: `${fmt(sandTons, 2)} tons · ${fmt(sandYd3, 2)} yd³` },
+    { k: `If bagged (${fmt(sandBagSize, 0)} lb)`, v: `${sandBags} bag${sandBags === 1 ? '' : 's'}` },
+    { k: `Cost (${supply})`, v: money(sandCost) },
+  ]);
+
+  // --- Layer 2: top fill ---
+  const topLb = net * num('top-rate');
+  const topBagSize = num('top-bag') || 50;
+  const topBags = Math.ceil(topLb / topBagSize);
+  const topCost = topLb * num('top-price');
+  lines('top-results', [
+    { k: 'Product', v: $('top-product').value },
+    { k: 'Total top fill', v: fmt(topLb, 0) + ' lb', big: true },
+    { k: `Bags (${fmt(topBagSize, 0)} lb)`, v: `${topBags} bag${topBags === 1 ? '' : 's'}` },
+    { k: 'Cost', v: money(topCost) },
+  ]);
+
+  // --- combined ---
+  lines('infill-results', [
+    { k: 'Combined infill', v: fmt(sandLb + topLb, 0) + ' lb', big: true },
+    { k: 'Combined rate', v: fmt(net > 0 ? (sandLb + topLb) / net : 0, 1) + ' lb/ft²' },
+    { k: 'Infill cost', v: money(sandCost + topCost) },
+  ]);
+  return { sandLb, topLb, sandCost, topCost, net };
+}
+
+function calcSeam() {
+  const len = num('seam-len');
+  const glueCover = num('glue-cover') || 60;
+  const tapeRoll = num('tape-roll') || 100;
+  const gallons = len > 0 ? Math.ceil(len / glueCover) : 0;
+  const tapeRolls = len > 0 ? Math.ceil(len / tapeRoll) : 0;
+  const cost = gallons * num('glue-price');
+  lines('seam-results', [
+    { k: 'Seam tape', v: `${tapeRolls} roll${tapeRolls === 1 ? '' : 's'} (${fmt(len, 0)} ft)` },
+    { k: 'Glue', v: `${gallons} gal`, big: true },
+    { k: 'Glue cost', v: money(cost) },
+  ]);
+}
+
+function calcNails() {
+  const net = areaTotal('fasten');
+  const perim = num('perimeter');
+  const perimSp = num('perim-spacing') || 6;
+  const seam = num('seam-len-2');
+  const seamSp = num('seam-spacing') || 3;
+  const fieldRate = num('field-rate');
+  const box = num('nail-box') || 250;
+  // spacing in inches → nails = length_ft × 12 / spacing_in
+  const perimNails = perimSp > 0 ? (perim * 12) / perimSp : 0;
+  const seamNails = seamSp > 0 ? (seam * 12) / seamSp : 0;
+  const fieldNails = net * fieldRate;
+  const total = Math.round(perimNails + seamNails + fieldNails);
+  const boxes = Math.ceil(total / box);
+  lines('nail-results', [
+    { k: 'Perimeter', v: fmt(perimNails, 0) + ' nails' },
+    { k: 'Seams', v: fmt(seamNails, 0) + ' nails' },
+    { k: 'Field', v: fmt(fieldNails, 0) + ' nails' },
+    { k: 'Total', v: fmt(total, 0) + ' nails', big: true },
+    { k: `Boxes (${fmt(box, 0)})`, v: `${boxes} box${boxes === 1 ? '' : 'es'}` },
+  ]);
+}
+
+/* ---------- estimate (pulls area + rates from the other tabs) ---------- */
+function calcEstimate() {
+  const net = areaTotal('estimate');
+  const waste = num('est-waste') / 100;
+  const gross = net * (1 + waste);
+
+  const turf = gross * num('est-turf-price');
+  // infill: sand layer + top fill, using the rates from the Infill tab
+  const sandLb = net * num('sand-rate');
+  const topLb = net * num('top-rate');
+  const infillLb = sandLb + topLb;
+  const sandCost = $('sand-supply').value === 'bulk'
+    ? (sandLb / 2000) * num('sand-ton-price')
+    : Math.ceil(sandLb / (num('sand-bag') || 50)) * num('sand-bag-price');
+  const infill = sandCost + topLb * num('top-price');
+  const depthFt = num('base-depth') / 12;
+  const yd3 = (net * depthFt) / 27 * (1 + num('base-compaction') / 100);
+  const base = yd3 * (num('base-material') || 1.5) * num('base-price');
+  const seamGal = num('seam-len') > 0 ? Math.ceil(num('seam-len') / (num('glue-cover') || 60)) : 0;
+  const seam = seamGal * num('glue-price');
+  const labor = net * num('est-labor');
+
+  const items = [
+    { name: 'Turf', qty: `${fmt(gross, 0)} ft²`, cost: turf },
+    { name: 'Infill', qty: `${fmt(infillLb, 0)} lb`, cost: infill },
+    { name: 'Base rock', qty: `${fmt(yd3, 1)} yd³`, cost: base },
+    { name: 'Seam glue', qty: `${seamGal} gal`, cost: seam },
+    { name: 'Labor', qty: `${fmt(net, 0)} ft²`, cost: labor },
+  ];
+  const subtotal = items.reduce((s, it) => s + it.cost, 0);
+  const markup = subtotal * (num('est-markup') / 100);
+  const total = subtotal + markup;
 
   const body = $('est-body');
   body.innerHTML = '';
-  r.items.forEach((it) => {
+  items.forEach((it) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${it.name}</td>
-      <td>${it.qty}${it.sub ? `<span class="qty-sub">${it.sub}</span>` : ''}</td>
-      <td class="num">${money(it.cost)}</td>`;
+    tr.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td class="num">${money(it.cost)}</td>`;
     body.appendChild(tr);
   });
-
-  $('est-subtotal').textContent = money(r.subtotal);
-  $('est-markup').textContent = money(r.markup);
-  $('est-total').textContent = money(r.total);
+  $('est-subtotal').textContent = money(subtotal);
+  $('est-markup-val').textContent = money(markup);
+  $('est-total').textContent = money(total);
+  return { net, gross, items, subtotal, markup, total };
 }
 
-/* ---------- serialize / restore form ---------- */
-const FIELD_IDS = [
-  'job-name', 'job-date', 'job-address', 'waste', 'roll-width', 'turf-price',
-  'infill-rate', 'infill-price', 'base-depth', 'base-price', 'nail-rate',
-  'nail-price', 'seam-len', 'seam-price', 'labor-rate', 'markup',
-];
+/* ---------- converters ---------- */
+function calcConvert() {
+  $('c-in').textContent = fmt(num('c-ft') * 12, 1) + ' in';
+  $('c-sqyd').textContent = fmt(num('c-sqft') / 9, 2) + ' yd²';
+  $('c-ton').textContent = fmt(num('c-lb') / 2000, 3) + ' tons';
+  $('c-area').textContent = fmt(num('c-l') * num('c-w'), 1) + ' ft²';
+}
+
+/* ---------- master render ---------- */
+function render() {
+  calcTurf(); calcBase(); calcInfill(); calcSeam(); calcNails();
+  calcEstimate(); calcConvert();
+}
+
+/* ---------- save / load / share ---------- */
+function readJobs() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+function writeJobs(j) { localStorage.setItem(STORE_KEY, JSON.stringify(j)); }
 
 function collectJob() {
-  const fields = {};
-  FIELD_IDS.forEach((id) => { fields[id] = $(id).value; });
   const areas = [];
-  areaRows.querySelectorAll('.area-row').forEach((row) => {
-    areas.push({
-      len: row.querySelector('.len').value,
-      wid: row.querySelector('.wid').value,
-    });
-  });
-  const r = calc();
+  areaBlocks.estimate.rows.querySelectorAll('.area-row').forEach((r) =>
+    areas.push({ len: r.querySelector('.len').value, wid: r.querySelector('.wid').value }));
+  const est = calcEstimate();
   return {
     id: 'j' + Date.now().toString(36),
-    savedAt: new Date().toISOString(),
-    fields,
-    areas,
-    total: r.total,
-    net: r.net,
+    savedAt: todayLocal(),
+    name: $('job-name').value || 'Untitled job',
+    date: $('job-date').value || todayLocal(),
+    areas, net: est.net, total: est.total,
   };
 }
 
 function loadJob(job) {
-  FIELD_IDS.forEach((id) => {
-    if (job.fields && id in job.fields) $(id).value = job.fields[id];
-  });
-  areaRows.innerHTML = '';
+  $('job-name').value = job.name || '';
+  $('job-date').value = job.date || todayLocal();
+  areaBlocks.estimate.rows.innerHTML = '';
   (job.areas && job.areas.length ? job.areas : [{ len: '', wid: '' }])
-    .forEach((a) => addAreaRow(a.len, a.wid));
+    .forEach((a) => areaBlocks.estimate.addRow(a.len, a.wid));
   render();
-}
-
-/* ---------- localStorage ---------- */
-function readJobs() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-function writeJobs(jobs) {
-  localStorage.setItem(STORE_KEY, JSON.stringify(jobs));
 }
 
 function renderSaved() {
   const jobs = readJobs().sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1));
   const list = $('saved-list');
-  const empty = $('saved-empty');
+  $('saved-empty').style.display = jobs.length ? 'none' : '';
   list.innerHTML = '';
-  empty.style.display = jobs.length ? 'none' : '';
-
   jobs.forEach((job) => {
-    const name = (job.fields && job.fields['job-name']) || 'Untitled job';
-    const date = (job.fields && job.fields['job-date']) || job.savedAt.slice(0, 10);
     const item = document.createElement('div');
     item.className = 'saved-item';
     item.innerHTML = `
-      <div class="meta">
-        <span class="name"></span>
-        <span class="sub">${date} · ${fmt(job.net || 0, 0)} ft²</span>
-      </div>
+      <div class="meta"><span class="name"></span>
+        <span class="sub">${job.date} · ${fmt(job.net || 0, 0)} ft²</span></div>
       <span class="price">${money(job.total || 0)}</span>
-      <div class="row-actions">
-        <button class="open" title="Open">📂</button>
-        <button class="del" title="Delete">🗑</button>
-      </div>`;
-    item.querySelector('.name').textContent = name; // textContent = XSS-safe
+      <div class="row-actions"><button class="open" title="Open">📂</button>
+        <button class="del" title="Delete">🗑</button></div>`;
+    item.querySelector('.name').textContent = job.name;   // XSS-safe
     item.querySelector('.open').addEventListener('click', () => {
-      loadJob(job);
-      toast('Job loaded');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      loadJob(job); toast('Job loaded');
     });
     item.querySelector('.del').addEventListener('click', () => {
-      writeJobs(readJobs().filter((j) => j.id !== job.id));
-      renderSaved();
-      toast('Job deleted');
+      writeJobs(readJobs().filter((j) => j.id !== job.id)); renderSaved(); toast('Deleted');
     });
     list.appendChild(item);
   });
 }
 
-/* ---------- share ---------- */
 function jobText() {
-  const r = calc();
-  const name = $('job-name').value || 'Turf job';
-  const addr = $('job-address').value;
-  const lines = [
-    `TurfPro estimate — ${name}`,
-    addr ? addr : null,
-    `Area: ${fmt(r.net, 0)} ft² (net) / ${fmt(r.gross, 0)} ft² w/ waste`,
-    '',
-    ...r.items.map((it) => `${it.name}: ${it.qty} — ${money(it.cost)}`),
-    '',
-    `Subtotal: ${money(r.subtotal)}`,
-    `Markup:   ${money(r.markup)}`,
-    `TOTAL:    ${money(r.total)}`,
-    '',
-    'Estimate only.',
+  const r = calcEstimate();
+  const lines2 = [
+    `TurfPro estimate — ${$('job-name').value || 'Turf job'}`,
+    `Area: ${fmt(r.net, 0)} ft² net / ${fmt(r.gross, 0)} ft² w/ waste`, '',
+    ...r.items.map((it) => `${it.name}: ${it.qty} — ${money(it.cost)}`), '',
+    `Subtotal: ${money(r.subtotal)}`, `Markup: ${money(r.markup)}`,
+    `TOTAL: ${money(r.total)}`, '', 'Estimate only.',
   ];
-  return lines.filter((l) => l !== null).join('\n');
+  return lines2.join('\n');
 }
 
 async function shareJob() {
   const text = jobText();
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: 'TurfPro estimate', text });
-      return;
-    } catch {
-      /* user cancelled — fall through to clipboard */
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    toast('Estimate copied');
-  } catch {
-    toast('Copy not supported');
-  }
+  if (navigator.share) { try { await navigator.share({ title: 'TurfPro estimate', text }); return; } catch { /* cancelled */ } }
+  try { await navigator.clipboard.writeText(text); toast('Estimate copied'); }
+  catch { toast('Copy not supported'); }
 }
 
 /* ---------- toast ---------- */
 let toastTimer;
 function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-/* ---------- reset ---------- */
-function newJob() {
-  FIELD_IDS.forEach((id) => {
-    const el = $(id);
-    if (id === 'job-name' || id === 'job-address') el.value = '';
-    else if (id === 'job-date') el.value = todayLocal();
-    // numeric settings keep their defaults from the HTML
-  });
-  areaRows.innerHTML = '';
-  addAreaRow();
-  render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  toast('New job');
+/* ---------- tabs ---------- */
+function initTabs() {
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach((tab) => tab.addEventListener('click', () => {
+    tabs.forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel-' + tab.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0 });
+  }));
 }
 
-/* ---------- wire up ---------- */
+/* ---------- init ---------- */
 function init() {
-  // Default date = today
+  document.querySelectorAll('.area-block').forEach(buildAreaBlock);
+  initTabs();
+
   if (!$('job-date').value) $('job-date').value = todayLocal();
 
-  // Start with two area rows
-  addAreaRow();
-  addAreaRow();
+  // Infill presets
+  document.querySelectorAll('#infill-presets .preset').forEach((p) =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#infill-presets .preset').forEach((x) => x.classList.remove('active'));
+      p.classList.add('active');
+      $('infill-rate').value = p.dataset.rate;
+      render();
+    }));
 
-  // Recalc on any input, anywhere
   document.addEventListener('input', render);
 
-  // Remove-area (event delegation)
-  areaRows.addEventListener('click', (e) => {
-    if (e.target.classList.contains('remove')) {
-      const rows = areaRows.querySelectorAll('.area-row');
-      if (rows.length > 1) e.target.closest('.area-row').remove();
-      else { // keep at least one row, just clear it
-        const row = e.target.closest('.area-row');
-        row.querySelector('.len').value = '';
-        row.querySelector('.wid').value = '';
-      }
-      render();
-    }
-  });
-
-  $('add-area').addEventListener('click', () => { addAreaRow(); });
-  $('new-job').addEventListener('click', newJob);
   $('save-job').addEventListener('click', () => {
-    const jobs = readJobs();
-    jobs.push(collectJob());
-    writeJobs(jobs);
-    renderSaved();
-    toast('Job saved');
+    const jobs = readJobs(); jobs.push(collectJob()); writeJobs(jobs); renderSaved(); toast('Job saved');
   });
   $('share-job').addEventListener('click', shareJob);
 
   renderSaved();
   render();
 
-  // Version label from version.json (best effort)
   fetch('version.json', { cache: 'no-store' })
-    .then((r) => r.json())
-    .then((v) => { $('app-version').textContent = v.version || VERSION; })
+    .then((r) => r.json()).then((v) => { $('app-version').textContent = v.version || VERSION; })
     .catch(() => { $('app-version').textContent = VERSION; });
 
-  // Service worker for offline
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 document.addEventListener('DOMContentLoaded', init);
