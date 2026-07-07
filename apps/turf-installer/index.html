@@ -27,6 +27,7 @@
     <button class="tab" role="tab" data-tab="base">Base Rock</button>
     <button class="tab" role="tab" data-tab="infill">Infill</button>
     <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
+    <button class="tab" role="tab" data-tab="expenses">Expenses</button>
     <button class="tab" role="tab" data-tab="estimate">Estimate</button>
     <button class="tab" role="tab" data-tab="convert">Convert</button>
   </nav>
@@ -272,6 +273,71 @@
           </label>
         </div>
         <div class="results" id="nail-results"></div>
+      </div>
+    </section>
+
+    <!-- ============ EXPENSES (foreman job-cost tracking) ============ -->
+    <section class="panel" id="panel-expenses" role="tabpanel">
+      <div class="card">
+        <h2>Foreman expenses</h2>
+        <p class="hint">Log diesel, gas, Home Depot runs and anything you spend on the job. Saved on this device for this foreman.</p>
+        <div class="grid two">
+          <label>Foreman / crew
+            <input id="exp-foreman" type="text" placeholder="Your name or crew #" autocomplete="off" />
+          </label>
+          <label>Job (optional)
+            <input id="exp-job" type="text" placeholder="e.g. Lincoln HS field" autocomplete="off" />
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Add expense</h3>
+        <div class="grid two">
+          <label>Category
+            <div class="suffix-field">
+              <select id="exp-cat" class="unit-select">
+                <option>⛽ Diesel</option>
+                <option>⛽ Gas</option>
+                <option>🛒 Home Depot / materials</option>
+                <option>🚜 Equipment rental</option>
+                <option>🗑 Dump / disposal</option>
+                <option>🍔 Food / per diem</option>
+                <option>🔧 Tools</option>
+                <option>💵 Other</option>
+              </select>
+            </div>
+          </label>
+          <label>Amount
+            <div class="suffix-field"><span class="prefix">$</span>
+              <input id="exp-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </div>
+          </label>
+          <label>Date
+            <input id="exp-date" type="date" />
+          </label>
+          <label>Note / vendor
+            <input id="exp-note" type="text" placeholder="e.g. seam nails, 3 boxes" autocomplete="off" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="exp-add" class="btn" type="button">Add expense</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Totals</h3>
+        <div class="results" id="exp-totals"></div>
+        <div class="actions">
+          <button id="exp-share" class="btn ghost" type="button">Share / export</button>
+          <button id="exp-clear" class="btn ghost danger-btn" type="button">Clear all</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Logged expenses</h3>
+        <div id="exp-list" class="saved-list"></div>
+        <p id="exp-empty" class="hint">No expenses logged yet.</p>
       </div>
     </section>
 

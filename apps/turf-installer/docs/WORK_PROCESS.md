@@ -13,6 +13,18 @@
 
 ---
 
+## Product direction (from Cameron)
+
+- **Audience:** turf workers / **foremen** on the job. Each foreman runs it on
+  their own device.
+- **Priority:** on-the-job **calculators** are the core. Cost/estimating is
+  *not* the focus, but stays in the app.
+- **Foreman expense tracking** (added 2026-07-07): each foreman logs job spend
+  — **diesel, gas, Home Depot / materials**, equipment rental, dump fees, etc.
+  Totals roll up by category; export/share to send in. Saved per device.
+
+---
+
 ## How to read this
 
 Each phase has:

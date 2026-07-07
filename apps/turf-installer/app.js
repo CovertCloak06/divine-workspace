@@ -344,6 +344,96 @@ async function shareJob() {
   catch { toast('Copy not supported'); }
 }
 
+/* ---------- expenses (foreman job-cost tracking) ---------- */
+const EXP_KEY = 'turfpro.expenses.v1';
+const META_KEY = 'turfpro.foreman.v1';
+
+function readExp() { try { return JSON.parse(localStorage.getItem(EXP_KEY)) || []; } catch { return []; } }
+function writeExp(x) { localStorage.setItem(EXP_KEY, JSON.stringify(x)); }
+
+function addExpense() {
+  const amount = num('exp-amount');
+  if (amount <= 0) { toast('Enter an amount'); return; }
+  const exp = readExp();
+  exp.push({
+    id: 'e' + Date.now().toString(36),
+    cat: $('exp-cat').value,
+    amount,
+    date: $('exp-date').value || todayLocal(),
+    note: $('exp-note').value.trim(),
+    foreman: $('exp-foreman').value.trim(),
+    job: $('exp-job').value.trim(),
+  });
+  writeExp(exp);
+  $('exp-amount').value = '';
+  $('exp-note').value = '';
+  renderExpenses();
+  toast('Expense added');
+}
+
+function renderExpenses() {
+  const exp = readExp().sort((a, b) => (a.date < b.date ? 1 : -1));
+  const list = $('exp-list');
+  $('exp-empty').style.display = exp.length ? 'none' : '';
+  list.innerHTML = '';
+
+  // totals by category + grand total
+  const byCat = {};
+  let grand = 0;
+  exp.forEach((e) => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; grand += e.amount; });
+  const totalLines = Object.entries(byCat)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => ({ k, v: money(v) }));
+  totalLines.push({ k: 'Total', v: money(grand), big: true });
+  lines('exp-totals', totalLines);
+
+  exp.forEach((e) => {
+    const item = document.createElement('div');
+    item.className = 'saved-item';
+    item.innerHTML = `
+      <div class="meta"><span class="name"></span>
+        <span class="sub">${e.date}${e.note ? ' · ' : ''}<span class="note"></span></span></div>
+      <span class="price">${money(e.amount)}</span>
+      <div class="row-actions"><button class="del" title="Delete">🗑</button></div>`;
+    item.querySelector('.name').textContent = e.cat;      // XSS-safe
+    item.querySelector('.note').textContent = e.note || '';
+    item.querySelector('.del').addEventListener('click', () => {
+      writeExp(readExp().filter((x) => x.id !== e.id)); renderExpenses(); toast('Deleted');
+    });
+    list.appendChild(item);
+  });
+}
+
+async function shareExpenses() {
+  const exp = readExp().sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (!exp.length) { toast('Nothing to export'); return; }
+  const foreman = $('exp-foreman').value.trim();
+  const job = $('exp-job').value.trim();
+  const grand = exp.reduce((s, e) => s + e.amount, 0);
+  const text = [
+    'TurfPro expenses' + (foreman ? ` — ${foreman}` : ''),
+    job ? `Job: ${job}` : null, '',
+    ...exp.map((e) => `${e.date}  ${e.cat}  ${money(e.amount)}${e.note ? '  (' + e.note + ')' : ''}`),
+    '', `TOTAL: ${money(grand)}`,
+  ].filter((l) => l !== null).join('\n');
+  if (navigator.share) { try { await navigator.share({ title: 'TurfPro expenses', text }); return; } catch { /* cancelled */ } }
+  try { await navigator.clipboard.writeText(text); toast('Expenses copied'); }
+  catch { toast('Copy not supported'); }
+}
+
+function saveForemanMeta() {
+  localStorage.setItem(META_KEY, JSON.stringify({
+    foreman: $('exp-foreman').value, job: $('exp-job').value,
+  }));
+}
+function loadForemanMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY)) || {};
+    if (m.foreman) $('exp-foreman').value = m.foreman;
+    if (m.job) $('exp-job').value = m.job;
+  } catch { /* ignore */ }
+}
+
 /* ---------- toast ---------- */
 let toastTimer;
 function toast(msg) {
@@ -369,6 +459,8 @@ function init() {
   initTabs();
 
   if (!$('job-date').value) $('job-date').value = todayLocal();
+  if (!$('exp-date').value) $('exp-date').value = todayLocal();
+  loadForemanMeta();
 
   // Infill presets
   document.querySelectorAll('#infill-presets .preset').forEach((p) =>
@@ -386,7 +478,18 @@ function init() {
   });
   $('share-job').addEventListener('click', shareJob);
 
+  // expenses
+  $('exp-add').addEventListener('click', addExpense);
+  $('exp-share').addEventListener('click', shareExpenses);
+  $('exp-clear').addEventListener('click', () => {
+    if (!readExp().length) { toast('Nothing to clear'); return; }
+    if (confirm('Clear ALL logged expenses on this device?')) { writeExp([]); renderExpenses(); toast('Cleared'); }
+  });
+  $('exp-foreman').addEventListener('input', saveForemanMeta);
+  $('exp-job').addEventListener('input', saveForemanMeta);
+
   renderSaved();
+  renderExpenses();
   render();
 
   fetch('version.json', { cache: 'no-store' })

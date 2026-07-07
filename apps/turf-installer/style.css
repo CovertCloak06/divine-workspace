@@ -291,6 +291,7 @@ input:focus { border-color: var(--turf); box-shadow: 0 0 0 2px rgba(63, 174, 90,
 .btn.small { background: var(--panel-2); border: 1px dashed var(--line); color: var(--turf-bright); font-weight: 600; padding: 10px 14px; min-height: 40px; }
 .actions { display: flex; gap: 10px; margin-top: 16px; }
 .actions .btn { flex: 1; }
+.btn.danger-btn { color: var(--danger); border-color: rgba(224, 85, 75, 0.5); }
 
 /* ---- Saved jobs ---- */
 .saved-list { display: flex; flex-direction: column; gap: 8px; }
