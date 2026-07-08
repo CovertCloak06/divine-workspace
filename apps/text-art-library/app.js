@@ -3691,6 +3691,13 @@ async function commitSubmit() {
   showToast(editingSubmission
     ? 'Update submitted — it will show once approved'
     : 'Submitted! Your art will appear once the admin approves it');
+  // Optimistic: remember this submission locally so "My art" shows it even if
+  // the server's list read hasn't caught up yet (Blobs eventual consistency).
+  recentDels.delete(piece.id);
+  recentSubs.set(piece.id, {
+    rec: { ...piece, submittedAt: Date.now(), held: !!r.held, revision: !!editingSubmission },
+    ts: Date.now(),
+  });
   await refreshMySubmissions();
   if (state.activeTag !== '__mine') setActiveTag('__mine');
 }
@@ -3699,6 +3706,9 @@ async function deleteSubmission(p) {
   if (!confirm(`Delete your submission "${p.title}"?`)) return;
   const r = await API.submitArt({ action: 'delete', ownerToken: ownerToken(true), id: p.id });
   if (!r.ok) { alert('Delete failed: ' + (r.error || 'unknown')); return; }
+  // Optimistic: a laggy server list must not resurrect the just-deleted piece.
+  recentSubs.delete(p.id);
+  recentDels.set(p.id, Date.now());
   // If it was live, drop it locally too (the server tombstoned it).
   state.library = state.library.filter((u) => u.id !== p.id);
   state.deletedIds.add(p.id);
@@ -3709,12 +3719,32 @@ async function deleteSubmission(p) {
 }
 
 // ---- "My art" (this device's submissions) ----
+// Netlify Blobs list() is eventually consistent (the functions request strong
+// reads; this is belt-and-suspenders): remember what THIS session just
+// submitted / deleted for 90s and merge it over the server response, so
+// "My art" never looks empty right after submitting and never resurrects a
+// just-deleted piece while the server list catches up.
+const RECENT_WINDOW_MS = 90000;
+const recentSubs = new Map();   // id -> { rec, ts }
+const recentDels = new Map();   // id -> ts
+function pruneRecent() {
+  const now = Date.now();
+  for (const [id, v] of recentSubs) if (now - v.ts > RECENT_WINDOW_MS) recentSubs.delete(id);
+  for (const [id, ts] of recentDels) if (now - ts > RECENT_WINDOW_MS) recentDels.delete(id);
+}
 async function refreshMySubmissions() {
   const t = ownerToken(false);
   if (!t) { state.myPending = []; state.myLiveIds = []; syncMineTab(); return; }
   const r = await API.getPending(t, null);
-  state.myPending = Array.isArray(r.pending) ? r.pending : [];
-  state.myLiveIds = Array.isArray(r.liveIds) ? r.liveIds : [];
+  pruneRecent();
+  let pending = Array.isArray(r.pending) ? r.pending : [];
+  pending = pending.filter((p) => !recentDels.has(p.id));
+  for (const [id, v] of recentSubs) {
+    if (!pending.some((p) => p.id === id)) pending.push(v.rec);
+  }
+  pending.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+  state.myPending = pending;
+  state.myLiveIds = (Array.isArray(r.liveIds) ? r.liveIds : []).filter((id) => !recentDels.has(id));
   syncMineTab();
   if (state.activeTag === '__mine') render();
 }

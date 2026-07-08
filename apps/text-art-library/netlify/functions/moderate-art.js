@@ -29,7 +29,8 @@ export const handler = async (event) => {
   if (!ID_RE.test(id || '')) return json(400, { error: 'Invalid id' });
 
   try {
-    const store = getStore('frostline');
+    // Strong consistency: approve/reject must see a submission created moments ago.
+    const store = getStore({ name: 'frostline', consistency: 'strong' });
     const raw = await store.get(`pending/${id}`);
     if (raw === null) return json(404, { error: 'No pending submission with that id' });
 

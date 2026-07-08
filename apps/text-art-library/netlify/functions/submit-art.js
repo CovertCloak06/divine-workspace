@@ -99,18 +99,25 @@ export const handler = async (event) => {
   const ownerHash = token ? sha256(token) : null;
 
   try {
-    const store = getStore('frostline');
+    // Strong consistency: reads reflect writes immediately, so an owner can
+    // update/list a submission they created seconds ago (default 'eventual'
+    // reads lag ~10-30s; older lib versions ignore the option gracefully).
+    const store = getStore({ name: 'frostline', consistency: 'strong' });
 
     if (action === 'create') {
       const err = validatePiece(body.piece);
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
 
-      // id must be fresh — no hijacking an existing live/pending/tombstoned id
-      const [livePiece, pendingPiece] = await Promise.all([
-        store.get(`piece/${p.id}`), store.get(`pending/${p.id}`),
+      // id must be fresh — no hijacking a live/pending id, and no reusing a
+      // TOMBSTONED id (approval clears tombstones, so accepting one here would
+      // let a submission resurrect admin-deleted art under its old id).
+      const [livePiece, pendingPiece, tombstone] = await Promise.all([
+        store.get(`piece/${p.id}`), store.get(`pending/${p.id}`), store.get(`deleted/${p.id}`),
       ]);
-      if (livePiece !== null || pendingPiece !== null) return json(409, { error: 'That id already exists' });
+      if (livePiece !== null || pendingPiece !== null || tombstone !== null) {
+        return json(409, { error: 'That id already exists' });
+      }
 
       // Anti-spam: cap how many pending submissions one owner can stack up.
       if (!isAdmin) {
