@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos92">
+  <link rel="stylesheet" href="style.css?v=wos93">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1047,53 +1047,72 @@
     <span class="smoke-puff"></span>
   </div>
 
-  <!-- ===== First-visit content notice / age gate =====
-       Community-submitted art may include mature themes; this is the liability
-       notice + age acknowledgement. Self-contained (no app.js dependency) so it
-       gates before the gallery paints. The "hide mature-flagged content" choice
-       defaults ON and drives Safe Mode (see app.js filtered()). -->
+  <!-- ===== 18+ AGE VERIFICATION gate (wos93) =====
+       Frostline is an adult-only gallery: art here is intended for adults.
+       Every new visitor must enter their birth year (must compute to 18+) AND
+       press the explicit "I am 18 or older" agreement to enter; under-18 or
+       no-thanks is sent away. Self-contained (no app.js dependency) so it
+       blocks before the gallery paints. Verification persists per device under
+       'frostline:age18' — a NEW key, so visitors verified under the old
+       content-notice gate re-verify under the adult gate. -->
   <div id="content-gate" class="content-gate" role="dialog" aria-modal="true" aria-labelledby="cg-title" hidden>
     <div class="content-gate-card">
-      <div class="content-gate-emblem" aria-hidden="true">❄</div>
-      <h2 id="cg-title">Content Notice</h2>
-      <p>Frostline is a community library of text art for <strong>Whiteout Survival</strong> chat. Pieces are submitted by users and may occasionally include mature or suggestive themes.</p>
-      <p class="content-gate-fine">Frostline is a fan-made tool and is <strong>not affiliated with, endorsed by, or connected to</strong> Whiteout Survival or its publisher. All trademarks belong to their respective owners.</p>
-      <label class="content-gate-safe">
-        <input type="checkbox" id="cg-safe" checked>
-        <span>Hide content flagged as mature <em>(recommended)</em></span>
+      <div class="content-gate-emblem" aria-hidden="true">🔞</div>
+      <h2 id="cg-title">Adults Only — 18+</h2>
+      <p>Frostline is a community text-art gallery for <strong>Whiteout Survival</strong> chat that contains art <strong>intended for adults only</strong>. You must be <strong>18 or older</strong> to enter.</p>
+      <label class="age-year-row" for="cg-year">
+        <span class="age-year-label">Enter your birth year</span>
+        <input type="number" id="cg-year" inputmode="numeric" pattern="[0-9]*" placeholder="YYYY" min="1900" max="2026" autocomplete="bday-year">
       </label>
-      <p class="content-gate-age">By entering, you confirm you are <strong>18 or older</strong>, or that you have a parent or guardian's permission to view community-submitted content.</p>
+      <p class="content-gate-error" id="cg-error" role="alert" hidden></p>
+      <p class="content-gate-fine">Frostline is a fan-made tool and is <strong>not affiliated with, endorsed by, or connected to</strong> Whiteout Survival or its publisher. All trademarks belong to their respective owners.</p>
       <div class="content-gate-actions">
-        <button type="button" id="cg-leave" class="content-gate-btn ghost">Leave</button>
-        <button type="button" id="cg-enter" class="content-gate-btn primary">Enter Frostline</button>
+        <button type="button" id="cg-leave" class="content-gate-btn ghost">I'm under 18 — Leave</button>
+        <button type="button" id="cg-enter" class="content-gate-btn primary">I am 18 or older — Enter</button>
       </div>
     </div>
   </div>
   <script>
   (function () {
-    var ACK = 'frostline:ageok', SAFE = 'frostline:safe';
+    var ACK = 'frostline:age18';
     var gate = document.getElementById('content-gate');
     if (!gate) return;
     var acked; try { acked = localStorage.getItem(ACK); } catch (e) { acked = '1'; }
-    // Apply the persisted Safe Mode choice to <html> before the gallery renders
-    // (default ON until the visitor explicitly turns it off). app.js reads this.
-    try { if (localStorage.getItem(SAFE) !== '0') document.documentElement.classList.add('safe-mode'); } catch (e) {}
     if (acked) { gate.hidden = true; return; }
     document.documentElement.classList.add('gate-open');   // locks page scroll
     gate.hidden = false;
-    var safeBox = document.getElementById('cg-safe');
+    var yearEl = document.getElementById('cg-year');
+    var errEl = document.getElementById('cg-error');
+    function refuse(msg) {
+      errEl.textContent = msg;
+      errEl.hidden = false;
+    }
+    function leave() { window.location.href = 'https://www.google.com/'; }
     document.getElementById('cg-enter').addEventListener('click', function () {
-      var safe = !!(safeBox && safeBox.checked);
-      try { localStorage.setItem(ACK, '1'); localStorage.setItem(SAFE, safe ? '1' : '0'); } catch (e) {}
-      document.documentElement.classList.toggle('safe-mode', safe);
+      var raw = (yearEl && yearEl.value || '').trim();
+      var year = parseInt(raw, 10);
+      var nowYear = new Date().getFullYear();
+      if (!raw || isNaN(year) || year < 1900 || year > nowYear) {
+        refuse('Please enter your 4-digit birth year to continue.');
+        return;
+      }
+      // Age from year alone: someone born (nowYear - 18) may still be 17 if
+      // their birthday hasn't happened yet — so the BOUNDARY YEAR IS REFUSED.
+      // Only birth years strictly more than 18 back are accepted (born in
+      // (nowYear - 19) or earlier = 18+ regardless of birthday). Conservative
+      // by design for an adults-only gate.
+      if (nowYear - year <= 18) {
+        refuse('You must be 18 or older to view this gallery.');
+        setTimeout(leave, 1600);   // refusal shown, then sent away
+        return;
+      }
+      try { localStorage.setItem(ACK, '1'); } catch (e) {}
       document.documentElement.classList.remove('gate-open');
       gate.hidden = true;
-      // If app.js already booted, tell it to re-render + refresh the drawer toggle.
-      try { window.dispatchEvent(new CustomEvent('frostline:safemode', { detail: { on: safe } })); } catch (e) {}
     });
-    document.getElementById('cg-leave').addEventListener('click', function () {
-      // Send non-consenting / under-age visitors away from the content.
-      window.location.href = 'https://www.google.com/';
+    document.getElementById('cg-leave').addEventListener('click', leave);
+    if (yearEl) yearEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('cg-enter').click();
     });
   })();
   </script>
@@ -1122,12 +1141,11 @@
            the drawer (above Themes) as a flat, prominent button. NOT a tag in
            the tag strip — drafts are a separate section, not a topical filter. -->
       <button type="button" id="drawer-drafts-btn" class="drawer-drafts-cta" hidden>📝 Drafts</button>
-      <!-- Public Safe Mode toggle — mirrors the content-gate choice; lets an
-           adult turn mature-flagged content back on (or off) after entering. -->
-      <button type="button" id="drawer-safe-btn" class="drawer-safe-cta" role="switch" aria-checked="true">
-        <span class="drawer-safe-label">🛡️ Safe Mode</span>
-        <span class="drawer-safe-state" id="drawer-safe-state">On</span>
-      </button>
+      <!-- wos93: ADMIN moderation queue — user submissions awaiting approval. -->
+      <button type="button" id="drawer-pending-btn" class="drawer-drafts-cta" hidden>🔎 Pending review</button>
+      <!-- wos93: the visitor's own submissions (pending + approved), owned by
+           this device's secret token. Hidden until they have any. -->
+      <button type="button" id="drawer-mine-btn" class="drawer-drafts-cta" hidden>🎨 My art</button>
       <!-- Admin-only usage analytics (visits/day + most-copied art). Private:
            gated by the editor password on the server. Loads on expand. -->
       <section class="drawer-section editor-only" data-section="analytics">
@@ -1372,6 +1390,12 @@
     <button class="btn-add" id="btn-add" data-st="addButtonLabel" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
   </div>
 
+  <!-- wos93: PUBLIC submission entry — visitors create art in the same editor;
+       it goes to the admin approval queue (never straight to the gallery). -->
+  <div class="submit-row" id="submit-row">
+    <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
+  </div>
+
   <!-- wos38: banner shown ONLY while viewing the admin Drafts destination. -->
   <div class="drafts-banner" id="drafts-banner" hidden role="region" aria-label="Drafts section">
     <div class="drafts-banner-inner">
@@ -1581,7 +1605,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos92"></script>
+  <script src="app.js?v=wos93"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
