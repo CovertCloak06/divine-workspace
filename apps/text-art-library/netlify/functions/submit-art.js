@@ -1,10 +1,11 @@
 // Frostline — POST /submit-art  (PUBLIC — owner-token capability, no account)
 //
-// User submissions with server-enforced ownership. Every visitor device holds a
-// secret random token (generated client-side, never shown to anyone); the
-// server stores only sha256(token) per piece. Create/update/delete of a
-// submission requires presenting the matching token — so users can manage ONLY
-// their own art. The admin password (Bearer) overrides ownership everywhere.
+// DIRECT-PUBLISH user submissions with server-enforced ownership. Every visitor
+// device holds a secret random token (generated client-side); the server stores
+// only sha256(token) per piece. A created piece goes STRAIGHT into the public
+// library (no approval queue — Frostline is an adult gallery behind the 18+
+// gate). Update/delete require presenting the matching token — so users can
+// manage ONLY their own art. The admin password (Bearer) overrides ownership.
 //
 // Body shapes:
 //   { action:'create', ownerToken, piece:{id,title,tags,art,width,height} }
@@ -12,15 +13,14 @@
 //   { action:'delete', ownerToken, id }              // owner or admin
 //
 // Storage (store 'frostline'):
-//   pending/<id> — JSON { ...piece, held?:true, submittedAt } awaiting approval
-//                  (a revision of a live piece uses the same id; the live
-//                   piece/<id> stays up until the revision is approved)
-//   owner/<id>   — sha256 hex of the owner token (survives approval so the
-//                  owner can still revise/delete their live piece)
+//   piece/<id> — the live, public piece (same shape as admin-authored pieces)
+//   owner/<id> — sha256 hex of the owner token (who may edit/delete it)
 //
-// Nothing here is ever publicly visible: pending/* is only readable by its
-// owner and the admin (get-pending.js); it becomes public only when the admin
-// approves it (moderate-art.js) into piece/<id>.
+// NOTE: default (eventual) Blobs reads — strong consistency is unavailable in
+// this Lambda-compat runtime (no uncachedEdgeURL, verified on deploy preview).
+// Lag is SAFE for authorization: a not-yet-visible owner read yields null,
+// which can only DENY, never grant. The client optimistically shows its own
+// just-published art while list() catches up.
 
 import crypto from 'node:crypto';
 import { connectLambda, getStore } from '@netlify/blobs';
@@ -31,21 +31,20 @@ const MAX_TITLE = 80;
 const MAX_ART = 20000;       // chars — generous for text art, blocks abuse blobs
 const MAX_TAGS = 8;
 const MAX_TAG_LEN = 24;
-const MAX_PENDING_PER_OWNER = 10;   // simple anti-spam rate cap
+const MAX_PIECES_PER_OWNER = 20;   // simple anti-spam cap on live pieces
 
-// Narrow PROHIBITED-content pre-screen — hard legal red lines only (terms that
-// suggest minors in an adult gallery). This is NOT a maturity filter and NOT
-// enforcement: a match only sets `held:true` so the submission surfaces at the
-// top of the admin queue flagged for urgent human review. It is already
-// private until approved either way.
-const HOLD_TERMS = [
+// Narrow PROHIBITED-content screen — hard legal red lines only (terms that
+// suggest minors in an adult gallery). With no review queue, a match is
+// REJECTED outright at submit time. This is NOT a maturity filter: adult
+// content is the point of the gallery; only clearly-prohibited terms match.
+const BLOCK_TERMS = [
   'child', 'children', 'kid', 'kids', 'minor', 'minors', 'underage',
   'preteen', 'pre-teen', 'loli', 'lolita', 'shota', 'jailbait', 'toddler',
   'infant', 'baby girl', 'baby boy', 'schoolgirl', 'schoolboy', 'cp',
 ];
-function needsHold(text) {
+function isProhibited(text) {
   const t = String(text || '').toLowerCase();
-  return HOLD_TERMS.some((w) =>
+  return BLOCK_TERMS.some((w) =>
     new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])').test(t));
 }
 
@@ -69,8 +68,8 @@ function validatePiece(p) {
   return null;
 }
 
-// The exact subset of fields a submission may carry — everything else
-// (wosVerified, draft, held, ownerHash…) is server-controlled.
+// The exact public piece shape — identical to admin-authored pieces. Nothing
+// else a submitter sends (draft, wosVerified, etc.) is honored.
 function sanitizePiece(p) {
   return {
     id: p.id,
@@ -79,6 +78,7 @@ function sanitizePiece(p) {
     width: Number.isFinite(+p.width) ? Math.max(0, Math.min(500, Math.round(+p.width))) : 0,
     height: Number.isFinite(+p.height) ? Math.max(0, Math.min(500, Math.round(+p.height))) : 0,
     art: p.art,
+    wosVerified: false,
   };
 }
 
@@ -99,11 +99,6 @@ export const handler = async (event) => {
   const ownerHash = token ? sha256(token) : null;
 
   try {
-    // NOTE: default (eventual) reads only — strong consistency is unavailable
-    // in this Lambda-compat runtime (BlobsConsistencyError: no uncachedEdgeURL,
-    // verified on the deploy preview). Lag is SAFE here: a not-yet-visible
-    // owner/piece read yields null, which can only DENY (403/404), never grant.
-    // The client papers over list lag with a 90s optimistic merge.
     const store = getStore('frostline');
 
     if (action === 'create') {
@@ -111,36 +106,39 @@ export const handler = async (event) => {
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
 
-      // id must be fresh — no hijacking a live/pending id, and no reusing a
-      // TOMBSTONED id (approval clears tombstones, so accepting one here would
-      // let a submission resurrect admin-deleted art under its old id).
-      const [livePiece, pendingPiece, tombstone] = await Promise.all([
-        store.get(`piece/${p.id}`), store.get(`pending/${p.id}`), store.get(`deleted/${p.id}`),
+      if (isProhibited(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) {
+        return json(400, { error: 'This submission contains prohibited content and cannot be published' });
+      }
+
+      // id must be fresh — no hijacking a live id, and no reusing a TOMBSTONED
+      // id (that would resurrect admin-deleted art under its old id).
+      const [livePiece, tombstone] = await Promise.all([
+        store.get(`piece/${p.id}`), store.get(`deleted/${p.id}`),
       ]);
-      if (livePiece !== null || pendingPiece !== null || tombstone !== null) {
+      if (livePiece !== null || tombstone !== null) {
         return json(409, { error: 'That id already exists' });
       }
 
-      // Anti-spam: cap how many pending submissions one owner can stack up.
+      // Anti-spam: cap how many live pieces one owner can publish.
       if (!isAdmin) {
         const { blobs } = await store.list({ prefix: 'owner/' });
         let mine = 0;
         await Promise.all((blobs || []).map(async ({ key }) => {
           const h = await store.get(key);
-          if (h === ownerHash && (await store.get(`pending/${key.slice('owner/'.length)}`)) !== null) mine++;
+          if (h === ownerHash && (await store.get(`piece/${key.slice('owner/'.length)}`)) !== null) mine++;
         }));
-        if (mine >= MAX_PENDING_PER_OWNER) {
-          return json(429, { error: `Limit of ${MAX_PENDING_PER_OWNER} pending submissions — wait for review` });
+        if (mine >= MAX_PIECES_PER_OWNER) {
+          return json(429, { error: `Limit of ${MAX_PIECES_PER_OWNER} published pieces reached` });
         }
       }
 
-      const record = { ...p, submittedAt: Date.now() };
-      if (needsHold(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) record.held = true;
+      // DIRECT PUBLISH: the piece goes straight into the public library.
       await Promise.all([
-        store.set(`pending/${p.id}`, JSON.stringify(record)),
+        store.set(`piece/${p.id}`, JSON.stringify(p)),
         store.set(`owner/${p.id}`, ownerHash || 'admin'),
+        store.delete(`deleted/${p.id}`),
       ]);
-      return json(200, { ok: true, pending: true, held: !!record.held });
+      return json(200, { ok: true, live: true });
     }
 
     if (action === 'update') {
@@ -148,38 +146,45 @@ export const handler = async (event) => {
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
 
-      const storedOwner = await store.get(`owner/${p.id}`);
-      const [livePiece, pendingPiece] = await Promise.all([
-        store.get(`piece/${p.id}`), store.get(`pending/${p.id}`),
-      ]);
-      if (livePiece === null && pendingPiece === null) return json(404, { error: 'Not found' });
-      // OWNERSHIP GATE: only the owner of this piece (or the admin) may touch it.
-      if (!isAdmin && (!storedOwner || storedOwner !== ownerHash)) {
-        return json(403, { error: 'Not your art' });
+      if (isProhibited(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) {
+        return json(400, { error: 'This update contains prohibited content and cannot be published' });
       }
 
-      // An edit always goes (back) through review: write the new content to
-      // pending/<id>; a live version stays public until the revision is approved.
-      const record = { ...p, submittedAt: Date.now(), revision: livePiece !== null };
-      if (needsHold(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) record.held = true;
-      await store.set(`pending/${p.id}`, JSON.stringify(record));
-      return json(200, { ok: true, pending: true, held: !!record.held });
+      // OWNERSHIP GATE: only the owner of this id (or the admin) may touch it.
+      // The owner record is the authority — if it doesn't exist, nothing was
+      // ever published under this id via submissions (404).
+      const storedOwner = await store.get(`owner/${p.id}`);
+      if (!isAdmin) {
+        if (!storedOwner) return json(404, { error: 'Not found' });
+        if (storedOwner !== ownerHash) return json(403, { error: 'Not your art' });
+      }
+      // Preserve an admin-granted wosVerified badge across owner edits.
+      let prevVerified = false;
+      try {
+        const prevRaw = await store.get(`piece/${p.id}`);
+        if (prevRaw !== null) prevVerified = !!JSON.parse(prevRaw).wosVerified;
+      } catch { /* corrupt/missing previous record — treat as unverified */ }
+      const record = { ...p, wosVerified: prevVerified };
+      await Promise.all([
+        store.set(`piece/${p.id}`, JSON.stringify(record)),
+        store.delete(`deleted/${p.id}`),
+      ]);
+      return json(200, { ok: true, live: true });
     }
 
     if (action === 'delete') {
       const id = body.id;
       if (!ID_RE.test(id || '')) return json(400, { error: 'Invalid id' });
       const storedOwner = await store.get(`owner/${id}`);
-      if (!isAdmin && (!storedOwner || storedOwner !== ownerHash)) {
-        return json(403, { error: 'Not your art' });
+      if (!isAdmin) {
+        if (!storedOwner) return json(404, { error: 'Not found' });
+        if (storedOwner !== ownerHash) return json(403, { error: 'Not your art' });
       }
-      const hadLive = (await store.get(`piece/${id}`)) !== null;
-      const ops = [store.delete(`pending/${id}`), store.delete(`owner/${id}`)];
-      if (hadLive) {
-        ops.push(store.delete(`piece/${id}`));
-        ops.push(store.set(`deleted/${id}`, String(Date.now())));  // tombstone
-      }
-      await Promise.all(ops);
+      await Promise.all([
+        store.delete(`piece/${id}`),
+        store.delete(`owner/${id}`),
+        store.set(`deleted/${id}`, String(Date.now())),  // tombstone
+      ]);
       return json(200, { ok: true });
     }
 
