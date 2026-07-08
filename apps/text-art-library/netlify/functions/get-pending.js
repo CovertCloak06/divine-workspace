@@ -32,9 +32,10 @@ export const handler = async (event) => {
   const ownerHash = token ? sha256(token) : null;
 
   try {
-    // Strong consistency so a submission made seconds ago appears in "My art"
-    // and the admin queue immediately (default reads lag ~10-30s).
-    const store = getStore({ name: 'frostline', consistency: 'strong' });
+    // Default (eventual) reads — strong consistency is unavailable in this
+    // Lambda-compat runtime (verified on the preview). list() may lag writes by
+    // ~10-30s; the client merges its own recent submissions over this response.
+    const store = getStore('frostline');
     const { blobs } = await store.list({ prefix: 'pending/' });
 
     const pending = [];

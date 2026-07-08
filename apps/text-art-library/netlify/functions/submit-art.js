@@ -99,10 +99,12 @@ export const handler = async (event) => {
   const ownerHash = token ? sha256(token) : null;
 
   try {
-    // Strong consistency: reads reflect writes immediately, so an owner can
-    // update/list a submission they created seconds ago (default 'eventual'
-    // reads lag ~10-30s; older lib versions ignore the option gracefully).
-    const store = getStore({ name: 'frostline', consistency: 'strong' });
+    // NOTE: default (eventual) reads only — strong consistency is unavailable
+    // in this Lambda-compat runtime (BlobsConsistencyError: no uncachedEdgeURL,
+    // verified on the deploy preview). Lag is SAFE here: a not-yet-visible
+    // owner/piece read yields null, which can only DENY (403/404), never grant.
+    // The client papers over list lag with a 90s optimistic merge.
+    const store = getStore('frostline');
 
     if (action === 'create') {
       const err = validatePiece(body.piece);

@@ -29,8 +29,11 @@ export const handler = async (event) => {
   if (!ID_RE.test(id || '')) return json(400, { error: 'Invalid id' });
 
   try {
-    // Strong consistency: approve/reject must see a submission created moments ago.
-    const store = getStore({ name: 'frostline', consistency: 'strong' });
+    // Default (eventual) reads — strong consistency is unavailable in this
+    // runtime. A just-created submission may 404 here for a few seconds; the
+    // admin queue UI is itself populated by list(), so by the time an item is
+    // visible to approve, its record is readable.
+    const store = getStore('frostline');
     const raw = await store.get(`pending/${id}`);
     if (raw === null) return json(404, { error: 'No pending submission with that id' });
 
