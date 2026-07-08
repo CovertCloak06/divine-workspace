@@ -3946,48 +3946,16 @@ body.editor .submit-row { display: none; }
 }
 .btn-submit-art:hover { filter: brightness(1.12); }
 
-/* Status pills on submission cards */
-.pending-pill {
+/* wos94: "YOURS" pill — marks this device's own published pieces */
+.mine-pill {
   background: rgba(120, 190, 255, 0.2) !important;
   color: #9fd2ff !important;
   border-color: rgba(120, 190, 255, 0.55) !important;
-}
-.held-pill {
-  background: rgba(255, 110, 110, 0.2) !important;
-  color: #ff9d9d !important;
-  border-color: rgba(255, 110, 110, 0.6) !important;
 }
 
 /* Owner edit/delete icons — .card-actions is display:none unless body.editor,
    so the owner variant must force itself visible for non-admin owners. */
 .card-actions.owner-actions { display: flex; }
-
-/* Admin moderation row on pending cards */
-.moderate-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.moderate-btn {
-  flex: 1 1 0;
-  padding: 9px 10px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-.moderate-btn.approve {
-  background: linear-gradient(180deg, #63c98a 0%, #3f9e6a 100%);
-  color: #06261a;
-  border-color: rgba(160, 240, 190, 0.5);
-}
-.moderate-btn.reject {
-  background: rgba(120, 30, 40, 0.55);
-  color: #ffc9c9;
-  border-color: rgba(255, 130, 130, 0.45);
-}
-.moderate-btn:hover { filter: brightness(1.12); }
 
 /* Submission mode: the Draft/Published status row is admin workflow — hide it
    (submissions are always pending until approved). */

@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos93">
+  <link rel="stylesheet" href="style.css?v=wos94">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1141,10 +1141,8 @@
            the drawer (above Themes) as a flat, prominent button. NOT a tag in
            the tag strip — drafts are a separate section, not a topical filter. -->
       <button type="button" id="drawer-drafts-btn" class="drawer-drafts-cta" hidden>📝 Drafts</button>
-      <!-- wos93: ADMIN moderation queue — user submissions awaiting approval. -->
-      <button type="button" id="drawer-pending-btn" class="drawer-drafts-cta" hidden>🔎 Pending review</button>
-      <!-- wos93: the visitor's own submissions (pending + approved), owned by
-           this device's secret token. Hidden until they have any. -->
+      <!-- wos94: the visitor's own published art, owned by this device's
+           secret token. Hidden until they have any. -->
       <button type="button" id="drawer-mine-btn" class="drawer-drafts-cta" hidden>🎨 My art</button>
       <!-- Admin-only usage analytics (visits/day + most-copied art). Private:
            gated by the editor password on the server. Loads on expand. -->
@@ -1390,8 +1388,9 @@
     <button class="btn-add" id="btn-add" data-st="addButtonLabel" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
   </div>
 
-  <!-- wos93: PUBLIC submission entry — visitors create art in the same editor;
-       it goes to the admin approval queue (never straight to the gallery). -->
+  <!-- wos94: PUBLIC submission entry — visitors create art in the same editor;
+       it publishes straight into the gallery (adult site behind the 18+ gate),
+       editable/deletable only by this device (server-enforced owner token). -->
   <div class="submit-row" id="submit-row">
     <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
   </div>
@@ -1605,7 +1604,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos93"></script>
+  <script src="app.js?v=wos94"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

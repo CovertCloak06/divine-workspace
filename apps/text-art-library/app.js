@@ -414,9 +414,9 @@ const API = {
       return { ok: true, flagged: id in flags, note: flags[id] || '' };
     }
   },
-  /* wos93 — user submission system. All ownership checks are SERVER-side
-   * (submit-art.js verifies sha256(ownerToken) against the piece's stored
-   * owner hash); these wrappers just carry the credentials. */
+  /* wos94 — user submissions (DIRECT PUBLISH, no review queue). All ownership
+   * checks are SERVER-side (submit-art.js verifies sha256(ownerToken) against
+   * the piece's stored owner hash); these wrappers just carry the credentials. */
   async submitArt(payload) {
     try {
       const res = await fetch(await fnUrl('submit-art'), {
@@ -431,32 +431,16 @@ const API = {
       return { ok: false, error: 'Network error — try again' };
     }
   },
-  async getPending(token, password) {
+  async getMine(token) {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (password) headers['Authorization'] = 'Bearer ' + password;
-      const res = await fetch(await fnUrl('get-pending'), {
+      const res = await fetch(await fnUrl('get-mine'), {
         method: 'POST',
-        headers,
-        body: JSON.stringify(token ? { ownerToken: token } : {}),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerToken: token }),
       });
       if (res.ok) return await res.json();
     } catch { /* offline — treat as none */ }
-    return { pending: [], liveIds: [] };
-  },
-  async moderateArt(action, id, password) {
-    try {
-      const res = await fetch(await fnUrl('moderate-art'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + password },
-        body: JSON.stringify({ action, id }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (res.ok) return body;
-      return { ok: false, error: body.error || `HTTP ${res.status}` };
-    } catch {
-      return { ok: false, error: 'Network error — try again' };
-    }
+    return { liveIds: [] };
   },
   async authenticate(password) {
     try {
@@ -555,10 +539,8 @@ const state = {
   editor: false,
   password: null,
   booted: false,
-  // wos93 — user submissions
-  myPending: [],          // this device's pending submissions (server-matched)
-  myLiveIds: [],          // approved ids still owned by this device
-  allPending: [],         // ADMIN moderation queue (all pending)
+  // wos94 — user submissions (direct publish)
+  myLiveIds: [],          // live ids owned by this device (server-matched)
 };
 
 async function boot() {
@@ -592,7 +574,6 @@ async function boot() {
         els.btnExport.disabled = false;
         render();
         showToast('Editor mode restored');
-        refreshPendingQueue();   // wos93: load the moderation queue
       } else {
         // password no longer valid — drop it silently
         try { localStorage.removeItem(REMEMBER_KEY); } catch {}
@@ -610,8 +591,8 @@ async function boot() {
   // Count this visit (anonymous, deduped per day) for the admin analytics panel.
   trackVisitOncePerDay();
 
-  // wos93: load this device's own submissions (no-op without an owner token).
-  refreshMySubmissions();
+  // wos94: load this device's own published pieces (no-op without a token).
+  refreshMyArt();
 
   // --- Restore scroll position + reopen the lightbox the user was viewing.
   if (typeof sess.scrollY === 'number' && sess.scrollY > 0) {
@@ -715,6 +696,15 @@ function resolveLibrary(data) {
       library.push({ ...p });
       needsPersist = true;
     }
+  }
+
+  // wos94: re-add pieces THIS session just published (direct-publish flow) —
+  // Blobs list() lags writes by ~10-30s, so a refresh() in that window would
+  // otherwise blink a just-published piece out of the gallery until the
+  // server's list catches up. recentSubs entries expire after 90s.
+  pruneRecent();
+  for (const [id, v] of recentSubs) {
+    if (!tomb.has(id) && !library.some((p) => p.id === id)) library.push({ ...v.rec });
   }
 
   state.library = library;
@@ -936,7 +926,6 @@ function syncActiveThemeChip() {
   const flagCount = liveFlagCount();
   // wos93: human labels for the submission destinations (not raw __ tags).
   const label = t === '__mine' ? 'my art'
-    : t === '__pending' ? 'pending review'
     : flagged ? `flagged (${flagCount})` : t;
   els.activeThemeLabel.textContent = label;
 }
@@ -1081,16 +1070,10 @@ function filtered() {
     } else {
       list = list.filter((p) => p && p.draft);
     }
-  } else if (state.activeTag === '__pending') {
-    // wos93: ADMIN moderation queue — user submissions awaiting approval.
-    // Served from state.allPending (get-pending w/ Bearer), never the library.
-    return state.editor ? state.allPending.slice() : [];
   } else if (state.activeTag === '__mine') {
-    // wos93: this device's own submissions: pending ones (from the server,
-    // owner-token-matched) + approved ones still owned by this device.
-    const liveMine = state.merged.filter((p) => p && !p.draft && state.myLiveIds.includes(p.id));
-    const pendingIds = new Set(state.myPending.map((p) => p.id));
-    return state.myPending.concat(liveMine.filter((p) => !pendingIds.has(p.id)));
+    // wos94: this device's own published pieces (server-matched ownership,
+    // plus anything just published this session while the list catches up).
+    return state.merged.filter((p) => p && !p.draft && isMine(p.id));
   } else {
     list = list.filter((p) => p && !p.draft);
     if (state.activeTag === '__flagged') {
@@ -1115,8 +1098,7 @@ function filtered() {
 function render() {
   syncFlaggedTab();
   syncDraftsTab();
-  syncMineTab();      // wos93
-  syncPendingTab();   // wos93
+  syncMineTab();      // wos94
   const list = filtered();
   if (!list.length) {
     renderEmpty(state.query || state.activeTag !== 'all'
@@ -1146,20 +1128,13 @@ function renderCard(p) {
     draftPill.textContent = 'DRAFT';
     title.appendChild(draftPill);
   }
-  // wos93: pending submissions (records carry submittedAt) get a status pill;
-  // blocklist-held ones get an urgent marker so the admin reviews them first.
-  if (p.submittedAt != null) {
-    const pendPill = document.createElement('span');
-    pendPill.className = 'draft-pill pending-pill';
-    pendPill.textContent = p.revision ? 'REVISION' : 'PENDING';
-    title.appendChild(pendPill);
-    if (p.held) {
-      const heldPill = document.createElement('span');
-      heldPill.className = 'draft-pill held-pill';
-      heldPill.textContent = '⚠ HELD';
-      heldPill.title = 'Matched the prohibited-content pre-screen — review urgently';
-      title.appendChild(heldPill);
-    }
+  // wos94: the owner sees a small YOURS pill on their own pieces so they can
+  // spot (and manage) their art anywhere in the gallery.
+  if (!state.editor && typeof isMine === 'function' && isMine(p.id)) {
+    const minePill = document.createElement('span');
+    minePill.className = 'draft-pill mine-pill';
+    minePill.textContent = 'YOURS';
+    title.appendChild(minePill);
   }
   head.appendChild(title);
 
@@ -1174,16 +1149,13 @@ function renderCard(p) {
 
   const EDIT_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-9.96a1 1 0 0 0 0-1.41l-2.59-2.59a1 1 0 0 0-1.41 0L14.13 5.87l3.75 3.75 2.83-2.83z"/></svg>';
   const DEL_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2.46-7.12 1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-  // wos93: whose actions go on this card?
-  //   admin      → edit/delete everywhere (pending pieces are moderated via the
-  //                footer Approve/Reject instead of head icons)
-  //   owner      → edit/delete on THEIR OWN cards in the "My art" view. This is
-  //                UX only — the server re-verifies the owner token on every
-  //                update/delete, so it cannot be used on someone else's art.
-  const isPendingRec = p.submittedAt != null;
-  const ownsThis = !state.editor && state.activeTag === '__mine'
-    && (isPendingRec || state.myLiveIds.includes(p.id));
-  if (state.editor && !isPendingRec) {
+  // wos94: whose actions go on this card?
+  //   admin → edit/delete everywhere.
+  //   owner → edit/delete on THEIR OWN cards (any view). This is UX only — the
+  //           server re-verifies the owner token on every update/delete, so it
+  //           cannot be used on someone else's art.
+  const ownsThis = !state.editor && isMine(p.id);
+  if (state.editor) {
     const actions = document.createElement('div');
     actions.className = 'card-actions';
     const edit = document.createElement('button');
@@ -1325,24 +1297,6 @@ function renderCard(p) {
   footer.appendChild(flag);
 
   card.appendChild(footer);
-
-  // wos93: ADMIN moderation controls on pending submissions — Approve makes it
-  // live in the public gallery; Reject discards the submission.
-  if (state.editor && isPendingRec) {
-    const modRow = document.createElement('div');
-    modRow.className = 'moderate-row';
-    const approve = document.createElement('button');
-    approve.className = 'moderate-btn approve';
-    approve.textContent = '✔ Approve';
-    approve.addEventListener('click', (e) => { e.stopPropagation(); moderateSubmission('approve', p); });
-    const reject = document.createElement('button');
-    reject.className = 'moderate-btn reject';
-    reject.textContent = '✖ Reject';
-    reject.addEventListener('click', (e) => { e.stopPropagation(); moderateSubmission('reject', p); });
-    modRow.appendChild(approve);
-    modRow.appendChild(reject);
-    card.appendChild(modRow);
-  }
 
   // open lightbox on card body click
   card.addEventListener('click', () => openLightbox(p));
@@ -1557,7 +1511,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos93';
+const APP_VERSION = 'wos94';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1865,7 +1819,6 @@ async function submitAuth() {
     } catch { /* ignore quota errors */ }
     closeAuth();
     render();
-    refreshPendingQueue();   // wos93: load the moderation queue
   } else {
     els.authError.textContent = r.error || 'Wrong password';
   }
@@ -1881,10 +1834,6 @@ function lockEditor() {
   try { localStorage.removeItem(REMEMBER_KEY); } catch {}
   // Re-render so per-card edit/delete buttons + flagged tab disappear.
   if (state.activeTag === '__flagged') state.activeTag = 'all';
-  // wos93: the moderation queue is admin-only — drop it on lock.
-  state.allPending = [];
-  if (state.activeTag === '__pending') state.activeTag = 'all';
-  syncPendingTab();
   render();
   showToast('Editor locked');
 }
@@ -3610,13 +3559,14 @@ function newId() {
 
 /* Two-step save: tap Save -> name the piece in the sheet -> confirm. Keeps the
    Title/Tags fields out of the drawing view so the canvas + palette own it. */
-/* ============ wos93 — USER SUBMISSIONS ============================
- * Visitors create art in the SAME editor and submit it to an admin approval
- * queue; nothing goes public until approved. Ownership: this device holds a
- * secret random token ('frostline:owner'); the server stores sha256(token)
- * per piece and refuses update/delete unless the presented token matches (or
- * the admin password is used) — so users can manage ONLY their own art, and
- * that guarantee lives server-side (client checks here are UX only). */
+/* ============ wos94 — USER SUBMISSIONS (direct publish) ============
+ * Visitors create art in the SAME editor and it goes STRAIGHT into the public
+ * gallery — no review queue (adult gallery behind the 18+ gate). Ownership:
+ * this device holds a secret random token ('frostline:owner'); the server
+ * stores sha256(token) per piece and refuses update/delete unless the
+ * presented token matches (or the admin password is used) — so users can
+ * manage ONLY their own art, and that guarantee lives server-side (client
+ * checks here are UX only). */
 const OWNER_TOKEN_KEY = 'frostline:owner';
 let submitMode = false;          // the editor modal is in public-submission mode
 let editingSubmission = null;    // piece being revised via the submission path
@@ -3640,22 +3590,29 @@ function setSubmitMode(on) {
   // CSS hook: hides the Draft/Published status row + relabels via .submit-mode
   els.edit.classList.toggle('submit-mode', submitMode);
   const confirmBtn = document.getElementById('save-confirm');
-  if (confirmBtn) confirmBtn.textContent = submitMode ? 'Submit for review' : 'Save art';
+  if (confirmBtn) confirmBtn.textContent = submitMode ? 'Publish art' : 'Save art';
 }
 
-// Public entry: same editor, submission save path.
+// Public entry: same editor, direct-publish save path.
 function openSubmit() {
   openAdd();                      // resets submitMode — flip it after
   setSubmitMode(true);
   editingSubmission = null;
   els.editTitle.textContent = 'Submit your art';
 }
-// Owner revising one of their own pieces (pending or live).
+// Owner editing one of their own live pieces.
 function openSubmitEdit(p) {
   openEdit(p);
   setSubmitMode(true);
   editingSubmission = p;
-  els.editTitle.textContent = 'Edit your submission';
+  els.editTitle.textContent = 'Edit your art';
+}
+
+// Is this piece owned by THIS device? (UX helper only — the server re-verifies
+// the owner token on every write.)
+function isMine(id) {
+  if (recentDels.has(id)) return false;
+  return state.myLiveIds.includes(id) || recentSubs.has(id);
 }
 
 async function commitSubmit() {
@@ -3674,56 +3631,60 @@ async function commitSubmit() {
     title, tags, art, width, height,
   };
   const confirmBtn = document.getElementById('save-confirm');
-  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…'; }
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Publishing…'; }
   const r = await API.submitArt({
     action: editingSubmission ? 'update' : 'create',
     ownerToken: ownerToken(true),
     piece,
   });
-  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Submit for review'; }
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Publish art'; }
   if (!r.ok) {
-    alert('Submit failed: ' + (r.error || 'unknown'));
+    alert('Publish failed: ' + (r.error || 'unknown'));
     return;
   }
   clearDraft();
   closeSaveSheet();
   closeEdit();
-  showToast(editingSubmission
-    ? 'Update submitted — it will show once approved'
-    : 'Submitted! Your art will appear once the admin approves it');
-  // Optimistic: remember this submission locally so "My art" shows it even if
-  // the server's list read hasn't caught up yet (Blobs eventual consistency).
+  showToast(editingSubmission ? 'Your art was updated' : 'Your art is live in the gallery!');
+  // DIRECT PUBLISH: put the piece straight into the local library so it shows
+  // instantly; remember it for 90s so a refresh() during the Blobs list lag
+  // can't blink it out (see resolveLibrary + refreshMyArt).
+  const livePiece = { ...piece, wosVerified: !!(editingSubmission && editingSubmission.wosVerified) };
   recentDels.delete(piece.id);
-  recentSubs.set(piece.id, {
-    rec: { ...piece, submittedAt: Date.now(), held: !!r.held, revision: !!editingSubmission },
-    ts: Date.now(),
-  });
-  await refreshMySubmissions();
+  recentSubs.set(piece.id, { rec: livePiece, ts: Date.now() });
+  const idx = state.library.findIndex((u) => u.id === piece.id);
+  if (idx >= 0) state.library[idx] = livePiece;
+  else state.library.push(livePiece);
+  state.deletedIds.delete(piece.id);
+  if (!state.myLiveIds.includes(piece.id)) state.myLiveIds.push(piece.id);
+  cacheNow();
+  recomputeMerged();
+  render();
   if (state.activeTag !== '__mine') setActiveTag('__mine');
+  refreshMyArt();
 }
 
 async function deleteSubmission(p) {
-  if (!confirm(`Delete your submission "${p.title}"?`)) return;
+  if (!confirm(`Delete your art "${p.title}"?`)) return;
   const r = await API.submitArt({ action: 'delete', ownerToken: ownerToken(true), id: p.id });
   if (!r.ok) { alert('Delete failed: ' + (r.error || 'unknown')); return; }
   // Optimistic: a laggy server list must not resurrect the just-deleted piece.
   recentSubs.delete(p.id);
   recentDels.set(p.id, Date.now());
-  // If it was live, drop it locally too (the server tombstoned it).
+  state.myLiveIds = state.myLiveIds.filter((id) => id !== p.id);
   state.library = state.library.filter((u) => u.id !== p.id);
-  state.deletedIds.add(p.id);
+  state.deletedIds.add(p.id);   // server tombstoned it
   cacheNow();
   recomputeMerged();
-  await refreshMySubmissions();
   render();
+  refreshMyArt();
 }
 
-// ---- "My art" (this device's submissions) ----
-// Netlify Blobs list() is eventually consistent (the functions request strong
-// reads; this is belt-and-suspenders): remember what THIS session just
-// submitted / deleted for 90s and merge it over the server response, so
-// "My art" never looks empty right after submitting and never resurrects a
-// just-deleted piece while the server list catches up.
+// ---- "My art" (this device's published pieces) ----
+// Netlify Blobs list() is eventually consistent: remember what THIS session
+// just published / deleted for 90s and merge it over the server response, so
+// "My art" (and the gallery) shows a just-published piece instantly and never
+// resurrects a just-deleted one while the server list catches up.
 const RECENT_WINDOW_MS = 90000;
 const recentSubs = new Map();   // id -> { rec, ts }
 const recentDels = new Map();   // id -> ts
@@ -3732,27 +3693,27 @@ function pruneRecent() {
   for (const [id, v] of recentSubs) if (now - v.ts > RECENT_WINDOW_MS) recentSubs.delete(id);
   for (const [id, ts] of recentDels) if (now - ts > RECENT_WINDOW_MS) recentDels.delete(id);
 }
-async function refreshMySubmissions() {
+async function refreshMyArt() {
   const t = ownerToken(false);
-  if (!t) { state.myPending = []; state.myLiveIds = []; syncMineTab(); return; }
-  const r = await API.getPending(t, null);
+  if (!t) { state.myLiveIds = []; syncMineTab(); return; }
+  const r = await API.getMine(t);
   pruneRecent();
-  let pending = Array.isArray(r.pending) ? r.pending : [];
-  pending = pending.filter((p) => !recentDels.has(p.id));
-  for (const [id, v] of recentSubs) {
-    if (!pending.some((p) => p.id === id)) pending.push(v.rec);
-  }
-  pending.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-  state.myPending = pending;
-  state.myLiveIds = (Array.isArray(r.liveIds) ? r.liveIds : []).filter((id) => !recentDels.has(id));
+  const ids = new Set((Array.isArray(r.liveIds) ? r.liveIds : []).filter((id) => !recentDels.has(id)));
+  for (const id of recentSubs.keys()) ids.add(id);
+  const prev = state.myLiveIds;
+  state.myLiveIds = [...ids];
   syncMineTab();
-  if (state.activeTag === '__mine') render();
+  // Re-render the CURRENT view whenever ownership changed — a returning owner's
+  // first gallery render happens before get-mine resolves, so their cards would
+  // otherwise miss the YOURS pill + edit/delete until an unrelated re-render.
+  const changed = prev.length !== state.myLiveIds.length
+    || state.myLiveIds.some((id) => !prev.includes(id));
+  if (changed && state.booted) render();
 }
 function syncMineTab() {
   const btn = document.getElementById('drawer-mine-btn');
   if (!btn) return;
-  const count = state.myPending.length + state.myLiveIds.filter(
-    (id) => !state.myPending.some((p) => p.id === id)).length;
+  const count = state.myLiveIds.filter((id) => !recentDels.has(id)).length;
   btn.hidden = count === 0;
   btn.textContent = `🎨 My art (${count})`;
   btn.classList.toggle('active', state.activeTag === '__mine');
@@ -3760,37 +3721,7 @@ function syncMineTab() {
   // syncFlaggedTab pattern to avoid re-entrant renders.
   if (count === 0 && state.activeTag === '__mine') state.activeTag = 'all';
 }
-
-// ---- Admin moderation queue ----
-async function refreshPendingQueue() {
-  if (!state.editor || !state.password) { state.allPending = []; syncPendingTab(); return; }
-  const r = await API.getPending(null, state.password);
-  state.allPending = Array.isArray(r.pending) ? r.pending : [];
-  syncPendingTab();
-  if (state.activeTag === '__pending') render();
-}
-function syncPendingTab() {
-  const btn = document.getElementById('drawer-pending-btn');
-  if (!btn) return;
-  const n = state.allPending.length;
-  const held = state.allPending.filter((p) => p.held).length;
-  btn.hidden = !(state.editor && n > 0);
-  btn.textContent = held ? `🔎 Pending review (${n}) — ⚠ ${held} held` : `🔎 Pending review (${n})`;
-  btn.classList.toggle('active', state.activeTag === '__pending');
-  // Direct reset (not setActiveTag) — runs inside render(); avoids re-entry.
-  if (btn.hidden && state.activeTag === '__pending') state.activeTag = 'all';
-}
-async function moderateSubmission(action, p) {
-  if (action === 'reject' && !confirm(`Reject "${p.title}"? The submission is discarded.`)) return;
-  const r = await API.moderateArt(action, p.id, state.password);
-  if (!r.ok) { alert('Moderation failed: ' + (r.error || 'unknown')); return; }
-  state.allPending = state.allPending.filter((q) => q.id !== p.id);
-  syncPendingTab();
-  showToast(action === 'approve' ? `Approved "${p.title}" — now live` : `Rejected "${p.title}"`);
-  if (action === 'approve') refresh();   // pull the newly-live piece into the library
-  render();
-}
-/* ============ end wos93 user submissions ============ */
+/* ============ end wos94 user submissions ============ */
 
 function openSaveSheet() {
   if (!state.editor && !submitMode) return;   // wos93: submissions may save too
@@ -4451,12 +4382,6 @@ loadCustomSiteText();
   const mineBtn = document.getElementById('drawer-mine-btn');
   if (mineBtn) mineBtn.addEventListener('click', () => {
     setActiveTag(state.activeTag === '__mine' ? 'all' : '__mine');
-    closeDrawer();
-  });
-  const pendBtn = document.getElementById('drawer-pending-btn');
-  if (pendBtn) pendBtn.addEventListener('click', () => {
-    if (!state.editor) return;
-    setActiveTag(state.activeTag === '__pending' ? 'all' : '__pending');
     closeDrawer();
   });
 })();
