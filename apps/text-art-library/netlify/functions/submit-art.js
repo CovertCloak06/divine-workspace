@@ -106,6 +106,14 @@ export const handler = async (event) => {
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
 
+      // Public submissions live in the 'user-' id namespace (what the client's
+      // newId() generates). Without this, a fresh/cleared Blob store would let
+      // a direct request claim a curated bundled id (e.g. 'heart-small') that
+      // exists only in art.js, shadowing the original. Admin is exempt.
+      if (!isAdmin && !/^user-/.test(p.id)) {
+        return json(400, { error: "Submission ids must start with 'user-'" });
+      }
+
       if (isProhibited(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) {
         return json(400, { error: 'This submission contains prohibited content and cannot be published' });
       }
@@ -157,6 +165,12 @@ export const handler = async (event) => {
       if (!isAdmin) {
         if (!storedOwner) return json(404, { error: 'Not found' });
         if (storedOwner !== ownerHash) return json(403, { error: 'Not your art' });
+        // TOMBSTONE VETO: an admin delete removes piece/<id> and writes
+        // deleted/<id> but leaves owner/<id> behind — owner auth alone must not
+        // let the submitter update (resurrect) an id the admin removed.
+        if ((await store.get(`deleted/${p.id}`)) !== null) {
+          return json(410, { error: 'This art was removed' });
+        }
       }
       // Preserve an admin-granted wosVerified badge across owner edits.
       let prevVerified = false;
@@ -165,10 +179,8 @@ export const handler = async (event) => {
         if (prevRaw !== null) prevVerified = !!JSON.parse(prevRaw).wosVerified;
       } catch { /* corrupt/missing previous record — treat as unverified */ }
       const record = { ...p, wosVerified: prevVerified };
-      await Promise.all([
-        store.set(`piece/${p.id}`, JSON.stringify(record)),
-        store.delete(`deleted/${p.id}`),
-      ]);
+      // NOTE: no tombstone clear here — only admin actions may undelete an id.
+      await store.set(`piece/${p.id}`, JSON.stringify(record));
       return json(200, { ok: true, live: true });
     }
 

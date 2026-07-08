@@ -3700,9 +3700,15 @@ async function refreshMyArt() {
   pruneRecent();
   const ids = new Set((Array.isArray(r.liveIds) ? r.liveIds : []).filter((id) => !recentDels.has(id)));
   for (const id of recentSubs.keys()) ids.add(id);
+  const prev = state.myLiveIds;
   state.myLiveIds = [...ids];
   syncMineTab();
-  if (state.activeTag === '__mine') render();
+  // Re-render the CURRENT view whenever ownership changed — a returning owner's
+  // first gallery render happens before get-mine resolves, so their cards would
+  // otherwise miss the YOURS pill + edit/delete until an unrelated re-render.
+  const changed = prev.length !== state.myLiveIds.length
+    || state.myLiveIds.some((id) => !prev.includes(id));
+  if (changed && state.booted) render();
 }
 function syncMineTab() {
   const btn = document.getElementById('drawer-mine-btn');
