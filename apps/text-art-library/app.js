@@ -414,6 +414,50 @@ const API = {
       return { ok: true, flagged: id in flags, note: flags[id] || '' };
     }
   },
+  /* wos93 — user submission system. All ownership checks are SERVER-side
+   * (submit-art.js verifies sha256(ownerToken) against the piece's stored
+   * owner hash); these wrappers just carry the credentials. */
+  async submitArt(payload) {
+    try {
+      const res = await fetch(await fnUrl('submit-art'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) return body;
+      return { ok: false, error: body.error || `HTTP ${res.status}`, status: res.status };
+    } catch {
+      return { ok: false, error: 'Network error — try again' };
+    }
+  },
+  async getPending(token, password) {
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (password) headers['Authorization'] = 'Bearer ' + password;
+      const res = await fetch(await fnUrl('get-pending'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(token ? { ownerToken: token } : {}),
+      });
+      if (res.ok) return await res.json();
+    } catch { /* offline — treat as none */ }
+    return { pending: [], liveIds: [] };
+  },
+  async moderateArt(action, id, password) {
+    try {
+      const res = await fetch(await fnUrl('moderate-art'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + password },
+        body: JSON.stringify({ action, id }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) return body;
+      return { ok: false, error: body.error || `HTTP ${res.status}` };
+    } catch {
+      return { ok: false, error: 'Network error — try again' };
+    }
+  },
   async authenticate(password) {
     try {
       const res = await fetch(await fnUrl('auth'), {
@@ -511,6 +555,10 @@ const state = {
   editor: false,
   password: null,
   booted: false,
+  // wos93 — user submissions
+  myPending: [],          // this device's pending submissions (server-matched)
+  myLiveIds: [],          // approved ids still owned by this device
+  allPending: [],         // ADMIN moderation queue (all pending)
 };
 
 async function boot() {
@@ -544,6 +592,7 @@ async function boot() {
         els.btnExport.disabled = false;
         render();
         showToast('Editor mode restored');
+        refreshPendingQueue();   // wos93: load the moderation queue
       } else {
         // password no longer valid — drop it silently
         try { localStorage.removeItem(REMEMBER_KEY); } catch {}
@@ -560,6 +609,9 @@ async function boot() {
 
   // Count this visit (anonymous, deduped per day) for the admin analytics panel.
   trackVisitOncePerDay();
+
+  // wos93: load this device's own submissions (no-op without an owner token).
+  refreshMySubmissions();
 
   // --- Restore scroll position + reopen the lightbox the user was viewing.
   if (typeof sess.scrollY === 'number' && sess.scrollY > 0) {
@@ -882,7 +934,11 @@ function syncActiveThemeChip() {
   const flagged = t === '__flagged';
   els.activeThemeChip.classList.toggle('flagged', flagged);
   const flagCount = liveFlagCount();
-  els.activeThemeLabel.textContent = flagged ? `flagged (${flagCount})` : t;
+  // wos93: human labels for the submission destinations (not raw __ tags).
+  const label = t === '__mine' ? 'my art'
+    : t === '__pending' ? 'pending review'
+    : flagged ? `flagged (${flagCount})` : t;
+  els.activeThemeLabel.textContent = label;
 }
 
 /* Returns the number of flags whose piece still exists in the live library.
@@ -1025,6 +1081,16 @@ function filtered() {
     } else {
       list = list.filter((p) => p && p.draft);
     }
+  } else if (state.activeTag === '__pending') {
+    // wos93: ADMIN moderation queue — user submissions awaiting approval.
+    // Served from state.allPending (get-pending w/ Bearer), never the library.
+    return state.editor ? state.allPending.slice() : [];
+  } else if (state.activeTag === '__mine') {
+    // wos93: this device's own submissions: pending ones (from the server,
+    // owner-token-matched) + approved ones still owned by this device.
+    const liveMine = state.merged.filter((p) => p && !p.draft && state.myLiveIds.includes(p.id));
+    const pendingIds = new Set(state.myPending.map((p) => p.id));
+    return state.myPending.concat(liveMine.filter((p) => !pendingIds.has(p.id)));
   } else {
     list = list.filter((p) => p && !p.draft);
     if (state.activeTag === '__flagged') {
@@ -1040,24 +1106,17 @@ function filtered() {
       return hay.includes(q);
     });
   }
-  // Safe Mode — public content protection (the content-warning gate defaults it
-  // ON). Hides pieces flagged as mature so minors don't see reported / NSFW art.
-  // Only editors are exempt (they see everything, including the admin flagged
-  // view). We deliberately do NOT exempt the "__flagged" tag here: a stale
-  // '__flagged' activeTag restored from a prior editor session (loadSession runs
-  // before auth) would otherwise drop a public visitor straight onto flagged
-  // content with the filter bypassed. For a non-editor the flagged view simply
-  // ends up empty, which is the safe outcome.
-  if (document.documentElement.classList.contains('safe-mode') && !state.editor) {
-    const flags = state.flags || {};
-    list = list.filter((p) => !(p.id in flags));
-  }
+  // wos93: Safe Mode removed — Frostline is an adult-only gallery behind the
+  // 18+ age gate, so nothing is content-hidden from verified visitors. Flags
+  // remain purely as REPORTS for admin review (the __flagged tab above).
   return list;
 }
 
 function render() {
   syncFlaggedTab();
   syncDraftsTab();
+  syncMineTab();      // wos93
+  syncPendingTab();   // wos93
   const list = filtered();
   if (!list.length) {
     renderEmpty(state.query || state.activeTag !== 'all'
@@ -1087,6 +1146,21 @@ function renderCard(p) {
     draftPill.textContent = 'DRAFT';
     title.appendChild(draftPill);
   }
+  // wos93: pending submissions (records carry submittedAt) get a status pill;
+  // blocklist-held ones get an urgent marker so the admin reviews them first.
+  if (p.submittedAt != null) {
+    const pendPill = document.createElement('span');
+    pendPill.className = 'draft-pill pending-pill';
+    pendPill.textContent = p.revision ? 'REVISION' : 'PENDING';
+    title.appendChild(pendPill);
+    if (p.held) {
+      const heldPill = document.createElement('span');
+      heldPill.className = 'draft-pill held-pill';
+      heldPill.textContent = '⚠ HELD';
+      heldPill.title = 'Matched the prohibited-content pre-screen — review urgently';
+      title.appendChild(heldPill);
+    }
+  }
   head.appendChild(title);
 
   // Width warning is decided after layout (in the fit pass below) from the ACTUAL
@@ -1098,19 +1172,46 @@ function renderCard(p) {
   warn.style.display = 'none';
   head.appendChild(warn);
 
-  if (state.editor) {
+  const EDIT_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-9.96a1 1 0 0 0 0-1.41l-2.59-2.59a1 1 0 0 0-1.41 0L14.13 5.87l3.75 3.75 2.83-2.83z"/></svg>';
+  const DEL_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2.46-7.12 1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+  // wos93: whose actions go on this card?
+  //   admin      → edit/delete everywhere (pending pieces are moderated via the
+  //                footer Approve/Reject instead of head icons)
+  //   owner      → edit/delete on THEIR OWN cards in the "My art" view. This is
+  //                UX only — the server re-verifies the owner token on every
+  //                update/delete, so it cannot be used on someone else's art.
+  const isPendingRec = p.submittedAt != null;
+  const ownsThis = !state.editor && state.activeTag === '__mine'
+    && (isPendingRec || state.myLiveIds.includes(p.id));
+  if (state.editor && !isPendingRec) {
     const actions = document.createElement('div');
     actions.className = 'card-actions';
     const edit = document.createElement('button');
     edit.className = 'icon-btn';
     edit.title = 'Edit';
-    edit.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-9.96a1 1 0 0 0 0-1.41l-2.59-2.59a1 1 0 0 0-1.41 0L14.13 5.87l3.75 3.75 2.83-2.83z"/></svg>';
+    edit.innerHTML = EDIT_SVG;
     edit.addEventListener('click', (e) => { e.stopPropagation(); openEdit(p); });
     const del = document.createElement('button');
     del.className = 'icon-btn danger';
     del.title = 'Delete';
-    del.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2.46-7.12 1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+    del.innerHTML = DEL_SVG;
     del.addEventListener('click', (e) => { e.stopPropagation(); deletePiece(p); });
+    actions.appendChild(edit);
+    actions.appendChild(del);
+    head.appendChild(actions);
+  } else if (ownsThis) {
+    const actions = document.createElement('div');
+    actions.className = 'card-actions owner-actions';
+    const edit = document.createElement('button');
+    edit.className = 'icon-btn';
+    edit.title = 'Edit your art (resubmits for review)';
+    edit.innerHTML = EDIT_SVG;
+    edit.addEventListener('click', (e) => { e.stopPropagation(); openSubmitEdit(p); });
+    const del = document.createElement('button');
+    del.className = 'icon-btn danger';
+    del.title = 'Delete your art';
+    del.innerHTML = DEL_SVG;
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteSubmission(p); });
     actions.appendChild(edit);
     actions.appendChild(del);
     head.appendChild(actions);
@@ -1224,6 +1325,24 @@ function renderCard(p) {
   footer.appendChild(flag);
 
   card.appendChild(footer);
+
+  // wos93: ADMIN moderation controls on pending submissions — Approve makes it
+  // live in the public gallery; Reject discards the submission.
+  if (state.editor && isPendingRec) {
+    const modRow = document.createElement('div');
+    modRow.className = 'moderate-row';
+    const approve = document.createElement('button');
+    approve.className = 'moderate-btn approve';
+    approve.textContent = '✔ Approve';
+    approve.addEventListener('click', (e) => { e.stopPropagation(); moderateSubmission('approve', p); });
+    const reject = document.createElement('button');
+    reject.className = 'moderate-btn reject';
+    reject.textContent = '✖ Reject';
+    reject.addEventListener('click', (e) => { e.stopPropagation(); moderateSubmission('reject', p); });
+    modRow.appendChild(approve);
+    modRow.appendChild(reject);
+    card.appendChild(modRow);
+  }
 
   // open lightbox on card body click
   card.addEventListener('click', () => openLightbox(p));
@@ -1438,7 +1557,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos92';
+const APP_VERSION = 'wos93';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1746,6 +1865,7 @@ async function submitAuth() {
     } catch { /* ignore quota errors */ }
     closeAuth();
     render();
+    refreshPendingQueue();   // wos93: load the moderation queue
   } else {
     els.authError.textContent = r.error || 'Wrong password';
   }
@@ -1761,6 +1881,10 @@ function lockEditor() {
   try { localStorage.removeItem(REMEMBER_KEY); } catch {}
   // Re-render so per-card edit/delete buttons + flagged tab disappear.
   if (state.activeTag === '__flagged') state.activeTag = 'all';
+  // wos93: the moderation queue is admin-only — drop it on lock.
+  state.allPending = [];
+  if (state.activeTag === '__pending') state.activeTag = 'all';
+  syncPendingTab();
   render();
   showToast('Editor locked');
 }
@@ -1776,6 +1900,7 @@ let editing = null; // null = adding new
 
 function openAdd() {
   editing = null;
+  setSubmitMode(false);   // wos93: admin path unless openSubmit() flips it on
   els.editTitle.textContent = 'Add new art';
   els.editTitleInput.value = '';
   els.editTagsInput.value = '';
@@ -1823,6 +1948,7 @@ for (const opt of document.querySelectorAll('.status-opt')) {
 
 function openEdit(p) {
   editing = p;
+  setSubmitMode(false);   // wos93: admin path unless openSubmitEdit() flips it on
   els.editTitle.textContent = 'Edit art';
   els.editTitleInput.value = p.title || '';
   els.editTagsInput.value = (p.tags || []).join(', ');
@@ -1843,6 +1969,7 @@ function closeEdit() {
   els.edit.classList.remove('open');
   els.edit.classList.remove('drawing');
   els.edit.classList.remove('typing');
+  setSubmitMode(false);   // wos93
   closeSaveSheet();
 }
 els.editClose.addEventListener('click', () => closeEdit());
@@ -3483,8 +3610,160 @@ function newId() {
 
 /* Two-step save: tap Save -> name the piece in the sheet -> confirm. Keeps the
    Title/Tags fields out of the drawing view so the canvas + palette own it. */
+/* ============ wos93 — USER SUBMISSIONS ============================
+ * Visitors create art in the SAME editor and submit it to an admin approval
+ * queue; nothing goes public until approved. Ownership: this device holds a
+ * secret random token ('frostline:owner'); the server stores sha256(token)
+ * per piece and refuses update/delete unless the presented token matches (or
+ * the admin password is used) — so users can manage ONLY their own art, and
+ * that guarantee lives server-side (client checks here are UX only). */
+const OWNER_TOKEN_KEY = 'frostline:owner';
+let submitMode = false;          // the editor modal is in public-submission mode
+let editingSubmission = null;    // piece being revised via the submission path
+
+function ownerToken(create) {
+  try {
+    let t = localStorage.getItem(OWNER_TOKEN_KEY);
+    if (!t && create) {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      t = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem(OWNER_TOKEN_KEY, t);
+    }
+    return t || null;
+  } catch { return null; }
+}
+
+function setSubmitMode(on) {
+  submitMode = !!on;
+  if (!on) editingSubmission = null;
+  // CSS hook: hides the Draft/Published status row + relabels via .submit-mode
+  els.edit.classList.toggle('submit-mode', submitMode);
+  const confirmBtn = document.getElementById('save-confirm');
+  if (confirmBtn) confirmBtn.textContent = submitMode ? 'Submit for review' : 'Save art';
+}
+
+// Public entry: same editor, submission save path.
+function openSubmit() {
+  openAdd();                      // resets submitMode — flip it after
+  setSubmitMode(true);
+  editingSubmission = null;
+  els.editTitle.textContent = 'Submit your art';
+}
+// Owner revising one of their own pieces (pending or live).
+function openSubmitEdit(p) {
+  openEdit(p);
+  setSubmitMode(true);
+  editingSubmission = p;
+  els.editTitle.textContent = 'Edit your submission';
+}
+
+async function commitSubmit() {
+  const title = els.editTitleInput.value.trim();
+  const tags = els.editTagsInput.value
+    .split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+  let art = els.editArtInput.value;
+  if (!title) { alert('Title is required'); els.editTitleInput.focus(); return; }
+  if (!art.trim()) { alert('Art is required'); closeSaveSheet(); return; }
+  art = spacesToNbsp(art);
+  art = trimTrailingBlankRows(art);
+  const { width, height } = measure(art);
+
+  const piece = {
+    id: editingSubmission ? editingSubmission.id : newId(),
+    title, tags, art, width, height,
+  };
+  const confirmBtn = document.getElementById('save-confirm');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…'; }
+  const r = await API.submitArt({
+    action: editingSubmission ? 'update' : 'create',
+    ownerToken: ownerToken(true),
+    piece,
+  });
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Submit for review'; }
+  if (!r.ok) {
+    alert('Submit failed: ' + (r.error || 'unknown'));
+    return;
+  }
+  clearDraft();
+  closeSaveSheet();
+  closeEdit();
+  showToast(editingSubmission
+    ? 'Update submitted — it will show once approved'
+    : 'Submitted! Your art will appear once the admin approves it');
+  await refreshMySubmissions();
+  if (state.activeTag !== '__mine') setActiveTag('__mine');
+}
+
+async function deleteSubmission(p) {
+  if (!confirm(`Delete your submission "${p.title}"?`)) return;
+  const r = await API.submitArt({ action: 'delete', ownerToken: ownerToken(true), id: p.id });
+  if (!r.ok) { alert('Delete failed: ' + (r.error || 'unknown')); return; }
+  // If it was live, drop it locally too (the server tombstoned it).
+  state.library = state.library.filter((u) => u.id !== p.id);
+  state.deletedIds.add(p.id);
+  cacheNow();
+  recomputeMerged();
+  await refreshMySubmissions();
+  render();
+}
+
+// ---- "My art" (this device's submissions) ----
+async function refreshMySubmissions() {
+  const t = ownerToken(false);
+  if (!t) { state.myPending = []; state.myLiveIds = []; syncMineTab(); return; }
+  const r = await API.getPending(t, null);
+  state.myPending = Array.isArray(r.pending) ? r.pending : [];
+  state.myLiveIds = Array.isArray(r.liveIds) ? r.liveIds : [];
+  syncMineTab();
+  if (state.activeTag === '__mine') render();
+}
+function syncMineTab() {
+  const btn = document.getElementById('drawer-mine-btn');
+  if (!btn) return;
+  const count = state.myPending.length + state.myLiveIds.filter(
+    (id) => !state.myPending.some((p) => p.id === id)).length;
+  btn.hidden = count === 0;
+  btn.textContent = `🎨 My art (${count})`;
+  btn.classList.toggle('active', state.activeTag === '__mine');
+  // Direct reset (not setActiveTag) — this runs inside render(), matching the
+  // syncFlaggedTab pattern to avoid re-entrant renders.
+  if (count === 0 && state.activeTag === '__mine') state.activeTag = 'all';
+}
+
+// ---- Admin moderation queue ----
+async function refreshPendingQueue() {
+  if (!state.editor || !state.password) { state.allPending = []; syncPendingTab(); return; }
+  const r = await API.getPending(null, state.password);
+  state.allPending = Array.isArray(r.pending) ? r.pending : [];
+  syncPendingTab();
+  if (state.activeTag === '__pending') render();
+}
+function syncPendingTab() {
+  const btn = document.getElementById('drawer-pending-btn');
+  if (!btn) return;
+  const n = state.allPending.length;
+  const held = state.allPending.filter((p) => p.held).length;
+  btn.hidden = !(state.editor && n > 0);
+  btn.textContent = held ? `🔎 Pending review (${n}) — ⚠ ${held} held` : `🔎 Pending review (${n})`;
+  btn.classList.toggle('active', state.activeTag === '__pending');
+  // Direct reset (not setActiveTag) — runs inside render(); avoids re-entry.
+  if (btn.hidden && state.activeTag === '__pending') state.activeTag = 'all';
+}
+async function moderateSubmission(action, p) {
+  if (action === 'reject' && !confirm(`Reject "${p.title}"? The submission is discarded.`)) return;
+  const r = await API.moderateArt(action, p.id, state.password);
+  if (!r.ok) { alert('Moderation failed: ' + (r.error || 'unknown')); return; }
+  state.allPending = state.allPending.filter((q) => q.id !== p.id);
+  syncPendingTab();
+  showToast(action === 'approve' ? `Approved "${p.title}" — now live` : `Rejected "${p.title}"`);
+  if (action === 'approve') refresh();   // pull the newly-live piece into the library
+  render();
+}
+/* ============ end wos93 user submissions ============ */
+
 function openSaveSheet() {
-  if (!state.editor) return;
+  if (!state.editor && !submitMode) return;   // wos93: submissions may save too
   if (!els.editArtInput.value.trim()) { alert('Add some art before saving.'); return; }
   const sheet = document.getElementById('save-sheet');
   if (sheet) sheet.classList.add('open');
@@ -3495,6 +3774,7 @@ function closeSaveSheet() {
   if (sheet) sheet.classList.remove('open');
 }
 async function commitSave() {
+  if (submitMode) return commitSubmit();   // wos93: public submission path
   if (!state.editor) return;
   const title = els.editTitleInput.value.trim();
   const tags = els.editTagsInput.value
@@ -3605,18 +3885,13 @@ async function toggleFlag(p, card, box, flag, note) {
     note.value = '';
   }
   syncFlaggedTab();
-  // Safe Mode: flagging is public, so a visitor flagging a card must stop seeing
-  // it at once. The gallery filter only runs in render(), and toggleFlag mutates
-  // state.flags without re-rendering — so re-render now to drop the just-flagged
-  // card immediately (the async save continues below).
-  const publicSafe = !state.editor && document.documentElement.classList.contains('safe-mode');
-  if (publicSafe) render();
+  // wos93: Safe Mode is gone — a flag is now purely a REPORT for admin review
+  // (the card stays visible), so no public re-render is needed here.
   const r = await API.saveFlag(p.id, 'toggle');
   if (r && r.flagged !== undefined) {
     if (r.flagged) state.flags[p.id] = r.note || '';
     else delete state.flags[p.id];
     syncFlaggedTab();
-    if (publicSafe) render();   // reconcile with the server's authoritative flag state
   }
 }
 
@@ -4138,32 +4413,22 @@ siteTextCaptureDefaults();
 setupSiteTextEditor();
 loadCustomSiteText();
 
-/* ===== Safe Mode (public content protection) =====
-   The first-visit content gate (inline in index.html) sets the `safe-mode`
-   class on <html> and persists the choice under 'frostline:safe'. This wires
-   the drawer toggle so an adult can flip it afterward, keeps the switch UI in
-   sync, and re-renders when it changes (the gate fires 'frostline:safemode'
-   in case the app had already booted). Filtering lives in filtered(). */
-(function setupSafeMode() {
-  const SAFE_KEY = 'frostline:safe';
-  const btn = document.getElementById('drawer-safe-btn');
-  const stateEl = document.getElementById('drawer-safe-state');
-  function isOn() { return document.documentElement.classList.contains('safe-mode'); }
-  function syncUi() {
-    const on = isOn();
-    if (btn) { btn.setAttribute('aria-checked', on ? 'true' : 'false'); btn.classList.toggle('is-on', on); }
-    if (stateEl) stateEl.textContent = on ? 'On' : 'Off';
-  }
-  function setSafe(on, persist) {
-    document.documentElement.classList.toggle('safe-mode', !!on);
-    if (persist) { try { localStorage.setItem(SAFE_KEY, on ? '1' : '0'); } catch {} }
-    syncUi();
-    try { render(); } catch {}
-  }
-  if (btn) btn.addEventListener('click', () => setSafe(!isOn(), true));
-  // Gate resolves after boot on a fresh visit — re-sync + re-render then.
-  window.addEventListener('frostline:safemode', (e) => setSafe(!!(e.detail && e.detail.on), false));
-  syncUi();
+/* ===== wos93: user-submission wiring =====
+   (Safe Mode removed — Frostline is adult-only behind the 18+ age gate.) */
+(function setupSubmissions() {
+  const submitBtn = document.getElementById('btn-submit-art');
+  if (submitBtn) submitBtn.addEventListener('click', openSubmit);
+  const mineBtn = document.getElementById('drawer-mine-btn');
+  if (mineBtn) mineBtn.addEventListener('click', () => {
+    setActiveTag(state.activeTag === '__mine' ? 'all' : '__mine');
+    closeDrawer();
+  });
+  const pendBtn = document.getElementById('drawer-pending-btn');
+  if (pendBtn) pendBtn.addEventListener('click', () => {
+    if (!state.editor) return;
+    setActiveTag(state.activeTag === '__pending' ? 'all' : '__pending');
+    closeDrawer();
+  });
 })();
 
 boot().catch((err) => {
