@@ -446,6 +446,17 @@ const API = {
       return { ok: false, error: 'Network error — try again' };
     }
   },
+  /* wos97 — public most-copied ids for the 🔥 Popular discovery rail. */
+  async getPopular() {
+    try {
+      const res = await fetch(await fnUrl('get-popular'));
+      if (res.ok) {
+        const d = await res.json();
+        return Array.isArray(d.topCopied) ? d.topCopied : [];
+      }
+    } catch { /* offline — rail just stays hidden */ }
+    return [];
+  },
   async getMine(token) {
     try {
       const res = await fetch(await fnUrl('get-mine'), {
@@ -609,6 +620,9 @@ async function boot() {
 
   // wos94: load this device's own published pieces (no-op without a token).
   refreshMyArt();
+
+  // wos97: load the most-copied ids for the 🔥 Popular rail (non-blocking).
+  API.getPopular().then((ids) => { popularIds = ids; renderDiscovery(); });
 
   // --- Restore scroll position + reopen the lightbox the user was viewing.
   if (typeof sess.scrollY === 'number' && sess.scrollY > 0) {
@@ -1111,7 +1125,82 @@ function filtered() {
   return list;
 }
 
+/* ============ wos97: discovery rails (🆕 New / 🔥 Popular) ============
+ * Prominent on launch (default view only: All tab, no search). New = newest
+ * user- pieces by the timestamp embedded in their ids (newId() encodes
+ * Date.now().toString(36)); Popular = most-copied ids from the public
+ * get-popular endpoint resolved against the live library. Each rail hides
+ * itself when empty; tiles use their own .rail-* classes (NEVER .card/.preview
+ * — the ice-frame border-image and phone !important overrides key on those). */
+let popularIds = [];   // [{id,n}] fetched once at boot
+
+function newestPieces(limit = 10) {
+  return state.merged
+    .filter((p) => p && !p.draft && /^user-/.test(p.id))
+    .map((p) => ({ p, ts: parseInt(String(p.id).split('-')[1], 36) || 0 }))
+    .filter((x) => x.ts > 0)
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, limit)
+    .map((x) => x.p);
+}
+function popularPieces(limit = 10) {
+  const out = [];
+  for (const { id } of popularIds) {
+    const p = state.merged.find((q) => q && q.id === id && !q.draft);
+    if (p) out.push(p);              // deleted/unknown ids skipped silently
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+function renderRailCard(p, badge) {
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = 'rail-card';
+  tile.dataset.id = p.id;
+  const prev = document.createElement('div');
+  prev.className = 'rail-preview';
+  const pre = document.createElement('pre');
+  pre.className = 'art-render';
+  pre.textContent = displayArt(p.art);
+  prev.appendChild(pre);
+  tile.appendChild(prev);
+  const name = document.createElement('div');
+  name.className = 'rail-name';
+  name.textContent = (badge ? badge + ' ' : '') + (p.title || 'Untitled');
+  tile.appendChild(name);
+  tile.addEventListener('click', () => openLightbox(p));
+  requestAnimationFrame(() => fitArt(prev, pre, 10, { height: true }));
+  return tile;
+}
+function renderDiscovery() {
+  const wrap = document.getElementById('discovery');
+  if (!wrap) return;
+  const isDefault = state.activeTag === 'all' && !state.query.trim();
+  if (!isDefault) { wrap.hidden = true; return; }
+  const popList = popularPieces(10);
+  const popIds = new Set(popList.map((p) => p.id));
+  // Dedupe: a piece already featured in Popular is skipped from New.
+  const newList = newestPieces(10 + popIds.size).filter((p) => !popIds.has(p.id)).slice(0, 10);
+  const railNew = document.getElementById('rail-new');
+  const railPop = document.getElementById('rail-popular');
+  const newScroll = document.getElementById('rail-new-scroll');
+  const popScroll = document.getElementById('rail-popular-scroll');
+  if (newScroll) {
+    newScroll.innerHTML = '';
+    for (const p of newList) newScroll.appendChild(renderRailCard(p, ''));
+  }
+  if (popScroll) {
+    popScroll.innerHTML = '';
+    for (const p of popList) popScroll.appendChild(renderRailCard(p, ''));
+  }
+  if (railNew) railNew.hidden = !newList.length;
+  if (railPop) railPop.hidden = !popList.length;
+  wrap.hidden = !newList.length && !popList.length;
+}
+/* ============ end wos97 discovery rails ============ */
+
 function render() {
+  renderDiscovery();   // wos97 — must run before the empty-grid early return
   syncFlaggedTab();
   syncDraftsTab();
   syncMineTab();      // wos94
@@ -1320,7 +1409,15 @@ function renderCard(p) {
   flag.appendChild(flagLabel);
   flag.addEventListener('click', (e) => {
     e.stopPropagation();
-    toggleFlag(p, card, box, flag, note);
+    // wos97 behavior matrix:
+    //   admin  → the original quick toggle (unchanged power tool)
+    //   public + already flagged → informational toast (no public unflag —
+    //            prevents griefing where a troll clears legitimate reports)
+    //   public + unflagged → the report dialog (files a bug report with the
+    //            piece attached AND flags it in one gesture)
+    if (state.editor) { toggleFlag(p, card, box, flag, note); return; }
+    if (p.id in state.flags) { showToast('Already reported — thank you'); return; }
+    openReportDialog(p);
   });
   footer.appendChild(flag);
 
@@ -1361,6 +1458,12 @@ function refitAllArt() {
   document.querySelectorAll('.grid .card .preview').forEach((prev) => {
     const pre = prev.querySelector('.art-render');
     if (pre) fitArt(prev, pre, 14, { height: true });
+  });
+  // wos97: discovery-rail tiles re-fit too (covers resize AND fonts.ready —
+  // without this they'd keep fallback-font scaling after web fonts load).
+  document.querySelectorAll('.rail-card .rail-preview').forEach((prev) => {
+    const pre = prev.querySelector('.art-render');
+    if (pre) fitArt(prev, pre, 10, { height: true });
   });
   if (els.lightbox && els.lightbox.classList.contains('open') && els.lbPre) {
     fitArt(els.lbPre.parentElement, els.lbPre, 20);
@@ -1530,6 +1633,7 @@ function renderBugInbox(listEl) {
     const meta = document.createElement('div');
     meta.className = 'bug-meta';
     meta.textContent = [
+      r.artId ? '🎨 “' + (r.artTitle || r.artId) + '”' : null,   // wos97: reported piece
       r.triage && r.triage.area,
       r.reporter ? 'from ' + r.reporter : 'anonymous',
       timeAgo(r.createdAt),
@@ -1578,6 +1682,50 @@ function renderBugInbox(listEl) {
       gh.rel = 'noopener';
       gh.textContent = 'GitHub ↗';
       actions.appendChild(gh);
+    }
+    // wos97: reports filed from a card's Flag dialog carry the piece id —
+    // give the admin a direct jump to the reported art, and an Unflag action
+    // (with confirmation) for clearing worked items without leaving the inbox.
+    if (r.artId) {
+      const view = document.createElement('button');
+      view.className = 'bug-btn ghost';
+      view.textContent = '🎨 View art';
+      view.addEventListener('click', () => {
+        const piece = state.merged.find((q) => q && q.id === r.artId);
+        if (!piece) { showToast('That art no longer exists'); return; }
+        // closeDrawer FIRST — the drawer (z-index 190) stacks above the
+        // lightbox overlay (z-index 100); opened underneath it'd be invisible.
+        closeDrawer();
+        openLightbox(piece);
+      });
+      actions.appendChild(view);
+      if (r.artId in state.flags) {
+        const unflag = document.createElement('button');
+        unflag.className = 'bug-btn reopen';
+        unflag.textContent = '🚩 Unflag art';
+        unflag.addEventListener('click', async () => {
+          // Re-check live state: toggle on an unflagged id would CREATE a flag.
+          if (!(r.artId in state.flags)) { renderBugInbox(listEl); return; }
+          if (!confirm(`Unflag "${r.artTitle || r.artId}"? It will be removed from the flagged review list.`)) return;
+          unflag.disabled = true;
+          const res = await API.saveFlag(r.artId, 'toggle');
+          unflag.disabled = false;
+          if (res && res.flagged === true) {
+            // Client/server drift (someone else unflagged first): the toggle
+            // just re-CREATED the flag — undo immediately.
+            await API.saveFlag(r.artId, 'toggle');
+          } else if (!res || res.flagged !== false) {
+            showToast('Could not unflag — try again');
+            return;
+          }
+          delete state.flags[r.artId];
+          syncFlaggedTab();
+          render();                 // gallery card sheds its 🚩/flagged chrome
+          renderBugInbox(listEl);   // this row re-renders without the button
+          showToast('Flag removed');
+        });
+        actions.appendChild(unflag);
+      }
     }
     const del = document.createElement('button');
     del.className = 'bug-btn danger';
@@ -1685,7 +1833,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos96';
+const APP_VERSION = 'wos97';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1896,10 +2044,124 @@ els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) c
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (els.lightbox.classList.contains('open')) closeLightbox();
+    else if (document.getElementById('report')?.classList.contains('open')) closeReportDialog();  // wos97
     else if (els.edit.classList.contains('open')) closeEdit();
     // auth modal is intentionally NOT closeable via Esc — only via X or correct password
   }
 });
+
+/* ============ wos97: public art-report dialog ============
+ * Opened by the card 🚩 for non-admins. Submitting does TWO things in one
+ * gesture: files a bug report through the existing submit-bug pipeline (with
+ * the piece id/title attached so the admin inbox can jump to it), and flags
+ * the piece via save-flags action:'note' — which CREATES flag/<id> with the
+ * reason as its note in a single call (no toggle+note race). The bug report is
+ * sent FIRST; the flag is only applied if the report filed, so a flag never
+ * exists without a matching inbox entry. */
+let reportPiece = null;
+let reportReason = null;
+
+function openReportDialog(p) {
+  reportPiece = p;
+  reportReason = null;
+  const nameEl = document.getElementById('report-art-name');
+  if (nameEl) nameEl.textContent = '“' + (p.title || 'Untitled') + '”';
+  for (const b of document.querySelectorAll('#report-reasons .report-reason')) {
+    b.classList.remove('selected');
+  }
+  const details = document.getElementById('report-details');
+  if (details) details.value = '';
+  const err = document.getElementById('report-error');
+  if (err) err.textContent = '';
+  const submit = document.getElementById('report-submit');
+  if (submit) { submit.disabled = false; submit.textContent = 'Send report'; }
+  document.getElementById('report').classList.add('open');
+}
+function closeReportDialog() {
+  document.getElementById('report').classList.remove('open');
+  reportPiece = null;
+}
+
+// Update a card's flag chrome by data-id lookup — NOT captured node refs: a
+// background refresh() can rebuild the grid while the dialog is open, which
+// would leave captured refs pointing at detached nodes.
+function applyFlagDom(id, noteText) {
+  const card = els.grid.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  if (!card) return;
+  card.classList.add('flagged');
+  const box = card.querySelector('.flag-corner .box');
+  const label = card.querySelector('.flag-corner .flag-label');
+  const note = card.querySelector('.flag-note');
+  if (box) box.textContent = '🚩';
+  if (label) label.textContent = ' flagged';
+  if (note) note.value = noteText;   // the admin's note textarea shows the reason
+}
+
+async function submitArtReport() {
+  const p = reportPiece;
+  if (!p) return;
+  const errEl = document.getElementById('report-error');
+  if (!reportReason) {
+    if (errEl) errEl.textContent = 'Pick a reason above';
+    return;
+  }
+  const details = (document.getElementById('report-details')?.value || '').trim().slice(0, 500);
+  const reporter = (document.getElementById('report-name')?.value || '').trim().slice(0, 80) || null;
+  const artTitle = (p.title || 'Untitled').slice(0, 80);
+  const description = '[Art report] ' + reportReason + ' — “' + artTitle + '” (' + p.id + ')'
+    + (details ? '\n' + details : '');
+  const noteText = reportReason + (details ? ': ' + details : '');
+  const ctx = captureFeedbackContext();
+  ctx.artId = p.id;
+  ctx.artTitle = artTitle;
+  ctx.reason = reportReason;
+
+  const submit = document.getElementById('report-submit');
+  if (submit) { submit.disabled = true; submit.textContent = 'Sending…'; }
+  if (errEl) errEl.textContent = '';
+  let filed = false;
+  try {
+    const res = await fetch(await fnUrl('submit-bug'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description, reporter, context: ctx, artId: p.id, artTitle }),
+    });
+    filed = res.ok;
+  } catch { filed = false; }
+  if (!filed) {
+    if (submit) { submit.disabled = false; submit.textContent = 'Send report'; }
+    if (errEl) errEl.textContent = 'Could not send — check your connection and try again';
+    return;   // no report filed → no flag applied
+  }
+  // Report filed — now flag the piece with the reason as its note. Mutate
+  // state.flags FIRST so the admin note-autosave coupling (guarded on
+  // `p.id in state.flags`) works for any later note edits.
+  state.flags[p.id] = noteText;
+  API.saveFlag(p.id, 'note', noteText);   // never rejects (localStorage fallback)
+  applyFlagDom(p.id, noteText);
+  syncFlaggedTab();
+  closeReportDialog();
+  showToast('Report sent — thank you');
+}
+
+(function wireReportDialog() {
+  const closeBtn = document.getElementById('report-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeReportDialog);
+  const reasons = document.getElementById('report-reasons');
+  if (reasons) reasons.addEventListener('click', (e) => {
+    const btn = e.target.closest('.report-reason');
+    if (!btn) return;
+    reportReason = btn.dataset.reason;
+    for (const b of reasons.querySelectorAll('.report-reason')) {
+      b.classList.toggle('selected', b === btn);
+    }
+    const errEl = document.getElementById('report-error');
+    if (errEl) errEl.textContent = '';
+  });
+  const submit = document.getElementById('report-submit');
+  if (submit) submit.addEventListener('click', submitArtReport);
+})();
+/* ============ end wos97 report dialog ============ */
 
 /* ============ 08  Copy with NBSP ============ */
 async function copyArt(text, btn, isLightbox, id) {

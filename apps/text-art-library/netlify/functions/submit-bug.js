@@ -22,6 +22,10 @@ const json = (statusCode, obj) => ({
 
 const MAX_DESC = 4000;
 const MAX_REPORTER = 80;
+// wos97: art-report dialog attaches the reported piece. Optional garnish —
+// invalid values are silently dropped, never a 400 (old clients keep working).
+const ART_ID_RE = /^[A-Za-z0-9_.-]{1,200}$/;
+const MAX_ART_TITLE = 80;
 
 const TRIAGE_SYSTEM = `You are a triage assistant for the Frostline text-art app — a curated character-art library for the Whiteout Survival mobile-game alliance chat. The app's main surfaces are:
 - A grid of art cards filterable by theme tags
@@ -232,6 +236,13 @@ export const handler = async (event) => {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const createdAt = Date.now();
   const report = { id, description, reporter, context, createdAt };
+  // wos97: link the report to a specific art piece (from the card Flag dialog)
+  // so the admin inbox can jump straight to it and unflag from there.
+  const artId = typeof body.artId === 'string' && ART_ID_RE.test(body.artId) ? body.artId : null;
+  if (artId) {
+    report.artId = artId;
+    report.artTitle = String(body.artTitle || '').trim().slice(0, MAX_ART_TITLE) || null;
+  }
 
   // 1. Triage (graceful if no API key)
   report.triage = await triage(description, context);

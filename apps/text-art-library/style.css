@@ -628,7 +628,9 @@ body.editor .card-actions { display: flex; }
 .flag-note::placeholder { color: var(--ink-dim); opacity: 0.7; }
 .flag-note:focus { border-color: var(--accent); }
 .flag-note:focus { border-color: var(--bad); }
-.card.flagged .flag-note { display: block; }
+/* wos97: admin-only — dialog-created flags carry the report reason as the
+   note; the public must not be able to read/edit/wipe it. */
+body.editor .card.flagged .flag-note { display: block; }
 
 .copy-btn {
   display: block;
@@ -4131,3 +4133,122 @@ body.editor .submit-row { display: none; }
 .bug-btn:hover { filter: brightness(1.12); }
 .bug-btn:disabled { opacity: 0.5; cursor: default; }
 /* End wos96 */
+
+
+/* ============================================================================
+ * wos97 — art-report dialog + discovery rails.
+ * ========================================================================== */
+/* --- report dialog (inherits the auth-modal frame) --- */
+.report-art-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.report-reason {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: rgba(12, 30, 54, 0.6);
+  color: #c6dcef;
+  border: 1px solid rgba(150, 220, 255, 0.3);
+  cursor: pointer;
+}
+.report-reason:hover { filter: brightness(1.15); }
+.report-reason.selected {
+  background: linear-gradient(180deg, #5db4ea 0%, #2f7fc0 100%);
+  color: #06263f;
+  border-color: rgba(190, 232, 255, 0.6);
+}
+.report-details {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(150, 220, 255, 0.3);
+  background: rgba(6, 16, 30, 0.6);
+  color: #eaf4ff;
+  font-family: inherit;
+  font-size: 12.5px;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.report-details:focus { outline: 2px solid #4a9fd4; outline-offset: 1px; }
+
+/* --- discovery rails --- */
+.discovery {
+  max-width: 1200px;
+  /* clear the ice bar's icicle overhang (border-image-outset ~50px) so the
+     first rail heading isn't hidden under the fringe */
+  margin: 46px auto 0;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rail-head {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 6px;
+  text-shadow: 0 1px 4px rgba(0, 12, 28, 0.7);
+}
+.rail-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.rail-card {
+  flex: 0 0 auto;
+  width: 120px;
+  scroll-snap-align: start;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 8px;
+  cursor: zoom-in;
+  text-align: center;
+  color: var(--ink-card);
+  font-family: inherit;
+  transition: border-color 140ms, transform 140ms;
+}
+.rail-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.rail-preview {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--wos-bubble);
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+.rail-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-card);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* End wos97 */
