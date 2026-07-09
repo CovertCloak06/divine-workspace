@@ -3962,3 +3962,95 @@ body.editor .submit-row { display: none; }
 #edit.submit-mode .draft-field,
 #edit.submit-mode .status-toggle { display: none !important; }
 /* End wos93 */
+
+/* ============================================================================
+ * wos95 — MOBILE usability overhaul (S25-class phones).
+ * 1) CARDS: at 2-col phone widths the ice frame + full chrome overflowed —
+ *    titles crushed to "Sn…", the WoS badge wrapped mid-word, chips clipped,
+ *    giant admin icons. Slim the frame and compact every piece of chrome so
+ *    both public and admin cards read clean.
+ * 2) EDITOR: the desktop layout pins the canvas and hides body overflow, which
+ *    on a phone crushed the palette below the fold with NO way to scroll — the
+ *    character/favorites menus were unreachable. On phones the modal body is a
+ *    normal scroller: comfortable-height canvas, then favorites + palette in
+ *    natural flow.
+ * Presentation only — no submission/ownership logic touched.
+ * ========================================================================== */
+@media (max-width: 480px) {
+  /* --- slimmer ice frame + tighter interior -> reclaim ~30px of width --- */
+  .grid .card {
+    border-width: 16px 12px 28px 12px !important;
+    border-image-width: 16px 12px 40px 12px !important;
+    border-image-outset: 0 2px 10px 2px !important;
+    padding: 8px 10px 12px !important;
+  }
+  .card-head { min-height: 20px !important; gap: 4px !important; margin-bottom: 4px !important; }
+  .card-title { font-size: 12px !important; }
+  .card-warn { font-size: 11px; }
+  .draft-pill {           /* covers DRAFT + YOURS (mine-pill) */
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+    margin-left: 4px !important;
+    letter-spacing: 0.04em !important;
+  }
+  /* compact admin/owner action icons (they were huge and ate the title) */
+  .card-actions { gap: 4px !important; }
+  .card-actions .icon-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .card-actions .icon-btn svg { width: 13px !important; height: 13px !important; }
+  /* slightly shorter preview so the card breathes */
+  .grid .card .preview { height: 118px !important; padding: 8px !important; margin-bottom: 8px !important; }
+  .chips { gap: 4px !important; min-height: 20px !important; margin-bottom: 6px !important; }
+  .chip { font-size: 9px !important; padding: 2px 6px !important; }
+  /* footer: icon-only WoS badge + flag, compact Copy — fits with room to spare */
+  .card-footer { gap: 6px !important; min-height: 24px !important; padding-top: 8px !important; }
+  .wos-badge { font-size: 10px !important; padding: 2px 7px !important; height: 20px !important; }
+  .wos-badge .wb-word { display: none; }
+  .copy-btn { font-size: 10px !important; padding: 3px 12px !important; }
+  .flag-corner { font-size: 10px; }
+  .flag-corner .flag-label { display: none; }
+}
+
+@media (max-width: 600px) {
+  /* --- the editor BODY becomes the scroller (was overflow:hidden, which made
+         favorites/palette unreachable). Children take natural heights and the
+         user simply scrolls down to the tools. --- */
+  #edit.drawing .edit-modal-body {
+    display: block !important;
+    overflow-y: auto !important;
+  }
+  #edit.drawing .draw-workspace,
+  #edit.drawing .canvas-dock { display: block !important; min-height: 0 !important; }
+  /* comfortable, bounded canvas that scrolls internally; page scrolls past it */
+  #edit.drawing .sketch-view {
+    height: 44vh !important;
+    min-height: 220px !important;
+    max-height: 46vh !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: auto !important;
+  }
+  /* the Type-mode textarea proxy is invisible (wos82) — but if a stylesheet
+     revision ever shows it, keep it inside the phone viewport too */
+  #edit.drawing.typing #edit-art-input { min-width: 0 !important; max-width: 100% !important; }
+  /* palette + favorites flow naturally; the body scroll reaches all of them */
+  #edit.drawing .draw-workspace > .field:last-child {
+    display: block !important;
+    flex: none !important;
+    min-height: 0 !important;
+  }
+  #edit.drawing .char-palette {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+/* End wos95 */
