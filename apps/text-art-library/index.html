@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos96">
+  <link rel="stylesheet" href="style.css?v=wos97">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1422,6 +1422,20 @@
       <button type="button" id="drafts-banner-back" class="drafts-banner-back" title="Back to the published library">← Back to library</button>
     </div>
   </div>
+  <!-- wos97: DISCOVERY rails — fresh + popular art, prominent on launch.
+       Shown only on the default view (All tab, no search); each rail hides
+       itself when it has no data. -->
+  <section class="discovery" id="discovery" hidden aria-label="Discover art">
+    <div class="rail" id="rail-new" hidden>
+      <div class="rail-head">🆕 New</div>
+      <div class="rail-scroll" id="rail-new-scroll"></div>
+    </div>
+    <div class="rail" id="rail-popular" hidden>
+      <div class="rail-head">🔥 Popular</div>
+      <div class="rail-scroll" id="rail-popular-scroll"></div>
+    </div>
+  </section>
+
   <main class="grid" id="grid" style="border-color: rgb(58, 41, 86)">
     <div class="grid-empty">Loading…</div>
   </main>
@@ -1486,6 +1500,38 @@
         </label>
         <p class="auth-error" id="auth-error"></p>
         <button class="auth-unlock" id="auth-submit">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- wos97: public ART-REPORT dialog. Opened by the card 🚩 for non-admins;
+       submitting files a bug report (with the piece id attached) AND flags the
+       piece for admin review — one gesture, full context. -->
+  <div class="modal-overlay" id="report">
+    <div class="modal auth-modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div class="modal-head">
+        <h3 id="report-title">🚩 Report this art</h3>
+        <button class="modal-close" id="report-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
+              <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/>
+              <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+      <div class="auth-body">
+        <p class="report-art-name" id="report-art-name"></p>
+        <div class="report-reasons" id="report-reasons" role="radiogroup" aria-label="Reason">
+          <button type="button" class="report-reason" data-reason="Broken in WoS">Broken in WoS</button>
+          <button type="button" class="report-reason" data-reason="Inappropriate">Inappropriate</button>
+          <button type="button" class="report-reason" data-reason="Spam">Spam</button>
+          <button type="button" class="report-reason" data-reason="Other">Other</button>
+        </div>
+        <textarea class="report-details" id="report-details" rows="3" maxlength="500" placeholder="Details (optional)"></textarea>
+        <input class="auth-input" id="report-name" type="text" maxlength="80" autocomplete="off" placeholder="Your name (optional)">
+        <p class="auth-error" id="report-error"></p>
+        <button class="auth-unlock" id="report-submit">Send report</button>
       </div>
     </div>
   </div>
@@ -1621,7 +1667,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos96"></script>
+  <script src="app.js?v=wos97"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

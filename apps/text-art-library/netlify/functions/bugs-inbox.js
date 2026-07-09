@@ -48,6 +48,8 @@ export const handler = async (event) => {
             reporter: r.reporter || null,
             status: r.status === 'resolved' ? 'resolved' : 'open',
             createdAt: r.createdAt || 0,
+            artId: r.artId || null,        // wos97: reported piece (Flag dialog)
+            artTitle: r.artTitle || null,
             triage: (r.triage && !r.triage.error && !r.triage.skipped) ? {
               severity: r.triage.severity,
               area: r.triage.area,
