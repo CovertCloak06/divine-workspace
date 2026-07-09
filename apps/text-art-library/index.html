@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos95">
+  <link rel="stylesheet" href="style.css?v=wos96">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1144,6 +1144,23 @@
       <!-- wos94: the visitor's own published art, owned by this device's
            secret token. Hidden until they have any. -->
       <button type="button" id="drawer-mine-btn" class="drawer-drafts-cta" hidden>🎨 My art</button>
+      <!-- wos96: ADMIN bug-report inbox. Reports come from the public "Send
+           Feedback" form (submit-bug.js: AI triage + Blobs storage); this is
+           the read/manage side — monitor, prioritize (severity chips), resolve
+           and delete. Server-gated by the editor password. Loads on expand. -->
+      <section class="drawer-section editor-only" data-section="bugs">
+        <button class="drawer-section-head" type="button" aria-expanded="false" aria-controls="drawer-section-bugs">
+          <span class="drawer-section-title" id="bugs-inbox-title">🐛 Bug Inbox</span>
+          <span class="drawer-section-caret" aria-hidden="true"></span>
+        </button>
+        <div class="drawer-section-body" id="drawer-section-bugs">
+          <div class="bugs-panel" id="bugs-panel">
+            <div class="bugs-status" id="bugs-status" role="status" aria-live="polite">Open to load reports…</div>
+            <div class="bugs-list" id="bugs-list" hidden></div>
+            <button type="button" class="analytics-refresh" id="bugs-refresh">↻ Refresh</button>
+          </div>
+        </div>
+      </section>
       <!-- Admin-only usage analytics (visits/day + most-copied art). Private:
            gated by the editor password on the server. Loads on expand. -->
       <section class="drawer-section editor-only" data-section="analytics">
@@ -1604,7 +1621,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos95"></script>
+  <script src="app.js?v=wos96"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
