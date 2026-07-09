@@ -431,6 +431,21 @@ const API = {
       return { ok: false, error: 'Network error — try again' };
     }
   },
+  /* wos96 — admin bug inbox (reports written by the public submit-bug form). */
+  async bugsInbox(action, id, password) {
+    try {
+      const res = await fetch(await fnUrl('bugs-inbox'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + password },
+        body: JSON.stringify(id ? { action, id } : { action }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) return body;
+      return { ok: false, error: body.error || `HTTP ${res.status}` };
+    } catch {
+      return { ok: false, error: 'Network error — try again' };
+    }
+  },
   async getMine(token) {
     try {
       const res = await fetch(await fnUrl('get-mine'), {
@@ -574,6 +589,7 @@ async function boot() {
         els.btnExport.disabled = false;
         render();
         showToast('Editor mode restored');
+        loadBugInbox();   // wos96: badge the inbox count for the session
       } else {
         // password no longer valid — drop it silently
         try { localStorage.removeItem(REMEMBER_KEY); } catch {}
@@ -1437,6 +1453,7 @@ if (drawerSectionsRoot) {
     section.classList.toggle('is-open', willOpen);
     head.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     if (willOpen && section.dataset.section === 'analytics') loadAnalytics();
+    if (willOpen && section.dataset.section === 'bugs') loadBugInbox();   // wos96
   });
 }
 
@@ -1444,6 +1461,151 @@ if (drawerSectionsRoot) {
  * Fetches /get-stats (Bearer = editor password) and renders visits-per-day +
  * most-copied art. Editor-only (the drawer section is hidden unless unlocked,
  * and the server rejects the request without a valid password). */
+/* === wos96: ADMIN bug-report inbox ==========================================
+ * Read/manage side of the feedback pipeline (submit-bug.js writes the reports).
+ * Lists reports open-first with AI-triage severity chips; the admin can mark
+ * resolved / reopen / delete. Server-gated by the editor password. */
+let bugReports = [];
+function timeAgo(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 90) return 'just now';
+  if (s < 3600) return Math.round(s / 60) + 'm ago';
+  if (s < 86400) return Math.round(s / 3600) + 'h ago';
+  return Math.round(s / 86400) + 'd ago';
+}
+function syncBugTitle() {
+  const t = document.getElementById('bugs-inbox-title');
+  if (!t) return;
+  const open = bugReports.filter((r) => r.status !== 'resolved').length;
+  t.textContent = open ? `🐛 Bug Inbox (${open})` : '🐛 Bug Inbox';
+}
+async function loadBugInbox() {
+  const statusEl = document.getElementById('bugs-status');
+  const listEl = document.getElementById('bugs-list');
+  if (!statusEl || !listEl) return;
+  if (!state.editor || !state.password) {
+    statusEl.hidden = false;
+    statusEl.textContent = 'Unlock the editor to view reports.';
+    listEl.hidden = true;
+    return;
+  }
+  statusEl.hidden = false;
+  statusEl.textContent = 'Loading…';
+  const r = await API.bugsInbox('list', null, state.password);
+  if (!Array.isArray(r.reports)) {
+    statusEl.textContent = r.error === 'HTTP 404' ? 'Inbox not deployed yet.' : ('Could not load: ' + (r.error || 'unknown'));
+    return;
+  }
+  bugReports = r.reports;
+  syncBugTitle();
+  if (!bugReports.length) {
+    statusEl.textContent = 'No bug reports — inbox zero 🎉';
+    listEl.hidden = true;
+    return;
+  }
+  statusEl.hidden = true;
+  listEl.hidden = false;
+  renderBugInbox(listEl);
+}
+function renderBugInbox(listEl) {
+  listEl.innerHTML = '';
+  for (const r of bugReports) {
+    const row = document.createElement('div');
+    row.className = 'bug-row' + (r.status === 'resolved' ? ' resolved' : '');
+
+    const head = document.createElement('div');
+    head.className = 'bug-head';
+    const sev = document.createElement('span');
+    const sevName = (r.triage && r.triage.severity) || 'new';
+    sev.className = 'bug-sev sev-' + sevName.toLowerCase();
+    sev.textContent = sevName;
+    head.appendChild(sev);
+    const summary = document.createElement('span');
+    summary.className = 'bug-summary';
+    summary.textContent = (r.triage && r.triage.summary) || (r.description || '').slice(0, 90);
+    head.appendChild(summary);
+    row.appendChild(head);
+
+    const meta = document.createElement('div');
+    meta.className = 'bug-meta';
+    meta.textContent = [
+      r.triage && r.triage.area,
+      r.reporter ? 'from ' + r.reporter : 'anonymous',
+      timeAgo(r.createdAt),
+      r.context && r.context.appVersion,
+    ].filter(Boolean).join(' · ');
+    row.appendChild(meta);
+
+    const desc = document.createElement('div');
+    desc.className = 'bug-desc';
+    desc.textContent = r.description || '';
+    row.appendChild(desc);
+
+    if (r.triage && (r.triage.likely_cause || r.triage.suggested_fix)) {
+      const tri = document.createElement('div');
+      tri.className = 'bug-triage';
+      tri.textContent = [
+        r.triage.likely_cause ? 'Likely: ' + r.triage.likely_cause : null,
+        r.triage.suggested_fix ? 'Fix: ' + r.triage.suggested_fix : null,
+      ].filter(Boolean).join('  —  ');
+      row.appendChild(tri);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'bug-actions';
+    const toggle = document.createElement('button');
+    toggle.className = 'bug-btn ' + (r.status === 'resolved' ? 'reopen' : 'resolve');
+    toggle.textContent = r.status === 'resolved' ? '↩ Reopen' : '✔ Resolve';
+    toggle.addEventListener('click', async () => {
+      toggle.disabled = true;
+      const res = await API.bugsInbox(r.status === 'resolved' ? 'reopen' : 'resolve', r.id, state.password);
+      toggle.disabled = false;
+      if (!res.ok) { alert('Failed: ' + (res.error || 'unknown')); return; }
+      r.status = res.status;
+      bugReports.sort((a, b) =>
+        (a.status === 'resolved' ? 1 : 0) - (b.status === 'resolved' ? 1 : 0)
+        || (b.createdAt || 0) - (a.createdAt || 0));
+      syncBugTitle();
+      renderBugInbox(listEl);
+    });
+    actions.appendChild(toggle);
+    if (r.issueUrl) {
+      const gh = document.createElement('a');
+      gh.className = 'bug-btn ghost';
+      gh.href = r.issueUrl;
+      gh.target = '_blank';
+      gh.rel = 'noopener';
+      gh.textContent = 'GitHub ↗';
+      actions.appendChild(gh);
+    }
+    const del = document.createElement('button');
+    del.className = 'bug-btn danger';
+    del.textContent = '🗑 Delete';
+    del.addEventListener('click', async () => {
+      if (!confirm('Delete this report permanently?')) return;
+      del.disabled = true;
+      const res = await API.bugsInbox('delete', r.id, state.password);
+      del.disabled = false;
+      if (!res.ok) { alert('Failed: ' + (res.error || 'unknown')); return; }
+      bugReports = bugReports.filter((q) => q.id !== r.id);
+      syncBugTitle();
+      if (!bugReports.length) {
+        const st = document.getElementById('bugs-status');
+        if (st) { st.hidden = false; st.textContent = 'No bug reports — inbox zero 🎉'; }
+        listEl.hidden = true;
+      } else renderBugInbox(listEl);
+    });
+    actions.appendChild(del);
+    row.appendChild(actions);
+
+    listEl.appendChild(row);
+  }
+}
+const bugsRefreshBtn = document.getElementById('bugs-refresh');
+if (bugsRefreshBtn) bugsRefreshBtn.addEventListener('click', loadBugInbox);
+/* === end wos96 bug inbox === */
+
 async function loadAnalytics() {
   const statusEl = document.getElementById('analytics-status');
   const contentEl = document.getElementById('analytics-content');
@@ -1523,7 +1685,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos95';
+const APP_VERSION = 'wos96';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -1831,6 +1993,7 @@ async function submitAuth() {
     } catch { /* ignore quota errors */ }
     closeAuth();
     render();
+    loadBugInbox();   // wos96: badge the inbox count for the session
   } else {
     els.authError.textContent = r.error || 'Wrong password';
   }
