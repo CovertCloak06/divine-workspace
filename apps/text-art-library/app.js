@@ -1264,7 +1264,16 @@ function renderCard(p) {
   // Noto Color Emoji, a bare ✓ was falling back to a COLOR-emoji glyph — taller
   // than text, which made verified cards' footers ~11px taller and broke the
   // uniform card height. The variation selector keeps it a flat text ✓.
-  wos.textContent = p.wosVerified ? '✓︎ WoS' : '? WoS';
+  // wos95: mark + word live in separate spans so phones can hide the word and
+  // show a compact icon-only badge.
+  const wbMark = document.createElement('span');
+  wbMark.className = 'wb-mark';
+  wbMark.textContent = p.wosVerified ? '✓︎' : '?';
+  const wbWord = document.createElement('span');
+  wbWord.className = 'wb-word';
+  wbWord.textContent = '\u00A0WoS';
+  wos.appendChild(wbMark);
+  wos.appendChild(wbWord);
   wos.addEventListener('click', (e) => {
     if (!state.editor) return;
     e.stopPropagation();
@@ -1289,7 +1298,10 @@ function renderCard(p) {
   box.className = 'box';
   box.textContent = (p.id in state.flags) ? '🚩' : '';
   flag.appendChild(box);
-  flag.appendChild(document.createTextNode(' ' + ((p.id in state.flags) ? 'flagged' : 'flag')));
+  const flagLabel = document.createElement('span');
+  flagLabel.className = 'flag-label';
+  flagLabel.textContent = ' ' + ((p.id in state.flags) ? 'flagged' : 'flag');
+  flag.appendChild(flagLabel);
   flag.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleFlag(p, card, box, flag, note);
@@ -1511,7 +1523,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos94';
+const APP_VERSION = 'wos95';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
