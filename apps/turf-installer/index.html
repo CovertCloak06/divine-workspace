@@ -27,6 +27,7 @@
     <button class="tab" role="tab" data-tab="base">Base Rock</button>
     <button class="tab" role="tab" data-tab="infill">Infill</button>
     <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
+    <button class="tab" role="tab" data-tab="guide">Job Guide</button>
     <button class="tab" role="tab" data-tab="expenses">Expenses</button>
     <button class="tab" role="tab" data-tab="estimate">Estimate</button>
     <button class="tab" role="tab" data-tab="convert">Convert</button>
@@ -60,6 +61,16 @@
         </div>
 
         <div class="results" id="turf-results"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Cut plan</h3>
+        <p class="hint">Strip layout per area at your roll width. Grain usually has to run one way on the real job — treat the "better" orientation as an estimate, not gospel.</p>
+        <div id="cut-plan"></div>
+        <div class="results" id="cut-results"></div>
+        <div class="actions">
+          <button id="use-seams" class="btn" type="button">Send seam length to Seam &amp; Nails</button>
+        </div>
       </div>
     </section>
 
@@ -274,6 +285,22 @@
         </div>
         <div class="results" id="nail-results"></div>
       </div>
+    </section>
+
+    <!-- ============ JOB GUIDE (phase checklist) ============ -->
+    <section class="panel" id="panel-guide" role="tabpanel">
+      <div class="card">
+        <h2>Job guide</h2>
+        <p class="hint">The install, phase by phase. Check steps off as the crew works; notes save on this device. Specs marked "per spec" follow the job sheet.</p>
+        <div class="guide-progress">
+          <div class="guide-bar"><div id="guide-bar-fill" class="guide-bar-fill"></div></div>
+          <span id="guide-progress-label" class="guide-progress-label">0%</span>
+        </div>
+        <div class="actions">
+          <button id="guide-reset" class="btn ghost danger-btn" type="button">Reset checklist</button>
+        </div>
+      </div>
+      <div id="guide-phases"></div>
     </section>
 
     <!-- ============ EXPENSES (foreman job-cost tracking) ============ -->

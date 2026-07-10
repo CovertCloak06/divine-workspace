@@ -22,6 +22,14 @@
 - **Foreman expense tracking** (added 2026-07-07): each foreman logs job spend
   — **diesel, gas, Home Depot / materials**, equipment rental, dump fees, etc.
   Totals roll up by category; export/share to send in. Saved per device.
+  Per diem removed from field categories (2026-07-07) — that's an office thing.
+- **Job Guide tab** (added 2026-07-10): the 9 phases below rendered as an
+  on-site checklist — steps to check off, tools + watch-outs per phase, notes,
+  progress bar. Persists per device. The steps update as this doc gets
+  corrected, so fixing the doc fixes the app.
+- **Cut planner** (added 2026-07-10): per-area strip layout at the chosen roll
+  width, both orientations compared by waste, estimated seam length with a
+  one-tap handoff into the Seam & Nails calculator.
 
 ---
 

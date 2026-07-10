@@ -111,6 +111,67 @@ function calcTurf() {
     { k: `Roll to buy @ ${fmt(width, 0)} ft wide`, v: fmt(linear, 1) + ' linear ft' },
     { k: 'That covers', v: fmt(linear * width, 0) + ' ft²' },
   ]);
+  calcCutPlan(width);
+}
+
+/* Cut plan: for each measured area, lay strips of roll-width `rw` in both
+ * orientations, compare waste, and estimate seam length. Real jobs often
+ * force one orientation (grain direction) — this is an estimate. */
+function planRect(L, W, rw) {
+  // strips run along the L dimension, stacked across W
+  const across = (len, span) => {
+    const strips = Math.ceil(span / rw);
+    return {
+      strips,
+      linear: strips * len,
+      seamFt: Math.max(0, strips - 1) * len,
+      wasteArea: (strips * rw - span) * len,
+    };
+  };
+  const a = across(L, W);   // strips along length
+  const b = across(W, L);   // strips along width
+  const best = a.wasteArea < b.wasteArea ? a
+    : b.wasteArea < a.wasteArea ? b
+    : (a.seamFt <= b.seamFt ? a : b);
+  return { a, b, best };
+}
+
+let cutSeamTotal = 0;
+
+function calcCutPlan(rw) {
+  const rowsEl = areaBlocks.turf && areaBlocks.turf.rows;
+  const container = $('cut-plan');
+  if (!rowsEl || !container) return;
+  container.innerHTML = '';
+  let seamTotal = 0, linearTotal = 0, wasteTotal = 0, idx = 0;
+
+  rowsEl.querySelectorAll('.area-row').forEach((row) => {
+    const L = num(row.querySelector('.len'));
+    const W = num(row.querySelector('.wid'));
+    if (L <= 0 || W <= 0) return;
+    idx += 1;
+    const { a, b, best } = planRect(L, W, rw);
+    seamTotal += best.seamFt;
+    linearTotal += best.linear;
+    wasteTotal += best.wasteArea;
+    const div = document.createElement('div');
+    div.className = 'cut-area';
+    const opt = (o, tag) =>
+      `<span class="cut-opt${o === best ? ' best' : ''}">${tag}: ${o.strips} strip${o.strips === 1 ? '' : 's'}, ` +
+      `${fmt(o.seamFt, 0)} ft seam, ${fmt(o.wasteArea, 0)} ft² waste</span>`;
+    div.innerHTML = `<span class="cut-title">Area ${idx} — ${fmt(L, 1)} × ${fmt(W, 1)} ft</span>` +
+      opt(a, 'Strips along length') + opt(b, 'Strips along width');
+    container.appendChild(div);
+  });
+
+  cutSeamTotal = seamTotal;
+  lines('cut-results', idx === 0 ? [
+    { k: 'Cut plan', v: 'enter areas above' },
+  ] : [
+    { k: 'Linear roll (best layout)', v: fmt(linearTotal, 0) + ' ft' },
+    { k: 'Layout waste', v: fmt(wasteTotal, 0) + ' ft²' },
+    { k: 'Estimated seams', v: fmt(seamTotal, 0) + ' ft', big: true },
+  ]);
 }
 
 function calcBase() {
@@ -344,6 +405,178 @@ async function shareJob() {
   catch { toast('Copy not supported'); }
 }
 
+/* ---------- job guide (phase checklist) ---------- */
+/* Phases mirror docs/WORK_PROCESS.md. Steps stay generic where the real spec
+ * is still unconfirmed — the job sheet wins over anything written here. */
+const GUIDE_KEY = 'turfpro.guide.v1';
+const GUIDE_PHASES = [
+  {
+    title: 'Measure & plan',
+    steps: [
+      'Walk the site — mark obstacles, sprinklers, utilities',
+      'Measure every area (L × W) and enter them in Turf & Rolls',
+      'Plan roll/grain direction (one way, toward main view)',
+      'Confirm equipment and material access',
+    ],
+    tools: 'Tape / measuring wheel, marking paint',
+    watch: 'Call 811 before digging. Watch for sprinkler lines.',
+  },
+  {
+    title: 'Demo / removal',
+    steps: [
+      'Remove sod, old turf, or mulch',
+      'Excavate to spec depth for base + turf',
+      'Haul off spoils',
+    ],
+    tools: 'Sod cutter, shovels, skid steer, wheelbarrow',
+    watch: 'Keep the grade consistent — don’t over-dig.',
+  },
+  {
+    title: 'Grade & drainage',
+    steps: [
+      'Rough-grade with slope away from structures',
+      'Fix any low spots that would pool water',
+      'Install drainage if the job calls for it',
+    ],
+    tools: 'Rake, laser/level, drain pipe if spec’d',
+    watch: 'Standing water later = callback. Check slope now.',
+  },
+  {
+    title: 'Base install',
+    steps: [
+      'Lay weed barrier per spec',
+      'Spread base rock (tons from the Base Rock tab)',
+      'Wet and compact in lifts — multiple passes',
+      'Screed and level to final grade',
+    ],
+    tools: 'Plate compactor, screed board, rake, hose',
+    watch: 'A soft base means a wavy lawn. Compact in lifts.',
+  },
+  {
+    title: 'Turf layout',
+    steps: [
+      'Roll turf out and let it relax',
+      'Grain the same direction on every piece',
+      'Position seams where they’ll show least',
+    ],
+    tools: 'Turf dolly/cart',
+    watch: 'Grain mismatch between pieces shows badly.',
+  },
+  {
+    title: 'Cut & seam',
+    steps: [
+      'Trim the factory selvage edge',
+      'Cut pieces to fit (see Cut plan in Turf & Rolls)',
+      'Seam with tape + glue or nails per spec',
+      'Weight seams while they cure',
+    ],
+    tools: 'Turf knife, seam tape, glue + trowel, weights',
+    watch: 'Don’t trap blades in the glue line.',
+  },
+  {
+    title: 'Fasten',
+    steps: [
+      'Stretch out wrinkles before nailing',
+      'Nail the perimeter (4–8″ spacing)',
+      'Nail seams zig-zag (2–3″ spacing)',
+    ],
+    tools: 'Turf nails/staples, hammer or nail gun',
+    watch: 'Over-driven nails dimple the turf.',
+  },
+  {
+    title: 'Infill',
+    steps: [
+      'Spread the sand layer and broom it in',
+      'Spread the customer’s top-fill product',
+      'Power-broom between lifts until blades stand',
+    ],
+    tools: 'Drop spreader, power broom',
+    watch: 'Quantities come from the Infill tab. Brush every lift.',
+  },
+  {
+    title: 'Cleanup & walkthrough',
+    steps: [
+      'Final brush across the whole lawn',
+      'Blow off surrounding hardscape',
+      'Walk the job with the customer — punch list',
+      'Leave care instructions',
+    ],
+    tools: 'Blower, broom',
+    watch: 'Sweep for dropped nails before you leave.',
+  },
+];
+
+function readGuide() {
+  try { return JSON.parse(localStorage.getItem(GUIDE_KEY)) || { done: {}, notes: {} }; }
+  catch { return { done: {}, notes: {} }; }
+}
+function writeGuide(g) { localStorage.setItem(GUIDE_KEY, JSON.stringify(g)); }
+
+function renderGuide() {
+  const host = $('guide-phases');
+  if (!host) return;
+  const g = readGuide();
+  host.innerHTML = '';
+  let total = 0, done = 0;
+
+  GUIDE_PHASES.forEach((phase, pi) => {
+    const card = document.createElement('div');
+    card.className = 'card guide-phase';
+    const phaseDone = phase.steps.filter((_, si) => g.done[`p${pi}s${si}`]).length;
+    total += phase.steps.length;
+    done += phaseDone;
+
+    const h = document.createElement('h3');
+    h.className = 'layer-h';
+    h.textContent = `${pi + 1}. ${phase.title} — ${phaseDone}/${phase.steps.length}`;
+    card.appendChild(h);
+
+    phase.steps.forEach((step, si) => {
+      const key = `p${pi}s${si}`;
+      const label = document.createElement('label');
+      label.className = 'guide-step' + (g.done[key] ? ' done' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!g.done[key];
+      cb.addEventListener('change', () => {
+        const cur = readGuide();
+        if (cb.checked) cur.done[key] = true; else delete cur.done[key];
+        writeGuide(cur);
+        renderGuide();
+      });
+      const span = document.createElement('span');
+      span.textContent = step;
+      label.appendChild(cb);
+      label.appendChild(span);
+      card.appendChild(label);
+    });
+
+    const meta = document.createElement('p');
+    meta.className = 'guide-meta';
+    meta.innerHTML = `<strong>Tools:</strong> ${phase.tools}<br><strong>Watch:</strong> ${phase.watch}`;
+    card.appendChild(meta);
+
+    const notes = document.createElement('textarea');
+    notes.className = 'guide-notes';
+    notes.placeholder = 'Phase notes…';
+    notes.value = g.notes[pi] || '';
+    notes.addEventListener('input', () => {
+      const cur = readGuide();
+      cur.notes[pi] = notes.value;
+      writeGuide(cur);
+    });
+    card.appendChild(notes);
+
+    host.appendChild(card);
+  });
+
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const fill = $('guide-bar-fill');
+  if (fill) fill.style.width = pct + '%';
+  const lbl = $('guide-progress-label');
+  if (lbl) lbl.textContent = `${pct}% — ${done}/${total} steps`;
+}
+
 /* ---------- expenses (foreman job-cost tracking) ---------- */
 const EXP_KEY = 'turfpro.expenses.v1';
 const META_KEY = 'turfpro.foreman.v1';
@@ -477,6 +710,24 @@ function init() {
     const jobs = readJobs(); jobs.push(collectJob()); writeJobs(jobs); renderSaved(); toast('Job saved');
   });
   $('share-job').addEventListener('click', shareJob);
+
+  // cut plan → seam length handoff
+  $('use-seams').addEventListener('click', () => {
+    $('seam-len').value = Math.round(cutSeamTotal);
+    $('seam-len-2').value = Math.round(cutSeamTotal);
+    render();
+    toast(`Seam length set to ${Math.round(cutSeamTotal)} ft`);
+  });
+
+  // job guide
+  renderGuide();
+  $('guide-reset').addEventListener('click', () => {
+    if (confirm('Reset the whole job checklist and phase notes?')) {
+      writeGuide({ done: {}, notes: {} });
+      renderGuide();
+      toast('Checklist reset');
+    }
+  });
 
   // expenses
   $('exp-add').addEventListener('click', addExpense);
