@@ -13,7 +13,7 @@
  */
 
 const STORE_KEY = 'turfpro.jobs.v2';
-const VERSION = 'v2';
+const VERSION = 'v4';
 
 /* ---------- helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -30,6 +30,14 @@ const todayLocal = () => {
   const d = new Date(); const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
+// HTML-escape anything that round-trips through localStorage or an input
+// before it reaches an innerHTML template.
+const esc = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+// Collision-proof id: Date.now alone can collide on same-ms double taps.
+const uid = (prefix) =>
+  prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 /* ---------- reusable area block ---------- */
 /* Each <div class="area-block" data-area="KEY"> becomes a mini measurer with
@@ -93,8 +101,8 @@ function areaTotal(key) {
 function lines(targetId, items) {
   $(targetId).innerHTML = items.map((it) =>
     `<div class="res-line${it.big ? ' big' : ''}">
-       <span class="res-k">${it.k}</span>
-       <span class="res-v">${it.v}</span>
+       <span class="res-k">${esc(it.k)}</span>
+       <span class="res-v">${esc(it.v)}</span>
      </div>`).join('');
 }
 
@@ -216,11 +224,11 @@ function calcInfill() {
     { k: `Cost (${supply})`, v: money(sandCost) },
   ]);
 
-  // --- Layer 2: top fill ---
+  // --- Layer 2: top fill (priced per bag, matching the label) ---
   const topLb = net * num('top-rate');
   const topBagSize = num('top-bag') || 50;
   const topBags = Math.ceil(topLb / topBagSize);
-  const topCost = topLb * num('top-price');
+  const topCost = topBags * num('top-price');
   lines('top-results', [
     { k: 'Product', v: $('top-product').value },
     { k: 'Total top fill', v: fmt(topLb, 0) + ' lb', big: true },
@@ -288,7 +296,8 @@ function calcEstimate() {
   const sandCost = $('sand-supply').value === 'bulk'
     ? (sandLb / 2000) * num('sand-ton-price')
     : Math.ceil(sandLb / (num('sand-bag') || 50)) * num('sand-bag-price');
-  const infill = sandCost + topLb * num('top-price');
+  const topBags = Math.ceil(topLb / (num('top-bag') || 50));
+  const infill = sandCost + topBags * num('top-price');
   const depthFt = num('base-depth') / 12;
   const yd3 = (net * depthFt) / 27 * (1 + num('base-compaction') / 100);
   const base = yd3 * (num('base-material') || 1.5) * num('base-price');
@@ -338,16 +347,30 @@ function render() {
 function readJobs() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
 function writeJobs(j) { localStorage.setItem(STORE_KEY, JSON.stringify(j)); }
 
+/* Every input that feeds the estimate. Snapshotted into each saved job so
+ * reopening a job shows the total it was saved with, not whatever rates
+ * happen to be in the inputs from the last job quoted. */
+const RATE_IDS = [
+  'est-turf-price', 'est-labor', 'est-waste', 'est-markup',
+  'turf-roll-width', 'turf-waste',
+  'base-depth', 'base-compaction', 'base-material', 'base-price',
+  'sand-rate', 'sand-supply', 'sand-ton-price', 'sand-bag', 'sand-bag-price',
+  'top-product', 'top-rate', 'top-bag', 'top-price',
+  'seam-len', 'glue-cover', 'tape-roll', 'glue-price',
+  'seam-len-2', 'perimeter', 'perim-spacing', 'seam-spacing', 'field-rate', 'nail-box',
+];
+
 function collectJob() {
   const areas = [];
   areaBlocks.estimate.rows.querySelectorAll('.area-row').forEach((r) =>
     areas.push({ len: r.querySelector('.len').value, wid: r.querySelector('.wid').value }));
   const est = calcEstimate();
   return {
-    id: 'j' + Date.now().toString(36),
+    id: uid('j'),
     savedAt: todayLocal(),
     name: $('job-name').value || 'Untitled job',
     date: $('job-date').value || todayLocal(),
+    rates: Object.fromEntries(RATE_IDS.map((id) => [id, $(id).value])),
     areas, net: est.net, total: est.total,
   };
 }
@@ -355,6 +378,9 @@ function collectJob() {
 function loadJob(job) {
   $('job-name').value = job.name || '';
   $('job-date').value = job.date || todayLocal();
+  if (job.rates) RATE_IDS.forEach((id) => {
+    if (id in job.rates) $(id).value = job.rates[id];
+  });
   areaBlocks.estimate.rows.innerHTML = '';
   (job.areas && job.areas.length ? job.areas : [{ len: '', wid: '' }])
     .forEach((a) => areaBlocks.estimate.addRow(a.len, a.wid));
@@ -371,7 +397,7 @@ function renderSaved() {
     item.className = 'saved-item';
     item.innerHTML = `
       <div class="meta"><span class="name"></span>
-        <span class="sub">${job.date} · ${fmt(job.net || 0, 0)} ft²</span></div>
+        <span class="sub">${esc(job.date)} · ${fmt(job.net || 0, 0)} ft²</span></div>
       <span class="price">${money(job.total || 0)}</span>
       <div class="row-actions"><button class="open" title="Open">📂</button>
         <button class="del" title="Delete">🗑</button></div>`;
@@ -589,7 +615,7 @@ function addExpense() {
   if (amount <= 0) { toast('Enter an amount'); return; }
   const exp = readExp();
   exp.push({
-    id: 'e' + Date.now().toString(36),
+    id: uid('e'),
     cat: $('exp-cat').value,
     amount,
     date: $('exp-date').value || todayLocal(),
@@ -625,7 +651,7 @@ function renderExpenses() {
     item.className = 'saved-item';
     item.innerHTML = `
       <div class="meta"><span class="name"></span>
-        <span class="sub">${e.date}${e.note ? ' · ' : ''}<span class="note"></span></span></div>
+        <span class="sub">${esc(e.date)}${e.note ? ' · ' : ''}<span class="note"></span></span></div>
       <span class="price">${money(e.amount)}</span>
       <div class="row-actions"><button class="del" title="Delete">🗑</button></div>`;
     item.querySelector('.name').textContent = e.cat;      // XSS-safe
@@ -694,15 +720,6 @@ function init() {
   if (!$('job-date').value) $('job-date').value = todayLocal();
   if (!$('exp-date').value) $('exp-date').value = todayLocal();
   loadForemanMeta();
-
-  // Infill presets
-  document.querySelectorAll('#infill-presets .preset').forEach((p) =>
-    p.addEventListener('click', () => {
-      document.querySelectorAll('#infill-presets .preset').forEach((x) => x.classList.remove('active'));
-      p.classList.add('active');
-      $('infill-rate').value = p.dataset.rate;
-      render();
-    }));
 
   document.addEventListener('input', render);
 
