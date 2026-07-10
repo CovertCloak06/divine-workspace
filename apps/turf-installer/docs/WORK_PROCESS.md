@@ -197,10 +197,12 @@ per sq ft.
 **Tools / materials:** sand (bulk or bagged), top-fill product, drop spreader,
 power broom / stiff push broom.
 
-**Measurements / specs:** ❓NEEDS INPUT — target rate for the sand layer vs. the
-top layer (lb/ft² each), and total infill depth. Calculator currently defaults
-to sand 4 lb/ft² + top 2 lb/ft² (= 6 total) as a *placeholder* — give me the
-real spec.
+**Measurements / specs ✅ (from Cameron, 2026-07-10):** there is NO standard
+rate — **the lb/ft² depends on the product, and each field's spec calls out
+the rate for that installation.** That's exactly why the materials calculator
+and tracker matter: the foreman gets the spec per job and the app turns it
+into tons / yards / bags. The app's rate inputs are labeled "per field spec"
+and per-product typical ranges are shown as hints only — the spec always wins.
 
 **Watch out:** too much/little infill; not brushing enough between lifts.
 

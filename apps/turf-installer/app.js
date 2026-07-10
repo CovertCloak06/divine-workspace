@@ -201,6 +201,18 @@ function calcBase() {
 
 const SAND_TONS_PER_YD3 = 1.35;   // dry masonry/silica sand ≈ 2700 lb/yd³
 
+/* Typical lb/ft² ranges by top-fill product — DISPLAY HINTS ONLY. The rate
+ * the field spec calls for always wins; these just sanity-check the entry. */
+const RATE_HINTS = {
+  'Crumb rubber (SBR)': 'typical 1.5–3 lb/ft² — the field spec wins',
+  'Coated / acrylic sand': 'typical 1–2 lb/ft² — the field spec wins',
+  'Cork / organic': 'typical 0.5–1 lb/ft² — the field spec wins',
+  'TPE': 'typical 1–2 lb/ft² — the field spec wins',
+  'Zeolite (antimicrobial)': 'typical 0.5–1 lb/ft² — the field spec wins',
+  'EPDM': 'typical 1–2 lb/ft² — the field spec wins',
+  'Other / custom': 'enter the rate from the field spec',
+};
+
 function calcInfill() {
   const net = areaTotal('infill');
 
@@ -225,6 +237,8 @@ function calcInfill() {
   ]);
 
   // --- Layer 2: top fill (priced per bag, matching the label) ---
+  const hintEl = $('top-rate-hint');
+  if (hintEl) hintEl.textContent = RATE_HINTS[$('top-product').value] || '';
   const topLb = net * num('top-rate');
   const topBagSize = num('top-bag') || 50;
   const topBags = Math.ceil(topLb / topBagSize);

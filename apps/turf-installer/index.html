@@ -121,7 +121,7 @@
     <section class="panel" id="panel-infill" role="tabpanel">
       <div class="card">
         <h2>Infill — sand + top fill</h2>
-        <p class="hint">Two layers: a <strong>sand</strong> base infill, then a <strong>top fill</strong> chosen per job. Rates are placeholders — set them to the spec for this field.</p>
+        <p class="hint">Two layers: a <strong>sand</strong> base infill, then a <strong>top fill</strong> chosen per job. <strong>The lb/ft² comes from the field spec for the product</strong> — enter what this job calls for and the calculator turns it into tons, yards, and bags.</p>
         <div class="area-block" data-area="infill"></div>
       </div>
 
@@ -129,7 +129,7 @@
       <div class="card">
         <h3 class="layer-h">① Sand (base infill)</h3>
         <div class="grid two">
-          <label>Sand rate
+          <label>Sand rate (per field spec)
             <div class="suffix-field">
               <input id="sand-rate" type="number" min="0" step="0.1" value="4" inputmode="decimal" />
               <span>lb/ft²</span>
@@ -179,11 +179,12 @@
               </select>
             </div>
           </label>
-          <label>Top-fill rate
+          <label>Top-fill rate (per field spec)
             <div class="suffix-field">
               <input id="top-rate" type="number" min="0" step="0.1" value="2" inputmode="decimal" /><span>lb/ft²</span>
             </div>
           </label>
+          <p id="top-rate-hint" class="hint full rate-hint"></p>
           <label>Bag size
             <div class="suffix-field">
               <input id="top-bag" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
