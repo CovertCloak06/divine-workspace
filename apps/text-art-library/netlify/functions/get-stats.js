@@ -1,8 +1,10 @@
 // Frostline — GET /get-stats  (ADMIN ONLY; Bearer = editor password)
-// Returns { visitsByDay: {date:n}, visitsTotal, topCopied: [{id,n}], copyTotal }
+// Returns { visitsByDay: {date:n}, visitsTotal, topCopied: [{id,n}], copyTotal,
+//           devicesTotal, newDevicesByDay: {date:n}, topDevices: [{id,n}] }
 //
 // Private analytics for the editor drawer — never exposed publicly. All numbers
-// are anonymous aggregates written by /track.
+// are anonymous aggregates written by /track; device ids are opaque random
+// client-minted strings (no PII, no fingerprints).
 
 import { connectLambda, getStore } from '@netlify/blobs';
 import { verifyRequest } from './_auth.js';
@@ -34,13 +36,36 @@ export const handler = async (event) => {
     }));
     topCopied.sort((a, b) => b.n - a.n);
 
+    // wos98: new devices per day (first-ever sighting of a device id)
+    const newDevicesByDay = {};
+    const { blobs: newDevBlobs } = await store.list({ prefix: 'stat/new-device-day/' });
+    await Promise.all((newDevBlobs || []).map(async ({ key }) => {
+      const date = key.slice('stat/new-device-day/'.length);
+      newDevicesByDay[date] = parseInt(await store.get(key), 10) || 0;
+    }));
+
+    // wos98: per-device visit counts — powers "top returning devices"
+    const topDevices = [];
+    const { blobs: devBlobs } = await store.list({ prefix: 'stat/device/' });
+    await Promise.all((devBlobs || []).map(async ({ key }) => {
+      const id = key.slice('stat/device/'.length);
+      if (!id) return;
+      topDevices.push({ id, n: parseInt(await store.get(key), 10) || 0 });
+    }));
+    topDevices.sort((a, b) => b.n - a.n);
+
     const visitsTotal = parseInt(await store.get('stat/visit-total'), 10) || 0;
     const copyTotal = parseInt(await store.get('stat/copy-total'), 10) || 0;
+    const devicesTotal = parseInt(await store.get('stat/device-total'), 10) || 0;
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ visitsByDay, visitsTotal, topCopied: topCopied.slice(0, 25), copyTotal }),
+      body: JSON.stringify({
+        visitsByDay, visitsTotal,
+        topCopied: topCopied.slice(0, 25), copyTotal,
+        devicesTotal, newDevicesByDay, topDevices: topDevices.slice(0, 25),
+      }),
     };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: 'Blob op failed', detail: String(err) }) };

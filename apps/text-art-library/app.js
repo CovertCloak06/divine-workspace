@@ -296,29 +296,61 @@ async function fnUrl(name) {
  * Fire-and-forget: never blocks the UI, silently no-ops when the backend is
  * unreachable, and sends only an aggregate event + (for copies) the piece id —
  * no identifiers or personal data. */
-function trackEvent(kind, id) {
+function trackEvent(kind, id, extra) {
   try {
     fnUrl('track').then((url) => {
+      const payload = { event: kind, ...(id ? { id } : {}), ...(extra || {}) };
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(id ? { event: kind, id } : { event: kind }),
+        body: JSON.stringify(payload),
         keepalive: true,
       }).catch(() => {});
     }).catch(() => {});
   } catch { /* ignore */ }
 }
-// Count one visit per device per UTC day so a single user refreshing doesn't
-// inflate the numbers (roughly "unique daily visitors").
-function trackVisitOncePerDay() {
-  let day;
-  try { day = new Date().toISOString().slice(0, 10); } catch { day = 'x'; }
+/* wos98: anonymous per-device analytics. Each browser gets ONE random opaque
+ * id (no fingerprinting, no PII — just a coin-flip string in localStorage) so
+ * the admin panel can answer "how many times does a device come back?" and
+ * "how many brand-new devices today?". Clearing site data mints a new id,
+ * which then correctly counts as a new device. */
+const DEVICE_ID_KEY = 'frostline:device-id';
+function deviceId() {
   try {
-    const key = 'frostline:tracked:' + day;
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, '1');
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (id && /^d[a-f0-9]{16,32}$/.test(id)) return id;
+    let hex = '';
+    try {
+      const buf = new Uint8Array(12);
+      crypto.getRandomValues(buf);
+      hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0')).join('');
+    } catch {
+      hex = (Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2)).slice(0, 24);
+    }
+    id = 'd' + hex;
+    localStorage.setItem(DEVICE_ID_KEY, id);
+    return id;
+  } catch { return null; }  // no storage — visit still counts, just deviceless
+}
+// wos98: a "visit" is one app-open (per-tab session), not one per day — so the
+// per-device counts reflect how many TIMES someone comes back. sessionStorage
+// guards reloads within the same tab from inflating the numbers.
+function trackVisit() {
+  try {
+    if (sessionStorage.getItem('frostline:visited')) return;
+    sessionStorage.setItem('frostline:visited', '1');
   } catch { /* no storage — just count it */ }
-  trackEvent('visit');
+  const dev = deviceId();
+  trackEvent('visit', null, dev ? { device: dev } : null);
+  // Housekeeping: drop the retired one-key-per-day markers from pre-wos98.
+  try {
+    const stale = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('frostline:tracked:')) stale.push(k);
+    }
+    stale.forEach((k) => localStorage.removeItem(k));
+  } catch { /* ignore */ }
 }
 
 // localStorage is a last-known-good CACHE only (never a competing store), so an
@@ -615,8 +647,8 @@ async function boot() {
   recomputeMerged();
   render();
 
-  // Count this visit (anonymous, deduped per day) for the admin analytics panel.
-  trackVisitOncePerDay();
+  // Count this visit (anonymous, deduped per tab-session) for the admin panel.
+  trackVisit();
 
   // wos94: load this device's own published pieces (no-op without a token).
   refreshMyArt();
@@ -746,9 +778,30 @@ function resolveLibrary(data) {
   }
 }
 
+/* wos98: the gallery shuffles on every page load so returning visitors see a
+ * fresh mix instead of the same first screen. Seeded hash sort, NOT a live
+ * random sort: the seed is fixed per page load, so the order is stable WITHIN
+ * a visit — background refresh() and re-renders never make cards jump — and
+ * different on the next reload. state.library keeps its canonical order
+ * (cache/export/save paths untouched); only the display list is shuffled.
+ * The 🆕/🔥 rails sort their own copies, so they're unaffected. */
+const SHUFFLE_SEED = Math.floor(Math.random() * 0xffffffff);
+function shuffleRank(id) {
+  let h = (0x811c9dc5 ^ SHUFFLE_SEED) >>> 0;          // FNV-1a over seed+id
+  const s = String(id);
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 function recomputeMerged() {
   // The library is authoritative; the tombstone filter is belt-and-suspenders.
-  state.merged = state.library.filter((p) => !state.deletedIds.has(p.id));
+  state.merged = state.library
+    .filter((p) => !state.deletedIds.has(p.id))
+    .sort((a, b) => shuffleRank(a.id) - shuffleRank(b.id)
+      || String(a.id).localeCompare(String(b.id)));
 }
 
 function cacheNow() {
@@ -1783,11 +1836,9 @@ async function loadAnalytics() {
   }
 }
 
-function renderAnalytics(stats) {
-  const contentEl = document.getElementById('analytics-content');
-  if (!contentEl) return;
-  const byDay = stats.visitsByDay || {};
-  // Last 14 days, oldest→newest, filling gaps with 0.
+// Last 14 days of {date: n}, rendered as the little bar chart. Shared by the
+// visits chart and the wos98 new-devices chart.
+function buildDayBars(byDay) {
   const days = [];
   const today = new Date();
   for (let i = 13; i >= 0; i--) {
@@ -1795,11 +1846,18 @@ function renderAnalytics(stats) {
     days.push({ d, n: byDay[d] || 0 });
   }
   const maxN = Math.max(1, ...days.map((x) => x.n));
-  const bars = days.map((x) => {
+  return days.map((x) => {
     const h = Math.round((x.n / maxN) * 46);
     const label = x.d.slice(5); // MM-DD
     return `<div class="an-bar" title="${x.d}: ${x.n}"><span class="an-bar-fill" style="height:${h}px"></span><span class="an-bar-n">${x.n || ''}</span><span class="an-bar-d">${label}</span></div>`;
   }).join('');
+}
+
+function renderAnalytics(stats) {
+  const contentEl = document.getElementById('analytics-content');
+  if (!contentEl) return;
+  const bars = buildDayBars(stats.visitsByDay || {});
+  const newDevBars = buildDayBars(stats.newDevicesByDay || {});
 
   // Resolve titles for the most-copied pieces from the loaded library.
   const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
@@ -1812,13 +1870,30 @@ function renderAnalytics(stats) {
     ? top.map((c, i) => `<li><span class="an-rank">${i + 1}</span><span class="an-title">${escapeHtml(titleFor(c.id))}</span><span class="an-count">${c.n}</span></li>`).join('')
     : '<li class="an-empty">No copies recorded yet.</li>';
 
+  // wos98: top returning devices. Ids are opaque random strings — show a short
+  // recognizable prefix. This device is starred so the admin can spot herself.
+  const myDev = (() => { try { return localStorage.getItem(DEVICE_ID_KEY); } catch { return null; } })();
+  const devs = (stats.topDevices || []).slice(0, 10);
+  const devRows = devs.length
+    ? devs.map((d, i) => {
+        const mine = myDev && d.id === myDev;
+        const label = 'Device ' + String(d.id).slice(1, 7) + (mine ? ' ★ (this device)' : '');
+        return `<li><span class="an-rank">${i + 1}</span><span class="an-title">${escapeHtml(label)}</span><span class="an-count">${d.n} visit${d.n === 1 ? '' : 's'}</span></li>`;
+      }).join('')
+    : '<li class="an-empty">No device visits recorded yet.</li>';
+
   contentEl.innerHTML = `
     <div class="an-totals">
       <div class="an-total"><span class="an-total-n">${stats.visitsTotal || 0}</span><span class="an-total-l">total visits</span></div>
       <div class="an-total"><span class="an-total-n">${stats.copyTotal || 0}</span><span class="an-total-l">total copies</span></div>
+      <div class="an-total"><span class="an-total-n">${stats.devicesTotal || 0}</span><span class="an-total-l">unique devices</span></div>
     </div>
     <div class="an-section-label">Visits · last 14 days</div>
     <div class="an-chart">${bars}</div>
+    <div class="an-section-label">New devices · last 14 days</div>
+    <div class="an-chart">${newDevBars}</div>
+    <div class="an-section-label">Top returning devices</div>
+    <ol class="an-top">${devRows}</ol>
     <div class="an-section-label">Most-copied art</div>
     <ol class="an-top">${rows}</ol>`;
 }
@@ -1833,7 +1908,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos97';
+const APP_VERSION = 'wos98';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
