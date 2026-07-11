@@ -4391,7 +4391,11 @@ async function toggleVerified(p) {
 
 /* ============ 14  Export art.js ============ */
 els.btnExport.addEventListener('click', () => {
-  if (!state.merged.length) return;
+  // wos99: export in CANONICAL library order. state.merged is display-shuffled
+  // per page load (wos98), so iterating it would emit a randomly-ordered
+  // bundle on every export and permanently reshuffle the checked-in library.
+  const canonical = state.library.filter((p) => !state.deletedIds.has(p.id));
+  if (!canonical.length) return;
   const out = ['/**',
     ' * Frostline — bundled art library. AUTO-GENERATED.',
     ' * Regenerated ' + new Date().toISOString(),
@@ -4399,7 +4403,7 @@ els.btnExport.addEventListener('click', () => {
     ' */',
     'const ART = [',
   ];
-  for (const p of state.merged) {
+  for (const p of canonical) {
     out.push('  {');
     out.push(`    id: ${JSON.stringify(p.id)},`);
     out.push(`    title: ${JSON.stringify(p.title)},`);
