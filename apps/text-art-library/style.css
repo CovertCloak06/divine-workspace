@@ -3325,10 +3325,13 @@ html body {
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 -2px 0 rgba(0, 30, 60, 0.22);
 }
+/* wos99: filter is INERT on Chromium scrollbar pseudos — hover must use
+ * paint-based properties (background/border/box-shadow) to actually show. */
 .sketch-view::-webkit-scrollbar-thumb:hover,
 .char-palette::-webkit-scrollbar-thumb:hover,
 .has-wos-scroll::-webkit-scrollbar-thumb:hover {
-  filter: brightness(1.12);
+  background: linear-gradient(180deg, #a8e2f7 0%, #5cb2e2 60%, #3b93cc 100%);
+  border-color: #2d76ab;
 }
 .sketch-view::-webkit-scrollbar-button:single-button,
 .char-palette::-webkit-scrollbar-button:single-button,
@@ -4268,7 +4271,10 @@ body.editor .submit-row { display: none; }
  *   3. tube body  — CSS gradient, stretches perfectly at any length
  * Desktop-only (hover+fine pointer): styling webkit scrollbars on Android
  * turns them into classic bars that STEAL ~14px of layout width from the
- * gallery, so phones keep their native overlay scrollbars.
+ * gallery, so phones keep their native overlay scrollbars. Known trade-off:
+ * macOS also matches this gate, and its overlay scrollbars become
+ * always-visible classic bars — the standard cost of webkit scrollbar
+ * theming; Windows/Linux merely restyle an existing gutter.
  * The editor's chunky WoS scrollbars (.sketch-view/.char-palette/
  * .has-wos-scroll, wos48 block) have higher specificity and keep their look. */
 @media (hover: hover) and (pointer: fine) {
@@ -4323,8 +4329,13 @@ body.editor .submit-row { display: none; }
       inset 0 2px 3px rgba(255, 255, 255, 0.5),
       inset 0 -2px 4px rgba(4, 40, 60, 0.6);
   }
+  /* Hover: paint-based only — filter/opacity are INERT on Chromium scrollbar
+   * pseudo-elements (silently ignored), so brighten via border + inner glow. */
   *::-webkit-scrollbar-thumb:hover {
-    filter: brightness(1.15);
+    border-color: #ffffff;
+    box-shadow:
+      inset 0 0 0 2px rgba(230, 250, 255, 0.55),
+      inset 0 0 8px rgba(255, 255, 255, 0.5);
   }
   *::-webkit-scrollbar-corner {
     background: transparent;
