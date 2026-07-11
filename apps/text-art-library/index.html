@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos99">
+  <link rel="stylesheet" href="style.css?v=wos100">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1030,6 +1030,114 @@
       // Match the body inline bg to the saved page color so it can't flash.
       if (t.bgColor) body.style.backgroundColor = t.bgColor;
     }
+
+    /* wos100: mirror the REMAINING applyX transforms on frame 1. These used
+       to arrive only after React+Babel downloaded and compiled the tweaks
+       panel (seconds on phones), so the page visibly restyled mid-load:
+       buttons re-rounded (chunkiness), text resized/re-tracked, cards
+       re-skinned (radius, glow, frost, border/text colors, header). The
+       style tags reuse the SAME ids the React applyX functions write to, so
+       the panel's later pass overwrites them with identical rules — no
+       visible change. KEEP IN LOCKSTEP with the applyX functions below. */
+    function injectId(id, css) {
+      var s = document.getElementById(id);
+      if (!s) { s = document.createElement('style'); s.id = id; document.head.appendChild(s); }
+      s.textContent = css;
+    }
+    if (t.chunkiness != null) {
+      var cv = t.chunkiness;
+      var radius = (4 + (cv / 100) * 14).toFixed(1);
+      var iconRadius = (3 + (cv / 100) * 10).toFixed(1);
+      var tagRadius = cv < 30 ? (4 + (cv / 100) * 24).toFixed(0) : 999;
+      var shadowDrop = ((cv / 100) * 5).toFixed(2);
+      var shadowSoft = (4 + (cv / 100) * 10).toFixed(1);
+      var insetBot = ((cv / 100) * 3).toFixed(2);
+      var stickerOff = (0.5 + (cv / 100) * 1.0).toFixed(2);
+      var stickerBlur = (1 + (cv / 100) * 5).toFixed(1);
+      var barShadow = (1 + (cv / 100) * 2).toFixed(1);
+      injectId('frostline-tweaks-chunk', `
+      .btn-add, .btn-export, .copy-btn, .modal-copy, .auth-unlock, .btn-primary,
+      .share-bar {
+        border-radius: ${radius}px !important;
+        box-shadow:
+          inset 0 1px 0 var(--btn-highlight),
+          inset 0 -${insetBot}px 0 rgba(0,0,0,0.18),
+          0 ${shadowDrop}px 0 rgba(0,0,0,0.18),
+          0 ${(parseFloat(shadowDrop)+1).toFixed(1)}px ${shadowSoft}px rgba(0,0,0,0.22) !important;
+      }
+      .icon-btn, .modal-close, .strip-arrow .palette-btn, .fav-slot.filled {
+        border-radius: ${iconRadius}px !important;
+      }
+      .tag { border-radius: ${tagRadius === 999 ? '999px' : tagRadius + 'px'} !important; }
+      .title, .card-title, .modal-head h3,
+      .btn-add, .btn-export, .copy-btn, .modal-copy, .auth-unlock, .btn-primary,
+      .tag {
+        text-shadow:
+          -${stickerOff}px 0 0 var(--btn-edge),
+          ${stickerOff}px 0 0 var(--btn-edge),
+          0 -${stickerOff}px 0 var(--btn-edge),
+          0 ${stickerOff}px 0 var(--btn-edge),
+          0 ${(parseFloat(stickerOff)*1.5).toFixed(2)}px 0 var(--btn-edge),
+          0 ${(parseFloat(stickerOff)*2).toFixed(2)}px ${stickerBlur}px rgba(0, 30, 80, 0.35) !important;
+      }
+      .tag:not(.active) { text-shadow: none !important; color: var(--ink-card) !important; }
+      .header, .controls {
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.35),
+          inset 0 -${barShadow}px 0 rgba(0,0,0,0.12) !important;
+      }
+    `);
+    }
+    if (t.cardShape === 'soft' && t.cardRadius != null) {
+      injectId('frostline-tweaks-shape', '.card { border-radius: ' + t.cardRadius + 'px !important; }');
+    }
+    if (t.cardGlow != null) {
+      root.setProperty('--tw-card-glow', ((t.cardGlow / 100) * 40).toFixed(1) + 'px');
+      root.setProperty('--tw-card-glow-a', ((t.cardGlow / 100) * 0.7).toFixed(3));
+    }
+    if (t.cardFrost != null) {
+      root.setProperty('--tw-card-frost', t.cardFrost + 'px');
+      if (body && t.cardFrost > 0) body.classList.add('fx-frost');
+    }
+    var fs = t.fontSize || 16, fr = fs / 16;
+    injectId('frostline-tweaks-fontsize', `
+      body { font-size: ${fs}px; }
+      .card-title { font-size: ${(15 * fr).toFixed(1)}px; }
+      .copy-btn { font-size: ${(13 * fr).toFixed(1)}px; }
+      .btn-add, .btn-export { font-size: ${(14 * fr).toFixed(1)}px; }
+      .tag, .strip-arrow { font-size: ${(13 * fr).toFixed(1)}px; }
+      .title { font-size: clamp(${(24*fr).toFixed(0)}px, ${(4*fr).toFixed(2)}vw, ${(42*fr).toFixed(0)}px); }
+      .subtitle { font-size: ${(14 * fr).toFixed(1)}px; }
+      .chip { font-size: ${(11 * fr).toFixed(1)}px; }
+      .badge { font-size: ${(11 * fr).toFixed(1)}px; }
+      .modal-head h3 { font-size: ${(18 * fr).toFixed(1)}px; }
+    `);
+    injectId('frostline-tweaks-tracking', 'body, .title, .card-title, button, .tag { letter-spacing: ' + ((t.tracking || 0) / 100).toFixed(3) + 'em; }');
+    injectId('frostline-tweaks-cardborder', t.cardBorderColor ? '.card { border-color: ' + t.cardBorderColor + ' !important; }' : '');
+    injectId('frostline-tweaks-cardtext', t.cardTextColor ? '.card, .card-title, .chip, .card-size { color: ' + t.cardTextColor + ' !important; }' : '');
+    (function (on, bg, text, style) {
+      if (!on) { injectId('frostline-tweaks-cardheader', ''); return; }
+      var bgVal = bg || 'rgba(255,255,255,0.12)';
+      var txtVal = text || 'currentColor';
+      var rule;
+      if (style === 'gradient') rule = 'background: linear-gradient(180deg, ' + bgVal + ', transparent) !important; padding: 8px 10px !important;';
+      else if (style === 'divider') rule = 'background: transparent !important; border-bottom: 2px solid ' + bgVal + ' !important; padding-bottom: 8px !important;';
+      else if (style === 'sticker') rule = 'background: ' + bgVal + ' !important; border-radius: 8px !important; padding: 6px 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.2) !important;';
+      else rule = 'background: ' + bgVal + ' !important; padding: 8px 10px !important; border-radius: 6px !important;';
+      injectId('frostline-tweaks-cardheader', `
+      .card-head { ${rule} margin: -4px -4px 10px -4px; }
+      .card-head .card-title, .card-head .card-size, .card-head .card-warn { color: ${txtVal} !important; }
+    `);
+    })(t.cardHeader, t.cardHeaderBg, t.cardHeaderText, t.cardHeaderStyle);
+    // Snow-drift geometry lives further down <body>, so set it at DCL —
+    // still long before the old React-time application.
+    document.addEventListener('DOMContentLoaded', function () {
+      var sd = document.querySelector('.snow-drift');
+      if (sd && t.snow != null) { sd.style.opacity = (t.snow / 100); sd.style.transformOrigin = 'top left'; }
+      if (sd && t.snowPosition != null) sd.style.top = t.snowPosition + 'px';
+      var profile = document.querySelector('.snow-profile');
+      if (profile && t.snowFlatness != null) profile.setAttribute('transform', 'scale(1, ' + (1 - 0.85 * (t.snowFlatness / 100)).toFixed(3) + ')');
+    });
   })();
   </script>
 
@@ -1377,6 +1485,12 @@
       <nav class="theme-tabs" id="theme-tabs" role="tablist" aria-label="Themes"></nav>
       <div class="search-row" style="color: rgb(191, 236, 206)">
         <input class="search-input" id="search" type="text" placeholder="Search art…" data-st-attr="placeholder" data-st="searchPlaceholder" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
+        <!-- wos100: PUBLIC submission entry (was its own row below the controls)
+             now sits right of the search box, skinned with the ice-panel asset.
+             Visitors create art in the same editor; it publishes straight into
+             the gallery (adult site behind the 18+ gate), editable/deletable
+             only by this device (server-enforced owner token). -->
+        <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
       </div>
       <div class="active-theme-row" id="active-theme-row" hidden>
         <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
@@ -1403,13 +1517,6 @@
 
   <div class="add-row" style="color: rgb(115, 168, 137)">
     <button class="btn-add" id="btn-add" data-st="addButtonLabel" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
-  </div>
-
-  <!-- wos94: PUBLIC submission entry — visitors create art in the same editor;
-       it publishes straight into the gallery (adult site behind the 18+ gate),
-       editable/deletable only by this device (server-enforced owner token). -->
-  <div class="submit-row" id="submit-row">
-    <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
   </div>
 
   <!-- wos38: banner shown ONLY while viewing the admin Drafts destination. -->
@@ -1667,7 +1774,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos99"></script>
+  <script src="app.js?v=wos100"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
