@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos104">
+  <link rel="stylesheet" href="style.css?v=wos105">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1493,6 +1493,9 @@
            gate), editable/deletable only by this device (server-enforced
            owner token). -->
       <button class="btn-submit-art" id="btn-submit-art">Submit your art</button>
+      <!-- wos105: the admin add button lives in the SAME grid slot with the
+           same ice-panel style; body.editor swaps which of the two shows. -->
+      <button class="btn-add" id="btn-add" data-st="addButtonLabel">+ Add New Art</button>
       <div class="active-theme-row" id="active-theme-row" hidden>
         <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
           <span class="active-theme-label" id="active-theme-label">all</span>
@@ -1515,10 +1518,6 @@
       </div>
     </div>
   </nav>
-
-  <div class="add-row" style="color: rgb(115, 168, 137)">
-    <button class="btn-add" id="btn-add" data-st="addButtonLabel" style="border-style: solid; color: rgb(255, 255, 255)">+ Add New Art</button>
-  </div>
 
   <!-- wos38: banner shown ONLY while viewing the admin Drafts destination. -->
   <div class="drafts-banner" id="drafts-banner" hidden role="region" aria-label="Drafts section">
@@ -1775,7 +1774,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos104"></script>
+  <script src="app.js?v=wos105"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

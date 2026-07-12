@@ -1413,33 +1413,11 @@ function renderCard(p) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
 
-  // wos badge (left). Use text checkmark not the ✅ emoji so the badge
-  // doesn't balloon to ~35px tall on mobile (the colorful emoji ignores
-  // font-size and renders at its natural icon size).
-  const wos = document.createElement('span');
-  wos.className = 'wos-badge ' + (p.wosVerified ? 'verified' : 'unverified');
-  // wos88: force TEXT presentation of the checkmark (U+FE0E). Since wos87 loads
-  // Noto Color Emoji, a bare ✓ was falling back to a COLOR-emoji glyph — taller
-  // than text, which made verified cards' footers ~11px taller and broke the
-  // uniform card height. The variation selector keeps it a flat text ✓.
-  // wos95: mark + word live in separate spans so phones can hide the word and
-  // show a compact icon-only badge.
-  const wbMark = document.createElement('span');
-  wbMark.className = 'wb-mark';
-  wbMark.textContent = p.wosVerified ? '✓︎' : '?';
-  const wbWord = document.createElement('span');
-  wbWord.className = 'wb-word';
-  wbWord.textContent = '\u00A0WoS';
-  wos.appendChild(wbMark);
-  wos.appendChild(wbWord);
-  wos.addEventListener('click', (e) => {
-    if (!state.editor) return;
-    e.stopPropagation();
-    toggleVerified(p);
-  });
-  footer.appendChild(wos);
+  // wos105: the WoS verification badge is gone from cards (removed per
+  // request). toggleVerified() and p.wosVerified stay for data/export
+  // compatibility, but nothing renders in the footer's left slot.
 
-  // copy (center). Text-only — same reason as badge above.
+  // copy (center). Text-only so the glyph can't change the footer height.
   const copy = document.createElement('button');
   copy.className = 'copy-btn';
   copy.textContent = 'Copy';
@@ -2006,7 +1984,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos104';
+const APP_VERSION = 'wos105';
 
 function captureFeedbackContext() {
   let editorState = 'locked';

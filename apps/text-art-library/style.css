@@ -172,9 +172,15 @@ input, textarea { font-family: inherit; }
   z-index: 10;
   background: linear-gradient(180deg, var(--bar-grad-top) 0%, var(--bar-grad-mid) 55%, var(--bar-grad-bot) 100%);
   padding: 28px 16px 14px;
-  margin: 0;
+  /* wos105: the container no longer stretches edge-to-edge — it hugs its
+     contents (tabs + search + submit) with padding, centered, inset from
+     the viewport. The snow drift is positioned inside .controls, so it
+     resizes with the bar automatically. */
+  max-width: min(880px, 100% - 24px);
+  margin: 10px auto 0;
+  border-radius: 16px;
   color: var(--ink);
-  border-bottom: 2px solid var(--bar-edge);
+  border: 2px solid var(--bar-edge);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -2px 0 rgba(0, 0, 0, 0.12),
@@ -233,11 +239,9 @@ input, textarea { font-family: inherit; }
   min-width: 0;
 }
 .search-input {
+  /* wos105: back to filling its grid column — the wos104 380px cap shrank
+     the wrong thing; the CONTAINER (.controls) is what got inset. */
   width: 100%;
-  /* wos104: no longer edge-to-edge — cap to a comfortable typing width and
-     let it left-align in grid column 1. Stays fluid below the cap on phones,
-     where the field shares its row with the Submit button. */
-  max-width: 380px;
   background: #ffffff;
   border: 2px solid var(--btn-edge);
   border-radius: 14px;
@@ -355,27 +359,12 @@ input, textarea { font-family: inherit; }
   border-color: var(--bad);
 }
 
-/* ============ ADD ROW ============ */
-.add-row {
-  max-width: 1200px;
-  margin: 18px auto 0;
-  padding: 0 16px;
-  text-align: center;
-  display: none;
-}
-body.editor .add-row { display: block; }
-.btn-add {
-  background: var(--accent);
-  color: #fff;
-  border: 0;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 11px 24px;
-  cursor: pointer;
-  transition: background 120ms;
-}
-.btn-add:hover { background: var(--accent-press); }
+/* ============ ADD BUTTON ============
+   wos105: the admin "+ Add New Art" button no longer lives in its own
+   .add-row strip below the bar — it sits INSIDE .controls-inner in the same
+   grid slot as the public Submit button and wears the same ice-panel style
+   (see the shared .btn-submit-art/.btn-add ruleset near the end of this
+   file). Only one of the two is visible per mode. */
 
 /* ============ GRID ============ */
 .grid {
@@ -437,6 +426,10 @@ body.editor .add-row { display: block; }
   padding-top: 12px;
   min-height: 32px;
 }
+/* wos105: with the WoS badge gone the footer holds Copy + flag; auto side
+   margins keep Copy visually centered while the flag stays pinned right.
+   (.card prefix out-specifies the frosty `.copy-btn:not(.copied)` margin:0.) */
+.card .card-footer .copy-btn { margin-inline: auto !important; }
 /* wos35: draft pill in the card title — small, dim, all caps so the admin
    sees at a glance which pieces are still WIP. */
 .draft-pill {
@@ -685,38 +678,8 @@ body.editor .card.flagged .flag-note { display: block; }
 .auth-modal .modal-head { border-bottom-color: #1e2c42 !important; }
 
 
-.wos-badge {
-  /* wos35: now inside .card-footer; no longer absolutely positioned. */
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 10px;
-  cursor: default;
-  user-select: none;
-  /* wos88: the ✓ (U+2713) must render as a flat TEXT checkmark. wos87 loaded
-     Noto Color Emoji, which the inherited Fredoka stack fell through to for ✓ —
-     a tall COLOR glyph that made verified badges 32px vs 21px and broke uniform
-     card height. Give the badge an explicit text stack that HAS a checkmark
-     (Roboto / Noto Sans Symbols 2) AND a fixed box height so no glyph can ever
-     change the footer's height again. */
-  font-family: 'Roboto', 'Noto Sans', 'Noto Sans Symbols 2', system-ui, sans-serif;
-  height: 24px;
-  box-sizing: border-box;
-  line-height: 1;
-  overflow: hidden;
-}
-body.editor .wos-badge { cursor: pointer; }
-.wos-badge.verified {
-  background: #0f88a8;
-  color: var(--ink-card);
-}
-.wos-badge.unverified {
-  background: rgba(255, 255, 255, 0.4);
-  color: var(--ink-card-soft);
-}
+/* wos105: the WoS verification badge is gone from cards (removed per request).
+   toggleVerified()/wosVerified data are retained for export compatibility. */
 
 .flag-corner {
   /* wos35: now inside .card-footer; no longer absolutely positioned. */
@@ -1783,7 +1746,7 @@ body.editor .export-bar { display: block; }
   .wos-preview { padding: 10px; }
   .wos-preview pre { font-size: 14px; }
   .card-footer { padding-top: 8px; gap: 6px; min-height: 26px; }
-  .wos-badge, .copy-btn { font-size: 10px !important; padding: 3px 8px !important; }
+  .copy-btn { font-size: 10px !important; padding: 3px 8px !important; }
   .tag-chip, .card .chip { font-size: 10px; padding: 2px 6px; }
 
   /* wos60: keep the flag control on mobile but compact it to icon-only.
@@ -2828,28 +2791,12 @@ html body {
 }
 /* Card art preview keeps the WoS-bubble lime — required for fidelity. */
 
-/* WoS verified badge → gold medal */
-.wos-badge.verified {
-  background: linear-gradient(180deg, var(--fl-gold-top) 0%, var(--fl-gold-bot) 100%);
-  border: 1.5px solid var(--fl-gold-edge);
-  outline: 1px solid var(--fl-gold-rim);
-  outline-offset: -2px;
-  color: var(--fl-text-on-gold);
-  box-shadow:
-    inset 0 1px 0 rgba(255,245,180,0.55),
-    0 2px 6px var(--fl-gold-glow);
-}
-.wos-badge.unverified {
-  background: rgba(138, 203, 240, 0.18);
-  color: var(--fl-ice-bright);
-  border: 1px solid rgba(138, 203, 240, 0.45);
-}
-
 /* ── BATCH 3: cohesive frosty CTAs (no gold; uniform aesthetic) ─────────── */
 /* Primary actions: Add new art, Export, Save, Unlock, Change password.
    Frosted cyan gradient + subtle 3D press feel. Replaces the previous gold
    buttons per "more cohesive aesthetic" feedback. */
-.btn-add,
+/* wos105: .btn-add removed from this !important group — it now wears the
+   ice-panel style shared with .btn-submit-art. */
 .btn-export,
 .auth-unlock,
 .btn-primary,
@@ -2870,7 +2817,6 @@ html body {
     0 3px 8px rgba(74, 159, 212, 0.32) !important;
   transition: transform 80ms, box-shadow 80ms, filter 100ms;
 }
-.btn-add:hover,
 .btn-export:hover,
 .auth-unlock:hover,
 .btn-primary:hover,
@@ -2878,7 +2824,6 @@ html body {
 .modal-copy:not(.copied):hover {
   filter: brightness(1.08) saturate(1.05);
 }
-.btn-add:active,
 .btn-export:active,
 .auth-unlock:active,
 .btn-primary:active,
@@ -2891,7 +2836,7 @@ html body {
     0 1px 0 rgba(15, 50, 90, 0.3) !important;
 }
 
-/* Copy button — pill, sized to match .wos-badge (4px 10px, 11px font) */
+/* Copy button — compact pill (4px 12px, 11px font) */
 .copy-btn:not(.copied) {
   background: linear-gradient(180deg,
     #8fd4ee 0%,
@@ -2914,23 +2859,6 @@ html body {
 }
 .copy-btn:not(.copied):hover { filter: brightness(1.1); }
 .copy-btn:not(.copied):active { transform: translateY(1px); }
-
-/* WoS verified badge — frosted cyan (not gold), same pill size as Copy */
-.wos-badge.verified {
-  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(180,220,240,0.35) 100%) !important;
-  border: 1px solid rgba(255,255,255,0.5) !important;
-  color: #0a2840 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.65),
-    0 1px 3px rgba(0,30,60,0.25) !important;
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-}
-.wos-badge.unverified {
-  background: rgba(138, 203, 240, 0.16) !important;
-  border: 1px solid rgba(138, 203, 240, 0.4) !important;
-  color: var(--fl-ice-bright) !important;
-}
 
 /* Secondary ghost / cancel buttons → frost-ghost variant */
 .btn-ghost,
@@ -3230,11 +3158,8 @@ html body {
   background-attachment: fixed, fixed, scroll, scroll, scroll !important;
 }
 
-/* wos51: cap badge / copy-btn line-height so any glyph (text checkmark,
-   emoji fallback, future icon) sits in a fixed-height pill instead of
-   expanding the row. Pairs with the JS change that switched from the ✅
-   emoji to the ✓ text checkmark. */
-.wos-badge,
+/* wos51: cap copy-btn line-height so any glyph sits in a fixed-height pill
+   instead of expanding the row. */
 .copy-btn {
   line-height: 1 !important;
 }
@@ -3428,7 +3353,11 @@ html body {
  * `border-style: solid !important` is required to enable border-image at all.
  * ========================================================================== */
 nav.controls {
-  margin: 2px 12px 30px !important;     /* inset; bottom room for icicle overhang */
+  /* wos105: the ice trough no longer stretches edge-to-edge — it hugs its
+     contents (tabs + search + submit) with padding, centered. The border-box
+     (incl. the 44px ice caps) is capped; phones keep near-full width. */
+  margin: 2px auto 30px !important;     /* centered; bottom room for icicle overhang */
+  max-width: min(880px, 100% - 24px) !important;
   background: none !important;          /* drop the old procedural ice-block */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -3464,7 +3393,8 @@ nav.controls {
 
 @media (max-width: 480px) {
   nav.controls {
-    margin: 2px 6px 20px !important;
+    margin: 2px auto 20px !important;
+    max-width: calc(100% - 12px) !important;
     border-width: 26px 30px 30px 30px !important;
     border-image-width: 26px 30px 62px 30px !important;
     border-image-outset: 10px 3px 32px 3px !important;
@@ -3991,8 +3921,15 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
  * stretches as one piece; the button's aspect stays close to the source
  * panel's so the glowing frame reads true. Occupies grid column 2 of
  * .controls-inner: right of the theme tabs AND the search box. */
+/* wos105: BOTH art-entry buttons share the ice-panel style and the same grid
+ * slot inside the controls container — public sees "Submit your art"
+ * (.btn-submit-art), the unlocked editor sees "+ Add New Art" (.btn-add).
+ * Only one is visible per mode. */
 body.editor .btn-submit-art { display: none; }
-.btn-submit-art {
+.btn-add { display: none; }
+body.editor .btn-add { display: block; }
+.btn-submit-art,
+.btn-add {
   grid-area: submit;
   align-self: stretch;
   min-width: 168px;
@@ -4007,7 +3944,20 @@ body.editor .btn-submit-art { display: none; }
   filter: drop-shadow(0 3px 8px rgba(0, 18, 40, 0.45));
   transition: filter 0.15s ease;
 }
-.btn-submit-art:hover { filter: brightness(1.15) drop-shadow(0 3px 10px rgba(80, 190, 255, 0.5)); }
+.btn-submit-art:hover,
+.btn-add:hover { filter: brightness(1.15) drop-shadow(0 3px 10px rgba(80, 190, 255, 0.5)); }
+/* Defense: the tweaks engine (chunkiness/button-shape, injected <style> tags
+ * that win ties against this file) rounds .btn-add into a 999px pill and adds
+ * box-shadows — that would warp/haze the ice panel art. Higher specificity +
+ * !important keeps the panel true for both buttons. */
+.controls .controls-inner > .btn-submit-art,
+.controls .controls-inner > .btn-add {
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  background: url('assets/btn-ice.webp?v=wos101') center / 100% 100% no-repeat !important;
+  border: none !important;
+  color: #eaf6ff !important;
+}
 @media (max-width: 640px) {
   /* Narrow screens: tabs keep the full width; the button sits right of the
    * search box only. */
@@ -4018,7 +3968,8 @@ body.editor .btn-submit-art { display: none; }
       "active active"
       "strip  strip";
   }
-  .btn-submit-art { min-width: 118px; font-size: 12.5px; padding: 0 10px; }
+  .btn-submit-art,
+  .btn-add { min-width: 118px; font-size: 12.5px; padding: 0 10px; }
 }
 
 /* wos94: "YOURS" pill — marks this device's own published pieces */
@@ -4086,10 +4037,8 @@ body.editor .btn-submit-art { display: none; }
   .grid .card .preview { height: 118px !important; padding: 8px !important; margin-bottom: 8px !important; }
   .chips { gap: 4px !important; min-height: 20px !important; margin-bottom: 6px !important; }
   .chip { font-size: 9px !important; padding: 2px 6px !important; }
-  /* footer: icon-only WoS badge + flag, compact Copy — fits with room to spare */
+  /* footer: compact Copy + icon-only flag — fits with room to spare */
   .card-footer { gap: 6px !important; min-height: 24px !important; padding-top: 8px !important; }
-  .wos-badge { font-size: 10px !important; padding: 2px 7px !important; height: 20px !important; }
-  .wos-badge .wb-word { display: none; }
   .copy-btn { font-size: 10px !important; padding: 3px 12px !important; }
   .flag-corner { font-size: 10px; }
   .flag-corner .flag-label { display: none; }
