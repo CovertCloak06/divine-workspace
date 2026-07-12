@@ -3946,10 +3946,13 @@ body.editor .btn-add { display: block; }
 }
 .btn-submit-art:hover,
 .btn-add:hover { filter: brightness(1.15) drop-shadow(0 3px 10px rgba(80, 190, 255, 0.5)); }
-/* Defense: the tweaks engine (chunkiness/button-shape, injected <style> tags
- * that win ties against this file) rounds .btn-add into a 999px pill and adds
- * box-shadows — that would warp/haze the ice panel art. Higher specificity +
- * !important keeps the panel true for both buttons. */
+/* Defense: the tweaks engine (chunkiness/button-shape/font-size, injected
+ * <style> tags that win ties against this file) rounds .btn-add into a 999px
+ * pill, adds box-shadows and sticker text-shadows, and rescales its font —
+ * and the legacy chunky-CTA groups still hand .btn-add a Fredoka face,
+ * letter-spacing, and an :active translate that .btn-submit-art never gets.
+ * The ice panel is fixed art: pin the FULL text + geometry set with higher
+ * specificity + !important so both buttons render identically. */
 .controls .controls-inner > .btn-submit-art,
 .controls .controls-inner > .btn-add {
   border-radius: 12px !important;
@@ -3957,10 +3960,19 @@ body.editor .btn-add { display: block; }
   background: url('assets/btn-ice.webp?v=wos101') center / 100% 100% no-repeat !important;
   border: none !important;
   color: #eaf6ff !important;
+  font-size: 15px !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  letter-spacing: normal !important;
+  padding: 0 22px !important;
+  text-shadow: 0 0 8px rgba(90, 200, 255, 0.85), 0 1px 2px rgba(0, 20, 40, 0.9) !important;
+  transform: none !important;
+  white-space: nowrap !important;
 }
 @media (max-width: 640px) {
   /* Narrow screens: tabs keep the full width; the button sits right of the
-   * search box only. */
+   * search box only. Defense-strength selector + !important, or the desktop
+   * pins above would override these. */
   .controls-inner {
     grid-template-areas:
       "tabs   tabs"
@@ -3968,8 +3980,12 @@ body.editor .btn-add { display: block; }
       "active active"
       "strip  strip";
   }
-  .btn-submit-art,
-  .btn-add { min-width: 118px; font-size: 12.5px; padding: 0 10px; }
+  .controls .controls-inner > .btn-submit-art,
+  .controls .controls-inner > .btn-add {
+    min-width: 118px;
+    font-size: 12.5px !important;
+    padding: 0 10px !important;
+  }
 }
 
 /* wos94: "YOURS" pill — marks this device's own published pieces */
