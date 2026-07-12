@@ -495,25 +495,8 @@ input, textarea { font-family: inherit; }
   color: #b86500;
   border: 1px solid rgba(255, 165, 0, 0.45);
 }
-.card-warn {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  background: rgba(255, 165, 0, 0.18);
-  color: #b86500;
-  border: 1px solid rgba(255, 165, 0, 0.4);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.card-warn.hard {
-  background: rgba(248, 113, 113, 0.22);
-  color: #b91c1c;
-  border-color: rgba(248, 113, 113, 0.5);
-}
+/* wos107: .card-warn is gone — cards carry no risk badge (only the 🚩 bug
+   flag). The WoS verdict shows in the lightbox game view + copy toast. */
 .card-actions {
   display: none;
   gap: 4px;
@@ -2399,10 +2382,16 @@ body.editor .export-bar { display: block; }
    the strip itself has no scrollbar (per user) — scrolling happens via
    click-drag, arrow buttons, mouse wheel, or touch swipe. Edge fade-mask
    signals there's more content past the visible edges. */
+/* wos107: flex row [left arrow][tabs][right arrow] — the arrows sit BESIDE
+   the strip in their own slots instead of overlaying the first/last tabs. */
 .theme-tabs-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 .theme-tabs {
+  flex: 1 1 auto;
+  min-width: 0;                /* let the strip shrink inside the flex row */
   display: flex;
   gap: 4px;
   padding: 0 4px;
@@ -2437,11 +2426,10 @@ body.editor .export-bar { display: block; }
 
 /* wos51: side arrow buttons for scroll on PC.
  * wos106: the buttons ARE the user's glossy ice arrow asset (true-alpha WEBP,
- * mirrored pair) — no pill chrome, no glyph; the aria-label carries meaning. */
+ * mirrored pair) — no pill chrome, no glyph; the aria-label carries meaning.
+ * wos107: normal-flow flex items on either side of the strip (no overlap). */
 .theme-tab-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 0 0 auto;
   width: 40px;
   height: 27px;
   border-radius: 0;
@@ -2449,7 +2437,6 @@ body.editor .export-bar { display: block; }
   background: url('assets/arrow-ice-left.webp?v=wos106') center / contain no-repeat;
   cursor: pointer;
   padding: 0;
-  z-index: 3;
   filter: drop-shadow(0 2px 4px rgba(0, 15, 40, 0.4));
   transition: opacity 150ms, filter 100ms;
   opacity: 0.92;
@@ -2458,15 +2445,28 @@ body.editor .export-bar { display: block; }
   filter: brightness(1.12) drop-shadow(0 2px 6px rgba(80, 190, 255, 0.55));
   opacity: 1;
 }
-.theme-tab-arrow:active { transform: translateY(-50%) scale(0.92); }
-.theme-tab-arrow.left { left: 2px; }
-.theme-tab-arrow.right {
-  right: 2px;
-  background-image: url('assets/arrow-ice-right.webp?v=wos106');
+.theme-tab-arrow:active { transform: scale(0.92); }
+.theme-tab-arrow.right { background-image: url('assets/arrow-ice-right.webp?v=wos106'); }
+/* At a scroll end the JS hides that side's arrow — keep its SLOT so the strip
+ * doesn't jump sideways every time an arrow appears/disappears mid-scroll.
+ * !important + [class][attr] specificity to beat index.html's global
+ * `[hidden] { display:none !important }`. */
+.theme-tab-arrow[hidden] {
+  display: block !important;
+  visibility: hidden;
+  pointer-events: none;
 }
-.theme-tab-arrow[hidden] { display: none !important; }
-/* Hide arrows on touch — touch users already get swipe scrolling */
-@media (hover: none) { .theme-tab-arrow { display: none; } }
+/* No overflow at all (data-scroll="none") → collapse both slots entirely.
+ * Higher specificity than the [hidden] slot-keeper above. */
+.theme-tabs-wrap:has(.theme-tabs[data-scroll="none"]) .theme-tab-arrow {
+  display: none !important;
+}
+/* Hide arrows on touch — touch users already get swipe scrolling. The
+ * [hidden] variant ties the slot-keeper's specificity and wins by order. */
+@media (hover: none) {
+  .theme-tab-arrow,
+  .theme-tab-arrow[hidden] { display: none !important; }
+}
 
 /* a single tab — rounded-top, flat-bottom; dark blue inactive */
 .theme-tab {
@@ -4092,7 +4092,6 @@ body.editor .btn-add { display: block; }
   }
   .card-head { min-height: 20px !important; gap: 4px !important; margin-bottom: 4px !important; }
   .card-title { font-size: 12px !important; }
-  .card-warn { font-size: 11px; }
   .draft-pill {           /* covers DRAFT + YOURS (mine-pill) */
     font-size: 8px !important;
     padding: 1px 5px !important;

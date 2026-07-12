@@ -1384,14 +1384,9 @@ function renderCard(p) {
   }
   head.appendChild(title);
 
-  // Width warning is decided after layout (in the fit pass below) from the ACTUAL
-  // render — WoS is proportional, so a character count can't predict wrapping.
-  const warn = document.createElement('span');
-  warn.className = 'card-warn';
-  warn.textContent = '⚠';
-  warn.title = 'Too wide — wraps in the WoS chat bubble';
-  warn.style.display = 'none';
-  head.appendChild(warn);
+  // wos107: NO risk badge on cards (per request — a card is either flagged
+  // via bug report, or it's not). The WoS-risk verdict surfaces only in the
+  // lightbox game view, the copy toast, and the submit gates.
 
   const EDIT_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-9.96a1 1 0 0 0 0-1.41l-2.59-2.59a1 1 0 0 0-1.41 0L14.13 5.87l3.75 3.75 2.83-2.83z"/></svg>';
   const DEL_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ffffff" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zm2.46-7.12 1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
@@ -1450,28 +1445,9 @@ function renderCard(p) {
   // "wrapped in preview" (impossible now); it means "wider than the WoS bubble"
   // — i.e. this piece WILL wrap in the game. Decide that from the true unwrapped
   // width at base size, then scale the picture down to fit the card.
-  requestAnimationFrame(() => {
-    pre.style.fontSize = '14px';
-    const emPx = parseFloat(getComputedStyle(pre).fontSize) || 14;
-    const wosCols = parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--wos-cols'),
-    ) || 17;
-    const tooWide = pre.scrollWidth > wosCols * emPx + 1;
-    // wos106: ONE verdict on the badge — measured bubble overflow OR unsafe
-    // characters/wosRisk. The admin's in-game Verified mark suppresses it
-    // (pieceRisk already returns null for verified pieces).
-    const risk = pieceRisk(p);
-    const show = (!p.wosVerified && tooWide) || !!risk;
-    if (show) {
-      warn.title = risk && risk.offenders.length
-        ? 'May break in WoS chat: ' + wosFmtOffenders(risk.offenders, 6)
-        : 'Too wide — wraps in the WoS chat bubble';
-      warn.style.display = '';
-    } else {
-      warn.style.display = 'none';
-    }
-    fitArt(prev, pre, 14, { height: true });
-  });
+  // wos107: the card shows no risk verdict — just fit the art to the tile.
+  // (The WoS-risk verdict lives in the lightbox game view / copy toast.)
+  requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
 
   // chips
   if (p.tags && p.tags.length) {
@@ -1516,8 +1492,8 @@ function renderCard(p) {
 
   // wos105: the WoS verification badge is gone from cards (removed per
   // request). toggleVerified() and p.wosVerified stay for data/export
-  // compatibility. (wos106: the risk verdict lives on the head's .card-warn
-  // badge — one indicator, not two.)
+  // compatibility. (wos107: no card risk badge either — the verdict lives in
+  // the lightbox game view and the copy toast.)
 
   // copy (center). Text-only so the glyph can't change the footer height.
   const copy = document.createElement('button');
@@ -2148,7 +2124,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos106';
+const APP_VERSION = 'wos107';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
