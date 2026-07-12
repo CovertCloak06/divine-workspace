@@ -51,25 +51,12 @@ const WOS_DEFAULT_ROWS = 12;   // default canvas rows
 const DEV_FALLBACK_PASSWORD = '0022';
 
 
-// WoS-safe Unicode ranges, per handoff.
-// wos106: this list became ENFORCING (public submits are blocked on
-// out-of-range chars; admin saves confirm). KEEP IN LOCKSTEP with the
-// server copy in netlify/functions/submit-art.js.
-const SAFE_RANGES = [
-  [0x000A, 0x000A], // newline
-  [0x00A0, 0x00A0], // NBSP
-  [0x200D, 0x200D], // wos106: ZWJ — glue inside compound emoji (👨‍👩‍👧)
-  [0x3000, 0x3000], // ideographic space
-  [0x0021, 0x007E], // printable ASCII
-  [0x2500, 0x27BF],
-  [0x2600, 0x26FF],
-  [0x2B1B, 0x2B1C], // wos106: ⬛/⬜ emoji squares (common pixel-art blocks)
-  [0x2B50, 0x2B50], // wos106: ⭐
-  [0x2B55, 0x2B55], // wos106: ⭕
-  [0xFE0E, 0xFE0F], // wos106: variation selectors — emoji presentation (❤️)
-  [0xFF00, 0xFFEF],
-  [0x1F100, 0x1FAFF],
-];
+// wos112: the character-whitelist apparatus (SAFE_RANGES / isSafeCode /
+// offender scans / publish gates) is GONE. It was heuristic, it blocked a
+// real user from publishing art known to work in the game, and policing
+// content was never this app's job — the gallery is governed by curation
+// and 🚩 bug reports. Only the WIDTH model below remains (it powers the
+// editor's canvas meter, a design aid — never a gate).
 
 const $ = (id) => document.getElementById(id);
 
@@ -232,13 +219,6 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function isSafeCode(cp) {
-  for (const [lo, hi] of SAFE_RANGES) {
-    if (cp >= lo && cp <= hi) return true;
-  }
-  return false;
-}
-
 function auditArt(text) {
   const issues = [];
   if (/ /.test(text)) {
@@ -263,71 +243,10 @@ function auditArt(text) {
       msg: `Artwork is approaching the chat wrap limit (${widthCheck.width.toFixed(1)} of safe ${WOS_SAFE_WIDTH} visual columns; hard cap ${WOS_HARD_LIMIT}).`,
     });
   }
-  const unsafe = new Set();
-  for (const g of graphemes(text)) {
-    for (const ch of g) {
-      const cp = ch.codePointAt(0);
-      if (!isSafeCode(cp)) unsafe.add(g);
-    }
-  }
-  if (unsafe.size) {
-    const list = [...unsafe].slice(0, 12).map((g) => {
-      const cp = g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
-      return `${g} (U+${cp})`;
-    }).join('  ·  ');
-    issues.push({
-      level: 'error',
-      msg: `Unverified in WoS: <code>${escapeHtml(list)}</code> — test in chat before publishing.`,
-    });
-  }
+  // wos112: the character-whitelist error ("Unverified in WoS … test in
+  // chat") is gone — it was heuristic and wrong, and testing is not the
+  // user's job. Width notes above are informational only, never blocking.
   return issues;
-}
-
-/* ============ wos106  WoS game-truth helpers ============
- * Pieces that look perfect in a capable webfont can scramble or blank out in
- * the actual WoS chat message box. These helpers back the PUBLIC submission
- * gate only (client + server): art that can't work in the game never enters
- * the gallery. wos109: no warning chrome anywhere on gallery pieces — the
- * gallery is curated/ready-to-go; the 🚩 bug report covers in-game failures. */
-
-// Unique out-of-whitelist graphemes in a piece of art. Plain spaces are
-// excluded — they're converted to NBSP on save/copy, never reach the game.
-function wosOffenders(text) {
-  const out = [];
-  const seen = new Set();
-  for (const g of graphemes(text || '')) {
-    if (g === ' ' || g === '\n') continue;
-    for (const ch of g) {
-      if (!isSafeCode(ch.codePointAt(0))) {
-        if (!seen.has(g)) { seen.add(g); out.push(g); }
-        break;
-      }
-    }
-  }
-  return out;
-}
-
-function wosFmtOffenders(offenders, max) {
-  return offenders.slice(0, max || 10).map((g) => {
-    const cp = g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
-    return `${g} (U+${cp})`;
-  }).join('  ');
-}
-
-/* Human message for the public submit gate. null = clean. */
-function wosGateMessage(art) {
-  const offenders = wosOffenders(art);
-  const width = wosClassifyWidth(art);
-  const parts = [];
-  if (width.level === 'fail') {
-    parts.push(`Too wide for the WoS chat bubble (${width.width.toFixed(1)} of max ${WOS_HARD_LIMIT} visual columns) — lines will wrap and scramble in game.`);
-  }
-  if (offenders.length) {
-    parts.push(`Uses ${offenders.length} character${offenders.length === 1 ? '' : 's'} the WoS chat font may not render: ${wosFmtOffenders(offenders)}`);
-  }
-  return parts.length
-    ? '⚠ This art may break in Whiteout Survival chat:\n\n• ' + parts.join('\n• ')
-    : null;
 }
 
 function debounce(fn, wait) {
@@ -2276,7 +2195,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos111';
+const APP_VERSION = 'wos112';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -4553,13 +4472,9 @@ async function commitSubmit() {
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
-  // wos106/109: gallery art must work in the game — public submissions that
-  // would scramble or blank out are blocked outright (the server enforces the
-  // same rule). The admin is exempt: she tests in the real game.
-  if (!state.editor) {
-    const gate = wosGateMessage(art);
-    if (gate) { alert(gate + '\n\nFix the art and try again.'); return; }
-  }
+  // wos112: NO publish gate. The whitelist heuristic blocked a real user's
+  // art that works fine in game. Curation + 🚩 bug reports govern the
+  // gallery; publishing is open to everyone.
 
   const piece = {
     id: editingSubmission ? editingSubmission.id : newId(),
