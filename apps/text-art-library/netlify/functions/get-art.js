@@ -22,11 +22,14 @@ export const handler = async (event) => {
   try {
     const store = getStore('frostline');
 
-    // Per-piece records
-    const [{ blobs: pieceBlobs }, { blobs: delBlobs }] = await Promise.all([
+    // Per-piece records (+ wos108: the admin-managed theme-tab list)
+    const [{ blobs: pieceBlobs }, { blobs: delBlobs }, tagsRaw] = await Promise.all([
       store.list({ prefix: 'piece/' }),
       store.list({ prefix: 'deleted/' }),
+      store.get('config/theme-tags'),
     ]);
+    let themeTags = null;
+    try { themeTags = tagsRaw ? JSON.parse(tagsRaw) : null; } catch { themeTags = null; }
 
     const deletedIds = (delBlobs || []).map((b) => b.key.slice('deleted/'.length));
 
@@ -40,7 +43,7 @@ export const handler = async (event) => {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CORS },
-        body: JSON.stringify({ library: library.filter(Boolean), deletedIds }),
+        body: JSON.stringify({ library: library.filter(Boolean), deletedIds, themeTags }),
       };
     }
 
@@ -59,6 +62,7 @@ export const handler = async (event) => {
       body: JSON.stringify({
         art: artRaw ? JSON.parse(artRaw) : [],
         deletedIds: [...new Set([...deletedIds, ...legacyDeleted])],
+        themeTags,
       }),
     };
   } catch (err) {

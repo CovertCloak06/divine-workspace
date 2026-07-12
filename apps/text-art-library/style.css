@@ -1182,6 +1182,49 @@ body.editor .export-bar { display: block; }
   font-size: 12.5px;
   line-height: 1.35;
 }
+/* ============ wos108: admin theme-tag manager ============ */
+/* The "✎ edit" tab only exists for the unlocked editor. */
+.manage-tab { display: none !important; }
+body.editor .manage-tab {
+  display: inline-block !important;
+  border-style: dashed;
+  opacity: 0.85;
+}
+body.editor .manage-tab:hover { opacity: 1; }
+.tags-modal .tags-hint {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #9db8d4;
+}
+.tagm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 42vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.tagm-row { display: flex; gap: 6px; align-items: center; }
+.tagm-row .auth-input { flex: 1 1 auto; margin: 0; }
+.tagm-del {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.15);
+  color: #ffb4b4;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.tagm-del:hover { background: rgba(248, 113, 113, 0.32); }
+.tagm-add { display: flex; gap: 6px; margin-top: 10px; }
+.tagm-add .auth-input { flex: 1 1 auto; margin: 0; }
+.tagm-add .btn-ghost { flex: 0 0 auto; }
+
 /* wos106: risk-aware copy feedback — amber instead of the clean green */
 .copy-btn.copied-risk,
 .modal-copy.copied-risk {

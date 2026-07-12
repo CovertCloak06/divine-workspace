@@ -24,11 +24,20 @@
  */
 
 /* ============ 01  Constants & DOM refs ============ */
-const TAGS = [
+// wos108: the theme list is admin-managed (Blob config/theme-tags via
+// save-tags; delivered to every visitor on get-art). This built-in list is
+// the fallback until the server list loads / when none was ever saved.
+let TAGS = [
   'all', 'love', 'nature', 'animals', 'banners', 'borders',
   'decorative', 'celebration', 'symbols', 'aesthetic', 'kawaii',
   'gothic', 'memes', 'sayings', 'minimalist', 'nsfw',
 ];
+function applyThemeTags(list) {
+  TAGS = ['all', ...list.filter((t) => typeof t === 'string' && t && t !== 'all')];
+  // The strips are built once at boot (before get-art resolves) — rebuild them
+  // whenever the list changes so the tabs actually reflect it.
+  buildTagStrip();
+}
 /* WoS chat rendering spec (v1.0):
  *  - WoS uses a PROPORTIONAL font, so raw char count is meaningless.
  *  - Effective hard wrap ≈ 34 VISUAL columns.
@@ -535,6 +544,19 @@ const API = {
       return { ok: true, flagged: id in flags, note: flags[id] || '' };
     }
   },
+  // wos108: persist the admin-managed theme-tab list.
+  async saveTags(tags, password) {
+    try {
+      const res = await fetch(await fnUrl('save-tags'), {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + password, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags }),
+      });
+      if (res.ok) return await res.json();
+      const e = await res.json().catch(() => ({}));
+      return { ok: false, error: e.error || `HTTP ${res.status}` };
+    } catch { return { ok: false, error: 'offline' }; }
+  },
   /* wos94 — user submissions (DIRECT PUBLISH, no review queue). All ownership
    * checks are SERVER-side (submit-art.js verifies sha256(ownerToken) against
    * the piece's stored owner hash); these wrappers just carry the credentials. */
@@ -732,6 +754,8 @@ async function boot() {
   const [artData, flags] = await Promise.all([API.getArt(), API.getFlags()]);
   state.flags = flags || {};
   resolveLibrary(artData);
+  // wos108: admin-managed theme tabs ride along on get-art.
+  if (Array.isArray(artData.themeTags) && artData.themeTags.length) applyThemeTags(artData.themeTags);
   state.booted = true;
   recomputeMerged();
   render();
@@ -907,6 +931,7 @@ async function refresh() {
     const data = await API.getArt();
     if (data && (Array.isArray(data.library) || Array.isArray(data.art))) {
       resolveLibrary(data);
+      if (Array.isArray(data.themeTags) && data.themeTags.length) applyThemeTags(data.themeTags); // wos108
       recomputeMerged();
       render();
     }
@@ -954,8 +979,144 @@ function buildThemeTabs() {
     });
     els.themeTabs.appendChild(b);
   }
+  // wos108: admin-only "manage themes" tab — visibility gated by body.editor
+  // CSS, so the button costs nothing for public visitors.
+  const manage = document.createElement('button');
+  manage.type = 'button';
+  manage.className = 'theme-tab manage-tab';
+  manage.textContent = '✎ edit';
+  manage.title = 'Add, rename, or remove theme tabs';
+  manage.addEventListener('click', openTagsManager);
+  els.themeTabs.appendChild(manage);
   attachThemeTabsScroll();
 }
+
+/* ============ wos108: admin theme-tag manager ============
+ * Add / rename / delete the theme tabs. Renames bulk-rewrite the tag on every
+ * library piece (one admin save), so filtering keeps working; deleting a tab
+ * never touches art — pieces simply keep a tag with no tab. */
+const TAG_INPUT_RE = /^[a-z0-9][a-z0-9 &_-]{0,23}$/; // LOCKSTEP: save-tags.js
+
+function tagmRow(tag, isNew) {
+  const row = document.createElement('div');
+  row.className = 'tagm-row';
+  const input = document.createElement('input');
+  input.className = 'auth-input';
+  input.type = 'text';
+  input.maxLength = 24;
+  input.value = tag;
+  input.dataset.orig = isNew ? '' : tag;
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'tagm-del';
+  del.textContent = '×';
+  del.title = 'Remove this theme tab (art keeps its tags)';
+  del.addEventListener('click', () => row.remove());
+  row.appendChild(input);
+  row.appendChild(del);
+  return row;
+}
+
+function openTagsManager() {
+  if (!state.editor) return;
+  const list = document.getElementById('tagm-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const t of TAGS) { if (t !== 'all') list.appendChild(tagmRow(t, false)); }
+  const err = document.getElementById('tags-error');
+  if (err) err.textContent = '';
+  const inp = document.getElementById('tagm-new');
+  if (inp) inp.value = '';
+  document.getElementById('tags-modal').classList.add('open');
+}
+function closeTagsManager() {
+  document.getElementById('tags-modal')?.classList.remove('open');
+}
+
+function tagmAdd() {
+  const inp = document.getElementById('tagm-new');
+  const err = document.getElementById('tags-error');
+  const v = (inp.value || '').trim().toLowerCase();
+  if (!v) return;
+  if (v === 'all') { err.textContent = '“all” is built in.'; return; }
+  if (!TAG_INPUT_RE.test(v)) { err.textContent = 'Lowercase letters/numbers, spaces, & _ - (max 24).'; return; }
+  const existing = [...document.querySelectorAll('#tagm-list .tagm-row input')]
+    .map((i) => i.value.trim().toLowerCase());
+  if (existing.includes(v)) { err.textContent = `“${v}” is already a theme.`; return; }
+  document.getElementById('tagm-list').appendChild(tagmRow(v, true));
+  err.textContent = '';
+  inp.value = '';
+  inp.focus();
+}
+
+async function saveTagsManager() {
+  const err = document.getElementById('tags-error');
+  const rows = [...document.querySelectorAll('#tagm-list .tagm-row input')];
+  const tags = [];
+  const renames = {};
+  for (const input of rows) {
+    const v = (input.value || '').trim().toLowerCase();
+    if (!v) continue; // emptied row = delete
+    if (v === 'all') { err.textContent = '“all” is built in.'; return; }
+    if (!TAG_INPUT_RE.test(v)) { err.textContent = `Invalid theme “${v}” — lowercase letters/numbers, spaces, & _ - (max 24).`; return; }
+    if (tags.includes(v)) { err.textContent = `Duplicate theme “${v}”.`; return; }
+    tags.push(v);
+    const orig = input.dataset.orig;
+    if (orig && orig !== v) renames[orig] = v;
+  }
+  if (!tags.length) { err.textContent = 'Keep at least one theme.'; return; }
+
+  const saveBtn = document.getElementById('tags-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  const r = await API.saveTags(tags, state.password);
+  if (!r || !r.ok) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save themes';
+    err.textContent = 'Save failed: ' + ((r && r.error) || 'unknown');
+    return;
+  }
+
+  // Renames migrate every library piece carrying the old tag, in one bulk
+  // admin save — so the renamed tab keeps showing its art.
+  if (Object.keys(renames).length) {
+    let touched = 0;
+    for (const p of state.library) {
+      if (!p || !Array.isArray(p.tags)) continue;
+      let hit = false;
+      const next = p.tags.map((t) => { if (renames[t]) { hit = true; return renames[t]; } return t; });
+      if (hit) { p.tags = [...new Set(next)]; touched++; }
+    }
+    if (touched) await API.savePieces(state.library, [...state.deletedIds], state.password);
+    if (renames[state.activeTag]) state.activeTag = renames[state.activeTag];
+  }
+  // If the active tab was deleted, fall back to All (special tabs excepted).
+  if (state.activeTag !== 'all' && state.activeTag !== '__mine' && state.activeTag !== 'flagged'
+      && !tags.includes(state.activeTag)) {
+    state.activeTag = 'all';
+  }
+
+  applyThemeTags(tags);
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save themes';
+  closeTagsManager();
+  cacheNow();
+  recomputeMerged();
+  render();
+  showToast('Themes updated');
+}
+
+(() => {
+  const overlay = document.getElementById('tags-modal');
+  if (!overlay) return;
+  document.getElementById('tags-close')?.addEventListener('click', closeTagsManager);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTagsManager(); });
+  document.getElementById('tagm-add-btn')?.addEventListener('click', tagmAdd);
+  document.getElementById('tagm-new')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); tagmAdd(); }
+  });
+  document.getElementById('tags-save')?.addEventListener('click', saveTagsManager);
+})();
 
 /* wos51: scroll the theme-tabs strip via click-drag, arrow buttons, mouse
    wheel, or touch swipe — no visible scrollbar (per user). Injects a
@@ -2124,7 +2285,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos107';
+const APP_VERSION = 'wos108';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2361,6 +2522,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (els.lightbox.classList.contains('open')) closeLightbox();
     else if (document.getElementById('report')?.classList.contains('open')) closeReportDialog();  // wos97
+    else if (document.getElementById('tags-modal')?.classList.contains('open')) closeTagsManager();  // wos108
     else if (els.edit.classList.contains('open')) closeEdit();
     // auth modal is intentionally NOT closeable via Esc — only via X or correct password
   }
