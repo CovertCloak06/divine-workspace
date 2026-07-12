@@ -618,6 +618,9 @@ const API = {
 // it. Use the "Lock editor" button to drop it.
 const SESSION_KEY = 'frostline:session';      // { query, activeTag, scrollY, lightboxId }
 const REMEMBER_KEY = 'frostline:remember';    // password string when "stay unlocked" is on
+// wos111: '1' once this device has EVER unlocked the editor. Drives the
+// locked-admin recovery hint in the save sheet (never shown to true public).
+const HAS_UNLOCKED_KEY = 'frostline:hasUnlocked';
 
 function loadSession() {
   try {
@@ -708,6 +711,7 @@ async function boot() {
         state.password = remembered;
         document.body.classList.add('editor');
         els.btnExport.disabled = false;
+        adoptEditorSessionAfterUnlock();   // wos111
         render();
         showToast('Editor mode restored');
         loadBugInbox();   // wos96: badge the inbox count for the session
@@ -2272,7 +2276,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos110';
+const APP_VERSION = 'wos111';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2701,6 +2705,7 @@ async function submitAuth() {
       else localStorage.removeItem(REMEMBER_KEY);
     } catch { /* ignore quota errors */ }
     closeAuth();
+    adoptEditorSessionAfterUnlock();   // wos111
     render();
     loadBugInbox();   // wos96: badge the inbox count for the session
   } else {
@@ -4475,10 +4480,48 @@ function setSubmitMode(on) {
   els.edit.classList.toggle('submit-mode', submitMode);
   const confirmBtn = document.getElementById('save-confirm');
   if (confirmBtn) confirmBtn.textContent = submitMode ? 'Publish art' : 'Save art';
+  syncSheetUnlockHint();   // wos111
 }
+
+/* ============ wos111: locked-admin recovery ============
+ * The editor unlock expires on refresh (by design), and since wos110 both
+ * art buttons carry the same "Submit Art" label — so a silently re-locked
+ * admin used to land in the PUBLIC submit editor where the Draft/Published
+ * row is hidden ("the save/draft option is gone"). Two guarantees fix it:
+ * (1) an UNLOCKED admin always gets the full editor whatever entry point
+ * she uses, and (2) a LOCKED device that has unlocked before gets a quiet
+ * unlock row inside the save sheet that flips the open editor back to the
+ * admin flow — typed work preserved. */
+function syncSheetUnlockHint() {
+  const hint = document.getElementById('sheet-unlock-hint');
+  if (!hint) return;
+  let wasAdmin = false;
+  try { wasAdmin = localStorage.getItem(HAS_UNLOCKED_KEY) === '1'; } catch {}
+  hint.hidden = !(submitMode && !state.editor && wasAdmin);
+}
+
+function adoptEditorSessionAfterUnlock() {
+  try { localStorage.setItem(HAS_UNLOCKED_KEY, '1'); } catch {}
+  // If the editor is open in public-submission mode, adopt it into the admin
+  // flow: the Draft/Published row and "Save art" appear in place, and the
+  // typed art/title/tags stay exactly as they were.
+  if (els.edit && els.edit.classList.contains('open') && submitMode) {
+    setSubmitMode(false);
+    els.editTitle.textContent = 'Add new art';
+  }
+  syncSheetUnlockHint();
+}
+
+(() => {
+  const hint = document.getElementById('sheet-unlock-hint');
+  if (hint) hint.addEventListener('click', () => openAuth());
+})();
 
 // Public entry: same editor, direct-publish save path.
 function openSubmit() {
+  // wos111: an unlocked admin always gets the FULL editor (drafts included),
+  // whichever entry point brought her here.
+  if (state.editor) { openAdd(); return; }
   openAdd();                      // resets submitMode — flip it after
   setSubmitMode(true);
   editingSubmission = null;
@@ -4620,6 +4663,7 @@ function openSaveSheet() {
   if (!els.editArtInput.value.trim()) { alert('Add some art before saving.'); return; }
   const sheet = document.getElementById('save-sheet');
   if (sheet) sheet.classList.add('open');
+  syncSheetUnlockHint();   // wos111
   setTimeout(() => { if (els.editTitleInput) els.editTitleInput.focus(); }, 60);
 }
 function closeSaveSheet() {

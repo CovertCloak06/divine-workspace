@@ -1085,6 +1085,25 @@ body .export-bar .btn-export:disabled {
 .save-sheet .field { margin-bottom: 14px; }
 .save-sheet .field input { width: 100%; box-sizing: border-box; }
 .save-sheet-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+/* wos111: locked-admin recovery row in the save sheet */
+.sheet-unlock-hint {
+  display: block;
+  width: 100%;
+  margin: 2px 0 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(155, 190, 230, 0.5);
+  background: rgba(20, 40, 70, 0.45);
+  color: #9fc6ec;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.sheet-unlock-hint:hover { background: rgba(30, 60, 100, 0.55); color: #cfe6ff; }
+/* wos111: when the unlock dialog is opened FROM the editor (sheet hint), it
+ * must stack above the edit modal (#auth precedes #edit in the DOM, so a
+ * shared z-index would paint it underneath). */
+#auth.open { z-index: 140; }
 .label-dim { color: var(--ink-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
 @media (max-width: 600px) { .save-sheet { padding: 20px 16px; } }
 
