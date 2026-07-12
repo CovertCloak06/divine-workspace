@@ -212,9 +212,18 @@ input, textarea { font-family: inherit; }
     "strip  strip";
   column-gap: 12px;
 }
-.controls-inner .theme-tabs { grid-area: tabs; }
-.controls-inner .active-theme-row { grid-area: active; }
-.controls-inner .tag-strip-wrap { grid-area: strip; }
+/* wos102: attachThemeTabsScroll() (app.js) wraps #theme-tabs in a new
+ * .theme-tabs-wrap div shortly after load. A grid-area set on .theme-tabs
+ * alone STOPS applying the moment it's nested (it's no longer a direct grid
+ * item) — the wrapper becomes the grid child with no area and auto-flows,
+ * so the whole controls grid reflows and the Submit button visibly jumps on
+ * first open ("two UIs fighting"). Pin BOTH possible direct children (the
+ * bare strip on frame 1, the wrapper after JS) to the same 'tabs' cell with
+ * the child combinator so the transition is seamless. */
+.controls-inner > .theme-tabs,
+.controls-inner > .theme-tabs-wrap { grid-area: tabs; min-width: 0; }
+.controls-inner > .active-theme-row { grid-area: active; }
+.controls-inner > .tag-strip-wrap { grid-area: strip; }
 .search-row {
   margin-bottom: 12px;
   grid-area: search;
