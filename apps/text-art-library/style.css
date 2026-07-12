@@ -699,22 +699,39 @@ body.editor .card.flagged .flag-note { display: block; }
   text-align: center;
 }
 body.editor .export-bar { display: block; }
-.btn-export {
-  background: var(--accent);
-  color: #fff;
-  border: 0;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 11px 24px;
+/* wos110: the Download Art (.js) button wears the SAME ice panel as the
+ * Submit Art button. Defense-strength pins (body + 2 classes, !important)
+ * beat the tweaks engine's chunk/shape/font-size rules exactly like the
+ * submit-button defense does. */
+body .export-bar .btn-export {
+  height: 52px;
+  min-width: 200px;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  background: url('assets/btn-ice.webp?v=wos101') center / 100% 100% no-repeat !important;
+  color: #eaf6ff !important;
+  font-size: 13.5px !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  letter-spacing: normal !important;
+  padding: 0 18px !important;
+  text-shadow: 0 0 8px rgba(90, 200, 255, 0.85), 0 1px 2px rgba(0, 20, 40, 0.9) !important;
+  transform: none !important;
+  white-space: nowrap !important;
   cursor: pointer;
-  transition: background 120ms;
+  filter: drop-shadow(0 3px 8px rgba(0, 18, 40, 0.45));
+  transition: filter 0.15s ease;
 }
-.btn-export:hover { background: var(--accent-press); }
-.btn-export:disabled {
-  opacity: 0.4;
+body .export-bar .btn-export:hover {
+  filter: brightness(1.15) drop-shadow(0 3px 10px rgba(80, 190, 255, 0.5));
+}
+body .export-bar .btn-export:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(26, 42, 68, 0.3);
+  filter: grayscale(0.5) drop-shadow(0 2px 5px rgba(0, 18, 40, 0.35));
+  color: rgba(234, 246, 255, 0.75) !important;
+  text-shadow: none !important;
 }
 
 /* ============ FOOTER ============ */
@@ -4016,14 +4033,17 @@ body.editor .btn-add { display: block; }
 .btn-submit-art,
 .btn-add {
   grid-area: submit;
-  align-self: stretch;
-  min-width: 168px;
+  /* wos110: smaller, consistent scale — centered in the slot instead of
+   * stretching across both grid rows. */
+  align-self: center;
+  height: 58px;
+  min-width: 128px;
   border: none;
   background: url('assets/btn-ice.webp?v=wos101') center / 100% 100% no-repeat;
   color: #eaf6ff;
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
-  padding: 0 22px;
+  padding: 0 14px;
   cursor: pointer;
   text-shadow: 0 0 8px rgba(90, 200, 255, 0.85), 0 1px 2px rgba(0, 20, 40, 0.9);
   filter: drop-shadow(0 3px 8px rgba(0, 18, 40, 0.45));
@@ -4045,11 +4065,11 @@ body.editor .btn-add { display: block; }
   background: url('assets/btn-ice.webp?v=wos101') center / 100% 100% no-repeat !important;
   border: none !important;
   color: #eaf6ff !important;
-  font-size: 15px !important;
+  font-size: 13.5px !important;
   font-family: inherit !important;
   font-weight: 800 !important;
   letter-spacing: normal !important;
-  padding: 0 22px !important;
+  padding: 0 14px !important;
   text-shadow: 0 0 8px rgba(90, 200, 255, 0.85), 0 1px 2px rgba(0, 20, 40, 0.9) !important;
   transform: none !important;
   white-space: nowrap !important;
@@ -4067,9 +4087,10 @@ body.editor .btn-add { display: block; }
   }
   .controls .controls-inner > .btn-submit-art,
   .controls .controls-inner > .btn-add {
-    min-width: 118px;
-    font-size: 12.5px !important;
-    padding: 0 10px !important;
+    min-width: 100px;
+    height: 46px;
+    font-size: 12px !important;
+    padding: 0 8px !important;
   }
 }
 
@@ -4409,6 +4430,32 @@ body.editor .btn-add { display: block; }
  * classic bars — the standard cost of webkit scrollbar theming.
  * The editor's chunky WoS scrollbars (.sketch-view/.char-palette/
  * .has-wos-scroll, wos48 block) have higher specificity and keep their look. */
+
+/* wos110: NO default browser scrollbars anywhere. This slim palette bar is
+ * the BASELINE for every environment (touch, macOS, inner panels: drawer,
+ * modals, analytics, palette lists). The desktop ice bars in the
+ * hover+fine-pointer block below share specificity and come later, so they
+ * override this on mouse setups. Rails stay bar-less (their display:none
+ * pseudo rule is more specific). */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(8, 22, 38, 0.55);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(10, 30, 55, 0.6);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a8e2f8 0%, #5cb2e6 60%, #3a92cc 100%);
+}
+*::-webkit-scrollbar-corner { background: transparent; }
+
 @media (hover: hover) and (pointer: fine) {
   *::-webkit-scrollbar {
     width: 18px;

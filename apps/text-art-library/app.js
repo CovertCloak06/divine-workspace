@@ -693,7 +693,8 @@ async function boot() {
   }
 
   buildTagStrip();
-  renderEmpty('Loading…');
+  // wos110: warm, reassuring boot message (never "no art" while loading).
+  renderEmpty('❄ Gathering the gallery — one snowflake at a time…');
 
   // --- Auto-unlock if the user previously chose "stay unlocked". We don't
   //     await this — boot can render the gallery while auth happens.
@@ -1490,9 +1491,13 @@ function render() {
   syncMineTab();      // wos94
   const list = filtered();
   if (!list.length) {
-    renderEmpty(state.query || state.activeTag !== 'all'
-      ? 'No art matches.'
-      : 'No art yet. Add some!');
+    // wos110: while the library is still loading, stay warm and reassuring —
+    // never claim the gallery is empty before the data has arrived.
+    renderEmpty(!state.booted
+      ? '❄ Gathering the gallery — one snowflake at a time…'
+      : (state.query || state.activeTag !== 'all'
+        ? 'No art matches.'
+        : 'Fresh snow! Be the first to submit some art. ❄'));
     return;
   }
   els.grid.innerHTML = '';
@@ -2267,7 +2272,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos109';
+const APP_VERSION = 'wos110';
 
 function captureFeedbackContext() {
   let editorState = 'locked';

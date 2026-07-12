@@ -21,7 +21,7 @@
   <!-- wos106: Noto JP/KR/Tibetan/Symbols-2 removed — they rendered glyphs the
        WoS game font can't, making broken art look fine in-app. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos109">
+  <link rel="stylesheet" href="style.css?v=wos110">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1494,10 +1494,11 @@
            publishes straight into the gallery (adult site behind the 18+
            gate), editable/deletable only by this device (server-enforced
            owner token). -->
-      <button class="btn-submit-art" id="btn-submit-art">Submit your art</button>
+      <button class="btn-submit-art" id="btn-submit-art">Submit Art</button>
       <!-- wos105: the admin add button lives in the SAME grid slot with the
-           same ice-panel style; body.editor swaps which of the two shows. -->
-      <button class="btn-add" id="btn-add" data-st="addButtonLabel">+ Add New Art</button>
+           same ice-panel style; body.editor swaps which of the two shows.
+           wos110: same LABEL too — "Submit Art" everywhere. -->
+      <button class="btn-add" id="btn-add" data-st="addButtonLabel">Submit Art</button>
       <div class="active-theme-row" id="active-theme-row" hidden>
         <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
           <span class="active-theme-label" id="active-theme-label">all</span>
@@ -1546,11 +1547,11 @@
   </section>
 
   <main class="grid" id="grid" style="border-color: rgb(58, 41, 86)">
-    <div class="grid-empty">Loading…</div>
+    <div class="grid-empty">❄ Gathering the gallery — one snowflake at a time…</div>
   </main>
 
   <div class="export-bar">
-    <button class="btn-export" id="btn-export" disabled>⬇ Download updated art.js</button>
+    <button class="btn-export" id="btn-export" disabled>⬇ Download Art (.js)</button>
     <button class="btn-lock" id="btn-lock" type="button" title="Lock editor (sign out)" aria-label="Lock editor">🔒</button>
   </div>
 
@@ -1803,7 +1804,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos109"></script>
+  <script src="app.js?v=wos110"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
