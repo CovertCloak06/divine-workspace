@@ -1908,7 +1908,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos100';
+const APP_VERSION = 'wos101';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
