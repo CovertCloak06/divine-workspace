@@ -49,20 +49,15 @@
   --wos-ink: #1a6614;          /* sampled WoS chat text (bold dark green) */
 
   /* The single art font stack — applied to EVERY art surface (card, lightbox,
-     editor canvas, sketch grid) so they render identically. Mirrors the Android
-     system stack WoS itself uses (Roboto + Noto), but loaded as webfonts so the
-     render is the same on every device, not just Android. Covers all 8 scripts
-     the library uses: Latin/Greek/Cyrillic (Roboto), extended-Latin/IPA/phonetic
-     (Noto Sans), kana/CJK/full-width/box-drawing/blocks/geometric (Noto Sans CJK
-     JP), Korean (KR), Tibetan, and stray symbols (Symbols 2). Emoji are left to
-     the device on purpose — that matches what WoS shows in-game. */
-  /* wos86: 'Noto Color Emoji' (loaded via the Google Fonts <link>) is added so
-     EMOJI render from a consistent, controlled font — the same Noto emoji on
-     every device instead of each OS's own (Apple/Segoe/Samsung), which is also
-     what Android/WoS shows for most players. Text glyphs still resolve to
-     Roboto/Noto Sans first; only emoji codepoints fall through to Noto Color
-     Emoji. */
-  --art-font: 'Roboto', 'Noto Sans', 'Noto Sans CJK JP', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Tibetan', 'Noto Sans Symbols 2', 'Noto Color Emoji', system-ui, sans-serif;
+     editor canvas, sketch grid) so they render identically.
+     wos106: the exotic Noto fallbacks (CJK JP, KR, Tibetan, Symbols 2) are
+     GONE. They covered glyph ranges the game's embedded font does NOT — the
+     exact reason pieces looked perfect in-app and blanked/scrambled in the
+     real WoS chat. The stack now approximates the game: Roboto + Noto Sans
+     (Latin) + Noto Color Emoji. Characters beyond that fall to the device's
+     system fonts AND get flagged by the WoS-safety audit (red underline in
+     the lightbox game view, ⚠ chip on the card, submit gate). */
+  --art-font: 'Roboto', 'Noto Sans', 'Noto Color Emoji', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -172,11 +167,12 @@ input, textarea { font-family: inherit; }
   z-index: 10;
   background: linear-gradient(180deg, var(--bar-grad-top) 0%, var(--bar-grad-mid) 55%, var(--bar-grad-bot) 100%);
   padding: 28px 16px 14px;
-  /* wos105: the container no longer stretches edge-to-edge — it hugs its
-     contents (tabs + search + submit) with padding, centered, inset from
-     the viewport. The snow drift is positioned inside .controls, so it
-     resizes with the bar automatically. */
-  max-width: min(880px, 100% - 24px);
+  /* wos106: the container spans exactly the width the CARDS span — the grid
+     is a 1200px box with 16px side padding, so the card columns cover
+     min(1168px, 100% - 32px). Keeps the bar flush with the gallery edges
+     at every viewport. The snow drift is positioned inside .controls, so
+     it resizes with the bar automatically. */
+  max-width: min(1168px, 100% - 32px);
   margin: 10px auto 0;
   border-radius: 16px;
   color: var(--ink);
@@ -1159,18 +1155,55 @@ body.editor .export-bar { display: block; }
   letter-spacing: 0;
 }
 
-/* lightbox-specific — match the card's lime preview tray */
+/* lightbox-specific — match the card's lime preview tray.
+ * wos106 GAME VIEW: the pre is a FIXED 17.5em column (the sampled WoS bubble
+ * width) that WRAPS over-wide lines at glyph level, exactly like the game's
+ * message box — no more shrink-to-fit hiding real overflow. NBSP art never
+ * soft-wraps on its own, so overflow-wrap:anywhere supplies the game's
+ * glyph-level break. Tall art scrolls. */
 .wos-preview {
   background: var(--wos-bubble);
   border: 1px solid var(--border-preview);
   border-radius: 8px;
-  padding: 28px;
+  padding: 28px 12px;
   text-align: center;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 46vh;
 }
 .wos-preview pre {
   font-size: 20px;
   color: var(--wos-ink);
+  width: calc(var(--wos-cols) * 1em);
+  max-width: 100%;
+  margin-inline: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+/* wos106: characters the WoS chat font may not render — flagged inline */
+.wos-bad {
+  text-decoration: underline dotted rgba(220, 60, 60, 0.95) 2px;
+  text-underline-offset: 2px;
+  background: rgba(248, 113, 113, 0.18);
+  border-radius: 2px;
+}
+/* wos106: the lightbox risk banner under the game view */
+.lb-audit {
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(120, 60, 10, 0.35);
+  border: 1px solid rgba(255, 190, 90, 0.45);
+  color: #ffd9a0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+/* wos106: risk-aware copy feedback — amber instead of the clean green */
+.copy-btn.copied-risk,
+.modal-copy.copied-risk {
+  background: linear-gradient(180deg, #e8a33d 0%, #c97f1f 100%) !important;
+  color: #2a1a02 !important;
 }
 .wos-preview pre .overflow {
   background: rgba(248, 113, 113, 0.22);
@@ -2402,34 +2435,35 @@ body.editor .export-bar { display: block; }
 .theme-tabs.dragging { cursor: grabbing; user-select: none; }
 .theme-tabs.dragging .theme-tab { pointer-events: none; }
 
-/* wos51: side arrow buttons for scroll on PC */
+/* wos51: side arrow buttons for scroll on PC.
+ * wos106: the buttons ARE the user's glossy ice arrow asset (true-alpha WEBP,
+ * mirrored pair) — no pill chrome, no glyph; the aria-label carries meaning. */
 .theme-tab-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #8fd4ee 0%, #4a9fd4 60%, #2a7fb8 100%);
-  border: 1px solid #1f5d8e;
-  color: #061a2d;
-  font-size: 16px;
-  font-weight: 800;
+  width: 40px;
+  height: 27px;
+  border-radius: 0;
+  border: none;
+  background: url('assets/arrow-ice-left.webp?v=wos106') center / contain no-repeat;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0;
   z-index: 3;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    0 2px 6px rgba(0,0,0,0.35);
+  filter: drop-shadow(0 2px 4px rgba(0, 15, 40, 0.4));
   transition: opacity 150ms, filter 100ms;
   opacity: 0.92;
 }
-.theme-tab-arrow:hover { filter: brightness(1.1); opacity: 1; }
-.theme-tab-arrow:active { transform: translateY(-50%) scale(0.95); }
+.theme-tab-arrow:hover {
+  filter: brightness(1.12) drop-shadow(0 2px 6px rgba(80, 190, 255, 0.55));
+  opacity: 1;
+}
+.theme-tab-arrow:active { transform: translateY(-50%) scale(0.92); }
 .theme-tab-arrow.left { left: 2px; }
-.theme-tab-arrow.right { right: 2px; }
+.theme-tab-arrow.right {
+  right: 2px;
+  background-image: url('assets/arrow-ice-right.webp?v=wos106');
+}
 .theme-tab-arrow[hidden] { display: none !important; }
 /* Hide arrows on touch — touch users already get swipe scrolling */
 @media (hover: none) { .theme-tab-arrow { display: none; } }
@@ -3353,11 +3387,12 @@ html body {
  * `border-style: solid !important` is required to enable border-image at all.
  * ========================================================================== */
 nav.controls {
-  /* wos105: the ice trough no longer stretches edge-to-edge — it hugs its
-     contents (tabs + search + submit) with padding, centered. The border-box
-     (incl. the 44px ice caps) is capped; phones keep near-full width. */
+  /* wos106: the ice trough spans exactly what the CARDS span — the grid box
+     is 1200px with 16px side padding, so the card columns cover
+     min(1168px, 100% - 32px). The trough's border-box lines up flush with
+     the gallery's outer card edges at every viewport. */
   margin: 2px auto 30px !important;     /* centered; bottom room for icicle overhang */
-  max-width: min(880px, 100% - 24px) !important;
+  max-width: min(1168px, 100% - 32px) !important;
   background: none !important;          /* drop the old procedural ice-block */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -3394,7 +3429,8 @@ nav.controls {
 @media (max-width: 480px) {
   nav.controls {
     margin: 2px auto 20px !important;
-    max-width: calc(100% - 12px) !important;
+    /* wos106: match the ≤480px grid (10px side padding → cards span 100% - 20px) */
+    max-width: calc(100% - 20px) !important;
     border-width: 26px 30px 30px 30px !important;
     border-image-width: 26px 30px 62px 30px !important;
     border-image-outset: 10px 3px 32px 3px !important;
@@ -3818,6 +3854,34 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
 .an-top li[data-device-id] { cursor: pointer; }
 .an-top li[data-device-id]:hover { background: rgba(74, 159, 212, 0.22); }
 .an-top li[data-device-id]:focus-visible { outline: 2px solid rgba(120, 200, 255, 0.7); outline-offset: -2px; }
+/* wos106: most-copied rows are drill targets too, with tiny true-render thumbs */
+.an-top li[data-piece-id] { cursor: pointer; }
+.an-top li[data-piece-id]:hover { background: rgba(74, 159, 212, 0.22); }
+.an-top li[data-piece-id]:focus-visible { outline: 2px solid rgba(120, 200, 255, 0.7); outline-offset: -2px; }
+.an-thumb {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--wos-bubble);
+  color: var(--wos-ink);
+  border-radius: 6px;
+}
+.an-drill-prev {
+  margin-top: 8px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--wos-bubble);
+  color: var(--wos-ink);
+  border-radius: 8px;
+  padding: 6px;
+}
 .an-drill {
   margin: 4px 0 8px;
   padding: 10px 12px;

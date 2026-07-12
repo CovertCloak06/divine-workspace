@@ -133,18 +133,34 @@ You can ship with either or both backends in the folder — the client picks whi
 
 ## WoS rules (cheat-sheet)
 
-Whiteout Survival chat renders in a CJK-aware proportional font. The art audit uses two width thresholds:
+Whiteout Survival chat renders in a proportional font, so raw character counts
+are meaningless. Since wos106 there is ONE width model everywhere (audit,
+editor meter, lightbox game view, and the server gate): **visual columns**,
+where narrow chars (`. , : ; ' | ! i l`) count 0.5, wide chars (`M W @ # % &`)
+count 1.5, and everything else counts 1.0.
 
-- **Soft warn (⚠)** at **27 graphemes** — wide characters (emoji, fullwidth, box-drawing) may clip past this.
-- **Hard warn (⛔)** at **58 graphemes** — narrow ASCII-only art can fit up to here, anything beyond will definitely break.
+- **Soft warn (⚠)** past **30 visual columns**.
+- **Hard fail (⛔)** past **34 visual columns** — the line wraps in the game
+  bubble and the art scrambles. Public submissions are rejected at this point
+  (client and server); the admin editor gets a confirm instead.
 
-The audit also flags:
-- regular spaces (auto-converted to NBSP on save)
-- Unicode outside known-safe ranges
+Character safety (also enforced at submit since wos106):
+- regular spaces are auto-converted to NBSP on save/copy
+- Unicode outside the WoS-safe whitelist (`SAFE_RANGES` in app.js, mirrored in
+  `netlify/functions/submit-art.js`) is flagged on cards (⚠ chip), underlined
+  red in the lightbox game view, warned on copy, and blocks public submission
+- marking a piece **Verified** (admin, after a real in-game test) suppresses
+  the warnings — the game is the final authority
+
+The lightbox preview is a true game view: a fixed 17.5em bubble that wraps
+over-wide lines at glyph level exactly like the game — art is never shrunk to
+"fit" anymore.
 
 Safe character families:
 - Pure emoji rows
 - Block + box-drawing (`█ ▓ ▒ ░ ─ │ ┌ ┐ └ ┘ ╔ ╗ ╚ ╝ ═ ║`)
 - Fullwidth chars where empty cells use `　` (U+3000)
 
-Avoid ASCII `/ \ - | # * +` for shape-building — they're proportional and will drift.
+Avoid ASCII `/ \ - | # * +` for shape-building — they're proportional and will
+drift. Avoid Hangul/Tibetan/IPA/modifier-letter kaomoji — the game font lacks
+them (they render blank/tofu in chat even though desktops show them fine).

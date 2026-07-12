@@ -48,6 +48,71 @@ function isProhibited(text) {
     new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9])').test(t));
 }
 
+/* ============ wos106: WoS-safety gate ============
+ * KEEP IN LOCKSTEP with SAFE_RANGES / wosClassifyWidth / wosOffenders in
+ * app.js. Public art that would scramble (over-wide lines wrap in the game
+ * bubble) or blank out (glyphs missing from the game's embedded font) is
+ * rejected at the door. Admin submissions are exempt — the admin verifies
+ * pieces in the actual game. */
+const WOS_SAFE_RANGES = [
+  [0x000A, 0x000A], // newline
+  [0x00A0, 0x00A0], // NBSP
+  [0x200D, 0x200D], // ZWJ (compound emoji)
+  [0x3000, 0x3000], // ideographic space
+  [0x0021, 0x007E], // printable ASCII
+  [0x2500, 0x27BF],
+  [0x2600, 0x26FF],
+  [0x2B1B, 0x2B1C], // ⬛/⬜
+  [0x2B50, 0x2B50], // ⭐
+  [0x2B55, 0x2B55], // ⭕
+  [0xFE0E, 0xFE0F], // variation selectors (emoji presentation)
+  [0xFF00, 0xFFEF],
+  [0x1F100, 0x1FAFF],
+];
+const WOS_HARD_LIMIT = 34; // visual columns (narrow .5 / medium 1 / wide 1.5)
+const WOS_NARROW_CHARS = new Set(['.', ',', ':', ';', "'", '`', '|', '!', 'i', 'l']);
+const WOS_WIDE_CHARS = new Set(['M', 'W', '@', '#', '%', '&']);
+
+function wosSafeCode(cp) {
+  for (const [lo, hi] of WOS_SAFE_RANGES) if (cp >= lo && cp <= hi) return true;
+  return false;
+}
+function wosWidestLine(art) {
+  let max = 0;
+  for (const line of String(art).split('\n')) {
+    let w = 0;
+    for (const ch of line) w += WOS_NARROW_CHARS.has(ch) ? 0.5 : WOS_WIDE_CHARS.has(ch) ? 1.5 : 1.0;
+    if (w > max) max = w;
+  }
+  return max;
+}
+function wosGateError(art) {
+  const w = wosWidestLine(art);
+  if (w > WOS_HARD_LIMIT) {
+    return `Art is too wide for the WoS chat bubble (${w.toFixed(1)} of max ${WOS_HARD_LIMIT} visual columns) — it would wrap and scramble in game`;
+  }
+  const bad = [];
+  const seen = new Set();
+  for (const ch of String(art)) {
+    if (ch === ' ' || ch === '\n' || seen.has(ch)) continue;
+    if (!wosSafeCode(ch.codePointAt(0))) { seen.add(ch); bad.push(ch); }
+  }
+  if (bad.length) {
+    const list = bad.slice(0, 8).map((g) => `${g} (U+${g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')})`).join(' ');
+    return `Art uses characters WoS chat may not render: ${list}`;
+  }
+  return null;
+}
+/* Mirror of the client save path: NFC + spaces→NBSP + drop trailing blank
+ * rows. Applied server-side so a direct API call can't skip normalization. */
+function normalizeArt(a) {
+  const art = String(a).normalize('NFC').replace(/ /g, '\u00A0');
+  const lines = art.split('\n');
+  const blank = (row) => [...row].every((c) => c === '\u00A0' || c === '\t' || c === ' ');
+  while (lines.length && blank(lines[lines.length - 1])) lines.pop();
+  return lines.join('\n');
+}
+
 const sha256 = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
 
 function json(status, body) {
@@ -77,7 +142,7 @@ function sanitizePiece(p) {
     tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, MAX_TAGS) : [],
     width: Number.isFinite(+p.width) ? Math.max(0, Math.min(500, Math.round(+p.width))) : 0,
     height: Number.isFinite(+p.height) ? Math.max(0, Math.min(500, Math.round(+p.height))) : 0,
-    art: p.art,
+    art: normalizeArt(p.art), // wos106: server-side normalization (NFC, NBSP, trim)
     wosVerified: false,
   };
 }
@@ -105,6 +170,12 @@ export const handler = async (event) => {
       const err = validatePiece(body.piece);
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
+
+      // wos106: WoS-safety gate (admin exempt — she verifies in the game).
+      if (!isAdmin) {
+        const wosErr = wosGateError(p.art);
+        if (wosErr) return json(400, { error: wosErr });
+      }
 
       // Public submissions live in the 'user-' id namespace (what the client's
       // newId() generates). Without this, a fresh/cleared Blob store would let
@@ -153,6 +224,12 @@ export const handler = async (event) => {
       const err = validatePiece(body.piece);
       if (err) return json(400, { error: err });
       const p = sanitizePiece(body.piece);
+
+      // wos106: WoS-safety gate (admin exempt)
+      if (!isAdmin) {
+        const wosErr = wosGateError(p.art);
+        if (wosErr) return json(400, { error: wosErr });
+      }
 
       if (isProhibited(p.title + '\n' + p.art + '\n' + p.tags.join(' '))) {
         return json(400, { error: 'This update contains prohibited content and cannot be published' });

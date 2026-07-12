@@ -43,13 +43,21 @@ const DEV_FALLBACK_PASSWORD = '0022';
 
 
 // WoS-safe Unicode ranges, per handoff.
+// wos106: this list became ENFORCING (public submits are blocked on
+// out-of-range chars; admin saves confirm). KEEP IN LOCKSTEP with the
+// server copy in netlify/functions/submit-art.js.
 const SAFE_RANGES = [
   [0x000A, 0x000A], // newline
   [0x00A0, 0x00A0], // NBSP
+  [0x200D, 0x200D], // wos106: ZWJ — glue inside compound emoji (👨‍👩‍👧)
   [0x3000, 0x3000], // ideographic space
   [0x0021, 0x007E], // printable ASCII
   [0x2500, 0x27BF],
   [0x2600, 0x26FF],
+  [0x2B1B, 0x2B1C], // wos106: ⬛/⬜ emoji squares (common pixel-art blocks)
+  [0x2B50, 0x2B50], // wos106: ⭐
+  [0x2B55, 0x2B55], // wos106: ⭕
+  [0xFE0E, 0xFE0F], // wos106: variation selectors — emoji presentation (❤️)
   [0xFF00, 0xFFEF],
   [0x1F100, 0x1FAFF],
 ];
@@ -264,6 +272,87 @@ function auditArt(text) {
     });
   }
   return issues;
+}
+
+/* ============ wos106  WoS game-truth helpers ============
+ * The wife-report: pieces that look perfect in the app scramble or blank out
+ * in the actual WoS chat message box. Root cause: the app's Noto webfonts
+ * render glyph ranges the game's embedded font lacks, and the shrink-to-fit
+ * preview hides over-wide lines that wrap in the real bubble. These helpers
+ * give every surface (card chip, copy toast, lightbox banner, submit gates)
+ * ONE verdict. */
+
+// Unique out-of-whitelist graphemes in a piece of art. Plain spaces are
+// excluded — they're converted to NBSP on save/copy, never reach the game.
+function wosOffenders(text) {
+  const out = [];
+  const seen = new Set();
+  for (const g of graphemes(text || '')) {
+    if (g === ' ' || g === '\n') continue;
+    for (const ch of g) {
+      if (!isSafeCode(ch.codePointAt(0))) {
+        if (!seen.has(g)) { seen.add(g); out.push(g); }
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+function wosFmtOffenders(offenders, max) {
+  return offenders.slice(0, max || 10).map((g) => {
+    const cp = g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+    return `${g} (U+${cp})`;
+  }).join('  ');
+}
+
+/* One verdict for a STORED piece. null = fine (or admin-verified in the real
+ * game, which overrides the heuristics — the wife's in-game test is truth). */
+function pieceRisk(p) {
+  if (!p || p.wosVerified) return null;
+  const art = p.art || '';
+  const offenders = wosOffenders(art);
+  const width = wosClassifyWidth(art);
+  if (!offenders.length && width.level !== 'fail' && !p.wosRisk) return null;
+  return { offenders, width };
+}
+
+/* Human message for the save/submit gates. null = clean. */
+function wosGateMessage(art) {
+  const offenders = wosOffenders(art);
+  const width = wosClassifyWidth(art);
+  const parts = [];
+  if (width.level === 'fail') {
+    parts.push(`Too wide for the WoS chat bubble (${width.width.toFixed(1)} of max ${WOS_HARD_LIMIT} visual columns) — lines will wrap and scramble in game.`);
+  }
+  if (offenders.length) {
+    parts.push(`Uses ${offenders.length} character${offenders.length === 1 ? '' : 's'} the WoS chat font may not render: ${wosFmtOffenders(offenders)}`);
+  }
+  return parts.length
+    ? '⚠ This art may break in Whiteout Survival chat:\n\n• ' + parts.join('\n• ')
+    : null;
+}
+
+/* Escaped HTML where each out-of-whitelist char is wrapped in a .wos-bad
+ * span — the lightbox game view underlines exactly what the game may drop. */
+function wosHighlight(text) {
+  let html = '';
+  for (const g of graphemes(text || '')) {
+    if (g === '\n') { html += '\n'; continue; }
+    let bad = false;
+    if (g !== ' ') {
+      for (const ch of g) {
+        if (!isSafeCode(ch.codePointAt(0))) { bad = true; break; }
+      }
+    }
+    if (bad) {
+      const cp = g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+      html += `<span class="wos-bad" title="U+${cp} — the WoS chat font may not render this">${escapeHtml(g)}</span>`;
+    } else {
+      html += escapeHtml(g);
+    }
+  }
+  return html;
 }
 
 function debounce(fn, wait) {
@@ -895,7 +984,7 @@ function attachThemeTabsScroll() {
     leftBtn.type = 'button';
     leftBtn.className = 'theme-tab-arrow left';
     leftBtn.setAttribute('aria-label', 'Scroll themes left');
-    leftBtn.innerHTML = '&#x2039;';
+    /* wos106: the glossy ice arrow is the button's CSS background — no glyph. */
     wrap.insertBefore(leftBtn, strip);
   }
   if (!rightBtn) {
@@ -903,7 +992,6 @@ function attachThemeTabsScroll() {
     rightBtn.type = 'button';
     rightBtn.className = 'theme-tab-arrow right';
     rightBtn.setAttribute('aria-label', 'Scroll themes right');
-    rightBtn.innerHTML = '&#x203A;';
     wrap.appendChild(rightBtn);
   }
 
@@ -1368,7 +1456,20 @@ function renderCard(p) {
     const wosCols = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue('--wos-cols'),
     ) || 17;
-    warn.style.display = (pre.scrollWidth > wosCols * emPx + 1) ? '' : 'none';
+    const tooWide = pre.scrollWidth > wosCols * emPx + 1;
+    // wos106: ONE verdict on the badge — measured bubble overflow OR unsafe
+    // characters/wosRisk. The admin's in-game Verified mark suppresses it
+    // (pieceRisk already returns null for verified pieces).
+    const risk = pieceRisk(p);
+    const show = (!p.wosVerified && tooWide) || !!risk;
+    if (show) {
+      warn.title = risk && risk.offenders.length
+        ? 'May break in WoS chat: ' + wosFmtOffenders(risk.offenders, 6)
+        : 'Too wide — wraps in the WoS chat bubble';
+      warn.style.display = '';
+    } else {
+      warn.style.display = 'none';
+    }
     fitArt(prev, pre, 14, { height: true });
   });
 
@@ -1415,7 +1516,8 @@ function renderCard(p) {
 
   // wos105: the WoS verification badge is gone from cards (removed per
   // request). toggleVerified() and p.wosVerified stay for data/export
-  // compatibility, but nothing renders in the footer's left slot.
+  // compatibility. (wos106: the risk verdict lives on the head's .card-warn
+  // badge — one indicator, not two.)
 
   // copy (center). Text-only so the glyph can't change the footer height.
   const copy = document.createElement('button');
@@ -1497,8 +1599,19 @@ function refitAllArt() {
     if (pre) fitArt(prev, pre, 10, { height: true });
   });
   if (els.lightbox && els.lightbox.classList.contains('open') && els.lbPre) {
-    fitArt(els.lbPre.parentElement, els.lbPre, 20);
+    sizeLightboxGameView(); // wos106: fixed-bubble game view, not shrink-to-fit
   }
+}
+
+// wos106: size the lightbox game view. The bubble is a FIXED 17.5em column
+// (.wos-preview pre width) — pick the largest font that fits the modal.
+// Wrap points are scale-invariant (line width and bubble width share the em),
+// so this never changes WHERE a line wraps; the render stays game-true.
+function sizeLightboxGameView() {
+  if (!els.lbPre || !els.lbPre.parentElement) return;
+  const box = els.lbPre.parentElement;
+  const fs = Math.max(9, Math.min(20, Math.floor(box.clientWidth / 19)));
+  els.lbPre.style.fontSize = fs + 'px';
 }
 let _refitTimer = null;
 window.addEventListener('resize', () => {
@@ -1865,9 +1978,11 @@ function renderAnalytics(stats) {
     const p = lib.find((q) => q && q.id === id);
     return p ? (p.title || id) : id;
   };
+  // wos106: each row is a drill-down target and carries a tiny true-render
+  // preview (filled in after innerHTML below, so fitArt gets live elements).
   const top = (stats.topCopied || []).slice(0, 10);
   const rows = top.length
-    ? top.map((c, i) => `<li><span class="an-rank">${i + 1}</span><span class="an-title">${escapeHtml(titleFor(c.id))}</span><span class="an-count">${c.n}</span></li>`).join('')
+    ? top.map((c, i) => `<li data-piece-id="${escapeHtml(String(c.id))}" role="button" tabindex="0"><span class="an-rank">${i + 1}</span><span class="an-thumb" data-thumb="${escapeHtml(String(c.id))}"></span><span class="an-title">${escapeHtml(titleFor(c.id))}</span><span class="an-count">${c.n}</span></li>`).join('')
     : '<li class="an-empty">No copies recorded yet.</li>';
 
   // wos98: top returning devices. Ids are opaque random strings — show a short
@@ -1905,6 +2020,17 @@ function renderAnalytics(stats) {
     <div class="an-section-label">Most-copied art</div>
     <ol class="an-top">${rows}</ol>`;
 
+  // wos106: fill the most-copied thumbnails with true renders of the art.
+  contentEl.querySelectorAll('.an-thumb[data-thumb]').forEach((box) => {
+    const p = lib.find((q) => q && q.id === box.getAttribute('data-thumb'));
+    if (!p || !p.art) { box.textContent = '?'; return; }
+    const pre = document.createElement('pre');
+    pre.className = 'art-render';
+    pre.textContent = displayArt(p.art);
+    box.appendChild(pre);
+    requestAnimationFrame(() => fitArt(box, pre, 8, { height: true }));
+  });
+
   wireAnalyticsDrill(); // wos104 (idempotent — wires the delegated listener once)
 }
 
@@ -1918,10 +2044,12 @@ function wireAnalyticsDrill() {
     if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
     const bar = e.target.closest('[data-date]');
     const dev = e.target.closest('[data-device-id]');
-    if (!bar && !dev) return;
+    const pc = e.target.closest('[data-piece-id]'); // wos106
+    if (!bar && !dev && !pc) return;
     if (e.type === 'keydown') e.preventDefault();
     if (bar) showDateDrill(bar.getAttribute('data-date'));
-    else showDeviceDrill(dev.getAttribute('data-device-id'));
+    else if (dev) showDeviceDrill(dev.getAttribute('data-device-id'));
+    else showPieceDrill(pc.getAttribute('data-piece-id'));
   };
   contentEl.addEventListener('click', handler);
   contentEl.addEventListener('keydown', handler);
@@ -1974,6 +2102,42 @@ function showDeviceDrill(id) {
   drill.scrollIntoView({ block: 'nearest' });
 }
 
+// wos106: drill-down for a most-copied piece — copy stats + a larger
+// true-render preview of the art itself.
+function showPieceDrill(id) {
+  const drill = document.getElementById('an-drill');
+  if (!drill || !analyticsStats || !id) return;
+  if (drill.dataset.key === 'piece:' + id && !drill.hidden) { drill.hidden = true; drill.dataset.key = ''; return; }
+  const list = analyticsStats.topCopied || [];
+  const entry = list.find((c) => c.id === id);
+  if (!entry) return;
+  const rank = list.indexOf(entry) + 1;
+  const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
+  const p = lib.find((q) => q && q.id === id);
+  const total = analyticsStats.copyTotal || 0;
+  let body = anDrillRow('Copies', entry.n) + anDrillRow('Rank', '#' + rank + ' most copied');
+  if (total > 0) body += anDrillRow('Share of all copies', ((entry.n / total) * 100).toFixed(1) + '%');
+  if (p) {
+    const artText = displayArt(p.art || '');
+    const lines = artText ? artText.split('\n').length : 0;
+    body += anDrillRow('Size', lines + ' line' + (lines === 1 ? '' : 's') + (p.width ? ' × ' + p.width + ' wide' : ''));
+    if (p.tags && p.tags.length) body += anDrillRow('Tags', p.tags.join(', '));
+    body += '<div class="an-drill-prev"><pre class="art-render"></pre></div>';
+  } else {
+    body += anDrillRow('Note', 'not in the current library (deleted or draft)');
+  }
+  drill.innerHTML = `<div class="an-drill-h">${escapeHtml(p ? (p.title || id) : id)}</div>` + body;
+  if (p) {
+    const box = drill.querySelector('.an-drill-prev');
+    const pre = box.querySelector('pre');
+    pre.textContent = displayArt(p.art || '');
+    requestAnimationFrame(() => fitArt(box, pre, 14, { height: true }));
+  }
+  drill.dataset.key = 'piece:' + id;
+  drill.hidden = false;
+  drill.scrollIntoView({ block: 'nearest' });
+}
+
 const analyticsRefreshBtn = document.getElementById('analytics-refresh');
 if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnalytics);
 
@@ -1984,7 +2148,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos105';
+const APP_VERSION = 'wos106';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2164,11 +2328,34 @@ setTimeout(updateStripArrows, 500);
 function openLightbox(p) {
   els.lightbox.dataset.openId = p.id;
   els.lbTitle.textContent = p.title || 'Untitled';
-  // WoS is proportional; show the art exactly as the bubble renders it (it will
-  // visibly wrap if a line is too wide) rather than guessing from char counts.
-  els.lbPre.textContent = displayArt(p.art);
-  const m = measure(displayArt(p.art));
+  // wos106 GAME VIEW: render exactly like the WoS message box instead of
+  // shrinking to fit (shrinking hid the very overflow that breaks in game).
+  //  - the bubble is a fixed 17.5em column (--wos-cols, sampled in-game);
+  //  - lines wider than the bubble WRAP at glyph level (pre-wrap +
+  //    overflow-wrap:anywhere), just like the game — visibly scrambling here
+  //    instead of only on the wife's phone;
+  //  - characters outside the WoS-safe whitelist get a red underline.
+  const artText = displayArt(p.art);
+  // Verified-in-game pieces skip the underlines — the wife's real-game test
+  // outranks the whitelist heuristic.
+  if (p.wosVerified) els.lbPre.textContent = artText;
+  else els.lbPre.innerHTML = wosHighlight(artText);
+  const m = measure(artText);
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
+  const audit = document.getElementById('lb-audit');
+  if (audit) {
+    const risk = pieceRisk(p);
+    if (risk) {
+      const bits = [];
+      if (risk.width.level === 'fail') bits.push(`wider than the chat bubble (${risk.width.width.toFixed(1)}/${WOS_HARD_LIMIT} cols — it wraps below exactly like in game)`);
+      if (risk.offenders.length) bits.push(`${risk.offenders.length} character${risk.offenders.length === 1 ? '' : 's'} the game font may not render (underlined in red)`);
+      if (!bits.length) bits.push('marked risky — test in game before sharing');
+      audit.textContent = '⚠ May break in WoS chat: ' + bits.join(' · ');
+      audit.hidden = false;
+    } else {
+      audit.hidden = true;
+    }
+  }
   els.lbPills.innerHTML = '';
   for (const t of (p.tags || [])) {
     const c = document.createElement('span');
@@ -2179,8 +2366,10 @@ function openLightbox(p) {
   els.lbCopy.classList.remove('copied');
   els.lbCopy.textContent = '📋 Copy to Clipboard';
   els.lbCopy.onclick = () => copyArt(p.art, els.lbCopy, true, p.id);
-  // fit preview to modal width
-  requestAnimationFrame(() => fitArt(els.lbPre.parentElement, els.lbPre, 20));
+  // Size the type so the FIXED 17.5em bubble fits the modal. Wrap behavior is
+  // scale-invariant (line width and bubble width share the em), so shrinking
+  // the font never changes WHERE a line wraps — the render stays game-true.
+  requestAnimationFrame(sizeLightboxGameView);
   els.lightbox.classList.add('open');
   saveSession();
 }
@@ -2330,12 +2519,18 @@ async function copyArt(text, btn, isLightbox, id) {
     ta.remove();
   }
   const original = isLightbox ? '📋 Copy to Clipboard' : '📋 Copy';
+  // wos106: risk-aware toast — copying stays allowed (player's choice), but a
+  // flagged piece says so right on the button instead of a clean "Copied!".
+  const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
+  const piece = id ? lib.find((q) => q && q.id === id) : null;
+  const risky = piece ? pieceRisk(piece) : null;
   btn.classList.add('copied');
-  btn.textContent = '✓︎ Copied!';
+  if (risky) btn.classList.add('copied-risk');
+  btn.textContent = risky ? '⚠ Copied — test in game' : '✓︎ Copied!';
   setTimeout(() => {
-    btn.classList.remove('copied');
+    btn.classList.remove('copied', 'copied-risk');
     btn.textContent = original;
-  }, 1400);
+  }, risky ? 2400 : 1400);
 }
 
 /* ============ 09  Share bar ============ */
@@ -4214,6 +4409,16 @@ async function commitSubmit() {
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
+  // wos106: WoS-safety gate. Public submissions that would scramble or blank
+  // out in the game are blocked outright (the server enforces the same rule);
+  // the admin editor gets a confirm instead — she can test in game and mark
+  // the piece Verified to clear the warnings.
+  const gate = wosGateMessage(art);
+  if (gate) {
+    if (!state.editor) { alert(gate + '\n\nFix the art and try again.'); return; }
+    if (!confirm(gate + '\n\nPublish anyway?')) return;
+  }
+
   const piece = {
     id: editingSubmission ? editingSubmission.id : newId(),
     title, tags, art, width, height,
@@ -4342,6 +4547,11 @@ async function commitSave() {
   // trailing whitespace can carry intentional horizontal padding.
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
+
+  // wos106: WoS-safety gate for the admin editor — confirm, never hard-block
+  // (she may be intentionally saving something she'll verify in game).
+  const gate = wosGateMessage(art);
+  if (gate && !confirm(gate + '\n\nSave anyway?')) return;
 
   // wos35: read Draft checkbox state. Default to true for new art (private
   // WIP), false for existing pieces (preserve their published state).
