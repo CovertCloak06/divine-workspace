@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+Tibetan:wght@400;700&family=Noto+Sans+Symbols+2&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos100">
+  <link rel="stylesheet" href="style.css?v=wos101">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1485,13 +1485,14 @@
       <nav class="theme-tabs" id="theme-tabs" role="tablist" aria-label="Themes"></nav>
       <div class="search-row" style="color: rgb(191, 236, 206)">
         <input class="search-input" id="search" type="text" placeholder="Search art…" data-st-attr="placeholder" data-st="searchPlaceholder" autocomplete="off" style="border-width: 0px; padding: 12px 16px 12px 8px; margin: 4px; border-radius: 14px 14px 13px">
-        <!-- wos100: PUBLIC submission entry (was its own row below the controls)
-             now sits right of the search box, skinned with the ice-panel asset.
-             Visitors create art in the same editor; it publishes straight into
-             the gallery (adult site behind the 18+ gate), editable/deletable
-             only by this device (server-enforced owner token). -->
-        <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
       </div>
+      <!-- wos101: PUBLIC submission entry — grid column 2 of .controls-inner,
+           right of the search box AND the theme tabs, faced with the full
+           ice-panel asset. Visitors create art in the same editor; it
+           publishes straight into the gallery (adult site behind the 18+
+           gate), editable/deletable only by this device (server-enforced
+           owner token). -->
+      <button class="btn-submit-art" id="btn-submit-art">🎨 Submit your art</button>
       <div class="active-theme-row" id="active-theme-row" hidden>
         <button class="active-theme-chip" id="active-theme-chip" type="button" aria-label="Clear theme filter">
           <span class="active-theme-label" id="active-theme-label">all</span>
@@ -1774,7 +1775,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos100"></script>
+  <script src="app.js?v=wos101"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
