@@ -1164,24 +1164,8 @@ body.editor .export-bar { display: block; }
   overflow-wrap: anywhere;
   text-align: left;
 }
-/* wos106: characters the WoS chat font may not render — flagged inline */
-.wos-bad {
-  text-decoration: underline dotted rgba(220, 60, 60, 0.95) 2px;
-  text-underline-offset: 2px;
-  background: rgba(248, 113, 113, 0.18);
-  border-radius: 2px;
-}
-/* wos106: the lightbox risk banner under the game view */
-.lb-audit {
-  margin: 8px 0 0;
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: rgba(120, 60, 10, 0.35);
-  border: 1px solid rgba(255, 190, 90, 0.45);
-  color: #ffd9a0;
-  font-size: 12.5px;
-  line-height: 1.35;
-}
+/* wos109: no warning chrome on gallery art (per request) — .wos-bad and
+   .lb-audit removed. The game-true bubble render above stays. */
 /* ============ wos108: admin theme-tag manager ============ */
 /* The "✎ edit" tab only exists for the unlocked editor. */
 .manage-tab { display: none !important; }
@@ -1225,12 +1209,6 @@ body.editor .manage-tab:hover { opacity: 1; }
 .tagm-add .auth-input { flex: 1 1 auto; margin: 0; }
 .tagm-add .btn-ghost { flex: 0 0 auto; }
 
-/* wos106: risk-aware copy feedback — amber instead of the clean green */
-.copy-btn.copied-risk,
-.modal-copy.copied-risk {
-  background: linear-gradient(180deg, #e8a33d 0%, #c97f1f 100%) !important;
-  color: #2a1a02 !important;
-}
 .wos-preview pre .overflow {
   background: rgba(248, 113, 113, 0.22);
 }
@@ -4356,8 +4334,24 @@ body.editor .btn-add { display: block; }
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 6px;
-  /* scrollbar-width moved to the wos99 @supports-not-webkit guard — a bare
-   * declaration here would disable the custom webkit thumb in Chrome 121+. */
+  /* wos109: rails scroll with ice ARROWS (same as the theme tabs) — no
+   * scrollbar. Kill it here only; the universal ice scrollbar elsewhere
+   * (page, editor, drawers) is untouched. */
+  flex: 1 1 auto;
+  min-width: 0;
+  scrollbar-width: none;
+}
+.rail-scroll::-webkit-scrollbar { display: none; }
+/* wos109: flex row [arrow][rail][arrow], mirroring .theme-tabs-wrap (wos107).
+ * The shared .theme-tab-arrow rules provide the ice buttons, slot-keeper,
+ * and touch-hide; only the no-overflow collapse needs a rail twin. */
+.rail-scroll-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.rail-scroll-wrap:has(.rail-scroll[data-scroll="none"]) .theme-tab-arrow {
+  display: none !important;
 }
 .rail-card {
   flex: 0 0 auto;
@@ -4484,8 +4478,7 @@ body.editor .btn-add { display: block; }
   * {
     scrollbar-color: #2f7fae rgba(8, 22, 38, 0.85);
   }
-  .rail-scroll {
-    scrollbar-width: thin;
-  }
+  /* wos109: rails have no scrollbar at all — they scroll via the ice arrows
+   * (scrollbar-width: none lives on .rail-scroll itself). */
 }
 /* End wos101 */

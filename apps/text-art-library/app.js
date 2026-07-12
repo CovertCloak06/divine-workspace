@@ -284,12 +284,11 @@ function auditArt(text) {
 }
 
 /* ============ wos106  WoS game-truth helpers ============
- * The wife-report: pieces that look perfect in the app scramble or blank out
- * in the actual WoS chat message box. Root cause: the app's Noto webfonts
- * render glyph ranges the game's embedded font lacks, and the shrink-to-fit
- * preview hides over-wide lines that wrap in the real bubble. These helpers
- * give every surface (card chip, copy toast, lightbox banner, submit gates)
- * ONE verdict. */
+ * Pieces that look perfect in a capable webfont can scramble or blank out in
+ * the actual WoS chat message box. These helpers back the PUBLIC submission
+ * gate only (client + server): art that can't work in the game never enters
+ * the gallery. wos109: no warning chrome anywhere on gallery pieces — the
+ * gallery is curated/ready-to-go; the 🚩 bug report covers in-game failures. */
 
 // Unique out-of-whitelist graphemes in a piece of art. Plain spaces are
 // excluded — they're converted to NBSP on save/copy, never reach the game.
@@ -315,18 +314,7 @@ function wosFmtOffenders(offenders, max) {
   }).join('  ');
 }
 
-/* One verdict for a STORED piece. null = fine (or admin-verified in the real
- * game, which overrides the heuristics — the wife's in-game test is truth). */
-function pieceRisk(p) {
-  if (!p || p.wosVerified) return null;
-  const art = p.art || '';
-  const offenders = wosOffenders(art);
-  const width = wosClassifyWidth(art);
-  if (!offenders.length && width.level !== 'fail' && !p.wosRisk) return null;
-  return { offenders, width };
-}
-
-/* Human message for the save/submit gates. null = clean. */
+/* Human message for the public submit gate. null = clean. */
 function wosGateMessage(art) {
   const offenders = wosOffenders(art);
   const width = wosClassifyWidth(art);
@@ -340,28 +328,6 @@ function wosGateMessage(art) {
   return parts.length
     ? '⚠ This art may break in Whiteout Survival chat:\n\n• ' + parts.join('\n• ')
     : null;
-}
-
-/* Escaped HTML where each out-of-whitelist char is wrapped in a .wos-bad
- * span — the lightbox game view underlines exactly what the game may drop. */
-function wosHighlight(text) {
-  let html = '';
-  for (const g of graphemes(text || '')) {
-    if (g === '\n') { html += '\n'; continue; }
-    let bad = false;
-    if (g !== ' ') {
-      for (const ch of g) {
-        if (!isSafeCode(ch.codePointAt(0))) { bad = true; break; }
-      }
-    }
-    if (bad) {
-      const cp = g.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
-      html += `<span class="wos-bad" title="U+${cp} — the WoS chat font may not render this">${escapeHtml(g)}</span>`;
-    } else {
-      html += escapeHtml(g);
-    }
-  }
-  return html;
 }
 
 function debounce(fn, wait) {
@@ -1118,21 +1084,22 @@ async function saveTagsManager() {
   document.getElementById('tags-save')?.addEventListener('click', saveTagsManager);
 })();
 
-/* wos51: scroll the theme-tabs strip via click-drag, arrow buttons, mouse
-   wheel, or touch swipe — no visible scrollbar (per user). Injects a
-   .theme-tabs-wrap wrapper around the strip and prepends/appends arrow
-   buttons that only show when there is overflow on that side. */
-function attachThemeTabsScroll() {
-  const strip = els.themeTabs;
+/* wos51: scroll a horizontal strip via click-drag, arrow buttons, mouse
+   wheel, or touch swipe — no visible scrollbar (per user). Injects a wrapper
+   around the strip and prepends/appends ice-arrow buttons that only show
+   when there is overflow on that side.
+   wos109: generalized from the theme tabs — the New/Popular rails use the
+   SAME scroller (same .theme-tab-arrow ice buttons) instead of scrollbars. */
+function attachArrowScroller(strip, wrapClass, label) {
   if (!strip) return;
 
   // Ensure wrapper exists. Wrap the strip lazily on first run.
-  let wrap = strip.parentElement && strip.parentElement.classList.contains('theme-tabs-wrap')
+  let wrap = strip.parentElement && strip.parentElement.classList.contains(wrapClass)
     ? strip.parentElement
     : null;
   if (!wrap) {
     wrap = document.createElement('div');
-    wrap.className = 'theme-tabs-wrap';
+    wrap.className = wrapClass;
     strip.parentNode.insertBefore(wrap, strip);
     wrap.appendChild(strip);
   }
@@ -1144,7 +1111,7 @@ function attachThemeTabsScroll() {
     leftBtn = document.createElement('button');
     leftBtn.type = 'button';
     leftBtn.className = 'theme-tab-arrow left';
-    leftBtn.setAttribute('aria-label', 'Scroll themes left');
+    leftBtn.setAttribute('aria-label', `Scroll ${label} left`);
     /* wos106: the glossy ice arrow is the button's CSS background — no glyph. */
     wrap.insertBefore(leftBtn, strip);
   }
@@ -1152,7 +1119,7 @@ function attachThemeTabsScroll() {
     rightBtn = document.createElement('button');
     rightBtn.type = 'button';
     rightBtn.className = 'theme-tab-arrow right';
-    rightBtn.setAttribute('aria-label', 'Scroll themes right');
+    rightBtn.setAttribute('aria-label', `Scroll ${label} right`);
     wrap.appendChild(rightBtn);
   }
 
@@ -1235,9 +1202,15 @@ function attachThemeTabsScroll() {
   strip.addEventListener('wheel', onWheel, { passive: false });
   strip.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
+  // Content changes (re-render, unhide) need an end-state recompute.
+  strip._arrowsRecompute = onScroll;
 
   // Initial state — wait for layout.
   requestAnimationFrame(onScroll);
+}
+
+function attachThemeTabsScroll() {
+  attachArrowScroller(els.themeTabs, 'theme-tabs-wrap', 'themes');
 }
 
 function syncActiveThemeChip() {
@@ -1498,6 +1471,15 @@ function renderDiscovery() {
   if (railNew) railNew.hidden = !newList.length;
   if (railPop) railPop.hidden = !popList.length;
   wrap.hidden = !newList.length && !popList.length;
+  // wos109: rails scroll with the SAME ice arrows as the theme tabs (no
+  // scrollbar). The wrapper + arrows live OUTSIDE the .rail-scroll element,
+  // so the innerHTML re-render above never destroys them; after each
+  // populate, recompute the end-state so arrows show/hide correctly.
+  for (const rail of [newScroll, popScroll]) {
+    if (!rail) continue;
+    attachArrowScroller(rail, 'rail-scroll-wrap', 'rail');
+    if (rail._arrowsRecompute) requestAnimationFrame(rail._arrowsRecompute);
+  }
 }
 /* ============ end wos97 discovery rails ============ */
 
@@ -2285,7 +2267,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos108';
+const APP_VERSION = 'wos109';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2466,33 +2448,15 @@ function openLightbox(p) {
   els.lightbox.dataset.openId = p.id;
   els.lbTitle.textContent = p.title || 'Untitled';
   // wos106 GAME VIEW: render exactly like the WoS message box instead of
-  // shrinking to fit (shrinking hid the very overflow that breaks in game).
-  //  - the bubble is a fixed 17.5em column (--wos-cols, sampled in-game);
-  //  - lines wider than the bubble WRAP at glyph level (pre-wrap +
-  //    overflow-wrap:anywhere), just like the game — visibly scrambling here
-  //    instead of only on the wife's phone;
-  //  - characters outside the WoS-safe whitelist get a red underline.
+  // shrinking to fit — the bubble is a fixed 17.5em column (--wos-cols,
+  // sampled in-game) and lines wider than it WRAP at glyph level (pre-wrap +
+  // overflow-wrap:anywhere), just like the game.
+  // wos109: no warning chrome — gallery art is curated/ready-to-go; the 🚩
+  // bug-report flow covers anything that misbehaves in game.
   const artText = displayArt(p.art);
-  // Verified-in-game pieces skip the underlines — the wife's real-game test
-  // outranks the whitelist heuristic.
-  if (p.wosVerified) els.lbPre.textContent = artText;
-  else els.lbPre.innerHTML = wosHighlight(artText);
+  els.lbPre.textContent = artText;
   const m = measure(artText);
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
-  const audit = document.getElementById('lb-audit');
-  if (audit) {
-    const risk = pieceRisk(p);
-    if (risk) {
-      const bits = [];
-      if (risk.width.level === 'fail') bits.push(`wider than the chat bubble (${risk.width.width.toFixed(1)}/${WOS_HARD_LIMIT} cols — it wraps below exactly like in game)`);
-      if (risk.offenders.length) bits.push(`${risk.offenders.length} character${risk.offenders.length === 1 ? '' : 's'} the game font may not render (underlined in red)`);
-      if (!bits.length) bits.push('marked risky — test in game before sharing');
-      audit.textContent = '⚠ May break in WoS chat: ' + bits.join(' · ');
-      audit.hidden = false;
-    } else {
-      audit.hidden = true;
-    }
-  }
   els.lbPills.innerHTML = '';
   for (const t of (p.tags || [])) {
     const c = document.createElement('span');
@@ -2657,18 +2621,12 @@ async function copyArt(text, btn, isLightbox, id) {
     ta.remove();
   }
   const original = isLightbox ? '📋 Copy to Clipboard' : '📋 Copy';
-  // wos106: risk-aware toast — copying stays allowed (player's choice), but a
-  // flagged piece says so right on the button instead of a clean "Copied!".
-  const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
-  const piece = id ? lib.find((q) => q && q.id === id) : null;
-  const risky = piece ? pieceRisk(piece) : null;
   btn.classList.add('copied');
-  if (risky) btn.classList.add('copied-risk');
-  btn.textContent = risky ? '⚠ Copied — test in game' : '✓︎ Copied!';
+  btn.textContent = '✓︎ Copied!';
   setTimeout(() => {
-    btn.classList.remove('copied', 'copied-risk');
+    btn.classList.remove('copied');
     btn.textContent = original;
-  }, risky ? 2400 : 1400);
+  }, 1400);
 }
 
 /* ============ 09  Share bar ============ */
@@ -4547,14 +4505,12 @@ async function commitSubmit() {
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
 
-  // wos106: WoS-safety gate. Public submissions that would scramble or blank
-  // out in the game are blocked outright (the server enforces the same rule);
-  // the admin editor gets a confirm instead — she can test in game and mark
-  // the piece Verified to clear the warnings.
-  const gate = wosGateMessage(art);
-  if (gate) {
-    if (!state.editor) { alert(gate + '\n\nFix the art and try again.'); return; }
-    if (!confirm(gate + '\n\nPublish anyway?')) return;
+  // wos106/109: gallery art must work in the game — public submissions that
+  // would scramble or blank out are blocked outright (the server enforces the
+  // same rule). The admin is exempt: she tests in the real game.
+  if (!state.editor) {
+    const gate = wosGateMessage(art);
+    if (gate) { alert(gate + '\n\nFix the art and try again.'); return; }
   }
 
   const piece = {
@@ -4685,11 +4641,6 @@ async function commitSave() {
   // trailing whitespace can carry intentional horizontal padding.
   art = trimTrailingBlankRows(art);
   const { width, height } = measure(art);
-
-  // wos106: WoS-safety gate for the admin editor — confirm, never hard-block
-  // (she may be intentionally saving something she'll verify in game).
-  const gate = wosGateMessage(art);
-  if (gate && !confirm(gate + '\n\nSave anyway?')) return;
 
   // wos35: read Draft checkbox state. Default to true for new art (private
   // WIP), false for existing pieces (preserve their published state).
