@@ -1849,15 +1849,37 @@ function buildDayBars(byDay) {
   return days.map((x) => {
     const h = Math.round((x.n / maxN) * 46);
     const label = x.d.slice(5); // MM-DD
-    return `<div class="an-bar" title="${x.d}: ${x.n}"><span class="an-bar-fill" style="height:${h}px"></span><span class="an-bar-n">${x.n || ''}</span><span class="an-bar-d">${label}</span></div>`;
+    // wos104: each bar is a drill-down target (date lives in data-date).
+    return `<div class="an-bar" role="button" tabindex="0" data-date="${x.d}" title="${x.d}: ${x.n}"><span class="an-bar-fill" style="height:${h}px"></span><span class="an-bar-n">${x.n || ''}</span><span class="an-bar-d">${label}</span></div>`;
   }).join('');
 }
+
+// wos104: cumulative unique devices through each of the last 14 days, derived
+// from the new-devices-per-day series (ISO date strings sort lexically, so
+// `k <= dstr` is a valid "on or before" test). No new server data needed.
+function cumulativeUniquesByDay(newByDay) {
+  const out = {};
+  const today = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const dstr = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
+    let sum = 0;
+    for (const k in newByDay) { if (k <= dstr) sum += newByDay[k] || 0; }
+    out[dstr] = sum;
+  }
+  return out;
+}
+
+// wos104: retained so the inline drill-down can read the last-loaded stats.
+let analyticsStats = null;
 
 function renderAnalytics(stats) {
   const contentEl = document.getElementById('analytics-content');
   if (!contentEl) return;
+  analyticsStats = stats; // wos104
   const bars = buildDayBars(stats.visitsByDay || {});
   const newDevBars = buildDayBars(stats.newDevicesByDay || {});
+  const cumBars = buildDayBars(cumulativeUniquesByDay(stats.newDevicesByDay || {})); // wos104
+  const copyBars = buildDayBars(stats.copiesByDay || {}); // wos104
 
   // Resolve titles for the most-copied pieces from the loaded library.
   const lib = (state.merged && state.merged.length ? state.merged : state.library) || [];
@@ -1872,13 +1894,15 @@ function renderAnalytics(stats) {
 
   // wos98: top returning devices. Ids are opaque random strings — show a short
   // recognizable prefix. This device is starred so the admin can spot herself.
+  // wos104: each row is a drill-down target; the star is a separate badge so
+  // it can never be clipped by the title's ellipsis.
   const myDev = (() => { try { return localStorage.getItem(DEVICE_ID_KEY); } catch { return null; } })();
   const devs = (stats.topDevices || []).slice(0, 10);
   const devRows = devs.length
     ? devs.map((d, i) => {
         const mine = myDev && d.id === myDev;
-        const label = 'Device ' + String(d.id).slice(1, 7) + (mine ? ' ★ (this device)' : '');
-        return `<li><span class="an-rank">${i + 1}</span><span class="an-title">${escapeHtml(label)}</span><span class="an-count">${d.n} visit${d.n === 1 ? '' : 's'}</span></li>`;
+        const label = 'Device ' + String(d.id).slice(1, 7);
+        return `<li data-device-id="${escapeHtml(String(d.id))}" role="button" tabindex="0"><span class="an-rank">${i + 1}</span><span class="an-title" title="${escapeHtml(label)}">${escapeHtml(label)}</span>${mine ? '<span class="an-badge">★ this device</span>' : ''}<span class="an-count">${d.n} visit${d.n === 1 ? '' : 's'}</span></li>`;
       }).join('')
     : '<li class="an-empty">No device visits recorded yet.</li>';
 
@@ -1888,14 +1912,88 @@ function renderAnalytics(stats) {
       <div class="an-total"><span class="an-total-n">${stats.copyTotal || 0}</span><span class="an-total-l">total copies</span></div>
       <div class="an-total"><span class="an-total-n">${stats.devicesTotal || 0}</span><span class="an-total-l">unique devices</span></div>
     </div>
+    <div class="an-hint">Tip: tap any day or device below for a breakdown.</div>
     <div class="an-section-label">Visits · last 14 days</div>
     <div class="an-chart">${bars}</div>
+    <div class="an-section-label">Unique devices · cumulative</div>
+    <div class="an-chart">${cumBars}</div>
     <div class="an-section-label">New devices · last 14 days</div>
     <div class="an-chart">${newDevBars}</div>
+    <div class="an-section-label">Copies · last 14 days</div>
+    <div class="an-chart">${copyBars}</div>
+    <div id="an-drill" class="an-drill" hidden></div>
     <div class="an-section-label">Top returning devices</div>
     <ol class="an-top">${devRows}</ol>
     <div class="an-section-label">Most-copied art</div>
     <ol class="an-top">${rows}</ol>`;
+
+  wireAnalyticsDrill(); // wos104 (idempotent — wires the delegated listener once)
+}
+
+// wos104: inline drill-down. One delegated listener on the (persistent)
+// #analytics-content element; the #an-drill block is rebuilt with each render.
+function wireAnalyticsDrill() {
+  const contentEl = document.getElementById('analytics-content');
+  if (!contentEl || contentEl._drillWired) return;
+  contentEl._drillWired = true;
+  const handler = (e) => {
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    const bar = e.target.closest('[data-date]');
+    const dev = e.target.closest('[data-device-id]');
+    if (!bar && !dev) return;
+    if (e.type === 'keydown') e.preventDefault();
+    if (bar) showDateDrill(bar.getAttribute('data-date'));
+    else showDeviceDrill(dev.getAttribute('data-device-id'));
+  };
+  contentEl.addEventListener('click', handler);
+  contentEl.addEventListener('keydown', handler);
+}
+
+function anDrillRow(k, v) {
+  return `<div class="an-drill-row"><span>${escapeHtml(String(k))}</span><span>${escapeHtml(String(v))}</span></div>`;
+}
+
+function showDateDrill(date) {
+  const drill = document.getElementById('an-drill');
+  if (!drill || !analyticsStats || !date) return;
+  if (drill.dataset.key === 'date:' + date && !drill.hidden) { drill.hidden = true; drill.dataset.key = ''; return; }
+  const s = analyticsStats;
+  const visits = (s.visitsByDay || {})[date] || 0;
+  const newDev = (s.newDevicesByDay || {})[date] || 0;
+  const copies = (s.copiesByDay || {})[date] || 0;
+  let cum = 0;
+  const nbd = s.newDevicesByDay || {};
+  for (const k in nbd) { if (k <= date) cum += nbd[k] || 0; }
+  drill.innerHTML = `<div class="an-drill-h">${escapeHtml(date)}</div>`
+    + anDrillRow('Visits', visits)
+    + anDrillRow('New devices', newDev)
+    + anDrillRow('Copies', copies)
+    + anDrillRow('Unique devices through this day', cum);
+  drill.dataset.key = 'date:' + date;
+  drill.hidden = false;
+  drill.scrollIntoView({ block: 'nearest' });
+}
+
+function showDeviceDrill(id) {
+  const drill = document.getElementById('an-drill');
+  if (!drill || !analyticsStats || !id) return;
+  if (drill.dataset.key === 'dev:' + id && !drill.hidden) { drill.hidden = true; drill.dataset.key = ''; return; }
+  const d = (analyticsStats.topDevices || []).find((x) => x.id === id);
+  if (!d) return;
+  let myDev = null; try { myDev = localStorage.getItem(DEVICE_ID_KEY); } catch { myDev = null; }
+  const label = 'Device ' + String(id).slice(1, 7) + (myDev && id === myDev ? ' ★' : '');
+  let body = anDrillRow('Total visits', d.n);
+  if (d.first) body += anDrillRow('First seen', d.first);
+  if (d.last) body += anDrillRow('Last seen', d.last);
+  if (d.first && d.last) {
+    const span = Math.round((Date.parse(d.last) - Date.parse(d.first)) / 86400000) + 1;
+    if (Number.isFinite(span) && span > 0) body += anDrillRow('Activity window', span + ' day' + (span === 1 ? '' : 's'));
+  }
+  if (!d.first && !d.last) body += anDrillRow('Activity window', 'not recorded (seen before this was tracked)');
+  drill.innerHTML = `<div class="an-drill-h">${escapeHtml(label)}</div>` + body;
+  drill.dataset.key = 'dev:' + id;
+  drill.hidden = false;
+  drill.scrollIntoView({ block: 'nearest' });
 }
 
 const analyticsRefreshBtn = document.getElementById('analytics-refresh');
@@ -1908,7 +2006,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos103';
+const APP_VERSION = 'wos104';
 
 function captureFeedbackContext() {
   let editorState = 'locked';

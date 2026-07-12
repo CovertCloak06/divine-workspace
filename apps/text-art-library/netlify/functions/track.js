@@ -4,7 +4,10 @@
 //            wos98: with a device id, also bumps stat/device/<id> (visits by
 //            that device) and — the first time a device is ever seen —
 //            stat/device-total + stat/new-device-day/<UTC-date>.
+//            wos104: also maintains stat/device-meta/<id> = {first,last} UTC
+//            dates so the admin panel can show a device's activity window.
 //   copy  -> bumps stat/copy/<id> + stat/copy-total
+//            wos104: also bumps stat/copy-day/<UTC-date> (copies-per-day series)
 //
 // Counters are anonymous aggregate numbers only — no IPs, no fingerprints, no
 // per-user data. The device id is a client-minted random opaque string; it
@@ -64,16 +67,26 @@ export const handler = async (event) => {
         ? body.device : null;
       if (device) {
         const devKey = `stat/device/${device}`;
+        const metaKey = `stat/device-meta/${device}`;
+        const today = utcDay();
         const cur = await store.get(devKey);
         if (cur === null) {
           const total = parseInt(await store.get('stat/device-total'), 10) || 0;
           if (total < MAX_DEVICES) {
             await store.set(devKey, '1');
             await store.set('stat/device-total', String(total + 1));
-            await bump(store, `stat/new-device-day/${utcDay()}`);
+            await bump(store, `stat/new-device-day/${today}`);
+            // wos104: open this device's activity window (first == last today).
+            await store.set(metaKey, JSON.stringify({ first: today, last: today }));
           }
         } else {
           await store.set(devKey, String((parseInt(cur, 10) || 0) + 1));
+          // wos104: refresh last-seen. Tolerate legacy devices (pre-wos104)
+          // that have no meta yet — seed first from today in that case.
+          let meta = null;
+          try { meta = JSON.parse(await store.get(metaKey)); } catch { meta = null; }
+          const first = meta && meta.first ? meta.first : today;
+          await store.set(metaKey, JSON.stringify({ first, last: today }));
         }
       }
       return ok();
@@ -86,6 +99,7 @@ export const handler = async (event) => {
       }
       await bump(store, `stat/copy/${id}`);
       await bump(store, 'stat/copy-total');
+      await bump(store, `stat/copy-day/${utcDay()}`); // wos104: copies-per-day series
       return ok();
     }
 

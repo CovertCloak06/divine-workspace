@@ -227,9 +227,17 @@ input, textarea { font-family: inherit; }
 .search-row {
   margin-bottom: 12px;
   grid-area: search;
+  /* wos104: grid items default to min-width:auto, which here is the input's
+     intrinsic (~default size) width — that stopped the search cell shrinking
+     and let the field overrun the Submit button on phones. Allow it to shrink. */
+  min-width: 0;
 }
 .search-input {
   width: 100%;
+  /* wos104: no longer edge-to-edge — cap to a comfortable typing width and
+     let it left-align in grid column 1. Stays fluid below the cap on phones,
+     where the field shares its row with the Submit button. */
+  max-width: 380px;
   background: #ffffff;
   border: 2px solid var(--btn-edge);
   border-radius: 14px;
@@ -3869,6 +3877,27 @@ html.gate-open, html.gate-open body { overflow: hidden !important; }
 .an-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-count { flex: 0 0 auto; font-weight: 800; color: #7fe0a6; }
 .an-empty { color: #8aa8c8; font-style: italic; }
+/* wos104: starred-device badge (kept OUT of the ellipsized .an-title so the
+   full "★ this device" is never clipped), drill-down affordances + detail. */
+.an-hint { font-size: 10.5px; color: #7fa6cc; margin: 2px 0 8px; font-style: italic; }
+.an-badge { flex: 0 0 auto; white-space: nowrap; font-size: 11px; font-weight: 700; color: #ffd27f; }
+.an-bar { cursor: pointer; border-radius: 4px; }
+.an-bar:hover .an-bar-fill,
+.an-bar:focus-visible .an-bar-fill { filter: brightness(1.2); box-shadow: 0 0 8px rgba(96, 206, 255, 0.7); }
+.an-bar:focus-visible { outline: 2px solid rgba(120, 200, 255, 0.7); outline-offset: 1px; }
+.an-top li[data-device-id] { cursor: pointer; }
+.an-top li[data-device-id]:hover { background: rgba(74, 159, 212, 0.22); }
+.an-top li[data-device-id]:focus-visible { outline: 2px solid rgba(120, 200, 255, 0.7); outline-offset: -2px; }
+.an-drill {
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(12, 30, 54, 0.7);
+  border: 1px solid rgba(150, 220, 255, 0.28);
+}
+.an-drill-h { font-size: 12.5px; font-weight: 800; color: #dcedff; margin-bottom: 6px; }
+.an-drill-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: #cfe1f4; padding: 2px 0; }
+.an-drill-row span:last-child { font-weight: 700; color: #9fe0ff; }
 .analytics-refresh {
   margin-top: 12px;
   width: 100%;

@@ -1,6 +1,8 @@
 // Frostline — GET /get-stats  (ADMIN ONLY; Bearer = editor password)
 // Returns { visitsByDay: {date:n}, visitsTotal, topCopied: [{id,n}], copyTotal,
-//           devicesTotal, newDevicesByDay: {date:n}, topDevices: [{id,n}] }
+//           copiesByDay: {date:n},                                    // wos104
+//           devicesTotal, newDevicesByDay: {date:n},
+//           topDevices: [{id, n, first?, last?}] }                    // wos104 first/last
 //
 // Private analytics for the editor drawer — never exposed publicly. All numbers
 // are anonymous aggregates written by /track; device ids are opaque random
@@ -36,6 +38,14 @@ export const handler = async (event) => {
     }));
     topCopied.sort((a, b) => b.n - a.n);
 
+    // wos104: copies per day (mirrors visit-day; powers the copies-over-time chart)
+    const copiesByDay = {};
+    const { blobs: copyDayBlobs } = await store.list({ prefix: 'stat/copy-day/' });
+    await Promise.all((copyDayBlobs || []).map(async ({ key }) => {
+      const date = key.slice('stat/copy-day/'.length);
+      copiesByDay[date] = parseInt(await store.get(key), 10) || 0;
+    }));
+
     // wos98: new devices per day (first-ever sighting of a device id)
     const newDevicesByDay = {};
     const { blobs: newDevBlobs } = await store.list({ prefix: 'stat/new-device-day/' });
@@ -53,6 +63,16 @@ export const handler = async (event) => {
       topDevices.push({ id, n: parseInt(await store.get(key), 10) || 0 });
     }));
     topDevices.sort((a, b) => b.n - a.n);
+    const topDevicesSliced = topDevices.slice(0, 25);
+    // wos104: attach each top device's activity window (first/last seen). Only
+    // the sliced top 25 are read, so the fan-out stays bounded. Legacy devices
+    // (seen before wos104) simply have no meta and omit first/last.
+    await Promise.all(topDevicesSliced.map(async (d) => {
+      try {
+        const meta = JSON.parse(await store.get(`stat/device-meta/${d.id}`));
+        if (meta && meta.first) { d.first = meta.first; d.last = meta.last || meta.first; }
+      } catch { /* no meta for this device */ }
+    }));
 
     const visitsTotal = parseInt(await store.get('stat/visit-total'), 10) || 0;
     const copyTotal = parseInt(await store.get('stat/copy-total'), 10) || 0;
@@ -63,8 +83,8 @@ export const handler = async (event) => {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       body: JSON.stringify({
         visitsByDay, visitsTotal,
-        topCopied: topCopied.slice(0, 25), copyTotal,
-        devicesTotal, newDevicesByDay, topDevices: topDevices.slice(0, 25),
+        topCopied: topCopied.slice(0, 25), copyTotal, copiesByDay,
+        devicesTotal, newDevicesByDay, topDevices: topDevicesSliced,
       }),
     };
   } catch (err) {
