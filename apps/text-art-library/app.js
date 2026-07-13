@@ -1646,9 +1646,17 @@ function artFrozenPreview(p, mode) {
   wrap._fit = () => {
     const host = wrap.parentElement;
     if (!host || !wrap.isConnected) return;
+    // Neutralize our own footprint FIRST: a shrink-wrapping host (the
+    // lightbox #lb-pre) takes its size from this wrapper, so a refit that
+    // measured the host with the previous fit still applied could only
+    // ever shrink (Codex P2 on PR #55 — rotate-to-landscape never grew
+    // the preview back). With the wrapper collapsed, shrink-wrap hosts
+    // read 0 and the climb below finds the REAL container fresh.
+    wrap.style.width = '';
+    wrap.style.height = '';
+    pre.style.transform = 'none';
     // Width comes from the nearest SIZED ancestor: shrink-wrapping hosts
-    // (the lightbox #lb-pre) collapse to 0 until we size the wrapper —
-    // chicken-and-egg — so climb to the first ancestor with real width.
+    // collapse to 0 — climb to the first ancestor with real width.
     let box = host;
     while (box && box.clientWidth <= 0) box = box.parentElement;
     if (!box) return;
@@ -1658,8 +1666,7 @@ function artFrozenPreview(p, mode) {
     // (card/rail/thumb boxes); shrink-wrapping hosts grow with the art.
     const hcs = getComputedStyle(host);
     const bh = host.clientHeight - (parseFloat(hcs.paddingTop) + parseFloat(hcs.paddingBottom));
-    // natural size at the fixed reference metrics
-    pre.style.transform = 'none';
+    // natural size at the fixed reference metrics (transform already reset)
     const nw = pre.scrollWidth || pre.offsetWidth;
     const nh = pre.scrollHeight || pre.offsetHeight;
     if (nw <= 0 || nh <= 0 || bw <= 0) return;
