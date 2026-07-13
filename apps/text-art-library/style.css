@@ -1,5 +1,15 @@
 /* Frostline — main stylesheet */
 
+/* wos115: the deterministic art font — see --art-font below. One file, one
+ * set of metrics, every device. Registered for 400-700 so no synthesis. */
+@font-face {
+  font-family: 'Frostline Art';
+  src: url('assets/frostline-art.woff2?v=wos115') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* INVERTED palette: page = light ice blue, cards/chrome = dark navy. */
   --bg: #394856;            /* page bg — Design System 7 dark default; matches the saved theme so the page doesn't flash light→dark before the tweaks engine loads */
@@ -50,14 +60,17 @@
 
   /* The single art font stack — applied to EVERY art surface (card, lightbox,
      editor canvas, sketch grid) so they render identically.
-     wos106: the exotic Noto fallbacks (CJK JP, KR, Tibetan, Symbols 2) are
-     GONE. They covered glyph ranges the game's embedded font does NOT — the
-     exact reason pieces looked perfect in-app and blanked/scrambled in the
-     real WoS chat. The stack now approximates the game: Roboto + Noto Sans
-     (Latin) + Noto Color Emoji. Characters beyond that fall to the device's
-     system fonts AND get flagged by the WoS-safety audit (red underline in
-     the lightbox game view, ⚠ chip on the card, submit gate). */
-  --art-font: 'Roboto', 'Noto Sans', 'Noto Color Emoji', system-ui, sans-serif;
+     wos115: 'Frostline Art' is a SELF-HOSTED subset of Noto Sans CJK JP Bold
+     (assets/frostline-art.woff2, 13k glyphs: ASCII/Latin-1, spaces, box
+     drawing + blocks + geometric, symbols/dingbats, kana, fullwidth, Hangul,
+     every codepoint the library uses). This family is the metric truth the
+     art was balanced against: box glyphs and ideographic spaces are EXACTLY
+     1em, NBSP 0.227em, Latin proportional — the same ratios as the game's
+     CJK font, so rows that align in game align here, identically on every
+     device (no more per-device fallback roulette; that was the misalignment
+     root cause). Color emoji (U+1F000+) are excluded from the subset and
+     fall through to the emoji fonts. */
+  --art-font: 'Frostline Art', 'Roboto', 'Noto Sans', 'Noto Color Emoji', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
