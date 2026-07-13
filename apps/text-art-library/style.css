@@ -4300,52 +4300,29 @@ body.editor .btn-add { display: block; }
 /* ============================================================================
  * wos97 — art-report dialog + discovery rails.
  * ========================================================================== */
-/* --- report dialog (inherits the auth-modal frame) --- */
-.report-art-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 0 0 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* wos113: report-dialog CSS removed — the card 🚩 is one-tap flag+report. */
+
+/* ============ wos113: bitmap previews ============
+ * Art previews are PNG bitmaps rendered once at fixed reference metrics —
+ * scaling the image can never re-flow characters, so cards/rails/thumbs/
+ * lightbox match the editor's rendering exactly at every size. */
+img.art-bmp {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.report-reasons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+/* the lightbox bubble holds the wrap-mode bitmap; neutralize the text-mode
+ * em-based column width when a bitmap is present */
+.wos-preview pre.has-bmp {
+  width: auto;
+  max-width: 100%;
+  white-space: normal;
 }
-.report-reason {
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 12.5px;
-  font-weight: 700;
-  background: rgba(12, 30, 54, 0.6);
-  color: #c6dcef;
-  border: 1px solid rgba(150, 220, 255, 0.3);
-  cursor: pointer;
-}
-.report-reason:hover { filter: brightness(1.15); }
-.report-reason.selected {
-  background: linear-gradient(180deg, #5db4ea 0%, #2f7fc0 100%);
-  color: #06263f;
-  border-color: rgba(190, 232, 255, 0.6);
-}
-.report-details {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(150, 220, 255, 0.3);
-  background: rgba(6, 16, 30, 0.6);
-  color: #eaf4ff;
-  font-family: inherit;
-  font-size: 12.5px;
-  resize: vertical;
-  margin-bottom: 10px;
-}
-.report-details:focus { outline: 2px solid #4a9fd4; outline-offset: 1px; }
+
 
 /* --- discovery rails --- */
 .discovery {

@@ -1358,17 +1358,23 @@ function renderRailCard(p, badge) {
   tile.dataset.id = p.id;
   const prev = document.createElement('div');
   prev.className = 'rail-preview';
-  const pre = document.createElement('pre');
-  pre.className = 'art-render';
-  pre.textContent = displayArt(p.art);
-  prev.appendChild(pre);
+  const railImg = artBitmapImg(p, 'flat');   // wos113: bitmap preview
+  if (railImg) {
+    prev.appendChild(railImg);
+  } else {
+    const pre = document.createElement('pre');
+    pre.className = 'art-render';
+    pre.textContent = displayArt(p.art);
+    prev.appendChild(pre);
+  }
   tile.appendChild(prev);
   const name = document.createElement('div');
   name.className = 'rail-name';
   name.textContent = (badge ? badge + ' ' : '') + (p.title || 'Untitled');
   tile.appendChild(name);
   tile.addEventListener('click', () => openLightbox(p));
-  requestAnimationFrame(() => fitArt(prev, pre, 10, { height: true }));
+  const railPre = prev.querySelector('pre.art-render');
+  if (railPre) requestAnimationFrame(() => fitArt(prev, railPre, 10, { height: true }));
   return tile;
 }
 function renderDiscovery() {
@@ -1502,23 +1508,21 @@ function renderCard(p) {
   }
   card.appendChild(head);
 
-  // preview
+  // preview — wos113: a BITMAP of the art (pixel-identical at every scale);
+  // <pre> + fitArt only as fallback when canvas is unavailable.
   const prev = document.createElement('div');
   prev.className = 'preview';
-  const pre = document.createElement('pre');
-  pre.className = 'art-render';
-  pre.textContent = displayArt(p.art);
-  prev.appendChild(pre);
+  const img = artBitmapImg(p, 'flat');
+  if (img) {
+    prev.appendChild(img);
+  } else {
+    const pre = document.createElement('pre');
+    pre.className = 'art-render';
+    pre.textContent = displayArt(p.art);
+    prev.appendChild(pre);
+    requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
+  }
   card.appendChild(prev);
-
-  // wos86: the art renders RIGID (white-space: pre — it never wraps), then
-  // fitArt scales the whole block to fit. So the ⚠ badge can no longer mean
-  // "wrapped in preview" (impossible now); it means "wider than the WoS bubble"
-  // — i.e. this piece WILL wrap in the game. Decide that from the true unwrapped
-  // width at base size, then scale the picture down to fit the card.
-  // wos107: the card shows no risk verdict — just fit the art to the tile.
-  // (The WoS-risk verdict lives in the lightbox game view / copy toast.)
-  requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
 
   // chips
   if (p.tags && p.tags.length) {
@@ -1597,7 +1601,7 @@ function renderCard(p) {
     //            piece attached AND flags it in one gesture)
     if (state.editor) { toggleFlag(p, card, box, flag, note); return; }
     if (p.id in state.flags) { showToast('Already reported — thank you'); return; }
-    openReportDialog(p);
+    quickReportArt(p);   // wos113: one tap = instant flag + auto bug report
   });
   footer.appendChild(flag);
 
@@ -1630,6 +1634,98 @@ function fitArt(container, pre, base, { height = false } = {}) {
   if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
 
+/* ============ wos113: bitmap previews ============
+ * Previews used to scale TEXT to fractional font sizes, and proportional
+ * glyph advances round differently at every size — so cards/lightbox drifted
+ * while the fixed-size editor stayed perfect. Now each piece renders ONCE to
+ * a canvas at fixed reference metrics (the editor's) and every preview shows
+ * the BITMAP scaled. A bitmap cannot re-flow characters, so alignment is
+ * identical at every display size.
+ *   mode 'flat' — each authored line as one run (cards / rails / thumbs)
+ *   mode 'wrap' — game-bubble wrap at --wos-cols em (the lightbox game view)
+ * PNG data-URLs are cached per (id, art, mode); the cache clears when the
+ * webfonts finish loading (metrics change). Any failure → null, and callers
+ * fall back to the old <pre class="art-render"> + fitArt path. */
+const ART_BMP_REF = 20;      // reference font px (the lightbox max)
+const ART_BMP_SCALE = 2;     // supersample for crisp downscales
+const ART_BMP_MAX = 4096;    // canvas axis cap
+const artBmpCache = new Map();
+
+function artRootProp(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+function artFontString(px) {
+  return '700 ' + px + 'px ' + artRootProp('--art-font', "'Roboto','Noto Sans','Noto Color Emoji',system-ui,sans-serif");
+}
+
+function artBitmapURL(p, mode) {
+  const art = displayArt(p.art || '');
+  if (!art) return null;
+  const key = p.id + '\u0000' + mode + '\u0000' + art;
+  const hit = artBmpCache.get(key);
+  if (hit) return hit;
+  try {
+    const c = document.createElement('canvas');
+    const ctx = c.getContext('2d');
+    if (!ctx) return null;
+    const ref = ART_BMP_REF;
+    ctx.font = artFontString(ref);
+    const lineH = (parseFloat(artRootProp('--art-line-height', '1.3')) || 1.3) * ref;
+    const bubbleW = (parseFloat(artRootProp('--wos-cols', '17.5')) || 17.5) * ref;
+
+    // Render lines; 'wrap' reproduces the game bubble's glyph-level wrap
+    // (pre-wrap + overflow-wrap:anywhere semantics).
+    const lines = [];
+    for (const line of art.split('\n')) {
+      if (mode !== 'wrap' || !line || ctx.measureText(line).width <= bubbleW) {
+        lines.push(line);
+        continue;
+      }
+      let cur = '';
+      for (const g of graphemes(line)) {
+        if (cur && ctx.measureText(cur + g).width > bubbleW) { lines.push(cur); cur = g; }
+        else cur += g;
+      }
+      if (cur) lines.push(cur);
+    }
+
+    let maxW = 0;
+    for (const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
+    const cssW = mode === 'wrap' ? bubbleW : Math.max(1, Math.ceil(maxW));
+    const cssH = Math.max(1, Math.ceil(lines.length * lineH));
+    const scale = Math.min(ART_BMP_SCALE, ART_BMP_MAX / cssW, ART_BMP_MAX / cssH);
+    c.width = Math.max(1, Math.round(cssW * scale));
+    c.height = Math.max(1, Math.round(cssH * scale));
+    ctx.scale(scale, scale);
+    ctx.font = artFontString(ref);   // context resets on resize
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = artRootProp('--wos-ink', '#1a6614');
+    lines.forEach((l, i) => { if (l) ctx.fillText(l, 0, (i + 0.5) * lineH); });
+    const out = { url: c.toDataURL('image/png'), w: cssW, h: cssH };
+    artBmpCache.set(key, out);
+    return out;
+  } catch { return null; }
+}
+
+// <img> preview for a piece; null → caller keeps the <pre> fallback.
+function artBitmapImg(p, mode) {
+  const bmp = artBitmapURL(p, mode);
+  if (!bmp) return null;
+  const img = document.createElement('img');
+  img.src = bmp.url;
+  img.alt = p.title || 'text art';
+  img.className = 'art-bmp';
+  img.decoding = 'async';
+  img.draggable = false;
+  img.dataset.w = bmp.w;
+  img.dataset.h = bmp.h;
+  // Never upscale past the design size — only shrink to fit the box.
+  img.style.maxWidth = 'min(100%, ' + bmp.w + 'px)';
+  img.style.maxHeight = '100%';
+  return img;
+}
+
 // wos86: re-fit every rigid art block when its container can change size — the
 // grid reflows columns on viewport resize / orientation change, and a rigid
 // (non-wrapping) block must be re-scaled to keep fitting. Debounced so a drag-
@@ -1657,6 +1753,14 @@ function refitAllArt() {
 function sizeLightboxGameView() {
   if (!els.lbPre || !els.lbPre.parentElement) return;
   const box = els.lbPre.parentElement;
+  const img = els.lbPre.querySelector('img.art-bmp');
+  if (img) {
+    // wos113: scale the BITMAP to the modal (never above its design size —
+    // that is the same 20px-max the text view used).
+    const design = parseFloat(img.dataset.w) || 350;
+    img.style.width = Math.max(120, Math.min(design, box.clientWidth - 24)) + 'px';
+    return;
+  }
   const fs = Math.max(9, Math.min(20, Math.floor(box.clientWidth / 19)));
   els.lbPre.style.fontSize = fs + 'px';
 }
@@ -1671,7 +1775,20 @@ window.addEventListener('resize', () => {
 // instead of staying sized for the fallback font (avoids a slightly-off scale
 // on first paint / cold cache).
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(() => { try { refitAllArt(); } catch {} });
+  document.fonts.ready.then(() => {
+    try {
+      // wos113: webfont metrics differ from the fallback font — throw away
+      // any bitmaps rendered before the fonts arrived and re-image everything.
+      artBmpCache.clear();
+      if (state.booted) render();
+      if (els.lightbox && els.lightbox.classList.contains('open')) {
+        const id = els.lightbox.dataset.openId;
+        const p = (state.merged || []).find((q) => q && q.id === id);
+        if (p) openLightbox(p);
+      }
+      refitAllArt();   // fallback <pre> surfaces (canvas-less browsers)
+    } catch {}
+  });
 }
 
 /* ============ 06  Filtering + search ============ */
@@ -2071,6 +2188,8 @@ function renderAnalytics(stats) {
   contentEl.querySelectorAll('.an-thumb[data-thumb]').forEach((box) => {
     const p = lib.find((q) => q && q.id === box.getAttribute('data-thumb'));
     if (!p || !p.art) { box.textContent = '?'; return; }
+    const img = artBitmapImg(p, 'flat');   // wos113: bitmap thumb
+    if (img) { box.appendChild(img); return; }
     const pre = document.createElement('pre');
     pre.className = 'art-render';
     pre.textContent = displayArt(p.art);
@@ -2176,9 +2295,15 @@ function showPieceDrill(id) {
   drill.innerHTML = `<div class="an-drill-h">${escapeHtml(p ? (p.title || id) : id)}</div>` + body;
   if (p) {
     const box = drill.querySelector('.an-drill-prev');
-    const pre = box.querySelector('pre');
-    pre.textContent = displayArt(p.art || '');
-    requestAnimationFrame(() => fitArt(box, pre, 14, { height: true }));
+    const dimg = artBitmapImg(p, 'flat');   // wos113: bitmap preview
+    if (dimg) {
+      box.textContent = '';
+      box.appendChild(dimg);
+    } else {
+      const pre = box.querySelector('pre');
+      pre.textContent = displayArt(p.art || '');
+      requestAnimationFrame(() => fitArt(box, pre, 14, { height: true }));
+    }
   }
   drill.dataset.key = 'piece:' + id;
   drill.hidden = false;
@@ -2195,7 +2320,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos112';
+const APP_VERSION = 'wos113';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2382,7 +2507,17 @@ function openLightbox(p) {
   // wos109: no warning chrome — gallery art is curated/ready-to-go; the 🚩
   // bug-report flow covers anything that misbehaves in game.
   const artText = displayArt(p.art);
-  els.lbPre.textContent = artText;
+  // wos113: the game view is a BITMAP (wrap-mode: the bubble wrap is baked in
+  // at reference metrics, then only the image scales — identical at any size).
+  els.lbPre.textContent = '';
+  const lbImg = artBitmapImg(p, 'wrap');
+  if (lbImg) {
+    els.lbPre.classList.add('has-bmp');
+    els.lbPre.appendChild(lbImg);
+  } else {
+    els.lbPre.classList.remove('has-bmp');
+    els.lbPre.textContent = artText;
+  }
   const m = measure(artText);
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
   els.lbPills.innerHTML = '';
@@ -2413,125 +2548,72 @@ els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) c
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (els.lightbox.classList.contains('open')) closeLightbox();
-    else if (document.getElementById('report')?.classList.contains('open')) closeReportDialog();  // wos97
     else if (document.getElementById('tags-modal')?.classList.contains('open')) closeTagsManager();  // wos108
     else if (els.edit.classList.contains('open')) closeEdit();
     // auth modal is intentionally NOT closeable via Esc — only via X or correct password
   }
 });
 
-/* ============ wos97: public art-report dialog ============
- * Opened by the card 🚩 for non-admins. Submitting does TWO things in one
- * gesture: files a bug report through the existing submit-bug pipeline (with
- * the piece id/title attached so the admin inbox can jump to it), and flags
- * the piece via save-flags action:'note' — which CREATES flag/<id> with the
- * reason as its note in a single call (no toggle+note race). The bug report is
- * sent FIRST; the flag is only applied if the report filed, so a flag never
- * exists without a matching inbox entry. */
-let reportPiece = null;
-let reportReason = null;
-
-function openReportDialog(p) {
-  reportPiece = p;
-  reportReason = null;
-  const nameEl = document.getElementById('report-art-name');
-  if (nameEl) nameEl.textContent = '“' + (p.title || 'Untitled') + '”';
-  for (const b of document.querySelectorAll('#report-reasons .report-reason')) {
-    b.classList.remove('selected');
-  }
-  const details = document.getElementById('report-details');
-  if (details) details.value = '';
-  const err = document.getElementById('report-error');
-  if (err) err.textContent = '';
-  const submit = document.getElementById('report-submit');
-  if (submit) { submit.disabled = false; submit.textContent = 'Send report'; }
-  document.getElementById('report').classList.add('open');
-}
-function closeReportDialog() {
-  document.getElementById('report').classList.remove('open');
-  reportPiece = null;
-}
+/* ============ wos113: one-tap flag-and-report (dialog removed) ============
+ * One tap on the card 🚩 (public, unflagged): the card is marked flagged
+ * INSTANTLY (optimistic) and the bug report files automatically through the
+ * same submit-bug pipeline (piece id/title attached so the admin inbox can
+ * jump to it), then save-flags action:'note' persists the flag. If the
+ * report fails to send, the optimistic flag ROLLS BACK — preserving the
+ * wos97 invariant that a flag never exists without a matching inbox entry. */
+const QUICK_REPORT_REASON = 'Flagged by user';
 
 // Update a card's flag chrome by data-id lookup — NOT captured node refs: a
-// background refresh() can rebuild the grid while the dialog is open, which
-// would leave captured refs pointing at detached nodes.
-function applyFlagDom(id, noteText) {
+// background refresh() can rebuild the grid mid-flight, which would leave
+// captured refs pointing at detached nodes.
+function applyFlagDom(id, noteText, flagged = true) {
   const card = els.grid.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
   if (!card) return;
-  card.classList.add('flagged');
+  card.classList.toggle('flagged', flagged);
   const box = card.querySelector('.flag-corner .box');
   const label = card.querySelector('.flag-corner .flag-label');
   const note = card.querySelector('.flag-note');
-  if (box) box.textContent = '🚩';
-  if (label) label.textContent = ' flagged';
-  if (note) note.value = noteText;   // the admin's note textarea shows the reason
+  if (box) box.textContent = flagged ? '🚩' : '';
+  if (label) label.textContent = flagged ? ' flagged' : ' flag';
+  if (note) note.value = flagged ? noteText : '';
 }
 
-async function submitArtReport() {
-  const p = reportPiece;
-  if (!p) return;
-  const errEl = document.getElementById('report-error');
-  if (!reportReason) {
-    if (errEl) errEl.textContent = 'Pick a reason above';
-    return;
-  }
-  const details = (document.getElementById('report-details')?.value || '').trim().slice(0, 500);
-  const reporter = (document.getElementById('report-name')?.value || '').trim().slice(0, 80) || null;
+async function quickReportArt(p) {
+  // 1. Instant optimistic mark — the user's tap takes effect immediately.
+  state.flags[p.id] = QUICK_REPORT_REASON;
+  applyFlagDom(p.id, QUICK_REPORT_REASON);
+  syncFlaggedTab();
+  showToast('Reported — thank you');
+
+  // 2. File the bug report automatically (same pipeline the dialog used).
   const artTitle = (p.title || 'Untitled').slice(0, 80);
-  const description = '[Art report] ' + reportReason + ' — “' + artTitle + '” (' + p.id + ')'
-    + (details ? '\n' + details : '');
-  const noteText = reportReason + (details ? ': ' + details : '');
+  const description = '[Art report] ' + QUICK_REPORT_REASON + ' — “' + artTitle + '” (' + p.id + ')';
   const ctx = captureFeedbackContext();
   ctx.artId = p.id;
   ctx.artTitle = artTitle;
-  ctx.reason = reportReason;
-
-  const submit = document.getElementById('report-submit');
-  if (submit) { submit.disabled = true; submit.textContent = 'Sending…'; }
-  if (errEl) errEl.textContent = '';
+  ctx.reason = QUICK_REPORT_REASON;
   let filed = false;
   try {
     const res = await fetch(await fnUrl('submit-bug'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description, reporter, context: ctx, artId: p.id, artTitle }),
+      body: JSON.stringify({ description, reporter: null, context: ctx, artId: p.id, artTitle }),
     });
     filed = res.ok;
   } catch { filed = false; }
-  if (!filed) {
-    if (submit) { submit.disabled = false; submit.textContent = 'Send report'; }
-    if (errEl) errEl.textContent = 'Could not send — check your connection and try again';
-    return;   // no report filed → no flag applied
-  }
-  // Report filed — now flag the piece with the reason as its note. Mutate
-  // state.flags FIRST so the admin note-autosave coupling (guarded on
-  // `p.id in state.flags`) works for any later note edits.
-  state.flags[p.id] = noteText;
-  API.saveFlag(p.id, 'note', noteText);   // never rejects (localStorage fallback)
-  applyFlagDom(p.id, noteText);
-  syncFlaggedTab();
-  closeReportDialog();
-  showToast('Report sent — thank you');
-}
 
-(function wireReportDialog() {
-  const closeBtn = document.getElementById('report-close');
-  if (closeBtn) closeBtn.addEventListener('click', closeReportDialog);
-  const reasons = document.getElementById('report-reasons');
-  if (reasons) reasons.addEventListener('click', (e) => {
-    const btn = e.target.closest('.report-reason');
-    if (!btn) return;
-    reportReason = btn.dataset.reason;
-    for (const b of reasons.querySelectorAll('.report-reason')) {
-      b.classList.toggle('selected', b === btn);
-    }
-    const errEl = document.getElementById('report-error');
-    if (errEl) errEl.textContent = '';
-  });
-  const submit = document.getElementById('report-submit');
-  if (submit) submit.addEventListener('click', submitArtReport);
-})();
-/* ============ end wos97 report dialog ============ */
+  if (filed) {
+    // 3. Persist the flag (single 'note' call creates flag/<id>; never rejects).
+    API.saveFlag(p.id, 'note', QUICK_REPORT_REASON);
+  } else {
+    // Roll the optimistic flag back — no flag without a matching inbox entry.
+    delete state.flags[p.id];
+    applyFlagDom(p.id, '', false);
+    syncFlaggedTab();
+    showToast('Could not send the report — try again');
+  }
+}
+/* ============ end wos113 one-tap flag ============ */
 
 /* ============ 08  Copy with NBSP ============ */
 async function copyArt(text, btn, isLightbox, id) {

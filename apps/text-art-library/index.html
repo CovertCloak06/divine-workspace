@@ -21,7 +21,7 @@
   <!-- wos106: Noto JP/KR/Tibetan/Symbols-2 removed — they rendered glyphs the
        WoS game font can't, making broken art look fine in-app. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos112">
+  <link rel="stylesheet" href="style.css?v=wos113">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -1617,34 +1617,7 @@
   <!-- wos97: public ART-REPORT dialog. Opened by the card 🚩 for non-admins;
        submitting files a bug report (with the piece id attached) AND flags the
        piece for admin review — one gesture, full context. -->
-  <div class="modal-overlay" id="report">
-    <div class="modal auth-modal report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
-      <div class="modal-head">
-        <h3 id="report-title">🚩 Report this art</h3>
-        <button class="modal-close" id="report-close" aria-label="Close">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
-              <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/>
-              <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/>
-            </g>
-          </svg>
-        </button>
-      </div>
-      <div class="auth-body">
-        <p class="report-art-name" id="report-art-name"></p>
-        <div class="report-reasons" id="report-reasons" role="radiogroup" aria-label="Reason">
-          <button type="button" class="report-reason" data-reason="Broken in WoS">Broken in WoS</button>
-          <button type="button" class="report-reason" data-reason="Inappropriate">Inappropriate</button>
-          <button type="button" class="report-reason" data-reason="Spam">Spam</button>
-          <button type="button" class="report-reason" data-reason="Other">Other</button>
-        </div>
-        <textarea class="report-details" id="report-details" rows="3" maxlength="500" placeholder="Details (optional)"></textarea>
-        <input class="auth-input" id="report-name" type="text" maxlength="80" autocomplete="off" placeholder="Your name (optional)">
-        <p class="auth-error" id="report-error"></p>
-        <button class="auth-unlock" id="report-submit">Send report</button>
-      </div>
-    </div>
-  </div>
+  <!-- wos113: the report dialog is gone — the card 🚩 is one-tap flag+report. -->
 
   <!-- wos108: admin theme-tag manager -->
   <div class="modal-overlay" id="tags-modal">
@@ -1808,7 +1781,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos112"></script>
+  <script src="app.js?v=wos113"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */
