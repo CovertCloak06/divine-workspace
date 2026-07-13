@@ -4302,21 +4302,35 @@ body.editor .btn-add { display: block; }
  * ========================================================================== */
 /* wos113: report-dialog CSS removed — the card 🚩 is one-tap flag+report. */
 
-/* ============ wos113: bitmap previews ============
- * Art previews are PNG bitmaps rendered once at fixed reference metrics —
- * scaling the image can never re-flow characters, so cards/rails/thumbs/
- * lightbox match the editor's rendering exactly at every size. */
-img.art-bmp {
-  display: block;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+/* ============ wos114: FROZEN previews ============
+ * A preview is the editor's own rendering: the art laid out ONCE by the page
+ * layout engine at fixed 20px reference metrics, then shrunk as a PICTURE
+ * (raster transform). The same engine paints editor and preview — they
+ * cannot differ; scaling a rasterized layer cannot re-flow characters. */
+.art-freeze {
+  position: relative;
+  overflow: hidden;
   margin: 0 auto;
-  -webkit-user-select: none;
-  user-select: none;
+  flex: 0 0 auto;
 }
-/* the lightbox bubble holds the wrap-mode bitmap; neutralize the text-mode
- * em-based column width when a bitmap is present */
+.art-freeze-pre {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  transform-origin: top left;
+  will-change: transform;   /* own raster layer — scaled as an image */
+}
+/* the lightbox game view freezes the WRAP layout (17.5em bubble, glyph-level
+ * breaks) exactly like the editor input column */
+.art-freeze-pre.art-freeze-wrapmode {
+  width: calc(var(--wos-cols, 17.5) * 1em);
+  max-width: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* the lightbox bubble hosts the frozen wrapper; neutralize the text-mode
+ * em-based column width on the host pre */
 .wos-preview pre.has-bmp {
   width: auto;
   max-width: 100%;

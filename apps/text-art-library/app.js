@@ -1358,23 +1358,15 @@ function renderRailCard(p, badge) {
   tile.dataset.id = p.id;
   const prev = document.createElement('div');
   prev.className = 'rail-preview';
-  const railImg = artBitmapImg(p, 'flat');   // wos113: bitmap preview
-  if (railImg) {
-    prev.appendChild(railImg);
-  } else {
-    const pre = document.createElement('pre');
-    pre.className = 'art-render';
-    pre.textContent = displayArt(p.art);
-    prev.appendChild(pre);
-  }
+  const frozen = artFrozenPreview(p, 'flat');   // wos114: frozen preview
+  prev.appendChild(frozen);
   tile.appendChild(prev);
+  fitFrozen(frozen);
   const name = document.createElement('div');
   name.className = 'rail-name';
   name.textContent = (badge ? badge + ' ' : '') + (p.title || 'Untitled');
   tile.appendChild(name);
   tile.addEventListener('click', () => openLightbox(p));
-  const railPre = prev.querySelector('pre.art-render');
-  if (railPre) requestAnimationFrame(() => fitArt(prev, railPre, 10, { height: true }));
   return tile;
 }
 function renderDiscovery() {
@@ -1508,21 +1500,14 @@ function renderCard(p) {
   }
   card.appendChild(head);
 
-  // preview — wos113: a BITMAP of the art (pixel-identical at every scale);
-  // <pre> + fitArt only as fallback when canvas is unavailable.
+  // preview — wos114: the editor's own rendering, frozen at 20px and scaled
+  // as a picture (raster transform — characters can never re-flow).
   const prev = document.createElement('div');
   prev.className = 'preview';
-  const img = artBitmapImg(p, 'flat');
-  if (img) {
-    prev.appendChild(img);
-  } else {
-    const pre = document.createElement('pre');
-    pre.className = 'art-render';
-    pre.textContent = displayArt(p.art);
-    prev.appendChild(pre);
-    requestAnimationFrame(() => fitArt(prev, pre, 14, { height: true }));
-  }
+  const frozen = artFrozenPreview(p, 'flat');
+  prev.appendChild(frozen);
   card.appendChild(prev);
+  fitFrozen(frozen);
 
   // chips
   if (p.tags && p.tags.length) {
@@ -1634,96 +1619,62 @@ function fitArt(container, pre, base, { height = false } = {}) {
   if (scale < 1) pre.style.fontSize = (base * scale).toFixed(2) + 'px';
 }
 
-/* ============ wos113: bitmap previews ============
- * Previews used to scale TEXT to fractional font sizes, and proportional
- * glyph advances round differently at every size — so cards/lightbox drifted
- * while the fixed-size editor stayed perfect. Now each piece renders ONCE to
- * a canvas at fixed reference metrics (the editor's) and every preview shows
- * the BITMAP scaled. A bitmap cannot re-flow characters, so alignment is
- * identical at every display size.
- *   mode 'flat' — each authored line as one run (cards / rails / thumbs)
- *   mode 'wrap' — game-bubble wrap at --wos-cols em (the lightbox game view)
- * PNG data-URLs are cached per (id, art, mode); the cache clears when the
- * webfonts finish loading (metrics change). Any failure → null, and callers
- * fall back to the old <pre class="art-render"> + fitArt path. */
-const ART_BMP_REF = 20;      // reference font px (the lightbox max)
-const ART_BMP_SCALE = 2;     // supersample for crisp downscales
-const ART_BMP_MAX = 4096;    // canvas axis cap
-const artBmpCache = new Map();
+/* ============ wos114: FROZEN previews ============
+ * wos113 drew previews with canvas fillText — but canvas resolves some glyph
+ * advances (emoji runs, wide spacers) slightly differently than real page
+ * layout, so bitmaps could still drift from the editor. Now a preview is the
+ * EDITOR'S OWN RENDERING, scaled as a picture: the art is laid out ONCE by
+ * the page layout engine at the same fixed reference metrics as the editor
+ * (.art-render @ 20px — never a fractional font size), and the laid-out
+ * block is then shrunk with a raster transform (transform: scale). Scaling
+ * a rasterized layer cannot re-flow or re-round characters, and the SAME
+ * engine paints editor and preview — they cannot differ, on any device.
+ *   mode 'flat' — rigid lines (white-space: pre), like the editor preview
+ *   mode 'wrap' — the 17.5em game-bubble wrap, like the editor input
+ * Each wrapper carries _fit() (measure once at 20px → scale to its box);
+ * refitAllArt re-runs fits on resize and when the webfonts finish loading. */
+const ART_FREEZE_REF = 20;   // reference font px — fixed, never fractional
 
-function artRootProp(name, fallback) {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fallback;
-}
-function artFontString(px) {
-  return '700 ' + px + 'px ' + artRootProp('--art-font', "'Roboto','Noto Sans','Noto Color Emoji',system-ui,sans-serif");
-}
-
-function artBitmapURL(p, mode) {
-  const art = displayArt(p.art || '');
-  if (!art) return null;
-  const key = p.id + '\u0000' + mode + '\u0000' + art;
-  const hit = artBmpCache.get(key);
-  if (hit) return hit;
-  try {
-    const c = document.createElement('canvas');
-    const ctx = c.getContext('2d');
-    if (!ctx) return null;
-    const ref = ART_BMP_REF;
-    ctx.font = artFontString(ref);
-    const lineH = (parseFloat(artRootProp('--art-line-height', '1.3')) || 1.3) * ref;
-    const bubbleW = (parseFloat(artRootProp('--wos-cols', '17.5')) || 17.5) * ref;
-
-    // Render lines; 'wrap' reproduces the game bubble's glyph-level wrap
-    // (pre-wrap + overflow-wrap:anywhere semantics).
-    const lines = [];
-    for (const line of art.split('\n')) {
-      if (mode !== 'wrap' || !line || ctx.measureText(line).width <= bubbleW) {
-        lines.push(line);
-        continue;
-      }
-      let cur = '';
-      for (const g of graphemes(line)) {
-        if (cur && ctx.measureText(cur + g).width > bubbleW) { lines.push(cur); cur = g; }
-        else cur += g;
-      }
-      if (cur) lines.push(cur);
-    }
-
-    let maxW = 0;
-    for (const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
-    const cssW = mode === 'wrap' ? bubbleW : Math.max(1, Math.ceil(maxW));
-    const cssH = Math.max(1, Math.ceil(lines.length * lineH));
-    const scale = Math.min(ART_BMP_SCALE, ART_BMP_MAX / cssW, ART_BMP_MAX / cssH);
-    c.width = Math.max(1, Math.round(cssW * scale));
-    c.height = Math.max(1, Math.round(cssH * scale));
-    ctx.scale(scale, scale);
-    ctx.font = artFontString(ref);   // context resets on resize
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = artRootProp('--wos-ink', '#1a6614');
-    lines.forEach((l, i) => { if (l) ctx.fillText(l, 0, (i + 0.5) * lineH); });
-    const out = { url: c.toDataURL('image/png'), w: cssW, h: cssH };
-    artBmpCache.set(key, out);
-    return out;
-  } catch { return null; }
+function artFrozenPreview(p, mode) {
+  const wrap = document.createElement('div');
+  wrap.className = 'art-freeze';
+  const pre = document.createElement('pre');
+  pre.className = 'art-render art-freeze-pre' + (mode === 'wrap' ? ' art-freeze-wrapmode' : '');
+  pre.style.fontSize = ART_FREEZE_REF + 'px';
+  pre.textContent = displayArt(p.art || '');
+  wrap.appendChild(pre);
+  wrap._fit = () => {
+    const host = wrap.parentElement;
+    if (!host || !wrap.isConnected) return;
+    // Width comes from the nearest SIZED ancestor: shrink-wrapping hosts
+    // (the lightbox #lb-pre) collapse to 0 until we size the wrapper —
+    // chicken-and-egg — so climb to the first ancestor with real width.
+    let box = host;
+    while (box && box.clientWidth <= 0) box = box.parentElement;
+    if (!box) return;
+    const bcs = getComputedStyle(box);
+    const bw = box.clientWidth - (parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight));
+    // Height constrains only when the DIRECT host is a fixed-size tile
+    // (card/rail/thumb boxes); shrink-wrapping hosts grow with the art.
+    const hcs = getComputedStyle(host);
+    const bh = host.clientHeight - (parseFloat(hcs.paddingTop) + parseFloat(hcs.paddingBottom));
+    // natural size at the fixed reference metrics
+    pre.style.transform = 'none';
+    const nw = pre.scrollWidth || pre.offsetWidth;
+    const nh = pre.scrollHeight || pre.offsetHeight;
+    if (nw <= 0 || nh <= 0 || bw <= 0) return;
+    let k = Math.min(1, bw / nw);
+    if (bh > 0) k = Math.min(k, bh / nh);
+    pre.style.transformOrigin = 'top left';
+    pre.style.transform = k < 1 ? 'scale(' + k + ')' : 'none';
+    wrap.style.width = Math.ceil(nw * k) + 'px';
+    wrap.style.height = Math.ceil(nh * k) + 'px';
+  };
+  return wrap;
 }
 
-// <img> preview for a piece; null → caller keeps the <pre> fallback.
-function artBitmapImg(p, mode) {
-  const bmp = artBitmapURL(p, mode);
-  if (!bmp) return null;
-  const img = document.createElement('img');
-  img.src = bmp.url;
-  img.alt = p.title || 'text art';
-  img.className = 'art-bmp';
-  img.decoding = 'async';
-  img.draggable = false;
-  img.dataset.w = bmp.w;
-  img.dataset.h = bmp.h;
-  // Never upscale past the design size — only shrink to fit the box.
-  img.style.maxWidth = 'min(100%, ' + bmp.w + 'px)';
-  img.style.maxHeight = '100%';
-  return img;
+function fitFrozen(wrap) {
+  if (wrap && wrap._fit) requestAnimationFrame(wrap._fit);
 }
 
 // wos86: re-fit every rigid art block when its container can change size — the
@@ -1731,19 +1682,9 @@ function artBitmapImg(p, mode) {
 // (non-wrapping) block must be re-scaled to keep fitting. Debounced so a drag-
 // resize doesn't thrash. Also re-fits the open lightbox.
 function refitAllArt() {
-  document.querySelectorAll('.grid .card .preview').forEach((prev) => {
-    const pre = prev.querySelector('.art-render');
-    if (pre) fitArt(prev, pre, 14, { height: true });
-  });
-  // wos97: discovery-rail tiles re-fit too (covers resize AND fonts.ready —
-  // without this they'd keep fallback-font scaling after web fonts load).
-  document.querySelectorAll('.rail-card .rail-preview').forEach((prev) => {
-    const pre = prev.querySelector('.art-render');
-    if (pre) fitArt(prev, pre, 10, { height: true });
-  });
-  if (els.lightbox && els.lightbox.classList.contains('open') && els.lbPre) {
-    sizeLightboxGameView(); // wos106: fixed-bubble game view, not shrink-to-fit
-  }
+  // wos114: every preview is a frozen wrapper — re-measure + re-scale each
+  // (container sizes change on resize; glyph metrics change on fonts.ready).
+  document.querySelectorAll('.art-freeze').forEach((w) => { if (w._fit) w._fit(); });
 }
 
 // wos106: size the lightbox game view. The bubble is a FIXED 17.5em column
@@ -1751,18 +1692,9 @@ function refitAllArt() {
 // Wrap points are scale-invariant (line width and bubble width share the em),
 // so this never changes WHERE a line wraps; the render stays game-true.
 function sizeLightboxGameView() {
-  if (!els.lbPre || !els.lbPre.parentElement) return;
-  const box = els.lbPre.parentElement;
-  const img = els.lbPre.querySelector('img.art-bmp');
-  if (img) {
-    // wos113: scale the BITMAP to the modal (never above its design size —
-    // that is the same 20px-max the text view used).
-    const design = parseFloat(img.dataset.w) || 350;
-    img.style.width = Math.max(120, Math.min(design, box.clientWidth - 24)) + 'px';
-    return;
-  }
-  const fs = Math.max(9, Math.min(20, Math.floor(box.clientWidth / 19)));
-  els.lbPre.style.fontSize = fs + 'px';
+  if (!els.lbPre) return;
+  const frozen = els.lbPre.querySelector('.art-freeze');
+  if (frozen && frozen._fit) frozen._fit();
 }
 let _refitTimer = null;
 window.addEventListener('resize', () => {
@@ -1775,20 +1707,9 @@ window.addEventListener('resize', () => {
 // instead of staying sized for the fallback font (avoids a slightly-off scale
 // on first paint / cold cache).
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(() => {
-    try {
-      // wos113: webfont metrics differ from the fallback font — throw away
-      // any bitmaps rendered before the fonts arrived and re-image everything.
-      artBmpCache.clear();
-      if (state.booted) render();
-      if (els.lightbox && els.lightbox.classList.contains('open')) {
-        const id = els.lightbox.dataset.openId;
-        const p = (state.merged || []).find((q) => q && q.id === id);
-        if (p) openLightbox(p);
-      }
-      refitAllArt();   // fallback <pre> surfaces (canvas-less browsers)
-    } catch {}
-  });
+  // wos114: the frozen previews are live DOM — when the webfonts land, the
+  // layout engine re-shapes them automatically; we only re-measure the fits.
+  document.fonts.ready.then(() => { try { refitAllArt(); } catch {} });
 }
 
 /* ============ 06  Filtering + search ============ */
@@ -2188,13 +2109,9 @@ function renderAnalytics(stats) {
   contentEl.querySelectorAll('.an-thumb[data-thumb]').forEach((box) => {
     const p = lib.find((q) => q && q.id === box.getAttribute('data-thumb'));
     if (!p || !p.art) { box.textContent = '?'; return; }
-    const img = artBitmapImg(p, 'flat');   // wos113: bitmap thumb
-    if (img) { box.appendChild(img); return; }
-    const pre = document.createElement('pre');
-    pre.className = 'art-render';
-    pre.textContent = displayArt(p.art);
-    box.appendChild(pre);
-    requestAnimationFrame(() => fitArt(box, pre, 8, { height: true }));
+    const frozen = artFrozenPreview(p, 'flat');   // wos114: frozen thumb
+    box.appendChild(frozen);
+    fitFrozen(frozen);
   });
 
   wireAnalyticsDrill(); // wos104 (idempotent — wires the delegated listener once)
@@ -2295,15 +2212,10 @@ function showPieceDrill(id) {
   drill.innerHTML = `<div class="an-drill-h">${escapeHtml(p ? (p.title || id) : id)}</div>` + body;
   if (p) {
     const box = drill.querySelector('.an-drill-prev');
-    const dimg = artBitmapImg(p, 'flat');   // wos113: bitmap preview
-    if (dimg) {
-      box.textContent = '';
-      box.appendChild(dimg);
-    } else {
-      const pre = box.querySelector('pre');
-      pre.textContent = displayArt(p.art || '');
-      requestAnimationFrame(() => fitArt(box, pre, 14, { height: true }));
-    }
+    box.textContent = '';
+    const dFrozen = artFrozenPreview(p, 'flat');   // wos114: frozen preview
+    box.appendChild(dFrozen);
+    fitFrozen(dFrozen);
   }
   drill.dataset.key = 'piece:' + id;
   drill.hidden = false;
@@ -2320,7 +2232,7 @@ if (analyticsRefreshBtn) analyticsRefreshBtn.addEventListener('click', loadAnaly
  * integration is optional on the server side; on the client we just render
  * whatever the function returns.
  */
-const APP_VERSION = 'wos113';
+const APP_VERSION = 'wos114';
 
 function captureFeedbackContext() {
   let editorState = 'locked';
@@ -2507,17 +2419,13 @@ function openLightbox(p) {
   // wos109: no warning chrome — gallery art is curated/ready-to-go; the 🚩
   // bug-report flow covers anything that misbehaves in game.
   const artText = displayArt(p.art);
-  // wos113: the game view is a BITMAP (wrap-mode: the bubble wrap is baked in
-  // at reference metrics, then only the image scales — identical at any size).
+  // wos114: the game view is the editor's own wrap rendering at reference
+  // metrics, scaled as a picture — identical layout at any size.
   els.lbPre.textContent = '';
-  const lbImg = artBitmapImg(p, 'wrap');
-  if (lbImg) {
-    els.lbPre.classList.add('has-bmp');
-    els.lbPre.appendChild(lbImg);
-  } else {
-    els.lbPre.classList.remove('has-bmp');
-    els.lbPre.textContent = artText;
-  }
+  els.lbPre.classList.add('has-bmp');
+  const lbFrozen = artFrozenPreview(p, 'wrap');
+  els.lbPre.appendChild(lbFrozen);
+  fitFrozen(lbFrozen);
   const m = measure(artText);
   els.lbDim.textContent = `${m.width} × ${m.height} graphemes`;
   els.lbPills.innerHTML = '';
