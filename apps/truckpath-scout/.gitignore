@@ -1,0 +1,8 @@
+node_modules
+dist
+*.tsbuildinfo
+# Root .gitignore excludes lib/ globally; this app's source lives in src/lib
+!src/lib/
+.env
+.env.local
+*.local
