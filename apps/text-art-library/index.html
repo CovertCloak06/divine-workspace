@@ -21,7 +21,7 @@
   <!-- wos106: Noto JP/KR/Tibetan/Symbols-2 removed — they rendered glyphs the
        WoS game font can't, making broken art look fine in-app. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&family=JetBrains+Mono:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=wos115">
+  <link rel="stylesheet" href="style.css?v=wos116">
   <script>
     /* wos89 — AUTO-UPDATE self-heal. The PWA service worker can keep serving an
        old build (esp. on iOS / an installed app resumed from memory), so a new
@@ -69,12 +69,15 @@
     /* Respect the [hidden] attribute even when our display:flex rules win cascade */
     [hidden] { display: none !important; }
 
-    /* === Hamburger button (top-left of header) === */
+    /* === Hamburger button (pinned top-left, overlay) === */
+    /* wos116: pinned to the corner as an overlay so it takes NO header width
+       (keeps the share link from wrapping); the centered brand lockup is
+       sized to always clear this corner — see the wos116 block in style.css. */
     .header { position: relative; }
     .hamburger-btn {
       position: absolute;
-      left: 14px;
-      top: 16px;
+      left: 12px;
+      top: 14px;
       width: 40px;
       height: 40px;
       display: inline-flex;
@@ -1781,7 +1784,7 @@
   </script>
   <script src="art.js?v=ds7r2"></script>
   <script src="palette-data.js?v=wos6"></script>
-  <script src="app.js?v=wos115"></script>
+  <script src="app.js?v=wos116"></script>
   <script>
     /* PWA: register the service worker so the app is installable and runs
        offline. Only on production-like origins (https or localhost). */

@@ -610,8 +610,10 @@ body.editor .card-actions { display: flex; }
   overflow: hidden;
   min-height: 24px;
   margin-bottom: 10px;
-  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
-          mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  /* wos116: wider soft fade so overflowing tags read as an intentional fade,
+     not a hard clip at the ice frame. */
+  -webkit-mask-image: linear-gradient(to right, #000 78%, transparent 98%);
+          mask-image: linear-gradient(to right, #000 78%, transparent 98%);
 }
 .chip { flex: 0 0 auto; white-space: nowrap; }
 .chip {
@@ -4552,3 +4554,47 @@ body.editor .btn-add { display: block; }
    * (scrollbar-width: none lives on .rail-scroll itself). */
 }
 /* End wos101 */
+
+/* ============================================================================
+ * wos116 — CLEAN LAYOUT PASS
+ * (1) HEADER: the snowflake + wordmark form ONE centered brand lockup (the
+ *     snowflake no longer drifts in a far-left column that overflowed into the
+ *     hamburger). The hamburger stays pinned in the corner as an overlay, so it
+ *     consumes no header width (the share link no longer wraps) and the lockup
+ *     is sized to always clear that corner with breathing room.
+ * (2) CARDS: widen the interior padding so the title, chips, Copy button and
+ *     flag all sit inside the ice frame's flat recessed panel (like the art
+ *     tray) instead of riding up onto the frame's inner lip.
+ * Presentation only.
+ * ========================================================================== */
+.header { padding: 18px 12px 26px !important; }
+.header-inner { max-width: 760px; }
+/* brand = snowflake + wordmark, centered together as one lockup */
+.title-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0;
+  max-width: 100%;
+}
+.title-row .snowflake-btn { justify-self: auto !important; flex: 0 0 auto; }
+.title-row .title { flex: 0 1 auto; min-width: 0; }
+
+/* Cards: pull all content in off the ice frame's inner bevel. */
+.grid .card { padding: 18px 30px 28px !important; }
+
+@media (max-width: 480px) {
+  /* Smaller brand on phones so the centered lockup always clears the corner
+     hamburger with comfortable space, and the header reads lighter. */
+  .header { padding: 12px 10px 20px !important; }
+  .title-img { height: clamp(34px, 9.5vw, 46px) !important; max-width: 60vw !important; }
+  #snowflake svg { width: 38px !important; height: 38px !important; }
+  .title-row { gap: 8px !important; }
+  .subtitle { font-size: 13px !important; }
+  /* Cards: interior clears the (slimmer) mobile ice frame's lip. */
+  .grid .card { padding: 10px 18px 16px !important; }
+}
+/* End wos116 */
