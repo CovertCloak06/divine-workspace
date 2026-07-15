@@ -4562,9 +4562,14 @@ body.editor .btn-add { display: block; }
  *     hamburger). The hamburger stays pinned in the corner as an overlay, so it
  *     consumes no header width (the share link no longer wraps) and the lockup
  *     is sized to always clear that corner with breathing room.
- * (2) CARDS: widen the interior padding so the title, chips, Copy button and
- *     flag all sit inside the ice frame's flat recessed panel (like the art
- *     tray) instead of riding up onto the frame's inner lip.
+ * (2) CARDS: the DEFAULT `fx-border-double` tweak forced the card's LAYOUT
+ *     border-width to 4px, but the ice frame is DRAWN at 40-44px via
+ *     border-image-width — so the content box only inset 4px while the frame
+ *     painted ~40px thick, dropping the footer (Copy + flag) into the drawn
+ *     bottom rail. Fix: pin the card's border-width to MATCH the drawn frame
+ *     (immune to fx-border-*), so the content box lines up with the flat
+ *     recessed panel on every side; then modest padding floats the content
+ *     off the panel's inner bevel.
  * Presentation only.
  * ========================================================================== */
 .header { padding: 18px 12px 26px !important; }
@@ -4583,8 +4588,13 @@ body.editor .btn-add { display: block; }
 .title-row .snowflake-btn { justify-self: auto !important; flex: 0 0 auto; }
 .title-row .title { flex: 0 1 auto; min-width: 0; }
 
-/* Cards: pull all content in off the ice frame's inner bevel. */
-.grid .card { padding: 18px 30px 28px !important; }
+/* Card content box == the drawn ice frame. `html body` raises specificity
+   above `body.fx-border-double .card` so the tweak can't shrink it to 4px.
+   border-width here equals the border-image-width above (24 20 44 20). */
+html body .grid .card {
+  border-width: 24px 20px 44px 20px !important;
+  padding: 8px 16px 14px !important;
+}
 
 @media (max-width: 480px) {
   /* Smaller brand on phones so the centered lockup always clears the corner
@@ -4594,7 +4604,11 @@ body.editor .btn-add { display: block; }
   #snowflake svg { width: 38px !important; height: 38px !important; }
   .title-row { gap: 8px !important; }
   .subtitle { font-size: 13px !important; }
-  /* Cards: interior clears the (slimmer) mobile ice frame's lip. */
-  .grid .card { padding: 10px 18px 16px !important; }
+  /* Mobile ice frame is slimmer: match its drawn border-image-width
+     (16 12 40 12) so the footer clears the bottom rail. */
+  html body .grid .card {
+    border-width: 16px 12px 40px 12px !important;
+    padding: 6px 12px 12px !important;
+  }
 }
 /* End wos116 */
