@@ -46,11 +46,13 @@ for f in "$DIR"/strings/c*.txt; do
     echo "[$i/$total] copy strings/$name.txt manually."
   fi
   echo "    -> switch to WoS, tap the chat box, PASTE, hit Send."
-  echo "    -> make sure the WHOLE message bubble is visible, then return here"
-  printf "    -> press Enter to screenshot... "
+  echo "    -> come back here and press Enter, then SWITCH BACK TO WoS:"
+  printf "    -> the screenshot fires 6 seconds after you press Enter... "
   read -r _
+  for s in 6 5 4 3 2 1; do printf "%s " "$s"; sleep 1; done; echo
   adb exec-out screencap -p > "$OUT/$name.png"
-  echo "saved shots/$name.png"
+  echo "    saved shots/$name.png  (whole bubble must be visible in WoS —"
+  echo "     close the keyboard / scroll if needed, and redo by deleting the file)"
 done
 echo
 echo "All $total captured. Next:"
