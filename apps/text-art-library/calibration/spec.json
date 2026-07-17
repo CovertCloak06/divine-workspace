@@ -1,0 +1,478 @@
+{
+ "marker": "█",
+ "messages": [
+  {
+   "id": "c01",
+   "desc": "U+2588, U+2582, U+2594",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+2588",
+     "label": "U+2588 █ full block (reference)",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2588",
+     "label": "U+2588 █ full block (reference)",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2582",
+     "label": "U+2582 ▂ lower quarter block",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2582",
+     "label": "U+2582 ▂ lower quarter block",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2594",
+     "label": "U+2594 ▔ upper eighth block",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2594",
+     "label": "U+2594 ▔ upper eighth block",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c02",
+   "desc": "U+2595, U+258F, U+0020",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+2595",
+     "label": "U+2595 ▕ right eighth block",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2595",
+     "label": "U+2595 ▕ right eighth block",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+258F",
+     "label": "U+258F ▏ left eighth block",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+258F",
+     "label": "U+258F ▏ left eighth block",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+0020",
+     "label": "U+0020 regular space",
+     "reps": 4,
+     "bracketed": true
+    },
+    {
+     "char": "U+0020",
+     "label": "U+0020 regular space",
+     "reps": 8,
+     "bracketed": true
+    }
+   ]
+  },
+  {
+   "id": "c03",
+   "desc": "U+00A0, U+3000, U+2003",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+00A0",
+     "label": "U+00A0 no-break space",
+     "reps": 4,
+     "bracketed": true
+    },
+    {
+     "char": "U+00A0",
+     "label": "U+00A0 no-break space",
+     "reps": 8,
+     "bracketed": true
+    },
+    {
+     "char": "U+3000",
+     "label": "U+3000 ideographic space",
+     "reps": 4,
+     "bracketed": true
+    },
+    {
+     "char": "U+3000",
+     "label": "U+3000 ideographic space",
+     "reps": 8,
+     "bracketed": true
+    },
+    {
+     "char": "U+2003",
+     "label": "U+2003 em space",
+     "reps": 4,
+     "bracketed": true
+    },
+    {
+     "char": "U+2003",
+     "label": "U+2003 em space",
+     "reps": 8,
+     "bracketed": true
+    }
+   ]
+  },
+  {
+   "id": "c04",
+   "desc": "U+2500, U+2501, U+2550",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+2500",
+     "label": "U+2500 ─ light horizontal",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2500",
+     "label": "U+2500 ─ light horizontal",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2501",
+     "label": "U+2501 ━ heavy horizontal",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2501",
+     "label": "U+2501 ━ heavy horizontal",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2550",
+     "label": "U+2550 ═ double horizontal",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2550",
+     "label": "U+2550 ═ double horizontal",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c05",
+   "desc": "U+2551, U+2503, U+2502",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+2551",
+     "label": "U+2551 ║ double vertical",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2551",
+     "label": "U+2551 ║ double vertical",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2503",
+     "label": "U+2503 ┃ heavy vertical",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2503",
+     "label": "U+2503 ┃ heavy vertical",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2502",
+     "label": "U+2502 │ light vertical",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2502",
+     "label": "U+2502 │ light vertical",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c06",
+   "desc": "U+250F, U+256D, U+2572",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+250F",
+     "label": "U+250F ┏ heavy corner",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+250F",
+     "label": "U+250F ┏ heavy corner",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+256D",
+     "label": "U+256D ╭ rounded corner",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+256D",
+     "label": "U+256D ╭ rounded corner",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2572",
+     "label": "U+2572 ╲ diagonal",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2572",
+     "label": "U+2572 ╲ diagonal",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c07",
+   "desc": "U+30CE, U+2282, U+2227",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+30CE",
+     "label": "U+30CE ノ katakana no",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+30CE",
+     "label": "U+30CE ノ katakana no",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2282",
+     "label": "U+2282 ⊂ subset",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2282",
+     "label": "U+2282 ⊂ subset",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+2227",
+     "label": "U+2227 ∧ logical and",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+2227",
+     "label": "U+2227 ∧ logical and",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c08",
+   "desc": "U+03C9, U+30CB, U+FF08",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+03C9",
+     "label": "U+03C9 ω omega",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+03C9",
+     "label": "U+03C9 ω omega",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+30CB",
+     "label": "U+30CB ニ katakana ni",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+30CB",
+     "label": "U+30CB ニ katakana ni",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF08",
+     "label": "U+FF08 （ fullwidth paren",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF08",
+     "label": "U+FF08 （ fullwidth paren",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c09",
+   "desc": "U+FF5C, U+30FB, U+FF0A",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+FF5C",
+     "label": "U+FF5C ｜ fullwidth bar",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF5C",
+     "label": "U+FF5C ｜ fullwidth bar",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+30FB",
+     "label": "U+30FB ・ katakana middle dot",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+30FB",
+     "label": "U+30FB ・ katakana middle dot",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF0A",
+     "label": "U+FF0A ＊ fullwidth asterisk",
+     "reps": 4,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF0A",
+     "label": "U+FF0A ＊ fullwidth asterisk",
+     "reps": 8,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c10",
+   "desc": "U+0069, U+006D, U+0028",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+0069",
+     "label": "U+0069 i latin",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+0069",
+     "label": "U+0069 i latin",
+     "reps": 16,
+     "bracketed": false
+    },
+    {
+     "char": "U+006D",
+     "label": "U+006D m latin",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+006D",
+     "label": "U+006D m latin",
+     "reps": 16,
+     "bracketed": false
+    },
+    {
+     "char": "U+0028",
+     "label": "U+0028 ( ascii paren",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+0028",
+     "label": "U+0028 ( ascii paren",
+     "reps": 16,
+     "bracketed": false
+    }
+   ]
+  },
+  {
+   "id": "c11",
+   "desc": "U+007C, U+002E, U+FF89",
+   "lines": 19,
+   "rulers": [
+    {
+     "char": "U+007C",
+     "label": "U+007C | ascii bar",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+007C",
+     "label": "U+007C | ascii bar",
+     "reps": 16,
+     "bracketed": false
+    },
+    {
+     "char": "U+002E",
+     "label": "U+002E . period",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+002E",
+     "label": "U+002E . period",
+     "reps": 16,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF89",
+     "label": "U+FF89 ﾉ halfwidth katakana no",
+     "reps": 8,
+     "bracketed": false
+    },
+    {
+     "char": "U+FF89",
+     "label": "U+FF89 ﾉ halfwidth katakana no",
+     "reps": 16,
+     "bracketed": false
+    }
+   ]
+  }
+ ]
+}
