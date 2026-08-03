@@ -161,3 +161,30 @@ Safe character families:
 Avoid ASCII `/ \ - | # * +` for shape-building — they're proportional and will
 drift. Avoid Hangul/Tibetan/IPA/modifier-letter kaomoji — the game font lacks
 them (they render blank/tofu in chat even though desktops show them fine).
+
+## Art library backups
+
+The user-submitted library lives in Netlify Blobs — which means a billing
+lapse, account problem, or accidental site deletion could take it with it.
+`.github/workflows/frostline-backup.yml` therefore snapshots the live library
+into `backups/` twice a day and commits only when something changed:
+
+- `backups/library-latest.json` — current library (deterministic serialization)
+- `backups/snapshots/library-YYYY-MM.json` — one restore point per month
+- `backups/status.json` — when the last run happened and what it saw
+
+The backup script (`scripts/backup-art.mjs`) refuses to overwrite a good
+backup with a bad read: a suspended site, an empty store, or a >20% shrink
+all abort loudly instead of writing. After an intentional bulk delete, re-run
+once with `ALLOW_SHRINK=1` to accept the smaller library.
+
+**Restore drill** (if Blobs data is ever lost):
+
+```sh
+EDITOR_PASSWORD=<editor password> node scripts/restore-art.mjs
+# or restore a specific monthly snapshot:
+EDITOR_PASSWORD=... node scripts/restore-art.mjs backups/snapshots/library-2026-08.json
+```
+
+Restores are additive upserts — nothing that only exists on the live site is
+deleted, so running a restore against a healthy site is harmless.

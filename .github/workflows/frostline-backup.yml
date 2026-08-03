@@ -1,0 +1,55 @@
+name: Backup — Frostline art library
+
+# Twice-daily snapshot of the live art library (Netlify Blobs) into the repo,
+# so the user-submitted collection always has an off-Netlify copy. The backup
+# script hard-fails rather than overwrite a good backup with a bad read (site
+# suspended, empty store, shrunken library), so a red run here means "go look
+# at the site", never "the backup ate itself".
+#
+# Restore drill (if the Blobs data is ever lost):
+#   EDITOR_PASSWORD=... node apps/text-art-library/scripts/restore-art.mjs
+
+on:
+  schedule:
+    # 09:23 and 21:23 UTC — off the :00/:30 marks to dodge the cron stampede.
+    - cron: '23 9,21 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frostline-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Snapshot art library
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch + validate library
+        run: node apps/text-art-library/scripts/backup-art.mjs
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git add apps/text-art-library/backups
+          if git diff --cached --quiet; then
+            echo "Library unchanged — nothing to commit."
+            exit 0
+          fi
+          pieces=$(node -e "console.log(JSON.parse(require('fs').readFileSync('apps/text-art-library/backups/status.json','utf8')).pieces)")
+          git config user.name "frostline-backup[bot]"
+          git config user.email "frostline-backup@users.noreply.github.com"
+          git commit -m "backup(frostline): art library snapshot — ${pieces} pieces"
+          git push origin master

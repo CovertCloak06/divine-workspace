@@ -222,6 +222,10 @@ token.json
 *.backup
 *.old
 backups/
+# EXCEPTION: Frostline art-library backups are the off-Netlify copy of
+# user-submitted art — they MUST be committed (see frostline-backup.yml).
+!apps/text-art-library/backups/
+!apps/text-art-library/backups/**
 
 # ==========================================
 # Custom Ignores
