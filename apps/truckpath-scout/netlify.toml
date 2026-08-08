@@ -1,0 +1,11 @@
+# Picked up automatically when a Netlify project is linked with
+# base directory = apps/truckpath-scout
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback so hash-less deep links still land on the app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
