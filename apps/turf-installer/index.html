@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b3a2b" />
+  <title>TurfPro — Field Turf Job Calculators</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon-180.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-bar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🌱</span>
+      <div>
+        <h1>TurfPro</h1>
+        <p class="tagline">On-the-job Field Turf calculators</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Calculators">
+    <button class="tab active" role="tab" data-tab="turf">Turf &amp; Rolls</button>
+    <button class="tab" role="tab" data-tab="base">Base Rock</button>
+    <button class="tab" role="tab" data-tab="infill">Infill</button>
+    <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
+    <button class="tab" role="tab" data-tab="guide">Job Guide</button>
+    <button class="tab" role="tab" data-tab="expenses">Expenses</button>
+    <button class="tab" role="tab" data-tab="estimate">Estimate</button>
+    <button class="tab" role="tab" data-tab="convert">Convert</button>
+  </nav>
+
+  <main>
+    <!-- ============ TURF & ROLLS ============ -->
+    <section class="panel active" id="panel-turf" role="tabpanel">
+      <div class="card">
+        <h2>Turf &amp; rolls</h2>
+        <p class="hint">How much turf to order, and how many roll-strips it cuts into.</p>
+
+        <div class="area-block" data-area="turf"></div>
+
+        <div class="grid two">
+          <label>Roll width
+            <div class="suffix-field">
+              <select id="turf-roll-width" class="unit-select">
+                <option value="15" selected>15 ft</option>
+                <option value="12">12 ft</option>
+                <option value="6">6 ft</option>
+              </select>
+            </div>
+          </label>
+          <label>Waste / cut factor
+            <div class="suffix-field">
+              <input id="turf-waste" type="number" min="0" max="60" step="1" value="10" inputmode="decimal" />
+              <span>%</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="results" id="turf-results"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Cut plan</h3>
+        <p class="hint">Strip layout per area at your roll width. Grain usually has to run one way on the real job — treat the "better" orientation as an estimate, not gospel.</p>
+        <div id="cut-plan"></div>
+        <div class="results" id="cut-results"></div>
+        <div class="actions">
+          <button id="use-seams" class="btn" type="button">Send seam length to Seam &amp; Nails</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BASE ROCK ============ -->
+    <section class="panel" id="panel-base" role="tabpanel">
+      <div class="card">
+        <h2>Base rock / aggregate</h2>
+        <p class="hint">Class II road base, crushed rock, or DG under the turf. Order loose volume; it loses ~15–20% when compacted.</p>
+
+        <div class="area-block" data-area="base"></div>
+
+        <div class="grid two">
+          <label>Compacted depth
+            <div class="suffix-field">
+              <input id="base-depth" type="number" min="0" step="0.5" value="3" inputmode="decimal" />
+              <span>in</span>
+            </div>
+          </label>
+          <label>Material
+            <div class="suffix-field">
+              <select id="base-material" class="unit-select">
+                <option value="1.5" selected>Class II base (1.5 t/yd³)</option>
+                <option value="1.4">Crushed rock (1.4 t/yd³)</option>
+                <option value="1.45">Decomposed granite (1.45 t/yd³)</option>
+              </select>
+            </div>
+          </label>
+          <label>Compaction allowance
+            <div class="suffix-field">
+              <input id="base-compaction" type="number" min="0" max="40" step="1" value="18" inputmode="decimal" />
+              <span>%</span>
+            </div>
+          </label>
+          <label>Price
+            <div class="suffix-field">
+              <span class="prefix">$</span>
+              <input id="base-price" type="number" min="0" step="0.01" value="55" inputmode="decimal" />
+              <span>/ton</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="results" id="base-results"></div>
+      </div>
+    </section>
+
+    <!-- ============ INFILL (two layers) ============ -->
+    <section class="panel" id="panel-infill" role="tabpanel">
+      <div class="card">
+        <h2>Infill — sand + top fill</h2>
+        <p class="hint">Two layers: a <strong>sand</strong> base infill, then a <strong>top fill</strong> chosen per job. <strong>The lb/ft² comes from the field spec for the product</strong> — enter what this job calls for and the calculator turns it into tons, yards, and bags.</p>
+        <div class="area-block" data-area="infill"></div>
+      </div>
+
+      <!-- Layer 1: sand -->
+      <div class="card">
+        <h3 class="layer-h">① Sand (base infill)</h3>
+        <div class="grid two">
+          <label>Sand rate (per field spec)
+            <div class="suffix-field">
+              <input id="sand-rate" type="number" min="0" step="0.1" value="4" inputmode="decimal" />
+              <span>lb/ft²</span>
+            </div>
+          </label>
+          <label>Supply
+            <div class="suffix-field">
+              <select id="sand-supply" class="unit-select">
+                <option value="bulk" selected>Bulk (by weight)</option>
+                <option value="bags">Bagged</option>
+              </select>
+            </div>
+          </label>
+          <label class="sand-bulk">Bulk price
+            <div class="suffix-field"><span class="prefix">$</span>
+              <input id="sand-ton-price" type="number" min="0" step="0.01" value="45" inputmode="decimal" /><span>/ton</span>
+            </div>
+          </label>
+          <label class="sand-bag">Bag size
+            <div class="suffix-field">
+              <input id="sand-bag" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
+            </div>
+          </label>
+          <label class="sand-bag">Bag price
+            <div class="suffix-field"><span class="prefix">$</span>
+              <input id="sand-bag-price" type="number" min="0" step="0.01" value="6" inputmode="decimal" /><span>/bag</span>
+            </div>
+          </label>
+        </div>
+        <div class="results" id="sand-results"></div>
+      </div>
+
+      <!-- Layer 2: top fill -->
+      <div class="card">
+        <h3 class="layer-h">② Top fill (customer's choice)</h3>
+        <div class="grid two">
+          <label class="full">Product
+            <div class="suffix-field">
+              <select id="top-product" class="unit-select">
+                <option>Crumb rubber (SBR)</option>
+                <option>Coated / acrylic sand</option>
+                <option>Cork / organic</option>
+                <option>TPE</option>
+                <option>Zeolite (antimicrobial)</option>
+                <option>EPDM</option>
+                <option>Other / custom</option>
+              </select>
+            </div>
+          </label>
+          <label>Top-fill rate (per field spec)
+            <div class="suffix-field">
+              <input id="top-rate" type="number" min="0" step="0.1" value="2" inputmode="decimal" /><span>lb/ft²</span>
+            </div>
+          </label>
+          <p id="top-rate-hint" class="hint full rate-hint"></p>
+          <label>Bag size
+            <div class="suffix-field">
+              <input id="top-bag" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
+            </div>
+          </label>
+          <label>Bag price
+            <div class="suffix-field"><span class="prefix">$</span>
+              <input id="top-price" type="number" min="0" step="0.01" value="30" inputmode="decimal" /><span>/bag</span>
+            </div>
+          </label>
+        </div>
+        <div class="results" id="top-results"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Infill totals</h3>
+        <div class="results" id="infill-results"></div>
+      </div>
+    </section>
+
+    <!-- ============ SEAM & NAILS ============ -->
+    <section class="panel" id="panel-fasten" role="tabpanel">
+      <div class="card">
+        <h2>Seam tape &amp; glue</h2>
+        <p class="hint">Seams between turf pieces: tape + adhesive.</p>
+        <div class="grid two">
+          <label>Total seam length
+            <div class="suffix-field">
+              <input id="seam-len" type="number" min="0" step="1" value="0" inputmode="decimal" />
+              <span>ft</span>
+            </div>
+          </label>
+          <label>Glue coverage
+            <div class="suffix-field">
+              <input id="glue-cover" type="number" min="1" step="1" value="60" inputmode="decimal" />
+              <span>ft/gal</span>
+            </div>
+          </label>
+          <label>Tape roll length
+            <div class="suffix-field">
+              <input id="tape-roll" type="number" min="1" step="1" value="100" inputmode="decimal" />
+              <span>ft</span>
+            </div>
+          </label>
+          <label>Glue price
+            <div class="suffix-field">
+              <span class="prefix">$</span>
+              <input id="glue-price" type="number" min="0" step="0.01" value="45" inputmode="decimal" />
+              <span>/gal</span>
+            </div>
+          </label>
+        </div>
+        <div class="results" id="seam-results"></div>
+      </div>
+
+      <div class="card">
+        <h2>Nails / staples</h2>
+        <p class="hint">Perimeter every 4–8″, seams zig-zag every 2–3″, plus field nails.</p>
+
+        <div class="area-block" data-area="fasten"></div>
+
+        <div class="grid two">
+          <label>Perimeter length
+            <div class="suffix-field">
+              <input id="perimeter" type="number" min="0" step="1" value="0" inputmode="decimal" />
+              <span>ft</span>
+            </div>
+          </label>
+          <label>Perimeter spacing
+            <div class="suffix-field">
+              <input id="perim-spacing" type="number" min="1" step="1" value="6" inputmode="decimal" />
+              <span>in</span>
+            </div>
+          </label>
+          <label>Seam length
+            <div class="suffix-field">
+              <input id="seam-len-2" type="number" min="0" step="1" value="0" inputmode="decimal" />
+              <span>ft</span>
+            </div>
+          </label>
+          <label>Seam spacing
+            <div class="suffix-field">
+              <input id="seam-spacing" type="number" min="1" step="0.5" value="3" inputmode="decimal" />
+              <span>in</span>
+            </div>
+          </label>
+          <label>Field nails
+            <div class="suffix-field">
+              <input id="field-rate" type="number" min="0" step="0.1" value="0.5" inputmode="decimal" />
+              <span>/ft²</span>
+            </div>
+          </label>
+          <label>Per box
+            <div class="suffix-field">
+              <input id="nail-box" type="number" min="1" step="1" value="250" inputmode="decimal" />
+              <span>nails</span>
+            </div>
+          </label>
+        </div>
+        <div class="results" id="nail-results"></div>
+      </div>
+    </section>
+
+    <!-- ============ JOB GUIDE (phase checklist) ============ -->
+    <section class="panel" id="panel-guide" role="tabpanel">
+      <div class="card">
+        <h2>Job guide</h2>
+        <p class="hint">The install, phase by phase. Check steps off as the crew works; notes save on this device. Specs marked "per spec" follow the job sheet.</p>
+        <div class="guide-progress">
+          <div class="guide-bar"><div id="guide-bar-fill" class="guide-bar-fill"></div></div>
+          <span id="guide-progress-label" class="guide-progress-label">0%</span>
+        </div>
+        <div class="actions">
+          <button id="guide-reset" class="btn ghost danger-btn" type="button">Reset checklist</button>
+        </div>
+      </div>
+      <div id="guide-phases"></div>
+    </section>
+
+    <!-- ============ EXPENSES (foreman job-cost tracking) ============ -->
+    <section class="panel" id="panel-expenses" role="tabpanel">
+      <div class="card">
+        <h2>Foreman expenses</h2>
+        <p class="hint">Log diesel, gas, Home Depot runs and anything you spend on the job. Saved on this device for this foreman.</p>
+        <div class="grid two">
+          <label>Foreman / crew
+            <input id="exp-foreman" type="text" placeholder="Your name or crew #" autocomplete="off" />
+          </label>
+          <label>Job (optional)
+            <input id="exp-job" type="text" placeholder="e.g. Lincoln HS field" autocomplete="off" />
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Add expense</h3>
+        <div class="grid two">
+          <label>Category
+            <div class="suffix-field">
+              <select id="exp-cat" class="unit-select">
+                <option>⛽ Diesel</option>
+                <option>⛽ Gas</option>
+                <option>🛒 Home Depot / materials</option>
+                <option>🚜 Equipment rental</option>
+                <option>🗑 Dump / disposal</option>
+                <option>🔧 Tools</option>
+                <option>💵 Other</option>
+              </select>
+            </div>
+          </label>
+          <label>Amount
+            <div class="suffix-field"><span class="prefix">$</span>
+              <input id="exp-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </div>
+          </label>
+          <label>Date
+            <input id="exp-date" type="date" />
+          </label>
+          <label>Note / vendor
+            <input id="exp-note" type="text" placeholder="e.g. seam nails, 3 boxes" autocomplete="off" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="exp-add" class="btn" type="button">Add expense</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Totals</h3>
+        <div class="results" id="exp-totals"></div>
+        <div class="actions">
+          <button id="exp-share" class="btn ghost" type="button">Share / export</button>
+          <button id="exp-clear" class="btn ghost danger-btn" type="button">Clear all</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Logged expenses</h3>
+        <div id="exp-list" class="saved-list"></div>
+        <p id="exp-empty" class="hint">No expenses logged yet.</p>
+      </div>
+    </section>
+
+    <!-- ============ FULL ESTIMATE ============ -->
+    <section class="panel" id="panel-estimate" role="tabpanel">
+      <div class="card">
+        <h2>Job details</h2>
+        <div class="grid two">
+          <label>Client / job name
+            <input id="job-name" type="text" placeholder="e.g. Miller backyard" autocomplete="off" />
+          </label>
+          <label>Date
+            <input id="job-date" type="date" />
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Areas</h2>
+        <div class="area-block" data-area="estimate"></div>
+      </div>
+
+      <div class="card estimate">
+        <h2>Estimate</h2>
+        <p class="hint">Pulls area above and the rates from each calculator tab.</p>
+        <div class="grid two tight">
+          <label>Turf $/ft²
+            <div class="suffix-field"><span class="prefix">$</span><input id="est-turf-price" type="number" min="0" step="0.01" value="2.75" inputmode="decimal" /></div>
+          </label>
+          <label>Labor $/ft²
+            <div class="suffix-field"><span class="prefix">$</span><input id="est-labor" type="number" min="0" step="0.01" value="1.50" inputmode="decimal" /></div>
+          </label>
+          <label>Waste %
+            <div class="suffix-field"><input id="est-waste" type="number" min="0" step="1" value="10" inputmode="decimal" /><span>%</span></div>
+          </label>
+          <label>Markup %
+            <div class="suffix-field"><input id="est-markup" type="number" min="0" step="1" value="0" inputmode="decimal" /><span>%</span></div>
+          </label>
+        </div>
+
+        <table class="est-table">
+          <thead><tr><th>Item</th><th>Qty</th><th class="num">Cost</th></tr></thead>
+          <tbody id="est-body"></tbody>
+          <tfoot>
+            <tr class="subtotal"><td colspan="2">Subtotal</td><td id="est-subtotal" class="num">$0.00</td></tr>
+            <tr class="markup-row"><td colspan="2">Markup</td><td id="est-markup-val" class="num">$0.00</td></tr>
+            <tr class="total"><td colspan="2">Total</td><td id="est-total" class="num">$0.00</td></tr>
+          </tfoot>
+        </table>
+
+        <div class="actions">
+          <button id="save-job" class="btn" type="button">Save job</button>
+          <button id="share-job" class="btn ghost" type="button">Share / copy</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saved jobs</h2>
+        <div id="saved-list" class="saved-list"></div>
+        <p id="saved-empty" class="hint">No saved jobs yet.</p>
+      </div>
+    </section>
+
+    <!-- ============ CONVERTERS ============ -->
+    <section class="panel" id="panel-convert" role="tabpanel">
+      <div class="card">
+        <h2>Quick converters</h2>
+
+        <div class="conv-row">
+          <span class="conv-label">Feet → inches</span>
+          <input id="c-ft" type="number" step="0.1" inputmode="decimal" placeholder="ft" />
+          <span class="conv-eq">=</span>
+          <output id="c-in">0 in</output>
+        </div>
+
+        <div class="conv-row">
+          <span class="conv-label">Sq ft → sq yd</span>
+          <input id="c-sqft" type="number" step="1" inputmode="decimal" placeholder="ft²" />
+          <span class="conv-eq">=</span>
+          <output id="c-sqyd">0 yd²</output>
+        </div>
+
+        <div class="conv-row">
+          <span class="conv-label">Pounds → tons</span>
+          <input id="c-lb" type="number" step="1" inputmode="decimal" placeholder="lb" />
+          <span class="conv-eq">=</span>
+          <output id="c-ton">0 tons</output>
+        </div>
+
+        <div class="conv-row">
+          <span class="conv-label">L × W → area</span>
+          <input id="c-l" type="number" step="0.1" inputmode="decimal" placeholder="L ft" />
+          <span class="conv-eq">×</span>
+          <input id="c-w" type="number" step="0.1" inputmode="decimal" placeholder="W ft" />
+          <span class="conv-eq">=</span>
+          <output id="c-area">0 ft²</output>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-foot">
+    <span>TurfPro · works offline · estimates only</span>
+    <span id="app-version"></span>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
