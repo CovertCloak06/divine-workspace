@@ -1388,13 +1388,18 @@
       "wosVerified": false
     },
     {
-      "art": " 🐾　/ヽ　  /ヽ\n　  ':'　ﾞ''\"\"　 `':,\n　 ﾐ　　 ･ω･　 ;, \n　:; .    っ ()xxxxx[[{::::::::::::::::::::::::::::::::::::::::>\n　 `:;　 　 　　,;'  Catxcalibur \n　　 `'∪\"\" '\"∪",
+      "art": ".　/ヽ　/ヽ\n   ':'　ﾞ''\" `':,\nﾐ　    ･  ω ･　 ;, \n: ; . っ ()xxx[[{:::::::::::::::::::::::::::::>\n`:;　 　 　　,;'  Catxcalibur \n  `'∪\"\" '\"∪",
       "draft": false,
       "height": 6,
       "id": "user-mr9nz2cg-s9j2",
-      "tags": [],
-      "title": "Sword",
-      "width": 62,
+      "tags": [
+        "cat",
+        "sword",
+        "war",
+        "fluffy kitty"
+      ],
+      "title": "Sword cat",
+      "width": 46,
       "wosVerified": false
     },
     {
