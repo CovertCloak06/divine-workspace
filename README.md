@@ -37,7 +37,7 @@ just dev
 | Package | Purpose |
 |---------|---------|
 | **shared-config** | Shared Biome & pre-commit configs |
-| **dev-dashboard** | Terminal UI for service monitoring |
+| **divine-scripts** | Production scripts (backup, deploy, health checks) |
 
 ### Infrastructure
 
@@ -113,7 +113,7 @@ divine-workspace/
 │   └── pkn-mobile/         # Mobile PKN (OpenAI API)
 ├── packages/               # Shared packages
 │   ├── shared-config/      # Shared configs
-│   └── dev-dashboard/      # Dev monitoring
+│   └── divine-scripts/     # Production utilities
 ├── scripts/                # Helper scripts
 ├── .vscode/                # VS Code workspace config
 ├── justfile                # Task runner (30+ commands)
