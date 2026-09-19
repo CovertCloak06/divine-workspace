@@ -1,7 +1,7 @@
 {
-  "lastRunUtc": "2026-09-18T21:27:35.371Z",
+  "lastRunUtc": "2026-09-19T09:28:57.449Z",
   "source": "https://frostline-art.netlify.app/.netlify/functions/get-art",
   "pieces": 308,
   "deletedIds": 75,
-  "changed": true
+  "changed": false
 }
