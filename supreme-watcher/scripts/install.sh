@@ -56,7 +56,11 @@ fetch_app() {
     git clone --depth 1 "$REPO_URL" "$APP_DIR"
   fi
   say "Installing packages + building…"
-  ( cd "$APP_DIR" && npm install --omit=dev >/dev/null 2>&1 || npm install >/dev/null; npm run build >/dev/null )
+  # Build needs dev deps (typescript). Install all, build, then prune dev to save space.
+  ( cd "$APP_DIR" \
+      && npm install >/dev/null 2>&1 \
+      && npm run build >/dev/null \
+      && npm prune --omit=dev >/dev/null 2>&1 || true )
 }
 
 # --- Auto-start: Android (Termux:Boot) --------------------------------------

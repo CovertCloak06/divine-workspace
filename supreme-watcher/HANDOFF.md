@@ -83,4 +83,10 @@ starts working** — no setup page, no typing. Ask them for that if you'd prefer
 | Worked, then stopped (Android) | Make sure battery optimization is **off** for Termux + Termux:Boot, and the phone is charged/on Wi-Fi. |
 | `HTTP 403` in the logs | The device isn't on a home connection. Move it to home Wi-Fi. |
 
-To reconfigure later (new keys/filters): in Termux run `cd ~/supreme-watcher && npm run setup`, or on the Pi the same, then reopen the setup page.
+To reconfigure later (new keys/filters), the watcher must be **restarted** to pick
+up the changes — writing `.env` alone isn't enough:
+- **Android (Termux):** `cd ~/supreme-watcher && npm run setup`, save in the page,
+  then `pkill -f dist/index.js` (Termux:Boot relaunches it with the new settings) —
+  or just reboot the phone.
+- **Raspberry Pi:** `cd ~/supreme-watcher && npm run setup`, save, then
+  `sudo systemctl restart supreme-watcher`.

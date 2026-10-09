@@ -31,23 +31,26 @@ export async function runCycle(
 
   for (const listing of listings) {
     const kind = classify(listing, store, cfg);
-    // Always record current state for next cycle.
-    store.set(listing.id, { soldOut: listing.soldOut, price: listing.price });
 
-    if (seeding || !kind) continue;
-    if (!matches(listing, criteria)) continue;
-
-    if (cfg.dryRun) {
-      log.info(`[DRY_RUN] ${kind}: ${listing.name} ($${listing.price}) ${listing.url}`);
-    } else {
-      try {
-        await notifyPushover({ token: cfg.pushoverToken, user: cfg.pushoverUser }, kind, listing);
-        log.info(`Alerted (${kind}): ${listing.name}`);
-      } catch (err) {
-        log.error(`Failed to notify for ${listing.name}`, err);
+    if (!seeding && kind && matches(listing, criteria)) {
+      if (cfg.dryRun) {
+        log.info(`[DRY_RUN] ${kind}: ${listing.name} ($${listing.price}) ${listing.url}`);
+      } else {
+        try {
+          await notifyPushover({ token: cfg.pushoverToken, user: cfg.pushoverUser }, kind, listing);
+          log.info(`Alerted (${kind}): ${listing.name}`);
+        } catch (err) {
+          // Delivery failed: leave the prior state untouched so this alert is
+          // re-detected and retried next cycle instead of being silently lost.
+          log.error(`Failed to notify for ${listing.name}; will retry next cycle.`, err);
+          continue;
+        }
       }
+      alerts++;
     }
-    alerts++;
+
+    // Advance stored state only after a successful alert, or when none was due.
+    store.set(listing.id, { soldOut: listing.soldOut, price: listing.price });
   }
 
   await store.save();

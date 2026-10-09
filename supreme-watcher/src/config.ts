@@ -26,7 +26,10 @@ const RawConfig = z.object({
   MAX_PRICE: z
     .string()
     .optional()
-    .transform((v) => (v && v.trim() ? Number(v) : undefined)),
+    .transform((v) => (v && v.trim() ? Number(v) : undefined))
+    .refine((v) => v === undefined || (Number.isFinite(v) && v >= 0), {
+      message: 'MAX_PRICE must be a nonnegative number',
+    }),
   ALERT_ON_RESTOCK: boolish(true),
   ALERT_ON_PRICE_DROP: boolish(false),
   DRY_RUN: boolish(false),
