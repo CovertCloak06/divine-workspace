@@ -13,7 +13,7 @@
  */
 
 const STORE_KEY = 'turfpro.jobs.v2';
-const VERSION = 'v5';
+const VERSION = 'v6';
 
 /* Infill drop-plan totals, computed by calcInfillPlan() and read by the Sand /
  * Top Layer trackers for their progress bars. */
