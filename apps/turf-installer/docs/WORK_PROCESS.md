@@ -215,6 +215,55 @@ and per-product typical ranges are shown as hints only — the spec always wins.
 
 ---
 
+## Infill — delivery & dropping tracking ✅✅ (FULL SPEC from Cameron, 2026-10-28)
+
+> This is the real requirement. The whole infill job runs **over several days**,
+> so everything below persists per device and is logged by **day**. Material
+> comes in two layers — **sand** (base) then a **top layer** — and for each layer
+> the crew tracks both what's **delivered/received** and what's **dropped**
+> (spread) on the field. Every item below is a hard requirement.
+
+### Key terms (the real vocabulary)
+- **Panel** — the field is divided into panels; material is dropped panel by panel.
+- **Pass** — one **pass** = dropping material over the span of the **whole field**
+  (every panel) once. It takes **multiple passes** to lay the full amount before
+  moving to the next layer.
+- **Drop** — one act of dropping material on a panel: a **bag** emptied, or (bulk
+  sand) a **load/drop** dumped.
+
+### A) Infill calculator — must compute:
+1. **lb per sq ft** — the rate for the field (per the field spec).
+2. **Bags or drops per panel** needed to make up the total for **one pass** over
+   the whole field.
+3. **Total for one pass** (whole field).
+4. **How many passes** it takes to finish dropping the material (before moving to
+   the top layer).
+5. **What the top-layer material is** for that field.
+
+### B) SAND layer tracking (bulk OR bags)
+Sand is sometimes **bulk**, sometimes **bags** — track whichever applies.
+- **Received:** how many **bags received**, on **how many trucks**, on **what days**.
+  If **bulk**: track **weight delivered** + **how many trucks** + **what days**.
+- **Dropped:** how many **bags or bulk loads/drops** have been dropped on the
+  field, **who** dropped them, on **what days**. Track toward the plan (passes).
+- **Weight matters for sand** (especially bulk).
+
+### C) TOP LAYER tracking (bags only)
+- The top layer is **always shipped in bags** → **no weight tracking** needed.
+- **Received:** bags received, trucks, days.
+- **Dropped:** bags dropped, **who** dropped, days. Track toward the plan (passes).
+- Record **what the top-layer material is** for this field.
+
+### D) Cross-cutting requirements
+- **Who is dropping** — every drop entry records the operator/person dropping.
+- **Multi-day** — the process spans a few days; all logs are kept and shown by day
+  and in running totals, and nothing resets on its own.
+- **Trucks & days** — deliveries are counted by number of trucks and by date.
+
+_Do not ask Cameron to re-explain any of the above — it is captured here._
+
+---
+
 ## Phase 9 — Cleanup & final walkthrough
 **Goal:** Site clean, customer sign-off.
 
