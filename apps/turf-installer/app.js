@@ -15,9 +15,10 @@
 const STORE_KEY = 'turfpro.jobs.v2';
 const VERSION = 'v5';
 
-/* cross-tab state: the Infill tab's latest computed sand-bag count, so the
- * Bag Count tab can pull it as a loading target. */
-let lastInfillSandBags = 0;
+/* Infill drop-plan totals, computed by calcInfillPlan() and read by the Sand /
+ * Top Layer trackers for their progress bars. */
+let planSand = { totalDrops: 0, unitWord: 'bags' };
+let planTop = { totalBags: 0 };
 
 /* ---------- helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -226,7 +227,6 @@ function calcInfill() {
   const sandYd3 = sandTons / SAND_TONS_PER_YD3;
   const sandBagSize = num('sand-bag') || 50;
   const sandBags = Math.ceil(sandLb / sandBagSize);
-  lastInfillSandBags = sandBags;   // let the Bag Count tab pull this as a target
   const supply = $('sand-supply').value;
   // show/hide bulk vs bag inputs
   document.querySelectorAll('.sand-bulk').forEach((n) => n.style.display = supply === 'bulk' ? '' : 'none');
@@ -262,6 +262,82 @@ function calcInfill() {
     { k: 'Infill cost', v: money(sandCost + topCost) },
   ]);
   return { sandLb, topLb, sandCost, topCost, net };
+}
+
+/* Drop plan: split the field into panels and passes, and work out how many
+ * bags/drops go down per panel per pass, per full pass, and in total. Sets the
+ * plan totals the Sand / Top Layer trackers measure progress against. */
+function calcInfillPlan() {
+  const area = areaTotal('infill');
+  const panels = Math.max(1, Math.round(num('plan-panels')) || 1);
+
+  // --- sand ---
+  const supply = $('sand-supply').value;
+  const sandRate = num('sand-rate');
+  const sandLb = area * sandRate;
+  const dropUnitLb = supply === 'bulk' ? (num('plan-bulk-drop') || 1000) : (num('sand-bag') || 50);
+  const sandPasses = Math.max(1, Math.round(num('plan-sand-passes')) || 1);
+  const sandTotal = dropUnitLb > 0 ? Math.ceil(sandLb / dropUnitLb) : 0;
+  const sandPerPass = Math.ceil(sandTotal / sandPasses);
+  const sandPerPanel = Math.ceil(sandPerPass / panels);
+  const word = supply === 'bulk' ? 'loads' : 'bags';
+  planSand = { totalDrops: sandTotal, unitWord: word };
+  lines('plan-sand-results', area <= 0 ? [{ k: 'Sand plan', v: 'enter the field area above' }] : [
+    { k: 'Rate', v: `${fmt(sandRate, 1)} lb/ft²` },
+    { k: 'Total sand', v: `${fmt(sandLb, 0)} lb · ${fmt(sandLb / 2000, 2)} tons` },
+    { k: 'Per panel, per pass', v: `${fmt(sandPerPanel, 0)} ${word}`, big: true },
+    { k: `Per pass (whole field, ${panels} panels)`, v: `${fmt(sandPerPass, 0)} ${word}` },
+    { k: `To finish (${sandPasses} pass${sandPasses === 1 ? '' : 'es'})`, v: `${fmt(sandTotal, 0)} ${word}` },
+  ]);
+
+  // --- top layer (always bags) ---
+  const topRate = num('top-rate');
+  const topLb = area * topRate;
+  const topBagLb = num('top-bag') || 50;
+  const topPasses = Math.max(1, Math.round(num('plan-top-passes')) || 1);
+  const topTotal = topBagLb > 0 ? Math.ceil(topLb / topBagLb) : 0;
+  const topPerPass = Math.ceil(topTotal / topPasses);
+  const topPerPanel = Math.ceil(topPerPass / panels);
+  planTop = { totalBags: topTotal };
+  const product = $('top-product').value;
+  const noteEl = $('top-product-note');
+  if (noteEl) noteEl.textContent = `This field: ${product}.`;
+  lines('plan-top-results', area <= 0 ? [{ k: 'Top plan', v: 'enter the field area above' }] : [
+    { k: 'Product', v: product },
+    { k: 'Rate', v: `${fmt(topRate, 1)} lb/ft²` },
+    { k: 'Per panel, per pass', v: `${fmt(topPerPanel, 0)} bags`, big: true },
+    { k: `Per pass (whole field, ${panels} panels)`, v: `${fmt(topPerPass, 0)} bags` },
+    { k: `To finish (${topPasses} pass${topPasses === 1 ? '' : 'es'})`, v: `${fmt(topTotal, 0)} bags` },
+  ]);
+
+  saveInfillPlan();
+}
+
+/* The drop plan must survive the multi-day job, so the infill area + plan inputs
+ * persist (unlike the other transient calculator tabs). */
+const INFILL_PLAN_KEY = 'turfpro.infill.plan.v1';
+const INFILL_PLAN_IDS = [
+  'sand-rate', 'sand-supply', 'sand-bag', 'sand-ton-price', 'sand-bag-price',
+  'top-product', 'top-rate', 'top-bag', 'top-price',
+  'plan-panels', 'plan-bulk-drop', 'plan-sand-passes', 'plan-top-passes',
+];
+function saveInfillPlan() {
+  if (!areaBlocks.infill) return;
+  const s = {};
+  INFILL_PLAN_IDS.forEach((id) => { s[id] = $(id).value; });
+  s.areas = [];
+  areaBlocks.infill.rows.querySelectorAll('.area-row').forEach((r) =>
+    s.areas.push({ len: r.querySelector('.len').value, wid: r.querySelector('.wid').value }));
+  try { localStorage.setItem(INFILL_PLAN_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+}
+function loadInfillPlan() {
+  let s; try { s = JSON.parse(localStorage.getItem(INFILL_PLAN_KEY)); } catch { s = null; }
+  if (!s) return;
+  INFILL_PLAN_IDS.forEach((id) => { if (s[id] != null && s[id] !== '') $(id).value = s[id]; });
+  if (s.areas && s.areas.length && areaBlocks.infill) {
+    areaBlocks.infill.rows.innerHTML = '';
+    s.areas.forEach((a) => areaBlocks.infill.addRow(a.len, a.wid));
+  }
 }
 
 function calcSeam() {
@@ -358,8 +434,10 @@ function calcConvert() {
 
 /* ---------- master render ---------- */
 function render() {
-  calcTurf(); calcBase(); calcInfill(); calcSeam(); calcNails();
+  calcTurf(); calcBase(); calcInfill(); calcInfillPlan(); calcSeam(); calcNails();
   calcEstimate(); calcConvert();
+  if (sandTracker) sandTracker.refreshProgress();
+  if (topTracker) topTracker.refreshProgress();
 }
 
 /* ---------- save / load / share ---------- */
@@ -712,58 +790,135 @@ function loadForemanMeta() {
   } catch { /* ignore */ }
 }
 
-/* ---------- bag loading tracker ---------- */
-/* A live tally of bags physically loaded, with an optional target (pullable
- * from the Infill tab) and weight math. The count persists so closing the app
- * mid-load doesn't lose it. */
-const BAG_KEY = 'turfpro.bags.v1';
-const BAG_FIELDS = ['bag-label', 'bag-weight', 'bag-target', 'bag-pallet'];
-let bagCount = 0;
+/* ---------- material trackers (sand + top layer) ---------- */
+/* Receiving + dropping logs for one infill layer, across the multi-day job.
+ * Reused for sand (hasWeight, bulk or bags) and top layer (bags only). Every
+ * drop records who dropped it and which pass; everything persists per device. */
+function makeTracker(opts) {
+  // opts: { P, key, hasWeight, planTotal: ()=>number, unitWord: ()=>string }
+  const P = opts.P;
+  const el = (s) => $(`${P}-${s}`);
+  const opsKey = opts.key + '.ops';
+  const read = () => { try { return JSON.parse(localStorage.getItem(opts.key)) || { received: [], dropped: [] }; } catch { return { received: [], dropped: [] }; } };
+  const write = (d) => localStorage.setItem(opts.key, JSON.stringify(d));
 
-function readBagState() { try { return JSON.parse(localStorage.getItem(BAG_KEY)) || {}; } catch { return {}; } }
-function writeBagState() {
-  const s = { count: bagCount };
-  BAG_FIELDS.forEach((id) => { s[id] = $(id).value; });
-  localStorage.setItem(BAG_KEY, JSON.stringify(s));
+  function addReceived() {
+    const trucks = num(el('rc-trucks'));
+    const bags = num(el('rc-bags'));
+    const weight = opts.hasWeight ? num(el('rc-weight')) : 0;
+    if (trucks <= 0 && bags <= 0 && weight <= 0) { toast('Enter a delivery'); return; }
+    const d = read();
+    const entry = { id: uid('r'), date: el('rc-date').value || todayLocal(), trucks, bags };
+    if (opts.hasWeight) entry.weight = weight;
+    d.received.push(entry); write(d);
+    el('rc-bags').value = ''; if (opts.hasWeight) el('rc-weight').value = '';
+    renderReceived(); refreshProgress(); toast('Delivery logged');
+  }
+
+  function renderReceived() {
+    const rows = read().received.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const list = el('rc-list'); list.innerHTML = '';
+    let tb = 0, tt = 0, tw = 0;
+    rows.forEach((e) => {
+      tb += e.bags; tt += e.trucks; tw += (e.weight || 0);
+      const bits = [`${fmt(e.trucks, 0)} truck${e.trucks === 1 ? '' : 's'}`];
+      if (e.bags > 0) bits.push(`${fmt(e.bags, 0)} bags`);
+      if (opts.hasWeight && e.weight > 0) bits.push(`${fmt(e.weight, 0)} lb`);
+      const item = document.createElement('div'); item.className = 'saved-item';
+      item.innerHTML = `<div class="meta"><span class="name"></span><span class="sub">${esc(e.date)}</span></div>
+        <div class="row-actions"><button class="del" title="Delete">🗑</button></div>`;
+      item.querySelector('.name').textContent = bits.join(' · ');
+      item.querySelector('.del').addEventListener('click', () => {
+        const dd = read(); dd.received = dd.received.filter((x) => x.id !== e.id); write(dd);
+        renderReceived(); refreshProgress(); toast('Deleted');
+      });
+      list.appendChild(item);
+    });
+    el('rc-empty').style.display = rows.length ? 'none' : '';
+    const totals = [
+      { k: 'Deliveries', v: `${rows.length}` },
+      { k: 'Trucks', v: fmt(tt, 0) },
+      { k: 'Bags received', v: fmt(tb, 0), big: true },
+    ];
+    if (opts.hasWeight) totals.push({ k: 'Weight received', v: `${fmt(tw, 0)} lb · ${fmt(tw / 2000, 2)} tons` });
+    lines(`${P}-rc-totals`, totals);
+  }
+
+  function addDropped(quick) {
+    const count = quick != null ? quick : num(el('dp-count'));
+    if (count <= 0) { toast('Enter a count'); return; }
+    const d = read();
+    d.dropped.push({
+      id: uid('d'), date: el('dp-date').value || todayLocal(),
+      operator: el('dp-ops').value.trim() || '—',
+      pass: Math.max(1, Math.round(num(el('dp-pass'))) || 1),
+      count,
+    });
+    write(d);
+    if (quick == null) el('dp-count').value = '';
+    renderDropped(); refreshProgress();
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch { /* unsupported */ } }
+  }
+
+  function renderDropped() {
+    const rows = read().dropped.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const list = el('dp-list'); list.innerHTML = '';
+    let total = 0; const byOp = {};
+    rows.forEach((e) => {
+      total += e.count; byOp[e.operator] = (byOp[e.operator] || 0) + e.count;
+      const item = document.createElement('div'); item.className = 'saved-item';
+      item.innerHTML = `<div class="meta"><span class="name"></span><span class="sub">${esc(e.date)} · pass ${fmt(e.pass, 0)}</span></div>
+        <span class="price">${fmt(e.count, 0)}</span>
+        <div class="row-actions"><button class="del" title="Delete">🗑</button></div>`;
+      item.querySelector('.name').textContent = e.operator;
+      item.querySelector('.del').addEventListener('click', () => {
+        const dd = read(); dd.dropped = dd.dropped.filter((x) => x.id !== e.id); write(dd);
+        renderDropped(); refreshProgress(); toast('Deleted');
+      });
+      list.appendChild(item);
+    });
+    el('dp-empty').style.display = rows.length ? 'none' : '';
+    const opLines = Object.entries(byOp).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ k: `  ${k}`, v: fmt(v, 0) }));
+    lines(`${P}-dp-totals`, [
+      { k: 'Total dropped', v: fmt(total, 0), big: true },
+      ...opLines,
+    ]);
+  }
+
+  function totalDropped() { return read().dropped.reduce((s, e) => s + e.count, 0); }
+  function totalReceivedBags() { return read().received.reduce((s, e) => s + e.bags, 0); }
+
+  function refreshProgress() {
+    const dropped = totalDropped();
+    const plan = opts.planTotal() || 0;
+    const word = opts.unitWord();
+    el('dropped-big').textContent = fmt(dropped, 0);
+    const pct = plan > 0 ? Math.min(100, Math.round((dropped / plan) * 100)) : 0;
+    el('bar').style.width = pct + '%';
+    el('progress').textContent = plan > 0
+      ? `${pct}% — ${fmt(Math.max(0, plan - dropped), 0)} ${word} to go`
+      : 'set a plan on the Infill tab';
+    lines(`${P}-summary`, [
+      { k: 'Dropped / plan', v: `${fmt(dropped, 0)} / ${fmt(plan, 0)} ${word}` },
+      { k: 'Received (bags)', v: fmt(totalReceivedBags(), 0) },
+    ]);
+  }
+
+  function init() {
+    if (!el('rc-date').value) el('rc-date').value = todayLocal();
+    if (!el('dp-date').value) el('dp-date').value = todayLocal();
+    try { const op = localStorage.getItem(opsKey); if (op) el('dp-ops').value = op; } catch { /* ignore */ }
+    el('dp-ops').addEventListener('input', () => { try { localStorage.setItem(opsKey, el('dp-ops').value); } catch { /* ignore */ } });
+    el('rc-add').addEventListener('click', addReceived);
+    el('dp-add').addEventListener('click', () => addDropped());
+    el('dp-plus').addEventListener('click', () => addDropped(1));
+    renderReceived(); renderDropped(); refreshProgress();
+  }
+
+  return { init, refreshProgress };
 }
-function loadBagState() {
-  const s = readBagState();
-  if (Number.isFinite(s.count)) bagCount = s.count;
-  BAG_FIELDS.forEach((id) => { if (s[id] != null && s[id] !== '') $(id).value = s[id]; });
-}
 
-function palletSize() { return Math.max(1, Math.round(num('bag-pallet')) || 1); }
-
-function renderBags() {
-  const target = Math.max(0, Math.round(num('bag-target')));
-  const weight = num('bag-weight');
-  $('bag-count').textContent = fmt(bagCount, 0);
-  $('bag-count-sub').textContent = ($('bag-label').value.trim() || 'bags') + ' loaded';
-  $('bag-plus-pallet').textContent = `+${palletSize()} (pallet)`;
-
-  const pct = target > 0 ? Math.min(100, Math.round((bagCount / target) * 100)) : 0;
-  $('bag-bar-fill').style.width = pct + '%';
-  const remaining = Math.max(0, target - bagCount);
-  $('bag-progress-label').textContent = target > 0
-    ? `${pct}% — ${fmt(remaining, 0)} to go`
-    : 'no target';
-
-  lines('bag-results', [
-    { k: 'Loaded', v: `${fmt(bagCount, 0)} bags · ${fmt(bagCount * weight, 0)} lb`, big: true },
-    ...(target > 0 ? [
-      { k: 'Target', v: `${fmt(target, 0)} bags · ${fmt(target * weight, 0)} lb` },
-      { k: 'Remaining', v: `${fmt(remaining, 0)} bags · ${fmt(remaining * weight, 0)} lb` },
-    ] : []),
-    { k: 'Weight loaded', v: `${fmt(bagCount * weight / 2000, 2)} tons` },
-  ]);
-}
-
-function bumpBags(n) {
-  bagCount = Math.max(0, bagCount + n);
-  writeBagState();
-  renderBags();
-  if (n > 0 && navigator.vibrate) { try { navigator.vibrate(20); } catch { /* unsupported */ } }
-}
+let sandTracker = null, topTracker = null;
 
 /* ---------- toast ---------- */
 let toastTimer;
@@ -788,6 +943,7 @@ function initTabs() {
 function init() {
   document.querySelectorAll('.area-block').forEach(buildAreaBlock);
   initTabs();
+  loadInfillPlan();   // restore the saved drop plan + infill area (multi-day)
 
   if (!$('job-date').value) $('job-date').value = todayLocal();
   if (!$('exp-date').value) $('exp-date').value = todayLocal();
@@ -828,22 +984,17 @@ function init() {
   $('exp-foreman').addEventListener('input', saveForemanMeta);
   $('exp-job').addEventListener('input', saveForemanMeta);
 
-  // bag loading tracker
-  loadBagState();
-  renderBags();
-  $('bag-plus').addEventListener('click', () => bumpBags(1));
-  $('bag-minus').addEventListener('click', () => bumpBags(-1));
-  $('bag-plus-pallet').addEventListener('click', () => bumpBags(palletSize()));
-  $('bag-use-infill').addEventListener('click', () => {
-    render();                              // make sure the infill count is current
-    $('bag-target').value = lastInfillSandBags || 0;
-    writeBagState(); renderBags();
-    toast(`Target set to ${fmt(lastInfillSandBags, 0)} bags`);
+  // material trackers (sand: weight + bulk/bags; top: bags only)
+  sandTracker = makeTracker({
+    P: 'strk', key: 'turfpro.track.sand.v1', hasWeight: true,
+    planTotal: () => planSand.totalDrops, unitWord: () => planSand.unitWord,
   });
-  $('bag-reset').addEventListener('click', () => {
-    if (confirm('Reset the bag count to 0?')) { bagCount = 0; writeBagState(); renderBags(); toast('Count reset'); }
+  topTracker = makeTracker({
+    P: 'ttrk', key: 'turfpro.track.top.v1', hasWeight: false,
+    planTotal: () => planTop.totalBags, unitWord: () => 'bags',
   });
-  BAG_FIELDS.forEach((id) => $(id).addEventListener('input', () => { writeBagState(); renderBags(); }));
+  sandTracker.init();
+  topTracker.init();
 
   renderSaved();
   renderExpenses();

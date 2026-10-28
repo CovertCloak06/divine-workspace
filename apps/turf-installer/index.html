@@ -26,7 +26,8 @@
     <button class="tab active" role="tab" data-tab="turf">Turf &amp; Rolls</button>
     <button class="tab" role="tab" data-tab="base">Base Rock</button>
     <button class="tab" role="tab" data-tab="infill">Infill</button>
-    <button class="tab" role="tab" data-tab="bags">Bag Count</button>
+    <button class="tab" role="tab" data-tab="sand">Sand</button>
+    <button class="tab" role="tab" data-tab="top">Top Layer</button>
     <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
     <button class="tab" role="tab" data-tab="guide">Job Guide</button>
     <button class="tab" role="tab" data-tab="expenses">Expenses</button>
@@ -204,64 +205,161 @@
         <h3 class="layer-h">Infill totals</h3>
         <div class="results" id="infill-results"></div>
       </div>
+
+      <div class="card">
+        <h3 class="layer-h">Drop plan — panels &amp; passes</h3>
+        <p class="hint">Split the field into panels and decide how many passes each layer takes. The plan tells you bags/drops per panel per pass, per full pass, and total — and feeds the Sand &amp; Top Layer trackers.</p>
+        <div class="grid two">
+          <label>Panels in the field
+            <div class="suffix-field">
+              <input id="plan-panels" type="number" min="1" step="1" value="8" inputmode="decimal" /><span>panels</span>
+            </div>
+          </label>
+          <label>Bulk sand drop size
+            <div class="suffix-field">
+              <input id="plan-bulk-drop" type="number" min="1" step="1" value="1000" inputmode="decimal" /><span>lb/load</span>
+            </div>
+          </label>
+          <label>Sand passes
+            <div class="suffix-field">
+              <input id="plan-sand-passes" type="number" min="1" step="1" value="3" inputmode="decimal" /><span>passes</span>
+            </div>
+          </label>
+          <label>Top-layer passes
+            <div class="suffix-field">
+              <input id="plan-top-passes" type="number" min="1" step="1" value="2" inputmode="decimal" /><span>passes</span>
+            </div>
+          </label>
+        </div>
+        <h4 class="plan-sub">Sand plan</h4>
+        <div class="results" id="plan-sand-results"></div>
+        <h4 class="plan-sub">Top-layer plan</h4>
+        <div class="results" id="plan-top-results"></div>
+      </div>
     </section>
 
-    <!-- ============ BAG COUNT (live loading tally) ============ -->
-    <section class="panel" id="panel-bags" role="tabpanel">
+    <!-- ============ SAND TRACKER (receiving + dropping) ============ -->
+    <section class="panel" id="panel-sand" role="tabpanel">
       <div class="card">
-        <h2>Sand bag loading</h2>
-        <p class="hint">Tap the big button each time you load a bag. The count saves on this device — close the app, it's still here.</p>
-
+        <h2>Sand — received &amp; dropped</h2>
+        <p class="hint">Track sand across the whole job. Deliveries by truck and day; drops by who dropped them. Everything saves on this device over the multi-day job.</p>
         <div class="counter">
-          <div class="counter-num" id="bag-count">0</div>
-          <div class="counter-sub" id="bag-count-sub">bags loaded</div>
+          <div class="counter-num" id="strk-dropped-big">0</div>
+          <div class="counter-sub">sand drops on the field</div>
         </div>
-
         <div class="guide-progress">
-          <div class="guide-bar"><div id="bag-bar-fill" class="guide-bar-fill"></div></div>
-          <span id="bag-progress-label" class="guide-progress-label">no target</span>
+          <div class="guide-bar"><div id="strk-bar" class="guide-bar-fill"></div></div>
+          <span id="strk-progress" class="guide-progress-label">set a plan</span>
         </div>
-
-        <div class="load-buttons">
-          <button id="bag-minus" class="btn ghost load-pm" type="button" aria-label="Subtract one bag">−1</button>
-          <button id="bag-plus" class="btn load-big" type="button">+1 bag</button>
-        </div>
-        <div class="load-buttons">
-          <button id="bag-plus-pallet" class="btn ghost" type="button">+ pallet</button>
-        </div>
+        <div class="results" id="strk-summary"></div>
       </div>
 
       <div class="card">
-        <h3 class="layer-h">Readout</h3>
-        <div class="results" id="bag-results"></div>
-      </div>
-
-      <div class="card">
-        <h3 class="layer-h">Settings</h3>
+        <h3 class="layer-h">Log a delivery (received)</h3>
         <div class="grid two">
-          <label>What you're loading
-            <input id="bag-label" type="text" value="Sand bags" autocomplete="off" />
+          <label>Date
+            <input id="strk-rc-date" type="date" />
           </label>
-          <label>Bag weight
-            <div class="suffix-field">
-              <input id="bag-weight" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
-            </div>
+          <label>Trucks
+            <div class="suffix-field"><input id="strk-rc-trucks" type="number" min="0" step="1" value="1" inputmode="decimal" /><span>trucks</span></div>
           </label>
-          <label>Target bags
-            <div class="suffix-field">
-              <input id="bag-target" type="number" min="0" step="1" value="0" inputmode="decimal" /><span>bags</span>
-            </div>
+          <label>Bags (if bagged)
+            <div class="suffix-field"><input id="strk-rc-bags" type="number" min="0" step="1" inputmode="decimal" placeholder="0" /><span>bags</span></div>
           </label>
-          <label>Bags per pallet
-            <div class="suffix-field">
-              <input id="bag-pallet" type="number" min="1" step="1" value="56" inputmode="decimal" /><span>bags</span>
-            </div>
+          <label>Weight (if bulk)
+            <div class="suffix-field"><input id="strk-rc-weight" type="number" min="0" step="1" inputmode="decimal" placeholder="0" /><span>lb</span></div>
           </label>
         </div>
-        <div class="actions">
-          <button id="bag-use-infill" class="btn ghost" type="button">Use Infill sand target</button>
-          <button id="bag-reset" class="btn ghost danger-btn" type="button">Reset count</button>
+        <div class="actions"><button id="strk-rc-add" class="btn" type="button">Log delivery</button></div>
+        <div class="results" id="strk-rc-totals"></div>
+        <div id="strk-rc-list" class="saved-list"></div>
+        <p id="strk-rc-empty" class="hint">No deliveries logged yet.</p>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Log drops (dropped on field)</h3>
+        <div class="grid two">
+          <label>Who's dropping
+            <input id="strk-dp-ops" type="text" placeholder="Operator name" autocomplete="off" />
+          </label>
+          <label>Date
+            <input id="strk-dp-date" type="date" />
+          </label>
+          <label>Drops / bags this entry
+            <div class="suffix-field"><input id="strk-dp-count" type="number" min="0" step="1" inputmode="decimal" placeholder="0" /><span>drops</span></div>
+          </label>
+          <label>Pass #
+            <div class="suffix-field"><input id="strk-dp-pass" type="number" min="1" step="1" value="1" inputmode="decimal" /><span>pass</span></div>
+          </label>
         </div>
+        <div class="load-buttons">
+          <button id="strk-dp-plus" class="btn load-big" type="button">+1 drop</button>
+          <button id="strk-dp-add" class="btn ghost load-pm2" type="button">Log entry</button>
+        </div>
+        <div class="results" id="strk-dp-totals"></div>
+        <div id="strk-dp-list" class="saved-list"></div>
+        <p id="strk-dp-empty" class="hint">No drops logged yet.</p>
+      </div>
+    </section>
+
+    <!-- ============ TOP LAYER TRACKER (bags only, no weight) ============ -->
+    <section class="panel" id="panel-top" role="tabpanel">
+      <div class="card">
+        <h2>Top layer — received &amp; dropped</h2>
+        <p class="hint">The top layer always comes in bags, so no weight tracking — just bags, trucks, days, and who dropped them. <span id="top-product-note"></span></p>
+        <div class="counter">
+          <div class="counter-num" id="ttrk-dropped-big">0</div>
+          <div class="counter-sub">top-layer bags on the field</div>
+        </div>
+        <div class="guide-progress">
+          <div class="guide-bar"><div id="ttrk-bar" class="guide-bar-fill"></div></div>
+          <span id="ttrk-progress" class="guide-progress-label">set a plan</span>
+        </div>
+        <div class="results" id="ttrk-summary"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Log a delivery (received)</h3>
+        <div class="grid two">
+          <label>Date
+            <input id="ttrk-rc-date" type="date" />
+          </label>
+          <label>Trucks
+            <div class="suffix-field"><input id="ttrk-rc-trucks" type="number" min="0" step="1" value="1" inputmode="decimal" /><span>trucks</span></div>
+          </label>
+          <label class="full">Bags received
+            <div class="suffix-field"><input id="ttrk-rc-bags" type="number" min="0" step="1" inputmode="decimal" placeholder="0" /><span>bags</span></div>
+          </label>
+        </div>
+        <div class="actions"><button id="ttrk-rc-add" class="btn" type="button">Log delivery</button></div>
+        <div class="results" id="ttrk-rc-totals"></div>
+        <div id="ttrk-rc-list" class="saved-list"></div>
+        <p id="ttrk-rc-empty" class="hint">No deliveries logged yet.</p>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Log drops (dropped on field)</h3>
+        <div class="grid two">
+          <label>Who's dropping
+            <input id="ttrk-dp-ops" type="text" placeholder="Operator name" autocomplete="off" />
+          </label>
+          <label>Date
+            <input id="ttrk-dp-date" type="date" />
+          </label>
+          <label>Bags this entry
+            <div class="suffix-field"><input id="ttrk-dp-count" type="number" min="0" step="1" inputmode="decimal" placeholder="0" /><span>bags</span></div>
+          </label>
+          <label>Pass #
+            <div class="suffix-field"><input id="ttrk-dp-pass" type="number" min="1" step="1" value="1" inputmode="decimal" /><span>pass</span></div>
+          </label>
+        </div>
+        <div class="load-buttons">
+          <button id="ttrk-dp-plus" class="btn load-big" type="button">+1 bag</button>
+          <button id="ttrk-dp-add" class="btn ghost load-pm2" type="button">Log entry</button>
+        </div>
+        <div class="results" id="ttrk-dp-totals"></div>
+        <div id="ttrk-dp-list" class="saved-list"></div>
+        <p id="ttrk-dp-empty" class="hint">No drops logged yet.</p>
       </div>
     </section>
 

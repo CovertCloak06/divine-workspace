@@ -2,7 +2,7 @@
  * Bump CACHE on every release so stale assets are evicted.
  * version.json is always network-first so the version label stays honest.
  */
-const CACHE = 'turfpro-v5';
+const CACHE = 'turfpro-v6';
 // Relative to the SW's own location so the app works when hosted from a
 // subdirectory (e.g. /apps/turf-installer/) as well as from the site root.
 const SHELL = [

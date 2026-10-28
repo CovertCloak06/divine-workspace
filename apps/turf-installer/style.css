@@ -373,6 +373,19 @@ input:focus { border-color: var(--turf); box-shadow: 0 0 0 2px rgba(63, 174, 90,
   font-size: 22px;
   min-height: 76px;
 }
+.load-pm2 {
+  flex: 0 0 auto;
+  min-height: 76px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+.plan-sub {
+  margin: 16px 0 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
 
 /* ---- Saved jobs ---- */
 .saved-list { display: flex; flex-direction: column; gap: 8px; }
