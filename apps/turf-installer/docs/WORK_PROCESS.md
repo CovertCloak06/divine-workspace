@@ -1,0 +1,293 @@
+# Turf Installation — Work Process
+
+> **Status: WORKING DRAFT — needs Cameron's corrections.**
+>
+> This is a *scaffold* of a typical artificial-turf install, written so you can
+> correct it fast instead of re-typing hours of notes. Anything I'm unsure about
+> is marked **❓NEEDS INPUT**. Cross out what's wrong, fill the blanks, reorder
+> steps — this file is committed to the repo after every edit, so your process is
+> saved permanently from here on. Once it's accurate, each phase below becomes a
+> step in the worker-facing app.
+>
+> _Last updated: draft 1 (auto-generated skeleton, unverified)._
+
+---
+
+## Product direction (from Cameron)
+
+- **Audience:** turf workers / **foremen** on the job. Each foreman runs it on
+  their own device.
+- **Priority:** on-the-job **calculators** are the core. Cost/estimating is
+  *not* the focus, but stays in the app.
+- **Foreman expense tracking** (added 2026-07-07): each foreman logs job spend
+  — **diesel, gas, Home Depot / materials**, equipment rental, dump fees, etc.
+  Totals roll up by category; export/share to send in. Saved per device.
+  Per diem removed from field categories (2026-07-07) — that's an office thing.
+- **Job Guide tab** (added 2026-07-10): the 9 phases below rendered as an
+  on-site checklist — steps to check off, tools + watch-outs per phase, notes,
+  progress bar. Persists per device. The steps update as this doc gets
+  corrected, so fixing the doc fixes the app.
+- **Cut planner** (added 2026-07-10): per-area strip layout at the chosen roll
+  width, both orientations compared by waste, estimated seam length with a
+  one-tap handoff into the Seam & Nails calculator.
+- **Bag Count tab** (added 2026-10-28): a live tally for bags being loaded to
+  spread on the field. Big +1 / −1 / +pallet buttons, an optional target
+  (pullable from the Infill tab's sand-bag count), weight-loaded math, and a
+  progress bar. Count persists per device so closing the app mid-load keeps it.
+
+---
+
+## How to read this
+
+Each phase has:
+- **Goal** — what "done" looks like for that phase
+- **Steps** — the actions, in order
+- **Tools / materials** — what the crew needs on hand
+- **Measurements / specs** — numbers that matter (depths, spacings, rates)
+- **Watch out** — common mistakes / quality checks
+- **❓NEEDS INPUT** — where I'm guessing and need your real process
+
+> ❓NEEDS INPUT (big picture): You said you'd only gotten through about **half**
+> your process last time. The phases below are the standard industry arc — tell
+> me which ones you actually do, what you call them, and what's missing.
+
+---
+
+## Phase 1 — Site assessment & measurement
+**Goal:** Know exactly how much turf/material the job needs and any obstacles.
+
+**Steps**
+1. Walk the site; note obstacles (trees, sprinklers, utilities, slopes).
+2. Measure each area; break irregular shapes into rectangles/triangles.
+3. Note access (can a truck/bobcat reach it? wheelbarrow-only?).
+4. Decide turf roll direction (grain should run the same way, usually toward
+   the main viewing point). ❓NEEDS INPUT: how do you decide grain direction?
+
+**Tools / materials:** tape measure / measuring wheel, marking paint, notepad
+or the app.
+
+**Measurements / specs:** ❓NEEDS INPUT — standard roll width you use (15 ft?),
+typical waste %.
+
+**Watch out:** underground utilities (call before you dig?), sprinkler lines.
+
+---
+
+## Phase 2 — Demolition / removal
+**Goal:** Clear the area down to workable sub-grade.
+
+**Steps**
+1. Remove existing grass/sod, mulch, or old turf.
+2. Excavate to the required depth for base + turf. ❓NEEDS INPUT: how deep do
+   you dig? (e.g. 3–4 in for base?)
+3. Haul off debris / spoils.
+
+**Tools / materials:** sod cutter, shovels, bobcat/skid steer, wheelbarrow,
+haul-off bags or dump trailer.
+
+**Measurements / specs:** ❓NEEDS INPUT — excavation depth, do you account for
+turf thickness + base + a margin?
+
+**Watch out:** don't over-dig; keep grade consistent.
+
+---
+
+## Phase 3 — Grading & drainage
+**Goal:** A properly sloped, draining sub-grade.
+
+**Steps**
+1. Rough-grade to slope (water should run away from structures).
+2. Address drainage (French drain / drain box?) ❓NEEDS INPUT: when do you add
+   drainage vs. rely on the base?
+3. ❓NEEDS INPUT: gopher/weed considerations at this stage?
+
+**Measurements / specs:** ❓NEEDS INPUT — target slope (e.g. 1–2%?).
+
+**Watch out:** low spots that pool water.
+
+---
+
+## Phase 4 — Base installation
+**Goal:** A compacted, level aggregate base the turf sits on.
+
+**Steps**
+1. Lay weed barrier / geotextile fabric first? ❓NEEDS INPUT: fabric before or
+   after base — what's your order?
+2. Spread base aggregate. ❓NEEDS INPUT: what material — crushed rock, class II
+   road base, decomposed granite? What depth?
+3. Wet and compact with a plate compactor (multiple passes).
+4. Screed / level to final grade.
+
+**Tools / materials:** aggregate, plate compactor, rake, screed board, hose,
+weed fabric.
+
+**Measurements / specs:** ❓NEEDS INPUT — base depth (compacted), compaction
+passes, moisture.
+
+**Watch out:** compact in lifts; a soft base = a wavy lawn later.
+
+---
+
+## Phase 5 — Turf layout & placement
+**Goal:** Turf rolled out, grain aligned, positioned before cutting.
+
+**Steps**
+1. Roll out turf; let it acclimate / relax (in the sun?). ❓NEEDS INPUT: how
+   long do you let it sit?
+2. Align grain the same direction on every piece.
+3. Rough-position seams where they'll be least visible.
+
+**Tools / materials:** turf rolls, dolly/cart to move rolls.
+
+**Watch out:** grain mismatch between pieces shows badly.
+
+---
+
+## Phase 6 — Cutting & seaming
+**Goal:** Tight, invisible seams between pieces.
+
+**Steps**
+1. Trim edges; cut off the manufactured selvage so blades meet cleanly.
+2. Lay seam tape (and adhesive) or use seam nails. ❓NEEDS INPUT: tape+glue,
+   or nails, or both? Which glue?
+3. Join pieces stitch-to-stitch, avoid trapping blades in the seam.
+4. Weight the seam while it sets.
+
+**Tools / materials:** turf knife/carpet cutter, seam tape, turf glue, glue
+trowel, weights.
+
+**Measurements / specs:** ❓NEEDS INPUT — seam spacing from edges, glue coverage.
+
+**Watch out:** blades caught in glue; gaps; uneven tension.
+
+---
+
+## Phase 7 — Fastening / anchoring
+**Goal:** Turf locked down at edges and seams.
+
+**Steps**
+1. Stretch turf to remove wrinkles (kicker/stretcher?). ❓NEEDS INPUT.
+2. Nail/stake perimeter and seams. ❓NEEDS INPUT: nail type & length (5–6 in
+   galvanized?), spacing (every 3–6 in on edges, X in the field?).
+3. Bender board / edging where turf meets hardscape? ❓NEEDS INPUT.
+
+**Tools / materials:** turf nails/staples, hammer or nail gun, edging.
+
+**Measurements / specs:** ❓NEEDS INPUT — nail spacing (edge vs. field), nails
+per sq ft.
+
+**Watch out:** don't dimple the turf by over-driving nails.
+
+---
+
+## Phase 8 — Infill application ✅ (from Cameron, 2026-07-07)
+**Goal:** Infill spread and brushed in to weight the turf and stand blades up.
+
+**Infill is TWO layers:**
+1. **Sand (base infill)** — the bottom stabilizing layer.
+   - Supplied **sometimes as bulk sand, sometimes in bags** (job-dependent).
+   - So the calculator shows sand both ways: bulk (tons + yd³) *and* bag count.
+2. **Top fill (performance layer)** — goes on top of the sand.
+   - The product **varies by installation** — it depends on **what the customer
+     chooses for that particular field**. Not one standard product.
+   - ❓NEEDS INPUT: which top-fill products do you commonly install? (crumb
+     rubber/SBR, coated sand, cork/organic, TPE, EPDM, Zeolite, others?)
+
+**Steps**
+1. Spread the sand layer; brush/broom it down into the turf.
+2. Spread the customer's chosen top fill.
+3. Power-broom to work infill down and lift the blades. Repeat in lifts.
+
+**Tools / materials:** sand (bulk or bagged), top-fill product, drop spreader,
+power broom / stiff push broom.
+
+**Measurements / specs ✅ (from Cameron, 2026-07-10):** there is NO standard
+rate — **the lb/ft² depends on the product, and each field's spec calls out
+the rate for that installation.** That's exactly why the materials calculator
+and tracker matter: the foreman gets the spec per job and the app turns it
+into tons / yards / bags. The app's rate inputs are labeled "per field spec"
+and per-product typical ranges are shown as hints only — the spec always wins.
+
+**Watch out:** too much/little infill; not brushing enough between lifts.
+
+> App status: the **Infill** tab now models both layers — sand with a bulk⇄bagged
+> toggle (shows tons/yd³ and bag count), and a top-fill product picker per job.
+
+---
+
+## Infill — delivery & dropping tracking ✅✅ (FULL SPEC from Cameron, 2026-10-28)
+
+> This is the real requirement. The whole infill job runs **over several days**,
+> so everything below persists per device and is logged by **day**. Material
+> comes in two layers — **sand** (base) then a **top layer** — and for each layer
+> the crew tracks both what's **delivered/received** and what's **dropped**
+> (spread) on the field. Every item below is a hard requirement.
+
+### Key terms (the real vocabulary)
+- **Panel** — the field is divided into panels; material is dropped panel by panel.
+- **Pass** — one **pass** = dropping material over the span of the **whole field**
+  (every panel) once. It takes **multiple passes** to lay the full amount before
+  moving to the next layer.
+- **Drop** — one act of dropping material on a panel: a **bag** emptied, or (bulk
+  sand) a **load/drop** dumped.
+
+### A) Infill calculator — must compute:
+1. **lb per sq ft** — the rate for the field (per the field spec).
+2. **Bags or drops per panel** needed to make up the total for **one pass** over
+   the whole field.
+3. **Total for one pass** (whole field).
+4. **How many passes** it takes to finish dropping the material (before moving to
+   the top layer).
+5. **What the top-layer material is** for that field.
+
+### B) SAND layer tracking (bulk OR bags)
+Sand is sometimes **bulk**, sometimes **bags** — track whichever applies.
+- **Received:** how many **bags received**, on **how many trucks**, on **what days**.
+  If **bulk**: track **weight delivered** + **how many trucks** + **what days**.
+- **Dropped:** how many **bags or bulk loads/drops** have been dropped on the
+  field, **who** dropped them, on **what days**. Track toward the plan (passes).
+- **Weight matters for sand** (especially bulk).
+
+### C) TOP LAYER tracking (bags only)
+- The top layer is **always shipped in bags** → **no weight tracking** needed.
+- **Received:** bags received, trucks, days.
+- **Dropped:** bags dropped, **who** dropped, days. Track toward the plan (passes).
+- Record **what the top-layer material is** for this field.
+
+### D) Cross-cutting requirements
+- **Who is dropping** — every drop entry records the operator/person dropping.
+- **Multi-day** — the process spans a few days; all logs are kept and shown by day
+  and in running totals, and nothing resets on its own.
+- **Trucks & days** — deliveries are counted by number of trucks and by date.
+
+_Do not ask Cameron to re-explain any of the above — it is captured here._
+
+---
+
+## Phase 9 — Cleanup & final walkthrough
+**Goal:** Site clean, customer sign-off.
+
+**Steps**
+1. Blow/clean surrounding hardscape.
+2. Final brush of the whole lawn.
+3. Walk the job with the customer; note punch-list items.
+4. Care instructions to the customer. ❓NEEDS INPUT: do you leave a care sheet?
+
+**Watch out:** leftover nails, glue smears, debris in the turf.
+
+---
+
+## Open questions (fill these and the whole thing gets sharper)
+
+1. ❓ What are the phases in **your** words, and which do you actually perform?
+2. ❓ Crew: how many people, who does what role on a job?
+3. ❓ The **second half** of your process you didn't get to last time — what is it?
+4. ❓ Standard specs you use: excavation depth, base type/depth, nail spacing,
+   infill type & rate, roll width, typical waste %.
+5. ❓ What does a worker most need the app to tell/remind them **on site**?
+6. ❓ What goes wrong most often that the app could help prevent?
+
+---
+
+_When this reflects your real process, we convert each phase into a step in the
+worker app (checklist + the material calculator that already exists)._
