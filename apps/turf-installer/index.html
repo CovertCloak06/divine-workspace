@@ -26,6 +26,7 @@
     <button class="tab active" role="tab" data-tab="turf">Turf &amp; Rolls</button>
     <button class="tab" role="tab" data-tab="base">Base Rock</button>
     <button class="tab" role="tab" data-tab="infill">Infill</button>
+    <button class="tab" role="tab" data-tab="bags">Bag Count</button>
     <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
     <button class="tab" role="tab" data-tab="guide">Job Guide</button>
     <button class="tab" role="tab" data-tab="expenses">Expenses</button>
@@ -202,6 +203,65 @@
       <div class="card">
         <h3 class="layer-h">Infill totals</h3>
         <div class="results" id="infill-results"></div>
+      </div>
+    </section>
+
+    <!-- ============ BAG COUNT (live loading tally) ============ -->
+    <section class="panel" id="panel-bags" role="tabpanel">
+      <div class="card">
+        <h2>Sand bag loading</h2>
+        <p class="hint">Tap the big button each time you load a bag. The count saves on this device — close the app, it's still here.</p>
+
+        <div class="counter">
+          <div class="counter-num" id="bag-count">0</div>
+          <div class="counter-sub" id="bag-count-sub">bags loaded</div>
+        </div>
+
+        <div class="guide-progress">
+          <div class="guide-bar"><div id="bag-bar-fill" class="guide-bar-fill"></div></div>
+          <span id="bag-progress-label" class="guide-progress-label">no target</span>
+        </div>
+
+        <div class="load-buttons">
+          <button id="bag-minus" class="btn ghost load-pm" type="button" aria-label="Subtract one bag">−1</button>
+          <button id="bag-plus" class="btn load-big" type="button">+1 bag</button>
+        </div>
+        <div class="load-buttons">
+          <button id="bag-plus-pallet" class="btn ghost" type="button">+ pallet</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Readout</h3>
+        <div class="results" id="bag-results"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="layer-h">Settings</h3>
+        <div class="grid two">
+          <label>What you're loading
+            <input id="bag-label" type="text" value="Sand bags" autocomplete="off" />
+          </label>
+          <label>Bag weight
+            <div class="suffix-field">
+              <input id="bag-weight" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
+            </div>
+          </label>
+          <label>Target bags
+            <div class="suffix-field">
+              <input id="bag-target" type="number" min="0" step="1" value="0" inputmode="decimal" /><span>bags</span>
+            </div>
+          </label>
+          <label>Bags per pallet
+            <div class="suffix-field">
+              <input id="bag-pallet" type="number" min="1" step="1" value="56" inputmode="decimal" /><span>bags</span>
+            </div>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="bag-use-infill" class="btn ghost" type="button">Use Infill sand target</button>
+          <button id="bag-reset" class="btn ghost danger-btn" type="button">Reset count</button>
+        </div>
       </div>
     </section>
 

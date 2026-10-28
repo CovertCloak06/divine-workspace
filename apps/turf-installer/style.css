@@ -346,6 +346,34 @@ input:focus { border-color: var(--turf); box-shadow: 0 0 0 2px rgba(63, 174, 90,
 .actions .btn { flex: 1; }
 .btn.danger-btn { color: var(--danger); border-color: rgba(224, 85, 75, 0.5); }
 
+/* ---- Bag loading counter ---- */
+.counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 16px 0 10px;
+}
+.counter-num {
+  font-size: 76px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--turf-bright);
+  font-variant-numeric: tabular-nums;
+}
+.counter-sub { font-size: 14px; color: var(--muted); }
+.load-buttons { display: flex; gap: 10px; margin-top: 12px; }
+.load-big {
+  flex: 1 1 auto;
+  font-size: 24px;
+  min-height: 76px;
+}
+.load-pm {
+  flex: 0 0 84px;
+  font-size: 22px;
+  min-height: 76px;
+}
+
 /* ---- Saved jobs ---- */
 .saved-list { display: flex; flex-direction: column; gap: 8px; }
 .saved-item {

@@ -30,6 +30,10 @@
 - **Cut planner** (added 2026-07-10): per-area strip layout at the chosen roll
   width, both orientations compared by waste, estimated seam length with a
   one-tap handoff into the Seam & Nails calculator.
+- **Bag Count tab** (added 2026-10-28): a live tally for bags being loaded to
+  spread on the field. Big +1 / −1 / +pallet buttons, an optional target
+  (pullable from the Infill tab's sand-bag count), weight-loaded math, and a
+  progress bar. Count persists per device so closing the app mid-load keeps it.
 
 ---
 

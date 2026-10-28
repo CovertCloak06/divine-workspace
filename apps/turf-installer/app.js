@@ -13,7 +13,11 @@
  */
 
 const STORE_KEY = 'turfpro.jobs.v2';
-const VERSION = 'v4';
+const VERSION = 'v5';
+
+/* cross-tab state: the Infill tab's latest computed sand-bag count, so the
+ * Bag Count tab can pull it as a loading target. */
+let lastInfillSandBags = 0;
 
 /* ---------- helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -222,6 +226,7 @@ function calcInfill() {
   const sandYd3 = sandTons / SAND_TONS_PER_YD3;
   const sandBagSize = num('sand-bag') || 50;
   const sandBags = Math.ceil(sandLb / sandBagSize);
+  lastInfillSandBags = sandBags;   // let the Bag Count tab pull this as a target
   const supply = $('sand-supply').value;
   // show/hide bulk vs bag inputs
   document.querySelectorAll('.sand-bulk').forEach((n) => n.style.display = supply === 'bulk' ? '' : 'none');
@@ -707,6 +712,59 @@ function loadForemanMeta() {
   } catch { /* ignore */ }
 }
 
+/* ---------- bag loading tracker ---------- */
+/* A live tally of bags physically loaded, with an optional target (pullable
+ * from the Infill tab) and weight math. The count persists so closing the app
+ * mid-load doesn't lose it. */
+const BAG_KEY = 'turfpro.bags.v1';
+const BAG_FIELDS = ['bag-label', 'bag-weight', 'bag-target', 'bag-pallet'];
+let bagCount = 0;
+
+function readBagState() { try { return JSON.parse(localStorage.getItem(BAG_KEY)) || {}; } catch { return {}; } }
+function writeBagState() {
+  const s = { count: bagCount };
+  BAG_FIELDS.forEach((id) => { s[id] = $(id).value; });
+  localStorage.setItem(BAG_KEY, JSON.stringify(s));
+}
+function loadBagState() {
+  const s = readBagState();
+  if (Number.isFinite(s.count)) bagCount = s.count;
+  BAG_FIELDS.forEach((id) => { if (s[id] != null && s[id] !== '') $(id).value = s[id]; });
+}
+
+function palletSize() { return Math.max(1, Math.round(num('bag-pallet')) || 1); }
+
+function renderBags() {
+  const target = Math.max(0, Math.round(num('bag-target')));
+  const weight = num('bag-weight');
+  $('bag-count').textContent = fmt(bagCount, 0);
+  $('bag-count-sub').textContent = ($('bag-label').value.trim() || 'bags') + ' loaded';
+  $('bag-plus-pallet').textContent = `+${palletSize()} (pallet)`;
+
+  const pct = target > 0 ? Math.min(100, Math.round((bagCount / target) * 100)) : 0;
+  $('bag-bar-fill').style.width = pct + '%';
+  const remaining = Math.max(0, target - bagCount);
+  $('bag-progress-label').textContent = target > 0
+    ? `${pct}% — ${fmt(remaining, 0)} to go`
+    : 'no target';
+
+  lines('bag-results', [
+    { k: 'Loaded', v: `${fmt(bagCount, 0)} bags · ${fmt(bagCount * weight, 0)} lb`, big: true },
+    ...(target > 0 ? [
+      { k: 'Target', v: `${fmt(target, 0)} bags · ${fmt(target * weight, 0)} lb` },
+      { k: 'Remaining', v: `${fmt(remaining, 0)} bags · ${fmt(remaining * weight, 0)} lb` },
+    ] : []),
+    { k: 'Weight loaded', v: `${fmt(bagCount * weight / 2000, 2)} tons` },
+  ]);
+}
+
+function bumpBags(n) {
+  bagCount = Math.max(0, bagCount + n);
+  writeBagState();
+  renderBags();
+  if (n > 0 && navigator.vibrate) { try { navigator.vibrate(20); } catch { /* unsupported */ } }
+}
+
 /* ---------- toast ---------- */
 let toastTimer;
 function toast(msg) {
@@ -769,6 +827,23 @@ function init() {
   });
   $('exp-foreman').addEventListener('input', saveForemanMeta);
   $('exp-job').addEventListener('input', saveForemanMeta);
+
+  // bag loading tracker
+  loadBagState();
+  renderBags();
+  $('bag-plus').addEventListener('click', () => bumpBags(1));
+  $('bag-minus').addEventListener('click', () => bumpBags(-1));
+  $('bag-plus-pallet').addEventListener('click', () => bumpBags(palletSize()));
+  $('bag-use-infill').addEventListener('click', () => {
+    render();                              // make sure the infill count is current
+    $('bag-target').value = lastInfillSandBags || 0;
+    writeBagState(); renderBags();
+    toast(`Target set to ${fmt(lastInfillSandBags, 0)} bags`);
+  });
+  $('bag-reset').addEventListener('click', () => {
+    if (confirm('Reset the bag count to 0?')) { bagCount = 0; writeBagState(); renderBags(); toast('Count reset'); }
+  });
+  BAG_FIELDS.forEach((id) => $(id).addEventListener('input', () => { writeBagState(); renderBags(); }));
 
   renderSaved();
   renderExpenses();
