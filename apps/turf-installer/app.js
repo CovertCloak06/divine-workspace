@@ -13,7 +13,7 @@
  */
 
 const STORE_KEY = 'turfpro.jobs.v2';
-const VERSION = 'v6';
+const VERSION = 'v7';
 
 /* Infill drop-plan totals, computed by calcInfillPlan() and read by the Sand /
  * Top Layer trackers for their progress bars. */
@@ -195,12 +195,10 @@ function calcBase() {
   const yd3Compacted = (net * depthFt) / 27;
   const yd3Order = yd3Compacted * comp;          // loose volume to buy
   const tons = yd3Order * tonsPerYd;
-  const cost = tons * num('base-price');
   lines('base-results', [
     { k: 'Compacted volume', v: fmt(yd3Compacted, 2) + ' yd³' },
     { k: 'Order (loose)', v: fmt(yd3Order, 2) + ' yd³' },
     { k: 'Weight', v: fmt(tons, 2) + ' tons', big: true },
-    { k: 'Cost', v: money(cost) },
   ]);
 }
 
@@ -231,37 +229,30 @@ function calcInfill() {
   // show/hide bulk vs bag inputs
   document.querySelectorAll('.sand-bulk').forEach((n) => n.style.display = supply === 'bulk' ? '' : 'none');
   document.querySelectorAll('.sand-bag').forEach((n) => n.style.display = supply === 'bags' ? '' : 'none');
-  const sandCost = supply === 'bulk'
-    ? sandTons * num('sand-ton-price')
-    : sandBags * num('sand-bag-price');
   lines('sand-results', [
     { k: 'Total sand', v: fmt(sandLb, 0) + ' lb', big: true },
     { k: 'If bulk', v: `${fmt(sandTons, 2)} tons · ${fmt(sandYd3, 2)} yd³` },
     { k: `If bagged (${fmt(sandBagSize, 0)} lb)`, v: `${sandBags} bag${sandBags === 1 ? '' : 's'}` },
-    { k: `Cost (${supply})`, v: money(sandCost) },
   ]);
 
-  // --- Layer 2: top fill (priced per bag, matching the label) ---
+  // --- Layer 2: top fill ---
   const hintEl = $('top-rate-hint');
   if (hintEl) hintEl.textContent = RATE_HINTS[$('top-product').value] || '';
   const topLb = net * num('top-rate');
   const topBagSize = num('top-bag') || 50;
   const topBags = Math.ceil(topLb / topBagSize);
-  const topCost = topBags * num('top-price');
   lines('top-results', [
     { k: 'Product', v: $('top-product').value },
     { k: 'Total top fill', v: fmt(topLb, 0) + ' lb', big: true },
     { k: `Bags (${fmt(topBagSize, 0)} lb)`, v: `${topBags} bag${topBags === 1 ? '' : 's'}` },
-    { k: 'Cost', v: money(topCost) },
   ]);
 
   // --- combined ---
   lines('infill-results', [
     { k: 'Combined infill', v: fmt(sandLb + topLb, 0) + ' lb', big: true },
     { k: 'Combined rate', v: fmt(net > 0 ? (sandLb + topLb) / net : 0, 1) + ' lb/ft²' },
-    { k: 'Infill cost', v: money(sandCost + topCost) },
   ]);
-  return { sandLb, topLb, sandCost, topCost, net };
+  return { sandLb, topLb, net };
 }
 
 /* Drop plan: split the field into panels and passes, and work out how many
@@ -317,8 +308,8 @@ function calcInfillPlan() {
  * persist (unlike the other transient calculator tabs). */
 const INFILL_PLAN_KEY = 'turfpro.infill.plan.v1';
 const INFILL_PLAN_IDS = [
-  'sand-rate', 'sand-supply', 'sand-bag', 'sand-ton-price', 'sand-bag-price',
-  'top-product', 'top-rate', 'top-bag', 'top-price',
+  'sand-rate', 'sand-supply', 'sand-bag',
+  'top-product', 'top-rate', 'top-bag',
   'plan-panels', 'plan-bulk-drop', 'plan-sand-passes', 'plan-top-passes',
 ];
 function saveInfillPlan() {
@@ -346,11 +337,9 @@ function calcSeam() {
   const tapeRoll = num('tape-roll') || 100;
   const gallons = len > 0 ? Math.ceil(len / glueCover) : 0;
   const tapeRolls = len > 0 ? Math.ceil(len / tapeRoll) : 0;
-  const cost = gallons * num('glue-price');
   lines('seam-results', [
     { k: 'Seam tape', v: `${tapeRolls} roll${tapeRolls === 1 ? '' : 's'} (${fmt(len, 0)} ft)` },
     { k: 'Glue', v: `${gallons} gal`, big: true },
-    { k: 'Glue cost', v: money(cost) },
   ]);
 }
 
@@ -377,51 +366,39 @@ function calcNails() {
   ]);
 }
 
-/* ---------- estimate (pulls area + rates from the other tabs) ---------- */
+/* ---------- materials summary (quantities only, no pricing) ---------- */
 function calcEstimate() {
   const net = areaTotal('estimate');
   const waste = num('est-waste') / 100;
   const gross = net * (1 + waste);
 
-  const turf = gross * num('est-turf-price');
-  // infill: sand layer + top fill, using the rates from the Infill tab
+  const rollW = num('turf-roll-width') || 15;
+  const turfLinear = rollW > 0 ? gross / rollW : 0;
   const sandLb = net * num('sand-rate');
+  const sandTons = sandLb / 2000;
+  const sandBags = Math.ceil(sandLb / (num('sand-bag') || 50));
+  const supply = $('sand-supply').value;
   const topLb = net * num('top-rate');
-  const infillLb = sandLb + topLb;
-  const sandCost = $('sand-supply').value === 'bulk'
-    ? (sandLb / 2000) * num('sand-ton-price')
-    : Math.ceil(sandLb / (num('sand-bag') || 50)) * num('sand-bag-price');
   const topBags = Math.ceil(topLb / (num('top-bag') || 50));
-  const infill = sandCost + topBags * num('top-price');
   const depthFt = num('base-depth') / 12;
   const yd3 = (net * depthFt) / 27 * (1 + num('base-compaction') / 100);
-  const base = yd3 * (num('base-material') || 1.5) * num('base-price');
-  const seamGal = num('seam-len') > 0 ? Math.ceil(num('seam-len') / (num('glue-cover') || 60)) : 0;
-  const seam = seamGal * num('glue-price');
-  const labor = net * num('est-labor');
+  const baseTons = yd3 * (num('base-material') || 1.5);
 
   const items = [
-    { name: 'Turf', qty: `${fmt(gross, 0)} ft²`, cost: turf },
-    { name: 'Infill', qty: `${fmt(infillLb, 0)} lb`, cost: infill },
-    { name: 'Base rock', qty: `${fmt(yd3, 1)} yd³`, cost: base },
-    { name: 'Seam glue', qty: `${seamGal} gal`, cost: seam },
-    { name: 'Labor', qty: `${fmt(net, 0)} ft²`, cost: labor },
+    { name: 'Turf', qty: `${fmt(gross, 0)} ft² · ${fmt(turfLinear, 0)} lin ft @ ${fmt(rollW, 0)}ft` },
+    { name: 'Sand', qty: supply === 'bulk' ? `${fmt(sandTons, 2)} tons` : `${fmt(sandBags, 0)} bags` },
+    { name: 'Top fill', qty: `${fmt(topBags, 0)} bags` },
+    { name: 'Base rock', qty: `${fmt(baseTons, 2)} tons · ${fmt(yd3, 1)} yd³` },
   ];
-  const subtotal = items.reduce((s, it) => s + it.cost, 0);
-  const markup = subtotal * (num('est-markup') / 100);
-  const total = subtotal + markup;
 
   const body = $('est-body');
   body.innerHTML = '';
   items.forEach((it) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td class="num">${money(it.cost)}</td>`;
+    tr.innerHTML = `<td>${it.name}</td><td class="num">${it.qty}</td>`;
     body.appendChild(tr);
   });
-  $('est-subtotal').textContent = money(subtotal);
-  $('est-markup-val').textContent = money(markup);
-  $('est-total').textContent = money(total);
-  return { net, gross, items, subtotal, markup, total };
+  return { net, gross, items };
 }
 
 /* ---------- converters ---------- */
@@ -444,16 +421,15 @@ function render() {
 function readJobs() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
 function writeJobs(j) { localStorage.setItem(STORE_KEY, JSON.stringify(j)); }
 
-/* Every input that feeds the estimate. Snapshotted into each saved job so
- * reopening a job shows the total it was saved with, not whatever rates
- * happen to be in the inputs from the last job quoted. */
+/* Every job-defining input. Snapshotted into each saved job so reopening it
+ * restores that job's setup. */
 const RATE_IDS = [
-  'est-turf-price', 'est-labor', 'est-waste', 'est-markup',
+  'est-waste',
   'turf-roll-width', 'turf-waste',
-  'base-depth', 'base-compaction', 'base-material', 'base-price',
-  'sand-rate', 'sand-supply', 'sand-ton-price', 'sand-bag', 'sand-bag-price',
-  'top-product', 'top-rate', 'top-bag', 'top-price',
-  'seam-len', 'glue-cover', 'tape-roll', 'glue-price',
+  'base-depth', 'base-compaction', 'base-material',
+  'sand-rate', 'sand-supply', 'sand-bag',
+  'top-product', 'top-rate', 'top-bag',
+  'seam-len', 'glue-cover', 'tape-roll',
   'seam-len-2', 'perimeter', 'perim-spacing', 'seam-spacing', 'field-rate', 'nail-box',
 ];
 
@@ -468,7 +444,7 @@ function collectJob() {
     name: $('job-name').value || 'Untitled job',
     date: $('job-date').value || todayLocal(),
     rates: Object.fromEntries(RATE_IDS.map((id) => [id, $(id).value])),
-    areas, net: est.net, total: est.total,
+    areas, net: est.net,
   };
 }
 
@@ -494,8 +470,8 @@ function renderSaved() {
     item.className = 'saved-item';
     item.innerHTML = `
       <div class="meta"><span class="name"></span>
-        <span class="sub">${esc(job.date)} · ${fmt(job.net || 0, 0)} ft²</span></div>
-      <span class="price">${money(job.total || 0)}</span>
+        <span class="sub">${esc(job.date)}</span></div>
+      <span class="price">${fmt(job.net || 0, 0)} ft²</span>
       <div class="row-actions"><button class="open" title="Open">📂</button>
         <button class="del" title="Delete">🗑</button></div>`;
     item.querySelector('.name').textContent = job.name;   // XSS-safe
@@ -512,19 +488,18 @@ function renderSaved() {
 function jobText() {
   const r = calcEstimate();
   const lines2 = [
-    `TurfPro estimate — ${$('job-name').value || 'Turf job'}`,
+    `TurfPro materials — ${$('job-name').value || 'Turf job'}`,
     `Area: ${fmt(r.net, 0)} ft² net / ${fmt(r.gross, 0)} ft² w/ waste`, '',
-    ...r.items.map((it) => `${it.name}: ${it.qty} — ${money(it.cost)}`), '',
-    `Subtotal: ${money(r.subtotal)}`, `Markup: ${money(r.markup)}`,
-    `TOTAL: ${money(r.total)}`, '', 'Estimate only.',
+    ...r.items.map((it) => `${it.name}: ${it.qty}`), '',
+    'Quantities are estimates — confirm before ordering.',
   ];
   return lines2.join('\n');
 }
 
 async function shareJob() {
   const text = jobText();
-  if (navigator.share) { try { await navigator.share({ title: 'TurfPro estimate', text }); return; } catch { /* cancelled */ } }
-  try { await navigator.clipboard.writeText(text); toast('Estimate copied'); }
+  if (navigator.share) { try { await navigator.share({ title: 'TurfPro materials', text }); return; } catch { /* cancelled */ } }
+  try { await navigator.clipboard.writeText(text); toast('Materials copied'); }
   catch { toast('Copy not supported'); }
 }
 

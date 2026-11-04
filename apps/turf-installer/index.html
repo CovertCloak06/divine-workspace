@@ -31,7 +31,7 @@
     <button class="tab" role="tab" data-tab="fasten">Seam &amp; Nails</button>
     <button class="tab" role="tab" data-tab="guide">Job Guide</button>
     <button class="tab" role="tab" data-tab="expenses">Expenses</button>
-    <button class="tab" role="tab" data-tab="estimate">Estimate</button>
+    <button class="tab" role="tab" data-tab="estimate">Materials</button>
     <button class="tab" role="tab" data-tab="convert">Convert</button>
   </nav>
 
@@ -106,13 +106,6 @@
               <span>%</span>
             </div>
           </label>
-          <label>Price
-            <div class="suffix-field">
-              <span class="prefix">$</span>
-              <input id="base-price" type="number" min="0" step="0.01" value="55" inputmode="decimal" />
-              <span>/ton</span>
-            </div>
-          </label>
         </div>
 
         <div class="results" id="base-results"></div>
@@ -145,19 +138,9 @@
               </select>
             </div>
           </label>
-          <label class="sand-bulk">Bulk price
-            <div class="suffix-field"><span class="prefix">$</span>
-              <input id="sand-ton-price" type="number" min="0" step="0.01" value="45" inputmode="decimal" /><span>/ton</span>
-            </div>
-          </label>
-          <label class="sand-bag">Bag size
+          <label class="full">Bag size (if bagged)
             <div class="suffix-field">
               <input id="sand-bag" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
-            </div>
-          </label>
-          <label class="sand-bag">Bag price
-            <div class="suffix-field"><span class="prefix">$</span>
-              <input id="sand-bag-price" type="number" min="0" step="0.01" value="6" inputmode="decimal" /><span>/bag</span>
             </div>
           </label>
         </div>
@@ -190,11 +173,6 @@
           <label>Bag size
             <div class="suffix-field">
               <input id="top-bag" type="number" min="1" step="1" value="50" inputmode="decimal" /><span>lb</span>
-            </div>
-          </label>
-          <label>Bag price
-            <div class="suffix-field"><span class="prefix">$</span>
-              <input id="top-price" type="number" min="0" step="0.01" value="30" inputmode="decimal" /><span>/bag</span>
             </div>
           </label>
         </div>
@@ -387,13 +365,6 @@
               <span>ft</span>
             </div>
           </label>
-          <label>Glue price
-            <div class="suffix-field">
-              <span class="prefix">$</span>
-              <input id="glue-price" type="number" min="0" step="0.01" value="45" inputmode="decimal" />
-              <span>/gal</span>
-            </div>
-          </label>
         </div>
         <div class="results" id="seam-results"></div>
       </div>
@@ -546,31 +517,17 @@
       </div>
 
       <div class="card estimate">
-        <h2>Estimate</h2>
-        <p class="hint">Pulls area above and the rates from each calculator tab.</p>
+        <h2>Materials</h2>
+        <p class="hint">Quantities to order for this job, from the area above and your rates on the other tabs. No pricing — just what to order.</p>
         <div class="grid two tight">
-          <label>Turf $/ft²
-            <div class="suffix-field"><span class="prefix">$</span><input id="est-turf-price" type="number" min="0" step="0.01" value="2.75" inputmode="decimal" /></div>
-          </label>
-          <label>Labor $/ft²
-            <div class="suffix-field"><span class="prefix">$</span><input id="est-labor" type="number" min="0" step="0.01" value="1.50" inputmode="decimal" /></div>
-          </label>
           <label>Waste %
             <div class="suffix-field"><input id="est-waste" type="number" min="0" step="1" value="10" inputmode="decimal" /><span>%</span></div>
-          </label>
-          <label>Markup %
-            <div class="suffix-field"><input id="est-markup" type="number" min="0" step="1" value="0" inputmode="decimal" /><span>%</span></div>
           </label>
         </div>
 
         <table class="est-table">
-          <thead><tr><th>Item</th><th>Qty</th><th class="num">Cost</th></tr></thead>
+          <thead><tr><th>Material</th><th class="num">Quantity</th></tr></thead>
           <tbody id="est-body"></tbody>
-          <tfoot>
-            <tr class="subtotal"><td colspan="2">Subtotal</td><td id="est-subtotal" class="num">$0.00</td></tr>
-            <tr class="markup-row"><td colspan="2">Markup</td><td id="est-markup-val" class="num">$0.00</td></tr>
-            <tr class="total"><td colspan="2">Total</td><td id="est-total" class="num">$0.00</td></tr>
-          </tfoot>
         </table>
 
         <div class="actions">
@@ -625,7 +582,7 @@
   </main>
 
   <footer class="app-foot">
-    <span>TurfPro · works offline · estimates only</span>
+    <span>TurfPro · works offline · quantities are estimates</span>
     <span id="app-version"></span>
   </footer>
 
